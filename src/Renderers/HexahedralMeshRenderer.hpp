@@ -29,8 +29,14 @@
 #ifndef RENDERERS_HEXAHEDRALMESHRENDERER_HPP
 #define RENDERERS_HEXAHEDRALMESHRENDERER_HPP
 
+#include "SceneData.hpp"
+
+class TransferFunctionWindow;
+
 class HexahedralMeshRenderer {
 public:
+    HexahedralMeshRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+        : sceneData(sceneData), transferFunctionWindow(transferFunctionWindow) {}
     virtual ~HexahedralMeshRenderer() {}
 
     // Returns if the visualization mapping needs to be re-generated.
@@ -42,13 +48,21 @@ public:
     virtual void generateVisualizationMapping(GeneralizedMapPtr meshIn)=0;
 
     // Renders the object to the scene framebuffer.
-    virtual void render(const SceneData& sceneData)=0;
+    virtual void render()=0;
     // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
     virtual void renderGui()=0;
 
+    // Called when the resolution of the application window has changed.
+    virtual void onResolutionChanged() {}
+
+    // Called when the transfer function was changed.
+    virtual void onTransferFunctionMapRebuilt() {}
+
 private:
+    SceneData &sceneData;
+    TransferFunctionWindow &transferFunctionWindow;
     bool dirty = true;
     bool reRender = true;
 };
 
-#endif RENDERERS_HEXAHEDRALMESHRENDERER_HPP
+#endif // RENDERERS_HEXAHEDRALMESHRENDERER_HPP

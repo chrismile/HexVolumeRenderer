@@ -29,8 +29,12 @@
 #ifndef GENERALMAP_GENERALMAP_HPP
 #define GENERALMAP_GENERALMAP_HPP
 
+#include <memory>
 
-class GeneralMap {
+class GeneralizedMap;
+typedef std::shared_ptr<GeneralizedMap> GeneralizedMapPtr;
+
+class GeneralizedMap {
 
 };
 

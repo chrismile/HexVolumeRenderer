@@ -29,9 +29,12 @@
 #ifndef RENDERERS_SCENEDATA_HPP
 #define RENDERERS_SCENEDATA_HPP
 
+#include <Graphics/Scene/Camera.hpp>
+#include <Graphics/Buffers/FBO.hpp>
+
 class SceneData {
-    FramebufferObjectPtr framebuffer;
-    CameraPtr camera;
+    sgl::FramebufferObjectPtr framebuffer;
+    sgl::CameraPtr camera;
 };
 
 #endif //RENDERERS_SCENEDATA_HPP

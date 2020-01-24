@@ -75,15 +75,12 @@ cmake-build-*/
 *.binpath
 *.camera
 *.binlines
+*.vtk
+*.mesh
 
-Data/WCB/*.txt
-Data/PointDatasets/*
-Data/IsoSurfaces/*
-Data/ConvectionRolls/*
-Data/Rings/*
+Data/Meshes/*
 Data/CameraPaths/*
 Data/Screenshots/*
-Data/TransferFunctions_*
 Data/TransferFunctions/*
 
 Data/ControlPoints.txt

@@ -1,0 +1,17 @@
+//
+// Created by christoph on 23.01.20.
+//
+
+#ifndef HEXVOLUMERENDERER_IMPORTANCECRITERIA_H
+#define HEXVOLUMERENDERER_IMPORTANCECRITERIA_H
+
+enum QualityMeasure {
+    QUALITY_MEASURE_SCALED_JACOBI
+};
+
+const char *const QUALITY_MEASURE_NAMES[] = {
+        "Scaled Jacobi"
+};
+const int NUM_IMPORTANCE_CRITERIA = ((int)(sizeof(QUALITY_MEASURE_NAMES) / sizeof(*QUALITY_MEASURE_NAMES)));
+
+#endif //HEXVOLUMERENDERER_IMPORTANCECRITERIA_H

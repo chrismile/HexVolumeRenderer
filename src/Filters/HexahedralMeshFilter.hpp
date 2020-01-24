@@ -29,10 +29,14 @@
 #ifndef FILTERS_HEXAHEDRALMESHFILTER_HPP
 #define FILTERS_HEXAHEDRALMESHFILTER_HPP
 
+#include "GeneralizedMap/GeneralizedMap.hpp"
+
 class HexahedralMeshFilter {
 public:
     virtual ~HexahedralMeshFilter() {}
 
+    // Returns if the filter is active and should be applied on the input data.
+    inline bool isEnabled() { return enabled; }
     // Returns if the visualization mapping needs to be re-generated.
     inline bool isDirty() { return dirty; }
 
@@ -40,9 +44,13 @@ public:
     virtual void filterMesh(GeneralizedMapPtr meshIn);
     inline GeneralizedMapPtr getOutput() { return output; }
 
+    // Renders the GUI. The "dirty" flag might be set depending on the user's actions.
+    virtual void renderGui()=0;
+
 private:
     GeneralizedMapPtr output;
+    bool enabled = true;
     bool dirty = true;
 };
 
-#endif FILTERS_HEXAHEDRALMESHFILTER_HPP
+#endif // FILTERS_HEXAHEDRALMESHFILTER_HPP

@@ -29,9 +29,11 @@
 #ifndef LOADERS_HEXAHEDRALMESHLOADER_HPP
 #define LOADERS_HEXAHEDRALMESHLOADER_HPP
 
+#include "GeneralizedMap/GeneralizedMap.hpp"
+
 class HexahedralMeshLoader {
 public:
     virtual GeneralizedMapPtr loadHexahedralMeshFromFile(const std::string& filename)=0;
 };
 
-#endif LOADERS_HEXAHEDRALMESHLOADER_HPP
+#endif // LOADERS_HEXAHEDRALMESHLOADER_HPP
