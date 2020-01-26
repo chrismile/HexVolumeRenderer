@@ -44,6 +44,15 @@
 #include "Renderers/TransferFunctionWindow.hpp"
 #include "Renderers/HexahedralMeshRenderer.hpp"
 
+enum RenderingMode {
+    RENDERING_MODE_SURFACE, RENDERING_MODE_VOLUME, RENDERING_MODE_DEPTH_COMPLEXITY
+};
+const char *const RENDERING_MODE_NAMES[] = {
+        "Surface", "Volume", "Depth Complexity"
+};
+const int NUM_RENDERING_MODES = ((int)(sizeof(QUALITY_MEASURE_NAMES) / sizeof(*QUALITY_MEASURE_NAMES)));
+
+
 class MainApp : public sgl::AppLogic {
 public:
     MainApp();
@@ -80,7 +89,7 @@ private:
     sgl::Color clearColor;
     ImVec4 clearColorSelection = ImColor(0, 0, 0, 255);
     bool cullBackface = true;
-    bool volumeRendering = false;
+    RenderingMode renderingMode = RENDERING_MODE_SURFACE;
     bool useLinearRGB = true;
     std::vector<float> fpsArray;
     size_t fpsArrayOffset = 0;
@@ -110,9 +119,12 @@ private:
     bool continuousRendering = false;
     bool reRender = true;
 
-    // Coloring & filtering dependent on importance criteria
+    // Coloring & filtering dependent on importance criteria.
     QualityMeasure selectedQualityMeasure;
     TransferFunctionWindow transferFunctionWindow;
+
+    // For downloading files in the background.
+    LoaderThread loaderThread;
 
 
     /// --- Visualization pipeline ---

@@ -677,11 +677,11 @@ namespace HexaLab {
             }
 
             // Add all unfiltered cells to full mesh (front- and backfaces)
-            if ( !mesh->is_marked ( nav.cell() ) || nav.dart().cell_neighbor == -1 ) {
+            if ( !mesh->is_marked ( nav.cell() ) ) {
                 this->add_mesh_face( nav.dart(), 1 );
-                if (nav.dart().cell_neighbor != -1) {
-                    this->add_mesh_face( nav.dart(), -1 );
-                }
+            }
+            if ( nav.dart().cell_neighbor != -1 && !mesh->is_marked ( nav.flip_cell().cell() ) ) {
+                this->add_mesh_face( nav.dart(), -1 );
             }
         }
     }

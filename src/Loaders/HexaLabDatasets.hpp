@@ -5,6 +5,10 @@
 #ifndef HEXVOLUMERENDERER_HEXALABDATASETS_HPP
 #define HEXVOLUMERENDERER_HEXALABDATASETS_HPP
 
+#include <string>
+#include <functional>
+#include <thread>
+
 /**
  * This file can help download data sets from HexaLab. The program assumes the user has the rights to download the data.
  *
@@ -28,8 +32,26 @@ struct MeshSourceDescription {
     std::vector<std::string> data;
 };
 
+class LoaderThread {
+public:
+    LoaderThread() : loaderThread() {}
+    ~LoaderThread() {
+        if (ownsThread) {
+            loaderThread.join();
+        }
+    }
+    void setThread(std::thread& thread) {
+        ownsThread = true;
+        loaderThread = std::move(thread);
+    }
+
+private:
+    std::thread loaderThread;
+    bool ownsThread = false;
+};
+
 /// The passed callback is called when the data was loaded successfully.
-void downloadHexaLabDataSets(std::function<void()> callback);
+void downloadHexaLabDataSets(std::function<void()> callback, LoaderThread& loaderThread);
 std::vector<MeshSourceDescription> parseSourceDescriptions();
 
 #endif //HEXVOLUMERENDERER_HEXALABDATASETS_HPP

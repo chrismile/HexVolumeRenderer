@@ -260,4 +260,11 @@ void VolumeRenderer::render() {
 }
 
 void VolumeRenderer::renderGui() {
+    /*bool enabled = true;
+    if (ImGui::Begin("Volume Renderer", &enabled)) {
+        if (ImGui::SliderInt("Slice", &expectedDepthComplexity, 32, 512)) {
+            dirty = true;
+        }
+    }
+    ImGui::End();*/
 }

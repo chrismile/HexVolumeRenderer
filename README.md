@@ -23,7 +23,7 @@ ln -s ../Data .
 The build process was also tested on Windows 10 64-bit using MSYS2 and Mingw-w64 (http://www.msys2.org/). Using MSYS2 and Pacman, the following packages need to be installed additionally to the prerequisites required by sgl.
 
 ```
-pacman -S mingw64/mingw-w64-x86_64-netcdf
+pacman -S mingw64/mingw-w64-x86_64-jsoncpp mingw64/mingw-w64-x86_64-libcurl
 ```
 
 On Windows, using MSYS2 and Mingw-w64 (http://www.msys2.org/), it is best to use the following CMake command:
@@ -61,4 +61,3 @@ Live view on [www.hexalab.net](http://www.hexalab.net)
 - <sup>2</sup> [Universit? degli Studi di Milano ("La Statale")](http://www.unimi.it)
 - <sup>3</sup> [IMATI](http://www.imati.cnr.it/) - [CNR](http://www.cnr.it)
 - <sup>4</sup> [University of Technology, Sidney](https://www.uts.edu.au/)
-

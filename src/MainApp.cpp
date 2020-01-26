@@ -64,9 +64,12 @@
 #include "Loaders/VtkLoader.hpp"
 #include "Loaders/MeshLoader.hpp"
 #include "Loaders/HexaLabDatasets.hpp"
+#include "Filters/PlaneFilter.hpp"
+#include "Filters/QualityFilter.hpp"
 #include "Renderers/SurfaceRenderer.hpp"
 #include "Renderers/WireframeRenderer.hpp"
 #include "Renderers/VolumeRenderer.hpp"
+#include "Renderers/DepthComplexityRenderer.hpp"
 #include "MainApp.hpp"
 
 void openglErrorCallback() {
@@ -119,6 +122,8 @@ MainApp::MainApp() : camera(new sgl::Camera()), sceneData(sceneFramebuffer, came
 
     meshLoaderMap.insert(std::make_pair("vtk", new VtkLoader));
     meshLoaderMap.insert(std::make_pair("mesh", new MeshLoader));
+    meshFilters.push_back(new PlaneFilter);
+    meshFilters.push_back(new QualityFilter);
     setRenderers();
 
     customMeshFileName = sgl::FileUtils::get()->getUserDirectory();
@@ -147,11 +152,13 @@ void MainApp::setRenderers() {
     }
     meshRenderers.clear();
 
-    if (volumeRendering) {
-        meshRenderers.push_back(new VolumeRenderer(sceneData, transferFunctionWindow));
-    } else {
+    if (renderingMode == RENDERING_MODE_SURFACE) {
         meshRenderers.push_back(new SurfaceRenderer(sceneData, transferFunctionWindow));
         meshRenderers.push_back(new WireframeRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_VOLUME) {
+        meshRenderers.push_back(new VolumeRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_DEPTH_COMPLEXITY) {
+        meshRenderers.push_back(new DepthComplexityRenderer(sceneData, transferFunctionWindow));
     }
 }
 
@@ -391,7 +398,7 @@ void MainApp::renderFileSelectionSettingsGui() {
             downloadHexaLabDataSets([this]() {
                 this->hexaLabDataSetsDownloaded = true;
                 this->loadAvailableDataSetSources();
-            });
+            }, loaderThread);
         }
     }
 }
@@ -429,14 +436,16 @@ void MainApp::renderSceneSettingsGUI() {
     ImGui::Checkbox("Continuous Rendering", &continuousRendering);
     ImGui::Checkbox("UI on Screenshot", &uiOnScreenshot);
     ImGui::SameLine();
-    if (ImGui::Checkbox("Volume Rendering", &volumeRendering)) {
-        setRenderers();
+    if (ImGui::Checkbox("Use Linear RGB", &useLinearRGB)) {
+        updateColorSpaceMode();
         reRender = true;
     }
     ImGui::Checkbox("Show Transfer Function Window", &transferFunctionWindow.getShowTransferFunctionWindow());
 
-    if (ImGui::Checkbox("Use Linear RGB", &useLinearRGB)) {
-        updateColorSpaceMode();
+    if (ImGui::Combo(
+            "Rendering Mode", (int*)&renderingMode, RENDERING_MODE_NAMES,
+            IM_ARRAYSIZE(RENDERING_MODE_NAMES))) {
+        setRenderers();
         reRender = true;
     }
 
@@ -603,11 +612,12 @@ HexMeshPtr MainApp::getFilteredMesh(bool& isDirty) {
 
     // Test if we need to re-run the filters.
     for (HexahedralMeshFilter* meshFilter : meshFilters) {
-        if (meshFilter->isEnabled()) {
+        if (!meshFilter->isEnabled()) {
             continue;
         }
         if (meshFilter->isDirty()) {
             isDirty = true;
+            reRender = true;
         }
     }
 
@@ -615,7 +625,7 @@ HexMeshPtr MainApp::getFilteredMesh(bool& isDirty) {
         filteredMesh->unmark();
         // Pass the output of each filter to the next filter.
         for (HexahedralMeshFilter* meshFilter : meshFilters) {
-            if (meshFilter->isEnabled()) {
+            if (!meshFilter->isEnabled()) {
                 continue;
             }
             meshFilter->filterMesh(filteredMesh);

@@ -22,7 +22,7 @@ out vec4 fragColor;
 void main()
 {
     // To counteract depth fighting with overlay wireframe.
-    gl_FragDepth = gl_FragCoord.z - 0.0001;
+    gl_FragDepth = gl_FragCoord.z - 0.00001;
     fragColor = fragmentColor;
 }
 

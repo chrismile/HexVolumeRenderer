@@ -85,7 +85,7 @@ void downloadHexaLabDataSetThreadFunction(std::function<void()> callback) {
     downloadThreadIsRunning = false;
 }
 
-void downloadHexaLabDataSets(std::function<void()> callback) {
+void downloadHexaLabDataSets(std::function<void()> callback, LoaderThread& loaderThread) {
 
     if (sgl::FileUtils::get()->exists(meshDirectory)) {
         // Already downloaded
@@ -97,7 +97,7 @@ void downloadHexaLabDataSets(std::function<void()> callback) {
     if (!downloadThreadIsRunning) {
         downloadThreadIsRunning = true;
         std::thread downloadThread(downloadHexaLabDataSetThreadFunction, callback);
-        downloadThread.detach();
+        loaderThread.setThread(downloadThread);
     }
 }
 

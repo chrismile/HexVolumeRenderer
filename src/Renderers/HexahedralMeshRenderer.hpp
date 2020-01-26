@@ -43,7 +43,7 @@ public:
     // Returns if the visualization mapping needs to be re-generated.
     inline bool isDirty() { return dirty; }
     // Returns if the data needs to be re-rendered, but the visualization mapping is valid.
-    inline bool needsReRender() { bool tmp = reRender; reRender = false; return tmp; }
+    virtual bool needsReRender() { bool tmp = reRender; reRender = false; return tmp; }
 
     // Re-generates the visualization mapping.
     virtual void generateVisualizationMapping(HexMeshPtr meshIn)=0;

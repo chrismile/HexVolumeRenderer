@@ -14,8 +14,7 @@ void swapFrags(uint i, uint j) {
     depthList[j] = dTemp;
 }
 
-vec4 blendFTB(uint fragsCount)
-{
+vec4 blendFTB(uint fragsCount) {
     vec4 color = vec4(0.0);
     for (uint i = 0; i < fragsCount; i++) {
         // Front-to-Back (FTB) blending
@@ -29,8 +28,7 @@ vec4 blendFTB(uint fragsCount)
 }
 
 
-vec4 bubbleSort(uint fragsCount)
-{
+vec4 bubbleSort(uint fragsCount) {
     bool changed; // Has anything changed yet
     do {
         changed = false; // Nothing changed yet
@@ -48,8 +46,7 @@ vec4 bubbleSort(uint fragsCount)
 }
 
 
-vec4 insertionSort(uint fragsCount)
-{
+vec4 insertionSort(uint fragsCount) {
     // Temporary fragment storage
     uint fragColor;
     float fragDepth;
@@ -77,8 +74,7 @@ vec4 insertionSort(uint fragsCount)
 }
 
 
-vec4 shellSort(uint fragsCount)
-{
+vec4 shellSort(uint fragsCount) {
     // Temporary fragment storage
     uint fragColor;
     float fragDepth;
@@ -113,8 +109,7 @@ vec4 shellSort(uint fragsCount)
 }
 
 
-void maxHeapSink(uint x, uint fragsCount)
-{
+void maxHeapSink(uint x, uint fragsCount) {
     uint c; // Child
     while((c = 2 * x + 1) < fragsCount) {
         // While children exist
@@ -133,8 +128,7 @@ void maxHeapSink(uint x, uint fragsCount)
     }
 }
 
-vec4 heapSort(uint fragsCount)
-{
+vec4 heapSort(uint fragsCount) {
     uint i;
     for (i = (fragsCount + 1)/2 ; i > 0 ; --i) {
         // Bring it to heap structure
@@ -150,8 +144,7 @@ vec4 heapSort(uint fragsCount)
 }
 
 
-void minHeapSink4(uint x, uint fragsCount)
-{
+void minHeapSink4(uint x, uint fragsCount) {
     uint c, t; // Child, Tmp
     while ((t = 4 * x + 1) < fragsCount) {
         if (t + 1 < fragsCount && depthList[t] > depthList[t+1]) {
@@ -181,8 +174,7 @@ void minHeapSink4(uint x, uint fragsCount)
 }
 
 
-vec4 frontToBackPQ(uint fragsCount)
-{
+vec4 frontToBackPQ(uint fragsCount) {
     uint i;
 
     // Bring it to heap structure

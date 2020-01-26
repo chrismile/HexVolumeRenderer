@@ -28,49 +28,24 @@
 
 #include <ImGui/ImGuiWrapper.hpp>
 
-#include "PlaneFilter.hpp"
+#include "QualityFilter.hpp"
 
-void PlaneFilter::filterMesh(HexMeshPtr meshIn) {
+void QualityFilter::filterMesh(HexMeshPtr meshIn) {
     output = meshIn;
     HexaLab::Mesh& mesh = meshIn->getMesh();
-    glm::vec3 normalizedDirection = glm::normalize(direction);
-
-    float minOffset = FLT_MAX;
-    float maxOffset = -FLT_MAX;
-    for (const HexaLab::Vert &vert : mesh.verts) {
-        float offset = glm::dot(normalizedDirection, vert.position);
-        minOffset = std::min(minOffset, offset);
-        maxOffset = std::max(maxOffset, offset);
-    }
-    float offset = minOffset + (maxOffset - minOffset) * filterRatio;
 
     for (size_t i = 0; i < mesh.cells.size(); ++i) {
         HexaLab::Cell& cell = mesh.cells.at(i);
-        HexaLab::MeshNavigator nav = mesh.navigate(cell);
-
-        HexaLab::MeshNavigator cellNav = mesh.navigate(nav.face());
-        for (int v = 0; v < 8; ++v) {
-            if (v == 4) {
-                nav = nav.rotate_on_cell().rotate_on_cell();
-                cellNav = mesh.navigate(nav.face());
-            }
-
-            if (glm::dot(normalizedDirection, cellNav.vert().position) < offset) {
-                mesh.mark(nav.cell());
-                break;
-            }
-            cellNav = cellNav.rotate_on_face();
+        if (1.0f - mesh.normalized_hexa_quality.at(i) < filterRatio) {
+            mesh.mark(cell);
         }
     }
     dirty = false;
 }
 
-void PlaneFilter::renderGui() {
-    if (ImGui::Begin("Plane Filter", &showFilterWindow)) {
-        if (ImGui::SliderFloat("Slice", &filterRatio, 0.0f, 1.0f)) {
-            dirty = true;
-        }
-        if (ImGui::InputFloat3("Direction", &direction.x)) {
+void QualityFilter::renderGui() {
+    if (ImGui::Begin("Quality Filter", &showFilterWindow)) {
+        if (ImGui::SliderFloat("Threshold", &filterRatio, 0.0f, 1.0f)) {
             dirty = true;
         }
     }
