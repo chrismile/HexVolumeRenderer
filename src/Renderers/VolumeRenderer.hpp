@@ -26,44 +26,56 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RENDERERS_HEXAHEDRALMESHRENDERER_HPP
-#define RENDERERS_HEXAHEDRALMESHRENDERER_HPP
+#ifndef HEXVOLUMERENDERER_VOLUMERENDERER_H
+#define HEXVOLUMERENDERER_VOLUMERENDERER_H
 
-#include "HexMesh/HexMesh.hpp"
-#include "SceneData.hpp"
+#include <Graphics/Shader/ShaderAttributes.hpp>
 
-class TransferFunctionWindow;
+#include "HexahedralMeshRenderer.hpp"
 
-class HexahedralMeshRenderer {
+class VolumeRenderer : public HexahedralMeshRenderer {
 public:
-    HexahedralMeshRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
-        : sceneData(sceneData), transferFunctionWindow(transferFunctionWindow) {}
-    virtual ~HexahedralMeshRenderer() {}
-
-    // Returns if the visualization mapping needs to be re-generated.
-    inline bool isDirty() { return dirty; }
-    // Returns if the data needs to be re-rendered, but the visualization mapping is valid.
-    inline bool needsReRender() { bool tmp = reRender; reRender = false; return tmp; }
+    VolumeRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    virtual ~VolumeRenderer() {}
 
     // Re-generates the visualization mapping.
-    virtual void generateVisualizationMapping(HexMeshPtr meshIn)=0;
+    virtual void generateVisualizationMapping(HexMeshPtr meshIn);
 
     // Renders the object to the scene framebuffer.
-    virtual void render()=0;
+    virtual void render();
     // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
-    virtual void renderGui()=0;
+    virtual void renderGui();
 
     // Called when the resolution of the application window has changed.
-    virtual void onResolutionChanged() {}
+    virtual void onResolutionChanged();
 
     // Called when the transfer function was changed.
     virtual void onTransferFunctionMapRebuilt() {}
 
 protected:
-    SceneData &sceneData;
-    TransferFunctionWindow &transferFunctionWindow;
-    bool dirty = true;
-    bool reRender = true;
+    void setSortingAlgorithmDefine();
+    void setUniformData();
+    void clear();
+    void gather();
+    void resolve();
+
+    // The rendering data for the volume object.
+    sgl::ShaderAttributesPtr shaderAttributes;
+
+    // Per-pixel linked list data.
+    sgl::GeometryBufferPtr fragmentBuffer;
+    sgl::GeometryBufferPtr startOffsetBuffer;
+    sgl::GeometryBufferPtr atomicCounterBuffer;
+
+    // The shaders for rendering.
+    sgl::ShaderProgramPtr clearShader;
+    sgl::ShaderProgramPtr gatherShader;
+    sgl::ShaderProgramPtr resolveShader;
+
+    // Blit data (ignores model-view-projection matrix and uses normalized device coordinates)
+    sgl::ShaderAttributesPtr blitRenderData;
+    sgl::ShaderAttributesPtr clearRenderData;
+
 };
 
-#endif // RENDERERS_HEXAHEDRALMESHRENDERER_HPP
+#endif //HEXVOLUMERENDERER_VOLUMERENDERER_H

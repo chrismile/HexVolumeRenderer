@@ -29,11 +29,30 @@
 #ifndef LOADERS_HEXAHEDRALMESHLOADER_HPP
 #define LOADERS_HEXAHEDRALMESHLOADER_HPP
 
-#include "GeneralizedMap/GeneralizedMap.hpp"
+#include <string>
+#include <vector>
+#include <functional>
+
+#include <glm/vec3.hpp>
+
+#include "HexMesh/HexMesh.hpp"
 
 class HexahedralMeshLoader {
 public:
-    virtual GeneralizedMapPtr loadHexahedralMeshFromFile(const std::string& filename)=0;
+    virtual bool loadHexahedralMeshFromFile(
+            const std::string& filename, std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices)=0;
 };
+
+/**
+ * Reads a text file line by line.
+ * @param filename The name of the text file.
+ * @param readLineCallback A function that is called when a new (non-empty) line was read. It is passed the line string
+ * and the tokenized words (seperated by whitespace characters) and is expected to return false if an error occurred
+ * while reading the line and true otherwise.
+ * @return Whether loading has succeeded.
+ */
+bool readFileLineByLine(
+        const std::string& filename,
+        std::function<bool(const std::string&, const std::vector<std::string>&)> readLineCallback);
 
 #endif // LOADERS_HEXAHEDRALMESHLOADER_HPP

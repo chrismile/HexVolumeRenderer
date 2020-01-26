@@ -29,7 +29,7 @@
 #ifndef FILTERS_HEXAHEDRALMESHFILTER_HPP
 #define FILTERS_HEXAHEDRALMESHFILTER_HPP
 
-#include "GeneralizedMap/GeneralizedMap.hpp"
+#include "HexMesh/HexMesh.hpp"
 
 class HexahedralMeshFilter {
 public:
@@ -41,16 +41,17 @@ public:
     inline bool isDirty() { return dirty; }
 
     // Gets a copy of mesh from parent if parent has multiple children, i.e., operations must use different meshes.
-    virtual void filterMesh(GeneralizedMapPtr meshIn);
-    inline GeneralizedMapPtr getOutput() { return output; }
+    virtual void filterMesh(HexMeshPtr meshIn)=0;
+    inline HexMeshPtr getOutput() { return output; }
 
     // Renders the GUI. The "dirty" flag might be set depending on the user's actions.
     virtual void renderGui()=0;
 
-private:
-    GeneralizedMapPtr output;
+protected:
+    HexMeshPtr output;
     bool enabled = true;
     bool dirty = true;
+    bool showFilterWindow = true;
 };
 
 #endif // FILTERS_HEXAHEDRALMESHFILTER_HPP

@@ -26,4 +26,27 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <ImGui/ImGuiWrapper.hpp>
+
 #include "PlaneFilter.hpp"
+
+void PlaneFilter::filterMesh(HexMeshPtr meshIn) {
+    HexaLab::Mesh& mesh = meshIn->getMesh();
+    for (size_t i = 0; i < mesh.cells.size(); ++i) {
+        HexaLab::Cell& cell = mesh.cells.at(i);
+        HexaLab::MeshNavigator nav = mesh.navigate(cell);
+        // TODO
+    }
+}
+
+void PlaneFilter::renderGui() {
+    if (ImGui::Begin("Plane Filter", &showFilterWindow)) {
+        if (ImGui::SliderFloat("Slice", &filterRatio, 0.0f, 1.0f)) {
+            dirty = true;
+        }
+        if (ImGui::InputFloat3("Direction", &direction.x)) {
+            dirty = true;
+        }
+    }
+    ImGui::End();
+}

@@ -61,14 +61,19 @@
 #include <Graphics/Texture/TextureManager.hpp>
 #include <Graphics/Texture/Bitmap.hpp>
 
+#include "Loaders/VtkLoader.hpp"
+#include "Loaders/MeshLoader.hpp"
 #include "Loaders/HexaLabDatasets.hpp"
+#include "Renderers/SurfaceRenderer.hpp"
+#include "Renderers/WireframeRenderer.hpp"
+#include "Renderers/VolumeRenderer.hpp"
 #include "MainApp.hpp"
 
 void openglErrorCallback() {
     std::cerr << "Application callback" << std::endl;
 }
 
-MainApp::MainApp() : camera(new sgl::Camera()) {
+MainApp::MainApp() : camera(new sgl::Camera()), sceneData(sceneFramebuffer, camera, lightDirection) {
     sgl::FileUtils::get()->ensureDirectoryExists(saveDirectoryScreenshots);
 
     gammaCorrectionShader = sgl::ShaderManager->getShaderProgram({"GammaCorrection.Vertex", "GammaCorrection.Fragment"});
@@ -81,7 +86,7 @@ MainApp::MainApp() : camera(new sgl::Camera()) {
     camera->setOrientation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
     float fovy = atanf(1.0f / 2.0f) * 2.0f;
     camera->setFOVy(fovy);
-    camera->setPosition(glm::vec3(0.0f, -0.1f, 2.4f));
+    camera->setPosition(glm::vec3(0.0f, 0.1f, 0.8f));
 
     clearColor = sgl::Color(255, 255, 255, 255);
     clearColorSelection = ImColor(clearColor.getColorRGBA());
@@ -109,16 +114,48 @@ MainApp::MainApp() : camera(new sgl::Camera()) {
     sgl::Renderer->setDebugVerbosity(sgl::DEBUG_OUTPUT_CRITICAL_ONLY);
     resolutionChanged(sgl::EventPtr());
 
+    selectedQualityMeasure = QUALITY_MEASURE_SCALED_JACOBIAN;
+    changeQualityMeasureType();
+
+    meshLoaderMap.insert(std::make_pair("vtk", new VtkLoader));
+    meshLoaderMap.insert(std::make_pair("mesh", new MeshLoader));
+    setRenderers();
+
     customMeshFileName = sgl::FileUtils::get()->getUserDirectory();
     hexaLabDataSetsDownloaded = sgl::FileUtils::get()->exists(meshDirectory + "index.json");
     loadAvailableDataSetSources();
 }
 
 MainApp::~MainApp() {
+    for (auto& it : meshLoaderMap) {
+        delete it.second;
+    }
+    meshLoaderMap.clear();
+    for (HexahedralMeshFilter* meshFilter : meshFilters) {
+        delete meshFilter;
+    }
+    meshFilters.clear();
+    for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
+        delete meshRenderer;
+    }
+    meshRenderers.clear();
 }
 
-void MainApp::resolutionChanged(sgl::EventPtr event)
-{
+void MainApp::setRenderers() {
+    for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
+        delete meshRenderer;
+    }
+    meshRenderers.clear();
+
+    if (volumeRendering) {
+        meshRenderers.push_back(new VolumeRenderer(sceneData, transferFunctionWindow));
+    } else {
+        meshRenderers.push_back(new SurfaceRenderer(sceneData, transferFunctionWindow));
+        meshRenderers.push_back(new WireframeRenderer(sceneData, transferFunctionWindow));
+    }
+}
+
+void MainApp::resolutionChanged(sgl::EventPtr event) {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
@@ -148,17 +185,13 @@ void MainApp::resolutionChanged(sgl::EventPtr event)
 }
 
 void MainApp::saveScreenshot(const std::string &filename) {
-    if (uiOnScreenshot) {
-        AppLogic::saveScreenshot(filename);
-    } else {
-        sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-        int width = window->getWidth();
-        int height = window->getHeight();
+    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    int width = window->getWidth();
+    int height = window->getHeight();
 
-        sgl::BitmapPtr bitmap(new sgl::Bitmap(width, height, 32));
-        glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, bitmap->getPixels());
-        bitmap->savePNG(filename.c_str(), true);
-    }
+    sgl::BitmapPtr bitmap(new sgl::Bitmap(width, height, 32));
+    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, bitmap->getPixels());
+    bitmap->savePNG(filename.c_str(), true);
 }
 
 void MainApp::updateColorSpaceMode() {
@@ -191,24 +224,30 @@ void MainApp::processSDLEvent(const SDL_Event &event) {
 void MainApp::render() {
     prepareVisualizationPipeline();
 
-    sgl::Renderer->bindFBO(sceneFramebuffer);
-    sgl::Renderer->clearFramebuffer(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, clearColor);
-
-    sgl::Renderer->setProjectionMatrix(camera->getProjectionMatrix());
-    sgl::Renderer->setViewMatrix(camera->getViewMatrix());
-    sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
-
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
-    glBlendEquation(GL_FUNC_ADD);
-
     for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
         reRender = reRender || meshRenderer->needsReRender();
     }
 
     if (reRender || continuousRendering) {
-        for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
-            meshRenderer->render();
+        sgl::Renderer->bindFBO(sceneFramebuffer);
+        sgl::Renderer->clearFramebuffer(
+                GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, clearColor);
+
+        sgl::Renderer->setProjectionMatrix(camera->getProjectionMatrix());
+        sgl::Renderer->setViewMatrix(camera->getViewMatrix());
+        sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
+
+        glEnable(GL_DEPTH_TEST);
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+        glBlendEquation(GL_FUNC_ADD);
+
+        if (inputData.get() != nullptr) {
+            for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
+                meshRenderer->render();
+            }
         }
+        reRender = false;
     }
 
     // Render to screen
@@ -227,7 +266,9 @@ void MainApp::render() {
 
     if (!uiOnScreenshot && screenshot) {
         printNow = true;
-        makeScreenshot();
+        saveScreenshot(
+                saveDirectoryScreenshots + saveFilenameScreenshots
+                + "_" + sgl::toString(screenshotNumber++) + ".png");
         printNow = false;
     }
 
@@ -264,6 +305,9 @@ void MainApp::renderGUI() {
 
     if (transferFunctionWindow.renderGUI()) {
         reRender = true;
+        if (inputData) {
+            inputData->onTransferFunctionMapRebuilt();
+        }
         if (transferFunctionWindow.getTransferFunctionMapRebuilt()) {
             for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
                 meshRenderer->onTransferFunctionMapRebuilt();
@@ -322,7 +366,7 @@ void MainApp::renderFileSelectionSettingsGui() {
     if (ImGui::Combo(
             "Source", &selectedFileSourceIndex, meshDataSetSources.data(),
             meshDataSetSources.size())) {
-        // Set meshDataSetPaperNames
+        loadSelectedMeshDataSetNames();
     }
 
     if (selectedFileSourceIndex == 0) {
@@ -385,7 +429,8 @@ void MainApp::renderSceneSettingsGUI() {
     ImGui::Checkbox("Continuous Rendering", &continuousRendering);
     ImGui::Checkbox("UI on Screenshot", &uiOnScreenshot);
     ImGui::SameLine();
-    if (ImGui::Checkbox("Transparency", &transparencyMapping)) {
+    if (ImGui::Checkbox("Volume Rendering", &volumeRendering)) {
+        setRenderers();
         reRender = true;
     }
     ImGui::Checkbox("Show Transfer Function Window", &transferFunctionWindow.getShowTransferFunctionWindow());
@@ -400,7 +445,6 @@ void MainApp::renderSceneSettingsGUI() {
             "Quality Measure", (int*)&selectedQualityMeasure, QUALITY_MEASURE_NAMES,
             IM_ARRAYSIZE(QUALITY_MEASURE_NAMES))) {
         changeQualityMeasureType();
-        recomputeHistogramForMesh();
         reRender = true;
     }
 
@@ -410,7 +454,9 @@ void MainApp::renderSceneSettingsGUI() {
 
     ImGui::InputText("##savescreenshotlabel", &saveFilenameScreenshots);
     if (ImGui::Button("Save screenshot")) {
-        saveScreenshot(saveDirectoryScreenshots + saveFilenameScreenshots + ".png");
+        saveScreenshot(
+                saveDirectoryScreenshots + saveFilenameScreenshots
+                + "_" + sgl::toString(screenshotNumber++) + ".png");
     }
 }
 
@@ -512,7 +558,7 @@ void MainApp::update(float dt) {
 
 void MainApp::loadHexahedralMesh(const std::string &fileName) {
     if (fileName.size() == 0) {
-        inputData = GeneralizedMapPtr();
+        inputData = HexMeshPtr();
         return;
     }
 
@@ -527,13 +573,21 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         sgl::Logfile::get()->writeError("Error: Unknown extension: ." + extension);
         return;
     }
-    inputData = it->second->loadHexahedralMeshFromFile(fileName);
+
+    std::vector<glm::vec3> vertices;
+    std::vector<uint32_t> cellIndices;
+    bool loadingSuccessful = it->second->loadHexahedralMeshFromFile(fileName, vertices, cellIndices);
+    if (loadingSuccessful) {
+        inputData = HexMeshPtr(new HexMesh(transferFunctionWindow));
+        inputData->setHexMeshData(vertices, cellIndices);
+        inputData->setQualityMeasure(selectedQualityMeasure);
+    }
 }
 
 void MainApp::prepareVisualizationPipeline() {
     if (inputData != nullptr) {
-        bool isPreviousNodeDirty = false;
-        GeneralizedMapPtr filteredMesh = getFilteredMesh(isPreviousNodeDirty);
+        bool isPreviousNodeDirty = inputData->isDirty();
+        HexMeshPtr filteredMesh = getFilteredMesh(isPreviousNodeDirty);
         // Generate the visualization mapping for all renderers that have the dirty flag set (or if the filtered data
         // changed).
         for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
@@ -544,26 +598,36 @@ void MainApp::prepareVisualizationPipeline() {
     }
 }
 
-GeneralizedMapPtr MainApp::getFilteredMesh(bool &isPreviousNodeDirty) {
-    GeneralizedMapPtr filteredMesh = inputData;
-    // Pass the output of each filter to the next filter.
+HexMeshPtr MainApp::getFilteredMesh(bool& isDirty) {
+    HexMeshPtr filteredMesh = inputData;
+
+    // Test if we need to re-run the filters.
     for (HexahedralMeshFilter* meshFilter : meshFilters) {
         if (meshFilter->isEnabled()) {
             continue;
         }
-        if (meshFilter->isDirty() || isPreviousNodeDirty) {
-            isPreviousNodeDirty = true;
-            meshFilter->filterMesh(filteredMesh);
+        if (meshFilter->isDirty()) {
+            isDirty = true;
         }
-        filteredMesh = meshFilter->getOutput();
     }
+
+    if (isDirty) {
+        filteredMesh->unmark();
+        // Pass the output of each filter to the next filter.
+        for (HexahedralMeshFilter* meshFilter : meshFilters) {
+            if (meshFilter->isEnabled()) {
+                continue;
+            }
+            meshFilter->filterMesh(filteredMesh);
+            filteredMesh = meshFilter->getOutput();
+        }
+    }
+
     return filteredMesh;
 }
 
-void MainApp::recomputeHistogramForMesh() {
-    // TODO: Based on inputData
-}
-
 void MainApp::changeQualityMeasureType() {
-    // TODO
+    if (inputData) {
+        inputData->setQualityMeasure(selectedQualityMeasure);
+    }
 }

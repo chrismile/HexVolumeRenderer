@@ -29,6 +29,19 @@
 #ifndef FILTERS_PLANEFILTER_HPP
 #define FILTERS_PLANEFILTER_HPP
 
+#include <glm/vec3.hpp>
+#include "HexahedralMeshFilter.hpp"
 
+class PlaneFilter : public HexahedralMeshFilter {
+public:
+    virtual void filterMesh(HexMeshPtr meshIn);
+
+    // Renders the GUI. The "dirty" flag might be set depending on the user's actions.
+    virtual void renderGui();
+
+protected:
+    float filterRatio = 0.0f;
+    glm::vec3 direction = glm::vec3(1.0f, 0.0f, 0.0f);
+};
 
 #endif // FILTERS_PLANEFILTER_HPP

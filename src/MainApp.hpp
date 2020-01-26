@@ -66,8 +66,8 @@ private:
     void saveScreenshot(const std::string &filename);
 
     /// Scene data (e.g., camera, main framebuffer, ...).
-    SceneData sceneData;
     sgl::CameraPtr camera;
+    SceneData sceneData;
 
     // Off-screen rendering
     sgl::FramebufferObjectPtr sceneFramebuffer;
@@ -80,7 +80,7 @@ private:
     sgl::Color clearColor;
     ImVec4 clearColorSelection = ImColor(0, 0, 0, 255);
     bool cullBackface = true;
-    bool transparencyMapping = true;
+    bool volumeRendering = false;
     bool useLinearRGB = true;
     std::vector<float> fpsArray;
     size_t fpsArrayOffset = 0;
@@ -89,6 +89,7 @@ private:
     bool printNow = false;
     std::string saveDirectoryScreenshots = "Data/Screenshots/";
     std::string saveFilenameScreenshots = "Screenshot";
+    int screenshotNumber = 0;
     float MOVE_SPEED = 0.2f;
     float ROT_SPEED = 1.0f;
     float MOUSE_ROT_SPEED = 0.05f;
@@ -121,14 +122,14 @@ private:
     /// Prepares the visualization pipeline for rendering.
     void prepareVisualizationPipeline();
     /// Returns the filtered mesh that is passed to the renderers.
-    GeneralizedMapPtr getFilteredMesh(bool &isPreviousNodeDirty);
+    HexMeshPtr getFilteredMesh(bool& isDirty);
     /// Change the importance criterion used for coloring.
     void changeQualityMeasureType();
-    /// Recompute the histogram based on the distribution of some importance criterion.
-    void recomputeHistogramForMesh();
+    /// Sets the used renderers
+    void setRenderers();
 
     /// The data loaded from the input file (or a wrapped nullptr).
-    GeneralizedMapPtr inputData;
+    HexMeshPtr inputData;
 
     /// A list of filters that are applied sequentially on the data.
     std::vector<HexahedralMeshFilter*> meshFilters;
@@ -137,8 +138,8 @@ private:
 
     // Visualization pipeline node types.
     std::map<std::string, HexahedralMeshLoader*> meshLoaderMap;
-    std::map<std::string, HexahedralMeshFilter*> meshFilterMap;
-    std::map<std::string, HexahedralMeshRenderer*> meshRendererMap;
+    //std::map<std::string, HexahedralMeshFilter*> meshFilterMap;
+    //std::map<std::string, HexahedralMeshRenderer*> meshRendererMap;
 };
 
 #endif // MAINAPP_HPP

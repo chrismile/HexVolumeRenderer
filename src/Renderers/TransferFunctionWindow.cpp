@@ -26,16 +26,18 @@ using namespace tinyxml2;
 
 const size_t TRANSFER_FUNCTION_TEXTURE_SIZE = 256;
 
-TransferFunctionWindow *g_TransferFunctionWindowHandle = NULL;
+TransferFunctionWindow* g_TransferFunctionWindowHandle = NULL;
 
-TransferFunctionWindow::TransferFunctionWindow()
-{
-    colorPoints = { ColorPoint_sRGB(sgl::Color(255, 255, 255), 0.0f), ColorPoint_sRGB(sgl::Color(255, 0, 0), 1.0f) };
-    /*colorPoints = { ColorPoint(sgl::Color(255, 255, 255), 0.0f),
-                    ColorPoint(sgl::Color(255, 255, 0), 0.5f),
-                    ColorPoint(sgl::Color(255, 0, 0), 1.0f)};*/
+TransferFunctionWindow::TransferFunctionWindow() {
+    colorPoints = {
+            ColorPoint_sRGB(sgl::Color(59, 76, 192), 0.0f),
+            ColorPoint_sRGB(sgl::Color(144, 178, 254), 0.25f),
+            ColorPoint_sRGB(sgl::Color(220, 220, 220), 0.5f),
+            ColorPoint_sRGB(sgl::Color(245, 156, 125), 0.75f),
+            ColorPoint_sRGB(sgl::Color(180, 4, 38), 1.0f)
+    };
     interpolationColorSpace = COLOR_SPACE_LINEAR_RGB;
-    opacityPoints = { OpacityPoint(0.0f, 0.0f), OpacityPoint(1.0f, 1.0f) };
+    opacityPoints = { OpacityPoint(1.0f, 0.0f), OpacityPoint(1.0f, 1.0f) };
     transferFunctionMap_sRGB.resize(TRANSFER_FUNCTION_TEXTURE_SIZE);
     transferFunctionMap_linearRGB.resize(TRANSFER_FUNCTION_TEXTURE_SIZE);
     tfMapTextureSettings.type = sgl::TEXTURE_1D;
@@ -51,9 +53,8 @@ TransferFunctionWindow::TransferFunctionWindow()
     g_TransferFunctionWindowHandle = this;
 }
 
-bool TransferFunctionWindow::saveFunctionToFile(const std::string &filename)
-{
-    FILE *file = fopen(filename.c_str(), "w");
+bool TransferFunctionWindow::saveFunctionToFile(const std::string& filename) {
+    FILE* file = fopen(filename.c_str(), "w");
     if (file == NULL) {
         sgl::Logfile::get()->writeError(std::string()
                 + "ERROR: TransferFunctionWindow::saveFunctionToFile: Couldn't create file \"" + filename + "\"!");
@@ -93,22 +94,21 @@ bool TransferFunctionWindow::saveFunctionToFile(const std::string &filename)
     return true;
 }
 
-bool TransferFunctionWindow::loadFunctionFromFile(const std::string &filename)
-{
+bool TransferFunctionWindow::loadFunctionFromFile(const std::string& filename) {
     XMLDocument doc;
     if (doc.LoadFile(filename.c_str()) != 0) {
         sgl::Logfile::get()->writeError(std::string()
                 + "TransferFunctionWindow::loadFunctionFromFile: Couldn't open file \"" + filename + "\"!");
         return false;
     }
-    XMLElement *tfNode = doc.FirstChildElement("TransferFunction");
+    XMLElement* tfNode = doc.FirstChildElement("TransferFunction");
     if (tfNode == NULL) {
         sgl::Logfile::get()->writeError("TransferFunctionWindow::loadFunctionFromFile: No \"TransferFunction\" node found!");
         return false;
     }
 
     interpolationColorSpace = COLOR_SPACE_SRGB; // Standard
-    const char *interpolationColorSpaceName = tfNode->Attribute("colorspace_interpolation");
+    const char* interpolationColorSpaceName = tfNode->Attribute("colorspace_interpolation");
     if (interpolationColorSpaceName != NULL) {
         for (int i = 0; i < 2; i++) {
             if (strcmp(interpolationColorSpaceName, COLOR_SPACE_NAMES[interpolationColorSpace]) == 0) {
@@ -124,7 +124,7 @@ bool TransferFunctionWindow::loadFunctionFromFile(const std::string &filename)
     auto opacityPointsNode = tfNode->FirstChildElement("OpacityPoints");
     if (opacityPointsNode != NULL) {
         for (sgl::XMLIterator it(opacityPointsNode, sgl::XMLNameFilter("OpacityPoint")); it.isValid(); ++it) {
-            XMLElement *childElement = *it;
+            XMLElement* childElement = *it;
             float position = childElement->FloatAttribute("position");
             float opacity = sgl::clamp(childElement->FloatAttribute("opacity"), 0.0f, 1.0f);
             opacityPoints.push_back(OpacityPoint(opacity, position));
@@ -135,7 +135,7 @@ bool TransferFunctionWindow::loadFunctionFromFile(const std::string &filename)
     auto colorPointsNode = tfNode->FirstChildElement("ColorPoints");
     if (colorPointsNode != NULL) {
         for (sgl::XMLIterator it(colorPointsNode, sgl::XMLNameFilter("ColorPoint")); it.isValid(); ++it) {
-            XMLElement *childElement = *it;
+            XMLElement* childElement = *it;
             float position = childElement->FloatAttribute("position");
             int red = sgl::clamp(childElement->IntAttribute("r"), 0, 255);
             int green = sgl::clamp(childElement->IntAttribute("g"), 0, 255);
@@ -150,8 +150,7 @@ bool TransferFunctionWindow::loadFunctionFromFile(const std::string &filename)
     return true;
 }
 
-void TransferFunctionWindow::updateAvailableFiles()
-{
+void TransferFunctionWindow::updateAvailableFiles() {
     sgl::FileUtils::get()->ensureDirectoryExists(saveDirectory);
     availableFiles = sgl::FileUtils::get()->getFilesInDirectoryVector(saveDirectory);
     availableFiles = sgl::FileUtils::get()->getFilesInDirectoryVector(saveDirectory);
@@ -166,14 +165,29 @@ void TransferFunctionWindow::updateAvailableFiles()
 }
 
 
-void TransferFunctionWindow::setClearColor(const sgl::Color &clearColor)
-{
+void TransferFunctionWindow::setClearColor(const sgl::Color& clearColor) {
     this->clearColor = clearColor;
 }
 
+void TransferFunctionWindow::setHistogram(const std::vector<int>& occurences) {
+    int histogramResolution = static_cast<int>(occurences.size());
+    histogram.clear();
+    histogram.resize(histogramResolution);
+    for (size_t i = 0; i < occurences.size(); i++) {
+        histogram.at(i) = occurences.at(i);
+    }
 
-void TransferFunctionWindow::computeHistogram(const std::vector<float> &attributes, float minAttr, float maxAttr)
-{
+    float maxNum = 1.0f;
+    for (float num : histogram) {
+        maxNum = std::max(num, maxNum);
+    }
+
+    for (float& num : histogram) {
+        num /= maxNum;
+    }
+}
+
+void TransferFunctionWindow::computeHistogram(const std::vector<float>& attributes, float minAttr, float maxAttr) {
     const int histogramResolution = 256;
     histogram.clear();
     histogram.resize(histogramResolution);
@@ -188,23 +202,28 @@ void TransferFunctionWindow::computeHistogram(const std::vector<float> &attribut
         maxNum = std::max(num, maxNum);
     }
 
-    for (float &num : histogram) {
+    for (float& num : histogram) {
         num /= maxNum;
     }
 }
 
 
-float TransferFunctionWindow::getOpacityAtAttribute(float attribute)
-{
+glm::vec4 TransferFunctionWindow::getLinearRGBColorAtAttribute(float attribute) {
     int idx = glm::clamp((int)std::round(attribute*int(TRANSFER_FUNCTION_TEXTURE_SIZE-1)),
-            0, (int)(TRANSFER_FUNCTION_TEXTURE_SIZE-1));
+                         0, (int)(TRANSFER_FUNCTION_TEXTURE_SIZE-1));
+    // Alpha always linear, doesn't matter which map we take
+    return transferFunctionMap_linearRGB[idx].getFloatColorRGBA();
+}
+
+float TransferFunctionWindow::getOpacityAtAttribute(float attribute) {
+    int idx = glm::clamp((int)std::round(attribute*int(TRANSFER_FUNCTION_TEXTURE_SIZE-1)),
+                         0, (int)(TRANSFER_FUNCTION_TEXTURE_SIZE-1));
     // Alpha always linear, doesn't matter which map we take
     return transferFunctionMap_sRGB[idx].getFloatA();
 }
 
 
-bool TransferFunctionWindow::renderGUI()
-{
+bool TransferFunctionWindow::renderGUI() {
     if (showTransferFunctionWindow) { // , ImGuiWindowFlags_AlwaysAutoResize)
         if (!ImGui::Begin("Transfer Function", &showTransferFunctionWindow)) {
             // Window collapsed
@@ -249,10 +268,9 @@ bool TransferFunctionWindow::renderGUI()
     return false;
 }
 
-void TransferFunctionWindow::renderFileDialog()
-{
+void TransferFunctionWindow::renderFileDialog() {
     // Load file data
-    if (ImGui::ListBox("##availablefiles", &selectedFileIndex, [this](void *data, int idx, const char **out_text) -> bool {
+    if (ImGui::ListBox("##availablefiles",& selectedFileIndex, [this](void* data, int idx, const char** out_text) -> bool {
         *out_text = availableFiles.at(idx).c_str();
         return true;
     }, NULL, availableFiles.size(), 4)) {
@@ -274,20 +292,23 @@ void TransferFunctionWindow::renderFileDialog()
     }
 }
 
-void TransferFunctionWindow::renderOpacityGraph()
-{
+void TransferFunctionWindow::renderOpacityGraph() {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
+    float scaleFactor = sgl::ImGuiWrapper::get()->getScaleFactor();
     int regionWidth = ImGui::GetContentRegionAvailWidth();
     int graphHeight = 300;
-    int border = 1;
+    int border = 2*scaleFactor;
+    int areaWidth = regionWidth - 2.0f*border;
+    int areaHeight = graphHeight - 2.0f*border;
     opacityGraphBox.min = glm::vec2(ImGui::GetCursorScreenPos().x + border, ImGui::GetCursorScreenPos().y + border);
-    opacityGraphBox.max = opacityGraphBox.min + glm::vec2(regionWidth - 2.0f*border, graphHeight - 2.0f*border);
+    opacityGraphBox.max = opacityGraphBox.min + glm::vec2(areaWidth, areaHeight);
 
     ImColor backgroundColor(clearColor.getFloatR(), clearColor.getFloatG(), clearColor.getFloatB());
     ImColor borderColor(1.0f - clearColor.getFloatR(), 1.0f - clearColor.getFloatG(), 1.0f - clearColor.getFloatB());
 
     // First render the graph box
     ImVec2 startPos = ImGui::GetCursorScreenPos();
+    ImVec2 cursorPosHistogram = ImGui::GetCursorPos();
     drawList->AddRectFilled(ImVec2(startPos.x, startPos.y),
                             ImVec2(startPos.x + regionWidth, startPos.y + graphHeight),
                             borderColor,
@@ -296,47 +317,48 @@ void TransferFunctionWindow::renderOpacityGraph()
                             ImVec2(startPos.x + regionWidth - border, startPos.y + graphHeight - border),
                             backgroundColor,
                             ImGui::GetStyle().FrameRounding);
-    ImVec2 cursorPosHistogram = ImGui::GetCursorPos();
-    ImVec2 oldPadding = ImGui::GetStyle().FramePadding;
-    ImGui::GetStyle().FramePadding = ImVec2(1,1);
-    ImGui::PlotHistogram("##histogram", &histogram.front(), histogram.size(), 0, NULL, 0.0f, 1.0f,
-            ImVec2(regionWidth, graphHeight));
-    ImGui::SetCursorPos(cursorPosHistogram);
-    ImGui::GetStyle().FramePadding = oldPadding;
-
-    // Then render the graph itself
-    for (int i = 0; i < (int)opacityPoints.size()-1; i++) {
-        float positionX0 = opacityPoints.at(i).position * regionWidth;
-        float positionX1 = opacityPoints.at(i+1).position * regionWidth;
-        float positionY0 = (1.0f - opacityPoints.at(i).opacity) * graphHeight;
-        float positionY1 = (1.0f - opacityPoints.at(i+1).opacity) * graphHeight;
-        drawList->AddLine(
-                ImVec2(startPos.x + positionX0, startPos.y + positionY0),
-                ImVec2(startPos.x + positionX1, startPos.y + positionY1),
-                borderColor, 2.0f);
-    }
-
-    // Finally, render the points
-    for (int i = 0; i < (int)opacityPoints.size(); i++) {
-        ImVec2 centerPt = ImVec2(startPos.x + border + opacityPoints.at(i).position * (regionWidth - border),
-                startPos.y + border + (1.0f - opacityPoints.at(i).opacity) * (graphHeight - border));
-        float radius = 6;
-        if (selectedPointType == SELECTED_POINT_TYPE_OPACITY && i == currentSelectionIndex) {
-            radius = 8;
-        }
-        drawList->AddCircleFilled(centerPt, radius, backgroundColor, 24);
-        drawList->AddCircle(centerPt, radius, borderColor, 24, 1.5f);
-    }
-
 
     if (ImGui::ClickArea("##grapharea", ImVec2(regionWidth, graphHeight + 2), mouseReleased)) {
         onOpacityGraphClick();
     }
+    //ImGui::SetItemAllowOverlap();
+    ImGui::SetCursorPos(cursorPosHistogram);
+
+    ImVec2 oldPadding = ImGui::GetStyle().FramePadding;
+    ImGui::GetStyle().FramePadding = ImVec2(1, 1);
+    ImGui::PlotHistogram(
+            "##histogram", &histogram.front(), histogram.size(), 0, NULL,
+            0.0f, 1.0f, ImVec2(regionWidth, graphHeight));
+    ImGui::GetStyle().FramePadding = oldPadding;
+
+    // Then render the graph itself
+    for (int i = 0; i < (int)opacityPoints.size()-1; i++) {
+        float positionX0 = opacityPoints.at(i).position * areaWidth + border;
+        float positionX1 = opacityPoints.at(i+1).position * areaWidth + border;
+        float positionY0 = (1.0f - opacityPoints.at(i).opacity) * areaHeight + border;
+        float positionY1 = (1.0f - opacityPoints.at(i+1).opacity) * areaHeight + border;
+        drawList->AddLine(
+                ImVec2(startPos.x + positionX0, startPos.y + positionY0),
+                ImVec2(startPos.x + positionX1, startPos.y + positionY1),
+                borderColor, 1.5f * scaleFactor);
+    }
+
+    // Finally, render the points
+    for (int i = 0; i < (int)opacityPoints.size(); i++) {
+        ImVec2 centerPt = ImVec2(startPos.x + border + opacityPoints.at(i).position * areaWidth,
+                startPos.y + border + (1.0f - opacityPoints.at(i).opacity) * areaHeight);
+        float radius = 4*scaleFactor;
+        if (selectedPointType == SELECTED_POINT_TYPE_OPACITY && i == currentSelectionIndex) {
+            radius = 6*scaleFactor;
+        }
+        drawList->AddCircleFilled(centerPt, radius, backgroundColor, 24);
+        drawList->AddCircle(centerPt, radius, borderColor, 24, 1.5f);
+    }
 }
 
-void TransferFunctionWindow::renderColorBar()
-{
+void TransferFunctionWindow::renderColorBar() {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
+    float scaleFactor = sgl::ImGuiWrapper::get()->getScaleFactor();
     int regionWidth = ImGui::GetContentRegionAvailWidth() - 2;
     int barHeight = 30;
     colorBarBox.min = glm::vec2(ImGui::GetCursorScreenPos().x + 1, ImGui::GetCursorScreenPos().y + 1);
@@ -360,9 +382,9 @@ void TransferFunctionWindow::renderColorBar()
         ImU32 colorImgui = ImColor(color.getR(), color.getG(), color.getB());
         ImU32 colorInvertedImgui = ImColor(1.0f - color.getFloatR(), 1.0f - color.getFloatG(), 1.0f - color.getFloatB());
         ImVec2 centerPt = ImVec2(pos.x + colorPoints.at(i).position * regionWidth, pos.y + barHeight/2);
-        float radius = 6;
+        float radius = 4*scaleFactor;
         if (selectedPointType == SELECTED_POINT_TYPE_COLOR && i == currentSelectionIndex) {
-            radius = 8;
+            radius = 6*scaleFactor;
         }
         drawList->AddCircleFilled(centerPt, radius, colorImgui, 24);
         drawList->AddCircle(centerPt, radius, colorInvertedImgui, 24);
@@ -375,18 +397,15 @@ void TransferFunctionWindow::renderColorBar()
 
 
 // For OpenGL: Has 256 entries. Get mapped color for normalized attribute by accessing entry at "attr*255".
-/*std::vector<sgl::Color> TransferFunctionWindow::getTransferFunctionMap()
-{
+/*std::vector<sgl::Color> TransferFunctionWindow::getTransferFunctionMap() {
     return transferFunctionMap;
 }*/
 
-sgl::TexturePtr &TransferFunctionWindow::getTransferFunctionMapTexture()
-{
+sgl::TexturePtr& TransferFunctionWindow::getTransferFunctionMapTexture() {
     return tfMapTexture;
 }
 
-bool TransferFunctionWindow::getTransferFunctionMapRebuilt()
-{
+bool TransferFunctionWindow::getTransferFunctionMapRebuilt() {
     if (transferFunctionMapRebuilt) {
         // Reset the flag
         transferFunctionMapRebuilt = false;
@@ -396,11 +415,10 @@ bool TransferFunctionWindow::getTransferFunctionMapRebuilt()
 }
 
 // For OpenGL: Has 256 entries. Get mapped color for normalized attribute by accessing entry at "attr*255".
-void TransferFunctionWindow::rebuildTransferFunctionMap()
-{
+void TransferFunctionWindow::rebuildTransferFunctionMap() {
     // Create linear RGB color points
     colorPoints_LinearRGB.clear();
-    for (ColorPoint_sRGB &colorPoint : colorPoints) {
+    for (ColorPoint_sRGB& colorPoint : colorPoints) {
         glm::vec3 linearRGBColor = sRGBToLinearRGB(colorPoint.color.getFloatColorRGB());
         colorPoints_LinearRGB.push_back(ColorPoint_LinearRGB(linearRGBColor, colorPoint.position));
     }
@@ -421,8 +439,7 @@ void TransferFunctionWindow::rebuildTransferFunctionMap()
 }
 
 // For OpenGL: Has 256 entries. Get mapped color for normalized attribute by accessing entry at "attr*255".
-void TransferFunctionWindow::rebuildTransferFunctionMap_LinearRGB()
-{
+void TransferFunctionWindow::rebuildTransferFunctionMap_LinearRGB() {
     int colorPointsIdx = 0;
     int opacityPointsIdx = 0;
     for (int i = 0; i < TRANSFER_FUNCTION_TEXTURE_SIZE; i++) {
@@ -469,8 +486,7 @@ void TransferFunctionWindow::rebuildTransferFunctionMap_LinearRGB()
 }
 
 // For OpenGL: Has 256 entries. Get mapped color for normalized attribute by accessing entry at "attr*255".
-void TransferFunctionWindow::rebuildTransferFunctionMap_sRGB()
-{
+void TransferFunctionWindow::rebuildTransferFunctionMap_sRGB() {
     int colorPointsIdx = 0;
     int opacityPointsIdx = 0;
     for (int i = 0; i < TRANSFER_FUNCTION_TEXTURE_SIZE; i++) {
@@ -517,13 +533,11 @@ void TransferFunctionWindow::rebuildTransferFunctionMap_sRGB()
 }
 
 
-void TransferFunctionWindow::update(float dt)
-{
+void TransferFunctionWindow::update(float dt) {
     dragPoint();
 }
 
-glm::vec3 TransferFunctionWindow::sRGBToLinearRGB(const glm::vec3 &color_LinearRGB)
-{
+glm::vec3 TransferFunctionWindow::sRGBToLinearRGB(const glm::vec3& color_LinearRGB) {
     //float factor = 2.2f;
     //return glm::pow(color_LinearRGB, glm::vec3(factor));
     // See https://en.wikipedia.org/wiki/SRGB
@@ -531,8 +545,7 @@ glm::vec3 TransferFunctionWindow::sRGBToLinearRGB(const glm::vec3 &color_LinearR
             color_LinearRGB / 12.92f, glm::lessThanEqual(color_LinearRGB, glm::vec3(0.04045f)));
 }
 
-glm::vec3 TransferFunctionWindow::linearRGBTosRGB(const glm::vec3 &color_sRGB)
-{
+glm::vec3 TransferFunctionWindow::linearRGBTosRGB(const glm::vec3& color_sRGB) {
     //float factor = 1.0f / 2.2f;
     //return glm::pow(color_sRGB, glm::vec3(factor));
     // See https://en.wikipedia.org/wiki/SRGB
@@ -540,17 +553,17 @@ glm::vec3 TransferFunctionWindow::linearRGBTosRGB(const glm::vec3 &color_sRGB)
             color_sRGB * 12.92f, glm::lessThanEqual(color_sRGB, glm::vec3(0.0031308f)));
 }
 
-void TransferFunctionWindow::setUseLinearRGB(bool useLinearRGB)
-{
+void TransferFunctionWindow::setUseLinearRGB(bool useLinearRGB) {
     this->useLinearRGB = useLinearRGB;
     rebuildTransferFunctionMap();
 }
 
-void TransferFunctionWindow::onOpacityGraphClick()
-{
+void TransferFunctionWindow::onOpacityGraphClick() {
     glm::vec2 mousePosWidget = glm::vec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y) - opacityGraphBox.min;
+
     glm::vec2 normalizedPosition = mousePosWidget / opacityGraphBox.getDimensions();
     normalizedPosition.y = 1.0f - normalizedPosition.y;
+    normalizedPosition = glm::clamp(normalizedPosition, glm::vec2(0), glm::vec2(1));
     dragging = false;
 
     if (selectNearestOpacityPoint(currentSelectionIndex, mousePosWidget)) {
@@ -594,8 +607,7 @@ void TransferFunctionWindow::onOpacityGraphClick()
     rebuildTransferFunctionMap();
 }
 
-void TransferFunctionWindow::onColorBarClick()
-{
+void TransferFunctionWindow::onColorBarClick() {
     glm::vec2 mousePosWidget = glm::vec2(ImGui::GetMousePos().x, ImGui::GetMousePos().y) - colorBarBox.min;
     float normalizedPosition = mousePosWidget.x / colorBarBox.getWidth();
     dragging = false;
@@ -663,8 +675,7 @@ void TransferFunctionWindow::onColorBarClick()
     rebuildTransferFunctionMap();
 }
 
-void TransferFunctionWindow::dragPoint()
-{
+void TransferFunctionWindow::dragPoint() {
     if (mouseReleased) {
         dragging = false;
     }
@@ -719,12 +730,13 @@ void TransferFunctionWindow::dragPoint()
     reRender = true;
 }
 
-bool TransferFunctionWindow::selectNearestOpacityPoint(int &currentSelectionIndex, const glm::vec2 &mousePosWidget)
-{
+bool TransferFunctionWindow::selectNearestOpacityPoint(int& currentSelectionIndex, const glm::vec2& mousePosWidget) {
+    float scaleFactor = sgl::ImGuiWrapper::get()->getScaleFactor();
+
     for (int i = 0; i < (int)opacityPoints.size(); i++) {
         glm::vec2 centerPt = glm::vec2(opacityPoints.at(i).position * opacityGraphBox.getWidth(),
                 (1.0f - opacityPoints.at(i).opacity) * opacityGraphBox.getHeight());
-        if (glm::length(centerPt - mousePosWidget) < 10.0f) {
+        if (glm::length(centerPt - mousePosWidget) < scaleFactor * 10.0f) {
             currentSelectionIndex = i;
             return true;
         }
@@ -732,12 +744,13 @@ bool TransferFunctionWindow::selectNearestOpacityPoint(int &currentSelectionInde
     return false;
 }
 
-bool TransferFunctionWindow::selectNearestColorPoint(int &currentSelectionIndex, const glm::vec2 &mousePosWidget)
-{
+bool TransferFunctionWindow::selectNearestColorPoint(int& currentSelectionIndex, const glm::vec2& mousePosWidget) {
+    float scaleFactor = sgl::ImGuiWrapper::get()->getScaleFactor();
+
     for (int i = 0; i < (int)colorPoints.size(); i++) {
         ImVec2 centerPt = ImVec2(colorPoints.at(i).position * colorBarBox.getWidth(),
                 colorBarBox.getHeight()/2);
-        if (glm::abs(centerPt.x - mousePosWidget.x) < 10.0f) {
+        if (glm::abs(centerPt.x - mousePosWidget.x) < scaleFactor * 10.0f) {
             currentSelectionIndex = i;
             return true;
         }

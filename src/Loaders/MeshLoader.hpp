@@ -29,6 +29,13 @@
 #ifndef LOADERS_MESHLOADER_HPP
 #define LOADERS_MESHLOADER_HPP
 
+#include "HexahedralMeshLoader.hpp"
 
+/// For .mesh files
+class MeshLoader : public HexahedralMeshLoader {
+public:
+    virtual bool loadHexahedralMeshFromFile(
+            const std::string& filename, std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices);
+};
 
 #endif // LOADERS_MESHLOADER_HPP

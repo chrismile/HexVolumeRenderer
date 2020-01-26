@@ -18,7 +18,7 @@
 enum ColorSpace {
     COLOR_SPACE_SRGB, COLOR_SPACE_LINEAR_RGB
 };
-const char *const COLOR_SPACE_NAMES[] {
+const char* const COLOR_SPACE_NAMES[] {
     "sRGB", "Linear RGB"
 };
 
@@ -27,14 +27,14 @@ const char *const COLOR_SPACE_NAMES[] {
  */
 struct ColorPoint_sRGB
 {
-    ColorPoint_sRGB(const sgl::Color &color, float position) : color(color), position(position) {}
+    ColorPoint_sRGB(const sgl::Color& color, float position) : color(color), position(position) {}
     sgl::Color color;
     float position;
 };
 
 struct ColorPoint_LinearRGB
 {
-    ColorPoint_LinearRGB(const glm::vec3 &color, float position) : color(color), position(position) {}
+    ColorPoint_LinearRGB(const glm::vec3& color, float position) : color(color), position(position) {}
     glm::vec3 color;
     float position;
 };
@@ -57,35 +57,37 @@ class TransferFunctionWindow
 {
 public:
     TransferFunctionWindow();
-    bool saveFunctionToFile(const std::string &filename);
-    bool loadFunctionFromFile(const std::string &filename);
+    bool saveFunctionToFile(const std::string& filename);
+    bool loadFunctionFromFile(const std::string& filename);
     void updateAvailableFiles();
 
     bool renderGUI();
     void update(float dt);
 
-    void setClearColor(const sgl::Color &clearColor);
+    void setClearColor(const sgl::Color& clearColor);
     void setShow(const bool showWindow) { showTransferFunctionWindow = showWindow; }
-    inline bool &getShowTransferFunctionWindow() { return showTransferFunctionWindow; }
-    void computeHistogram(const std::vector<float> &attributes, float minAttr, float maxAttr);
+    inline bool& getShowTransferFunctionWindow() { return showTransferFunctionWindow; }
+    void setHistogram(const std::vector<int>& occurences);
+    void computeHistogram(const std::vector<float>& attributes, float minAttr, float maxAttr);
     void setUseLinearRGB(bool useLinearRGB);
 
     // For querying transfer function in application
+    glm::vec4 getLinearRGBColorAtAttribute(float attribute); // attribute: Between 0 and 1
     float getOpacityAtAttribute(float attribute); // attribute: Between 0 and 1
-    const std::vector<sgl::Color> &getTransferFunctionMap_sRGB() { return transferFunctionMap_sRGB; }
+    const std::vector<sgl::Color>& getTransferFunctionMap_sRGB() { return transferFunctionMap_sRGB; }
 
     // For OpenGL: Has 256 entries. Get mapped color for normalized attribute by accessing entry at "attr*255".
-    sgl::TexturePtr &getTransferFunctionMapTexture();
+    sgl::TexturePtr& getTransferFunctionMapTexture();
     bool getTransferFunctionMapRebuilt();
 
     // For ray tracing interface
-    inline const std::vector<OpacityPoint> &getOpacityPoints() { return opacityPoints; }
-    inline const std::vector<ColorPoint_sRGB> &getColorPoints_sRGB() { return colorPoints; }
-    inline const std::vector<ColorPoint_LinearRGB> &getColorPoints_LinearRGB() { return colorPoints_LinearRGB; }
+    inline const std::vector<OpacityPoint>& getOpacityPoints() { return opacityPoints; }
+    inline const std::vector<ColorPoint_sRGB>& getColorPoints_sRGB() { return colorPoints; }
+    inline const std::vector<ColorPoint_LinearRGB>& getColorPoints_LinearRGB() { return colorPoints_LinearRGB; }
 
     // sRGB and linear RGB conversion
-    static glm::vec3 sRGBToLinearRGB(const glm::vec3 &color_LinearRGB);
-    static glm::vec3 linearRGBTosRGB(const glm::vec3 &color_sRGB);
+    static glm::vec3 sRGBToLinearRGB(const glm::vec3& color_LinearRGB);
+    static glm::vec3 linearRGBTosRGB(const glm::vec3& color_sRGB);
 
 private:
     void renderFileDialog();
@@ -96,8 +98,8 @@ private:
     void onOpacityGraphClick();
     void onColorBarClick();
     void dragPoint();
-    bool selectNearestOpacityPoint(int &currentSelectionIndex, const glm::vec2 &mousePosWidget);
-    bool selectNearestColorPoint(int &currentSelectionIndex, const glm::vec2 &mousePosWidget);
+    bool selectNearestOpacityPoint(int& currentSelectionIndex, const glm::vec2& mousePosWidget);
+    bool selectNearestColorPoint(int& currentSelectionIndex, const glm::vec2& mousePosWidget);
 
     // Drag-and-drop data
     SelectedPointType selectedPointType = SELECTED_POINT_TYPE_NONE;
@@ -135,7 +137,7 @@ private:
     bool transferFunctionMapRebuilt = true;
 };
 
-extern TransferFunctionWindow *g_TransferFunctionWindowHandle;
+extern TransferFunctionWindow* g_TransferFunctionWindowHandle;
 
 
 #endif //PIXELSYNCOIT_TRANSFERFUNCTIONWINDOW_HPP

@@ -32,9 +32,12 @@
 #include <Graphics/Scene/Camera.hpp>
 #include <Graphics/Buffers/FBO.hpp>
 
-class SceneData {
-    sgl::FramebufferObjectPtr framebuffer;
-    sgl::CameraPtr camera;
+struct SceneData {
+    SceneData(sgl::FramebufferObjectPtr& framebuffer, sgl::CameraPtr& camera, glm::vec3& lightDirection)
+        : framebuffer(framebuffer), camera(camera), lightDirection(lightDirection) {}
+    sgl::FramebufferObjectPtr& framebuffer;
+    sgl::CameraPtr& camera;
+    glm::vec3& lightDirection;
 };
 
 #endif //RENDERERS_SCENEDATA_HPP

@@ -26,4 +26,166 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cstdio>
+#include <string>
+#include <vector>
+
+#include <boost/algorithm/string.hpp>
+#include <glm/vec3.hpp>
+
+#include <Utils/File/Logfile.hpp>
+#include <Utils/Convert.hpp>
+
+#include "HexMesh/HexMesh.hpp"
 #include "VtkLoader.hpp"
+
+bool VtkLoader::loadHexahedralMeshFromFile(
+        const std::string& filename, std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices) {
+    HexMeshPtr loadedMesh;
+
+    bool foundVersionHeader = false;
+    bool foundTitle = false;
+    bool foundType = false;
+    bool foundDatasetType = false;
+    bool foundPoints = false;
+    bool foundCells = false;
+    bool foundCellTypes = false;
+    bool isPointsReadMode = false;
+    int numPointsLeft = 0;
+    bool isCellsReadMode = false;
+    int numCellsLeft = 0;
+    bool isCellTypesReadMode = false;
+    int numCellTypesLeft = 0;
+
+    bool loadingSuccessful = readFileLineByLine(
+            filename, [&](const std::string& lineString, const std::vector<std::string>& tokens) {
+        if (isPointsReadMode) {
+            if (tokens.size() != 3) {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Invalid number of point coordinates!");
+                return false;
+            }
+            vertices.push_back(glm::vec3(
+                    sgl::fromString<float>(tokens.at(0)),
+                    sgl::fromString<float>(tokens.at(1)),
+                    sgl::fromString<float>(tokens.at(2))));
+            numPointsLeft--;
+            if (numPointsLeft <= 0) {
+                isPointsReadMode = false;
+            }
+            return true;
+        }
+
+        if (isCellsReadMode) {
+            if (tokens.size() != 9 || tokens.at(0) != "8") {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Invalid number of cell indices!");
+                return false;
+            }
+            for (int i = 0; i < 8; i++) {
+                cellIndices.push_back(sgl::fromString<uint32_t>(tokens.at(i + 1)));
+            }
+            numCellsLeft--;
+            if (numCellsLeft <= 0) {
+                isCellsReadMode = false;
+            }
+            return true;
+        }
+
+        if (isCellTypesReadMode) {
+            if (tokens.size() != 1 || tokens.at(0) != "12") {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Invalid cell type!");
+                return false;
+            }
+            numCellTypesLeft--;
+            if (numCellTypesLeft <= 0) {
+                isCellTypesReadMode = false;
+            }
+            return true;
+        }
+
+        // The version header must the first non-empty line!
+        if (!foundVersionHeader) {
+            if (boost::starts_with(lineString, "# vtk DataFile Version")) {
+                foundVersionHeader = true;
+                return true;
+            } else {
+                sgl::Logfile::get()->writeError(
+                        "Error in VtkLoader: The version header must the first non-empty line!");
+                return false;
+
+            }
+        }
+
+        // Next line after the header is the title.
+        if (!foundTitle) {
+            foundTitle = true;
+            return true;
+        }
+
+        // Next line is the type of data (ASCII vs BINARY).
+        if (!foundType) {
+            if (tokens.at(0) == "ASCII") {
+                foundType = true;
+                return true;
+            } else {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Invalid or unsupported type!");
+                return false;
+            }
+        }
+
+        // Expecting: DATASET UNSTRUCTURED_GRID
+        if (!foundDatasetType && tokens.at(0) == "DATASET") {
+            if (tokens.size() != 2 || tokens.at(1) != "UNSTRUCTURED_GRID") {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Invalid or unsupported dataset type!");
+                return false;
+            }
+            foundDatasetType = true;
+            return true;
+        }
+
+        // Expecting: POINTS <num_points> <data_type>
+        if (!foundPoints && tokens.at(0) == "POINTS") {
+            if (tokens.size() != 3) {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Malformed POINTS declaration!");
+                return false;
+            }
+            numPointsLeft = sgl::fromString<size_t>(tokens.at(1));
+            foundPoints = true;
+            isPointsReadMode = numPointsLeft > 0;
+            return true;
+        }
+
+        // Expecting: CELLS <num_cells> <num_entries>
+        if (!foundCells && tokens.at(0) == "CELLS") {
+            if (tokens.size() != 3) {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Malformed POINTS declaration!");
+                return false;
+            }
+            numCellsLeft = sgl::fromString<size_t>(tokens.at(1));
+            int numEntries = sgl::fromString<size_t>(tokens.at(2));
+            if (numEntries != numCellsLeft * 9) {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Invalid number of cell entries!");
+                return false;
+            }
+            foundCells = true;
+            isCellsReadMode = numCellsLeft > 0;
+            return true;
+        }
+
+        // Expecting: CELL_TYPES <num_cells>
+        if (!foundCellTypes && tokens.at(0) == "CELL_TYPES") {
+            if (tokens.size() != 2) {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Malformed CELL_TYPES declaration!");
+                return false;
+            }
+            numCellTypesLeft = sgl::fromString<size_t>(tokens.at(1));
+            foundCellTypes = true;
+            isCellTypesReadMode = numCellTypesLeft > 0;
+            return true;
+        }
+
+        // Something unexpected happened.
+        return false;
+    });
+
+    return loadingSuccessful;
+}

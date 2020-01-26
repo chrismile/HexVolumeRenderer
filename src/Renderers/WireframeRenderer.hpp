@@ -26,17 +26,35 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GENERALMAP_GENERALMAP_HPP
-#define GENERALMAP_GENERALMAP_HPP
+#ifndef HEXVOLUMERENDERER_WIREFRAMERENDERER_H
+#define HEXVOLUMERENDERER_WIREFRAMERENDERER_H
 
-#include <memory>
+#include <Graphics/Shader/ShaderAttributes.hpp>
 
-class GeneralizedMap;
-typedef std::shared_ptr<GeneralizedMap> GeneralizedMapPtr;
+#include "HexahedralMeshRenderer.hpp"
 
-class GeneralizedMap {
+class WireframeRenderer : public HexahedralMeshRenderer {
+public:
+    WireframeRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    virtual ~WireframeRenderer() {}
 
+    // Re-generates the visualization mapping.
+    virtual void generateVisualizationMapping(HexMeshPtr meshIn);
+
+    // Renders the object to the scene framebuffer.
+    virtual void render();
+    // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
+    virtual void renderGui();
+
+    // Called when the resolution of the application window has changed.
+    virtual void onResolutionChanged() {}
+
+    // Called when the transfer function was changed.
+    virtual void onTransferFunctionMapRebuilt() {}
+
+protected:
+    sgl::ShaderProgramPtr shaderProgram;
+    sgl::ShaderAttributesPtr shaderAttributes;
 };
 
-
-#endif //GENERALMAP_GENERALMAP_HPP
+#endif //HEXVOLUMERENDERER_WIREFRAMERENDERER_H
