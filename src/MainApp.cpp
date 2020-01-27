@@ -333,14 +333,16 @@ void MainApp::renderGUI() {
 }
 
 void MainApp::loadAvailableDataSetSources() {
+    meshDataSetSources.clear();
+    meshDataSetSources.push_back("Local file...");
+    selectedFileSourceIndex = 0;
+
     if (!hexaLabDataSetsDownloaded) {
         return;
     }
     meshSourceDescriptions = parseSourceDescriptions();
 
     selectedFileSourceIndex = 1;
-    meshDataSetSources.clear();
-    meshDataSetSources.push_back("Local file...");
     for (MeshSourceDescription& sourceDescription  : meshSourceDescriptions) {
         meshDataSetSources.push_back(sourceDescription.label);
     }
