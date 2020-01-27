@@ -38,6 +38,8 @@ protected:
     void gather();
     void resolve();
 
+    ImVec4 colorSelection = ImColor(0, 255, 255, 127);
+    sgl::Color renderColor = sgl::Color(0, 255, 255);
     uint32_t numFragmentsMaxColor; // = max(16, max. depth complexity of scene)
     bool firstFrame = true;
 

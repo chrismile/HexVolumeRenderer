@@ -139,7 +139,7 @@ void DepthComplexityRenderer::resolve() {
     glStencilFunc(GL_EQUAL, 1, 0xFF);
     glStencilMask(0x00);
 
-    resolveShader->setUniform("color", sgl::Color(0, 255, 255));
+    resolveShader->setUniform("color", renderColor);
     resolveShader->setUniform("numFragmentsMaxColor", numFragmentsMaxColor);
     sgl::Renderer->render(blitRenderData);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -171,19 +171,18 @@ std::string numberToCommaString(int number, bool attachLeadingZeroes = false) {
 }
 
 void DepthComplexityRenderer::renderGui() {
-    if (ImGui::Begin("Volume Renderer", &showWindow)) {
+    if (ImGui::Begin("Depth Complexity Renderer", &showWindow)) {
         std::string totalNumFragmentsString = numberToCommaString(totalNumFragments);
         ImGui::Text("Depth complexity: #fragments: %s", totalNumFragmentsString.c_str());
         ImGui::Text("avg used: %.2f, avg all: %.2f, max: %lu", ((float) totalNumFragments / usedLocations),
                     ((float) totalNumFragments / bufferSize), maxComplexity);
 
-        static ImVec4 colorSelection = ImColor(0, 255, 255, 127);
         if (ImGui::ColorEdit4("Coloring", (float*)&colorSelection, 0)) {
             sgl::Color newColor = sgl::colorFromFloat(colorSelection.x, colorSelection.y, colorSelection.z, 1.0f);
-            resolveShader->setUniform("color", newColor);
-            intensity = 0.01+2*colorSelection.w;
+            renderColor = newColor;
+            intensity = 0.0001f + 3*colorSelection.w;
             numFragmentsMaxColor = std::max(maxComplexity, 4ul)/intensity;
-            //reRender = true;
+            reRender = true;
         }
     }
     ImGui::End();

@@ -78,6 +78,7 @@ void openglErrorCallback() {
 
 MainApp::MainApp() : camera(new sgl::Camera()), sceneData(sceneFramebuffer, camera, lightDirection) {
     sgl::FileUtils::get()->ensureDirectoryExists(saveDirectoryScreenshots);
+    setPrintFPS(false);
 
     gammaCorrectionShader = sgl::ShaderManager->getShaderProgram({"GammaCorrection.Vertex", "GammaCorrection.Fragment"});
 
@@ -234,6 +235,11 @@ void MainApp::render() {
     for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
         reRender = reRender || meshRenderer->needsReRender();
     }
+
+    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    int width = window->getWidth();
+    int height = window->getHeight();
+    glViewport(0, 0, width, height);
 
     if (reRender || continuousRendering) {
         sgl::Renderer->bindFBO(sceneFramebuffer);
