@@ -24,8 +24,8 @@ namespace HexaLab {
         MeshNavigator flip_edge();
         MeshNavigator flip_vert();
 
-        // -- Composite operaions --
-        // 'Rotates' aound the current edge, changing face and possibly cell (if there are more than one)
+        // -- Composite operations --
+        // 'Rotates' around the current edge, changing face and possibly cell (if there are more than one)
         MeshNavigator rotate_on_edge();
         // 'Rotates' on the current face, changing vert and edge
         MeshNavigator rotate_on_face();
@@ -46,6 +46,10 @@ namespace HexaLab {
         bool is_face_boundary() const;
         // Gets the number of faces that are incident on the current edge
         int incident_face_on_edge_num() const;
+        // Gets the number of cells that are incident on the current edge
+        int incident_cell_on_edge_num() const;
+        // Gets the number of cells that are incident on the current vertex
+        int incident_cell_on_vertex_num() const;
         void collect_face_vertex_position_vector ( std::vector<glm::vec3>& posVec ) const;
 
         Cell& cell();

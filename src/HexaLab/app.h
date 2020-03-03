@@ -172,5 +172,17 @@ namespace HexaLab {
         void compute_hexa_quality();
         void build_surface_models();
         void build_singularity_models();
+
+        // Singularity structure visualization
+    public:
+        void build_singularity_model(
+                std::vector<glm::vec3>& lineVertices,
+                std::vector<glm::vec4>& lineColors,
+                std::vector<glm::vec3>& pointVertices,
+                std::vector<glm::vec4>& pointColors);
+        void build_lod_representation(
+                std::vector<glm::vec3>& lineVertices,
+                std::vector<uint32_t>& lineLodValues);
+        void build_base_complex();
     };
 }

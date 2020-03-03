@@ -225,3 +225,25 @@ void HexMesh::getVolumeData(
     normals = hexaLabApp->get_visible_model()->mesh_vert_norm;
     colors = hexaLabApp->get_visible_model()->mesh_vert_color;
 }
+
+void HexMesh::getSingularityData(
+        std::vector<glm::vec3>& lineVertices,
+        std::vector<glm::vec4>& lineColors,
+        std::vector<glm::vec3>& pointVertices,
+        std::vector<glm::vec4>& pointColors) {
+    if (dirty) {
+        hexaLabApp->update_models();
+        dirty = false;
+    }
+    hexaLabApp->build_singularity_model(lineVertices, lineColors, pointVertices, pointColors);
+}
+
+void HexMesh::getLodRepresentation(
+        std::vector<glm::vec3>& lineVertices,
+        std::vector<uint32_t>& lineLodValues) {
+    if (dirty) {
+        hexaLabApp->update_models();
+        dirty = false;
+    }
+    hexaLabApp->build_lod_representation(lineVertices, lineLodValues);
+}

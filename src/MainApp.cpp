@@ -70,6 +70,9 @@
 #include "Renderers/WireframeRenderer.hpp"
 #include "Renderers/VolumeRenderer.hpp"
 #include "Renderers/DepthComplexityRenderer.hpp"
+#include "Renderers/SingularityRenderer.hpp"
+#include "Renderers/BaseComplexRenderer.hpp"
+#include "Renderers/LodRenderer.hpp"
 #include "MainApp.hpp"
 
 void openglErrorCallback() {
@@ -90,7 +93,7 @@ MainApp::MainApp() : camera(new sgl::Camera()), sceneData(sceneFramebuffer, came
     camera->setOrientation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
     float fovy = atanf(1.0f / 2.0f) * 2.0f;
     camera->setFOVy(fovy);
-    camera->setPosition(glm::vec3(0.0f, 0.1f, 0.8f));
+    camera->setPosition(glm::vec3(0.0f, 0.0f, 0.8f));
 
     clearColor = sgl::Color(255, 255, 255, 255);
     clearColorSelection = ImColor(clearColor.getColorRGBA());
@@ -160,6 +163,12 @@ void MainApp::setRenderers() {
         meshRenderers.push_back(new VolumeRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_DEPTH_COMPLEXITY) {
         meshRenderers.push_back(new DepthComplexityRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_SINGULARITY) {
+        meshRenderers.push_back(new SingularityRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_BASE_COMPLEX) {
+        meshRenderers.push_back(new BaseComplexRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_LOD_LINES) {
+        meshRenderers.push_back(new LodRenderer(sceneData, transferFunctionWindow));
     }
 }
 
@@ -573,6 +582,21 @@ void MainApp::update(float dt) {
 
 // --- Visualization pipeline ---
 
+void normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
+    sgl::AABB3 aabb;
+    for (size_t i = 0; i < vertices.size(); i++) {
+        aabb.combine(vertices.at(i));
+    }
+    glm::vec3 translation = -aabb.getCenter();
+    glm::vec3 scale3D = 0.5f / aabb.getDimensions();
+    float scale = std::min(scale3D.x, std::min(scale3D.y, scale3D.z));
+
+    #pragma omp parallel for
+    for (size_t i = 0; i < vertices.size(); i++) {
+        vertices.at(i) = (vertices.at(i) + translation) * scale;
+    }
+}
+
 void MainApp::loadHexahedralMesh(const std::string &fileName) {
     if (fileName.size() == 0) {
         inputData = HexMeshPtr();
@@ -595,6 +619,7 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
     std::vector<uint32_t> cellIndices;
     bool loadingSuccessful = it->second->loadHexahedralMeshFromFile(fileName, vertices, cellIndices);
     if (loadingSuccessful) {
+        normalizeVertexPositions(vertices);
         inputData = HexMeshPtr(new HexMesh(transferFunctionWindow));
         inputData->setHexMeshData(vertices, cellIndices);
         inputData->setQualityMeasure(selectedQualityMeasure);

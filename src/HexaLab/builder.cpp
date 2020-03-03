@@ -114,6 +114,8 @@ Index Builder::add_edge ( Mesh& mesh, Index h, Index f, const Index* edge ) {
         mesh.edges.emplace_back ( mesh.darts.size() );
         edges_map.insert ( std::make_pair ( EdgeMapKey ( edge ), e ) );
     }
+    // Valence values are counted doubly due to two faces sharing one edge per cell.
+    mesh.edges.at(e).valence++;
 
     // Add a dart to each vertex
     assert ( mesh.verts.size() > edge[0] );
@@ -207,7 +209,13 @@ Index Builder::add_hexa ( Mesh& mesh, const Index* hexa ) {
     Index base = mesh.darts.size();
     Index faces[6];
 
+    // Add one to the valence of the vertex if it is referenced by this cell.
+    for ( int i = 0; i < 8; i++ ) {
+        mesh.verts[hexa[i]].valence++;
+    }
+
     for ( int i = 0; i < 6; ++i ) {
+
         Index face_indices[4];
 
         for ( int j = 0; j < 4; ++j ) {
@@ -269,6 +277,11 @@ void Builder::build ( Mesh& mesh, const vector<glm::vec3>& vertices, const vecto
     add_hexas(mesh, indices , 25, 50);
     add_hexas(mesh, indices , 50, 75);
     add_hexas(mesh, indices , 75, 100);
+
+    // Valence values are counted doubly due to two faces sharing one edge per cell.
+    for ( size_t i = 0; i < mesh.edges.size(); i++ ) {
+        mesh.edges.at(i).valence /= 2;
+    }
 
     mesh.hexa_quality.resize ( mesh.cells.size() );
     HL_LOG ( "100%%\n" );

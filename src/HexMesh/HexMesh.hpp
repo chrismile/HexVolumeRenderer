@@ -98,6 +98,14 @@ public:
             std::vector<glm::vec3>& vertices,
             std::vector<glm::vec3>& normals,
             std::vector<glm::vec4>& colors);
+    void getSingularityData(
+            std::vector<glm::vec3>& lineVertices,
+            std::vector<glm::vec4>& lineColors,
+            std::vector<glm::vec3>& pointVertices,
+            std::vector<glm::vec4>& pointColors);
+    void getLodRepresentation(
+            std::vector<glm::vec3>& lineVertices,
+            std::vector<uint32_t>& lineLodValues);
 
 private:
     void recomputeHistogram();

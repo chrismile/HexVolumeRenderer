@@ -82,6 +82,7 @@ namespace HexaLab {
         // build buffers
         this->flag_models_as_dirty();
         //this->update_models();
+        this->build_base_complex();
         this->build_singularity_models();
         this->build_full_model();
         return true;
@@ -236,6 +237,93 @@ namespace HexaLab {
         this->mesh_stats.normalized_quality_min = minQ;
         this->mesh_stats.normalized_quality_max = maxQ;
         HL_LOG ( "[QUALITY: %s] %f %f - norm %f %f.\n", get_quality_name(this->quality_measure), mesh_stats.quality_min,mesh_stats.quality_max,mesh_stats.normalized_quality_min,mesh_stats.normalized_quality_max );
+    }
+
+    void App::build_singularity_model(
+            std::vector<glm::vec3>& lineVertices,
+            std::vector<glm::vec4>& lineColors,
+            std::vector<glm::vec3>& pointVertices,
+            std::vector<glm::vec4>& pointColors) {
+        // Find all irregular edges
+        for (size_t i = 0; i < mesh->edges.size(); ++i) {
+            MeshNavigator nav = mesh->navigate(mesh->edges[i]);
+            int edgeValence = nav.edge().valence;
+            bool isBoundary = nav.edge().is_surface;
+            if ((edgeValence != 2 && isBoundary) || (edgeValence != 4 && !isBoundary)) {
+                lineVertices.push_back(nav.vert().position);
+                lineVertices.push_back(nav.flip_vert().vert().position);
+                //glm::vec4 color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+                glm::vec4 color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+                if (edgeValence == 1) {
+                    color = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+                }
+                if (edgeValence == 2) {
+                    color = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+                }
+                if (edgeValence == 3) {
+                    color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+                }
+                if (edgeValence == 4) {
+                    color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+                }
+                if (edgeValence == 6) {
+                    color = glm::vec4(0.5f, 0.0f, 0.5f, 1.0f);
+                }
+                lineColors.push_back(color);
+                lineColors.push_back(color);
+            }
+        }
+
+        // Find all irregular vertices
+        for (size_t i = 0; i < mesh->verts.size(); ++i) {
+            MeshNavigator nav = mesh->navigate(mesh->verts[i]);
+            int vertValence = nav.vert().valence;//nav.incident_cell_on_vertex_num();
+            bool isBoundary = nav.vert().is_surface;
+            if ((vertValence != 4 && isBoundary) || (vertValence != 8 && !isBoundary)) {
+                pointVertices.push_back(nav.vert().position);
+                pointColors.push_back(glm::vec4(0.4f, 0.0f, 0.0f, 1.0f));
+            }
+        }
+    }
+
+    void App::build_lod_representation(
+            std::vector<glm::vec3>& lineVertices,
+            std::vector<uint32_t>& lineLodValues) {
+        // TODO: For now only one base-complex component supported
+        for (size_t i = 0; i < mesh->edges.size(); ++i) {
+            MeshNavigator nav = mesh->navigate(mesh->edges[i]);
+            int edgeValence = nav.edge().valence;
+            bool isBoundary = nav.edge().is_surface;
+            /*if ((edgeValence != 2 && isBoundary) || (edgeValence != 4 && !isBoundary)) {
+                ;
+            }*/
+            lineVertices.push_back(nav.vert().position);
+            lineVertices.push_back(nav.flip_vert().vert().position);
+            uint32_t lodValue = i;
+            lineLodValues.push_back(lodValue);
+            lineLodValues.push_back(lodValue);
+        }
+    }
+
+    void App::build_base_complex() {
+        // Mark irregular edges.
+        for (size_t i = 0; i < mesh->edges.size(); ++i) {
+            MeshNavigator nav = mesh->navigate(mesh->edges[i]);
+            int edgeValence = nav.edge().valence;
+            bool isBoundary = nav.edge().is_surface;
+            if ((edgeValence != 2 && isBoundary) || (edgeValence != 4 && !isBoundary)) {
+                ;
+            }
+        }
+        // Mark irregular vertices.
+        for (size_t i = 0; i < mesh->verts.size(); ++i) {
+            MeshNavigator nav = mesh->navigate(mesh->verts[i]);
+            int vertValence = nav.vert().valence;
+            bool isBoundary = nav.vert().is_surface;
+            if ((vertValence != 4 && isBoundary) || (vertValence != 8 && !isBoundary)) {
+                ;
+            }
+        }
     }
 
     void App::build_singularity_models() {

@@ -26,18 +26,69 @@ namespace HexaLab {
      */
     int MeshNavigator::incident_face_on_edge_num() const
     {
-      int faceCnt=0;
-      bool edge_on_boundary=false;
-      MeshNavigator nav = *this;
-      do
-      {
-        nav = nav.rotate_on_edge();
-        if(nav.is_face_boundary()) edge_on_boundary=true;
-        ++faceCnt;
+        int faceCnt=0;
+        bool edge_on_boundary=false;
+        MeshNavigator nav = *this;
+        do
+        {
+            nav = nav.rotate_on_edge();
+            if(nav.is_face_boundary()) edge_on_boundary=true;
+            ++faceCnt;
 
-      } while(!(nav == *this));
-      if(edge_on_boundary) faceCnt/=2;
-      return faceCnt;
+        } while(!(nav == *this));
+        if(edge_on_boundary) faceCnt/=2;
+        return faceCnt;
+    }
+
+    /**
+     * @brief MeshNavigator::incident_cell_on_edge_num
+     * @return the number of cells that are incident on the current edge
+     */
+    int MeshNavigator::incident_cell_on_edge_num() const
+    {
+        int cellCnt=0;
+        bool edge_on_boundary=false;
+        MeshNavigator nav = *this;
+        do
+        {
+            nav = nav.rotate_on_edge();
+            if(nav.is_face_boundary()) edge_on_boundary=true;
+            ++cellCnt;
+
+        } while(!(nav == *this));
+        if (edge_on_boundary) cellCnt/=2;
+        return cellCnt;
+    }
+
+    /**
+     * @brief MeshNavigator::incident_cell_on_vertex_num
+     * @return the number of cells that are incident on the current vertex
+     */
+    int MeshNavigator::incident_cell_on_vertex_num() const
+    {
+        int cellCnt=0;
+        MeshNavigator nav = *this;
+        cellCnt += nav.incident_cell_on_edge_num();
+        nav = nav.flip_edge();
+        nav = nav.flip_face();
+        if (nav.dart().cell_neighbor != -1) {
+            nav = nav.flip_cell();
+            nav = nav.flip_face();
+            nav = nav.flip_edge();
+            cellCnt += nav.incident_cell_on_edge_num();
+        }
+        /*bool vertex_on_boundary=false;
+        MeshNavigator nav = *this;
+        do
+        {
+            if (nav.dart().cell_neighbor != -1) {
+                nav = nav.flip_cell();
+            }
+            nav = nav.flip_edge();
+            nav = nav.flip_face();
+            if(nav.is_face_boundary()) ++cellCnt;
+        } while(!(nav == *this));*/
+        return cellCnt;
     }
 
     void MeshNavigator::collect_face_vertex_position_vector(std::vector<glm::vec3> &posVec) const

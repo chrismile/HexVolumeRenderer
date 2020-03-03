@@ -97,6 +97,7 @@ namespace HexaLab {
 
     struct Edge {
         Index dart      = -1;
+        uint32_t valence = 0; // Number of incident cells
         bool is_surface = false;
 
         Edge() {}
@@ -109,6 +110,7 @@ namespace HexaLab {
         Index dart          = -1;
         glm::vec3 position;
         uint32_t visible_mark = 0;
+        uint32_t valence = 0; // Number of incident cells
         bool is_surface     = false;
 
         Vert() {}

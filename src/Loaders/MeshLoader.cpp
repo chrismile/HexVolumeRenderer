@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/algorithm/string.hpp>
 #include <glm/vec3.hpp>
 
 #include <Utils/File/Logfile.hpp>
@@ -109,7 +110,7 @@ bool MeshLoader::loadHexahedralMeshFromFile(
 
         // The version header must the first non-empty line!
         if (!foundVersionHeader) {
-            if (tokens.at(0) == "MeshVersionFormatted") {
+            if (boost::starts_with(tokens.at(0), "MeshVersionFormatted")) {
                 foundVersionHeader = true;
                 return true;
             } else {
