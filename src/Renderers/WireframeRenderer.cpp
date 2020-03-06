@@ -35,7 +35,7 @@
 WireframeRenderer::WireframeRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
-    shaderProgram = sgl::ShaderManager->getShaderProgram({"Wireframe.Vertex", "Wireframe.Fragment"});
+    shaderProgram = sgl::ShaderManager->getShaderProgram({"Wireframe.Vertex", "Wireframe.Geometry", "Wireframe.Fragment"});
 }
 
 void WireframeRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
@@ -73,7 +73,7 @@ void WireframeRenderer::render() {
     //glEnable(GL_POLYGON_OFFSET_FILL);
     //glPolygonOffset(1, 1);
     ///glDepthFunc(GL_LEQUAL);
-    sgl::Renderer->setLineWidth(2.0f);
+    shaderProgram->setUniform("lineWidth", 0.001f);
     sgl::Renderer->render(shaderAttributes);
     //glDisable(GL_POLYGON_OFFSET_FILL);
 }

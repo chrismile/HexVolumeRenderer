@@ -37,7 +37,7 @@
 LodRenderer::LodRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
-    shaderProgram = sgl::ShaderManager->getShaderProgram({"WireframeLod.Vertex", "WireframeLod.Fragment"});
+    shaderProgram = sgl::ShaderManager->getShaderProgram({"WireframeLod.Vertex", "WireframeLod.Geometry", "WireframeLod.Fragment"});
 }
 
 void LodRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
@@ -72,7 +72,7 @@ void LodRenderer::render() {
         shaderProgram->setUniform("lightDirection", sceneData.lightDirection);
     }
 
-    sgl::Renderer->setLineWidth(2.0f);
+    shaderProgram->setUniform("lineWidth", 0.001f);
     sgl::Renderer->render(shaderAttributes);
 }
 

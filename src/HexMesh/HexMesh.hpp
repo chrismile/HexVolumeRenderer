@@ -70,6 +70,7 @@
 #include "HexaLab/app.h"
 
 class HexMesh;
+class Mesh;
 typedef std::shared_ptr<HexMesh> HexMeshPtr;
 
 class HexMesh {
@@ -103,11 +104,20 @@ public:
             std::vector<glm::vec4>& lineColors,
             std::vector<glm::vec3>& pointVertices,
             std::vector<glm::vec4>& pointColors);
+    void getBaseComplexDataWireframe(
+            std::vector<glm::vec3>& lineVertices,
+            std::vector<glm::vec4>& lineColors,
+            std::vector<glm::vec3>& pointVertices,
+            std::vector<glm::vec4>& pointColors);
+    void getBaseComplexDataSurface(
+            std::vector<glm::vec3>& triangleVertices,
+            std::vector<glm::vec4>& vertexColors);
     void getLodRepresentation(
             std::vector<glm::vec3>& lineVertices,
             std::vector<uint32_t>& lineLodValues);
 
 private:
+    void computeBaseComplexMesh(const std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices);
     void recomputeHistogram();
     QualityMeasure qualityMeasure = QUALITY_MEASURE_SCALED_JACOBIAN;
     TransferFunctionWindow &transferFunctionWindow;
@@ -115,6 +125,7 @@ private:
 
     // HexaLab data
     HexaLab::App* hexaLabApp = nullptr;
+    Mesh* baseComplexMesh = nullptr;
     HexaLab::QualityMeasureEnum hexaLabQualityMeasure;
 };
 

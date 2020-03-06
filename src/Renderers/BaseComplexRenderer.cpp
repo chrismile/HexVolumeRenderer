@@ -35,7 +35,7 @@
 BaseComplexRenderer::BaseComplexRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
-    shaderProgram = sgl::ShaderManager->getShaderProgram({"Wireframe.Vertex", "Wireframe.Fragment"});
+    shaderProgram = sgl::ShaderManager->getShaderProgram({"Wireframe.Vertex", "Wireframe.Geometry", "Wireframe.Fragment"});
 }
 
 void BaseComplexRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
@@ -70,7 +70,7 @@ void BaseComplexRenderer::render() {
         shaderProgram->setUniform("lightDirection", sceneData.lightDirection);
     }
 
-    sgl::Renderer->setLineWidth(2.0f);
+    shaderProgram->setUniform("lineWidth", 0.002f);
     sgl::Renderer->render(shaderAttributes);
 }
 

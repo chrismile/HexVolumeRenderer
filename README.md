@@ -6,7 +6,7 @@ A program for rendering hexahedral meshes in the form of transparent volumes.
 On Ubuntu 18.04 for example, you can install all necessary packages with this command (additionally to the prerequisites required by sgl):
 
 ```
-sudo apt-get install libjsoncpp-dev libcurl-dev
+sudo apt-get install libjsoncpp-dev libcurl-dev libeigen3-dev
 ```
 
 After installing sgl (see above) execute in the repository directory:

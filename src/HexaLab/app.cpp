@@ -290,6 +290,21 @@ namespace HexaLab {
             std::vector<glm::vec3>& lineVertices,
             std::vector<uint32_t>& lineLodValues) {
         // TODO: For now only one base-complex component supported
+        bool edgeVisitedArray = new bool[mesh->edges.size()];
+        for (size_t i = 0; i < mesh->edges.size(); ++i) {
+            int direction = i % 3;
+            MeshNavigator nav = mesh->navigate(mesh->edges[i]);
+            int edgeValence = nav.edge().valence;
+            bool isBoundary = nav.edge().is_surface;
+            /*if ((edgeValence != 2 && isBoundary) || (edgeValence != 4 && !isBoundary)) {
+                ;
+            }*/
+            lineVertices.push_back(nav.vert().position);
+            lineVertices.push_back(nav.flip_vert().vert().position);
+            uint32_t lodValue = i;
+            lineLodValues.push_back(lodValue);
+            lineLodValues.push_back(lodValue);
+        }
         for (size_t i = 0; i < mesh->edges.size(); ++i) {
             MeshNavigator nav = mesh->navigate(mesh->edges[i]);
             int edgeValence = nav.edge().valence;

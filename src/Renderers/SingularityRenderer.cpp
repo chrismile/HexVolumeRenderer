@@ -37,7 +37,7 @@
 SingularityRenderer::SingularityRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
-    shaderProgram = sgl::ShaderManager->getShaderProgram({"Wireframe.Vertex", "Wireframe.Fragment"});
+    shaderProgram = sgl::ShaderManager->getShaderProgram({"Wireframe.Vertex", "Wireframe.Geometry", "Wireframe.Fragment"});
     shaderProgramPoints = sgl::ShaderManager->getShaderProgram({"Point.Vertex", "Point.Geometry", "Point.Fragment"});
 }
 
@@ -76,15 +76,20 @@ void SingularityRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
 }
 
 void SingularityRenderer::render() {
+    if (shaderProgram->hasUniform("cameraPosition")) {
+        shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
+    }
     if (shaderProgramPoints->hasUniform("cameraPosition")) {
         shaderProgramPoints->setUniform("cameraPosition", sceneData.camera->getPosition());
     }
 
-    glDepthMask(GL_FALSE);
-    sgl::Renderer->setLineWidth(2.0f);
+    glDepthMask(GL_TRUE);
+    shaderProgram->setUniform("lineWidth", 0.0015f);
     sgl::Renderer->render(lineShaderAttributes);
+    glDepthMask(GL_FALSE);
     shaderProgramPoints->setUniform("radius", 0.002f);
     sgl::Renderer->render(pointShaderAttributes);
+    glDepthMask(GL_TRUE);
 }
 
 void SingularityRenderer::renderGui() {
