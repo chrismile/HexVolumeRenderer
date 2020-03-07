@@ -35,6 +35,34 @@
 #include <Utils/Convert.hpp>
 
 /**
+ * Splits a string into tokens with the whitespace characters as delimiters (space, tabulator).
+ * No empty tokens are generated.
+ * @param inputString The string to split.
+ * @param splitString A list of non-empty tokens.
+ */
+void splitStringByWhitespaceChars(const std::string& inputString, std::vector<std::string>& splitString) {
+    const size_t stringSize = inputString.size();
+    std::string currentStringPart = "";
+    splitString.clear();
+
+    for (size_t i = 0; i < stringSize; i++) {
+        char currentChar = inputString.at(i);
+        if (currentChar == ' ' || currentChar == '\t') {
+            if (currentStringPart.length() > 0) {
+                splitString.push_back(currentStringPart);
+                currentStringPart.clear();
+            }
+        } else {
+            currentStringPart.push_back(currentChar);
+        }
+    }
+
+    if (currentStringPart.length() > 0) {
+        splitString.push_back(currentStringPart);
+    }
+}
+
+/**
  * Reads a text file line by line.
  * @param filename The name of the text file.
  * @param readLineCallback A function that is called when a new (non-empty) line was read. It is passed the line string
@@ -85,9 +113,10 @@ bool readFileLineByLine(
         }
         lineNumber++;
 
-        boost::trim_if(lineBuffer, boost::is_any_of("\t "));
+        /*boost::trim_if(lineBuffer, boost::is_any_of("\t "));
         boost::algorithm::split(
-                lineWords, lineBuffer, boost::is_any_of("\t "), boost::token_compress_on);
+                lineWords, lineBuffer, boost::is_any_of("\t "), boost::token_compress_on);*/
+        splitStringByWhitespaceChars(lineBuffer, lineWords);
         if (lineWords.size() == 0) {
             continue;
         }

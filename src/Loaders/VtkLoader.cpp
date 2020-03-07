@@ -56,6 +56,8 @@ bool VtkLoader::loadHexahedralMeshFromFile(
     int numCellsLeft = 0;
     bool isCellTypesReadMode = false;
     int numCellTypesLeft = 0;
+    bool isCellDataReadMode = false;
+    int numCellDataLinesLeft = 0;
 
     bool loadingSuccessful = readFileLineByLine(
             filename, [&](const std::string& lineString, const std::vector<std::string>& tokens) {
@@ -91,13 +93,22 @@ bool VtkLoader::loadHexahedralMeshFromFile(
         }
 
         if (isCellTypesReadMode) {
-            if (tokens.size() != 1 || tokens.at(0) != "12") {
-                sgl::Logfile::get()->writeError("Error in VtkLoader: Invalid cell type!");
-                return false;
-            }
+            // Somehow, data sets from "2019 - Symmetric Moving Frames" have 10 / tetrahedron as cell type...
+            //if (tokens.size() != 1 || tokens.at(0) != "12") {
+            //    sgl::Logfile::get()->writeError("Error in VtkLoader: Invalid cell type!");
+            //    return false;
+            //}
             numCellTypesLeft--;
             if (numCellTypesLeft <= 0) {
                 isCellTypesReadMode = false;
+            }
+            return true;
+        }
+
+        if (isCellDataReadMode) {
+            numCellDataLinesLeft--;
+            if (numCellDataLinesLeft <= 0) {
+                isCellDataReadMode = false;
             }
             return true;
         }
@@ -180,6 +191,18 @@ bool VtkLoader::loadHexahedralMeshFromFile(
             numCellTypesLeft = sgl::fromString<size_t>(tokens.at(1));
             foundCellTypes = true;
             isCellTypesReadMode = numCellTypesLeft > 0;
+            return true;
+        }
+
+        // Ignore cell data
+        if (tokens.at(0) == "CELL_DATA") {
+            if (tokens.size() != 2) {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Malformed CELL_DATA declaration!");
+                return false;
+            }
+            // Number of entries + SCALARS + LOOKUP_TABLE information
+            numCellDataLinesLeft = sgl::fromString<size_t>(tokens.at(1)) + 2;
+            isCellDataReadMode = true;
             return true;
         }
 

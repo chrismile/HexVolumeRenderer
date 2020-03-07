@@ -363,13 +363,13 @@ void HexMesh::getBaseComplexDataWireframe(
     }*/
 
 
-    /*for (size_t partitionIndex = 0; partitionIndex < frame.FHs.size(); partitionIndex++) {
+    for (size_t partitionIndex = 0; partitionIndex < frame.FHs.size(); partitionIndex++) {
         Frame_H& frameCell = frame.FHs.at(partitionIndex);
         for (uint32_t i = 0; i < frameCell.es.size(); i++) {
             Hybrid_E& edge = mesh.Es.at(frameCell.es.at(i));
             glm::vec4 vertexColor;
             if (true) {
-                frameCell.vs_net
+                //frameCell.vs_net
                 vertexColor = glm::vec4(fmod(frameCell.Color_ID / 10.0f, 1.0f), 0.0f, 0.0f, 1.0f);
             }
 
@@ -379,7 +379,7 @@ void HexMesh::getBaseComplexDataWireframe(
                 lineVertices.push_back(vertexPosition);
                 lineColors.push_back(vertexColor);
             }
-        }*/
+        }
 
 
         /*glm::vec4 vertexColor;
@@ -395,10 +395,10 @@ void HexMesh::getBaseComplexDataWireframe(
             lineVertices.push_back(vertexPosition);
             lineColors.push_back(vertexColor);
         }*/
-    //}
+    }
 
 
-    for (size_t partitionIndex = 0; partitionIndex < frame.FFs.size(); partitionIndex++) {
+    /*for (size_t partitionIndex = 0; partitionIndex < frame.FFs.size(); partitionIndex++) {
         Frame_F &frameFace = frame.FFs.at(partitionIndex);
         for (uint32_t i = 0; i < frameFace.ffs_net.size(); i++) {
             Hybrid_F &face = mesh.Fs.at(frameFace.ffs_net.at(i));
@@ -416,7 +416,7 @@ void HexMesh::getBaseComplexDataWireframe(
                 }
             }
         }
-    }
+    }*/
 
 }
 
