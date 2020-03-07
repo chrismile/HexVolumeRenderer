@@ -36,27 +36,38 @@ BaseComplexRenderer::BaseComplexRenderer(SceneData &sceneData, TransferFunctionW
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     shaderProgram = sgl::ShaderManager->getShaderProgram({"Wireframe.Vertex", "Wireframe.Geometry", "Wireframe.Fragment"});
+    shaderProgramPoints = sgl::ShaderManager->getShaderProgram({"Point.Vertex", "Point.Geometry", "Point.Fragment"});
 }
 
 void BaseComplexRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
-    std::vector<glm::vec3> vertices;
-    std::vector<glm::vec4> colors;
-    meshIn->getWireframeData(vertices, colors);
+    std::vector<glm::vec3> lineVertices, pointVertices;
+    std::vector<glm::vec4> lineColors, pointColors;
+    meshIn->getBaseComplexDataWireframe(lineVertices, lineColors, pointVertices, pointColors);
 
-    shaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);
-    shaderAttributes->setVertexMode(sgl::VERTEX_MODE_LINES);
+    lineShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);
+    lineShaderAttributes->setVertexMode(sgl::VERTEX_MODE_LINES);
+    pointShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgramPoints);
+    pointShaderAttributes->setVertexMode(sgl::VERTEX_MODE_POINTS);
 
     // Add the position buffer.
-    sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertices.size()*sizeof(glm::vec3), (void*)&vertices.front(), sgl::VERTEX_BUFFER);
-    shaderAttributes->addGeometryBuffer(
-            positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+    sgl::GeometryBufferPtr linePositionBuffer = sgl::Renderer->createGeometryBuffer(
+            lineVertices.size()*sizeof(glm::vec3), (void*)&lineVertices.front(), sgl::VERTEX_BUFFER);
+    lineShaderAttributes->addGeometryBuffer(
+            linePositionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+    sgl::GeometryBufferPtr pointPositionBuffer = sgl::Renderer->createGeometryBuffer(
+            pointVertices.size()*sizeof(glm::vec3), (void*)&pointVertices.front(), sgl::VERTEX_BUFFER);
+    pointShaderAttributes->addGeometryBuffer(
+            pointPositionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the color buffer.
-    sgl::GeometryBufferPtr colorBuffer = sgl::Renderer->createGeometryBuffer(
-            colors.size()*sizeof(glm::vec4), (void*)&colors.front(), sgl::VERTEX_BUFFER);
-    shaderAttributes->addGeometryBuffer(
-            colorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
+    sgl::GeometryBufferPtr lineColorBuffer = sgl::Renderer->createGeometryBuffer(
+            lineColors.size()*sizeof(glm::vec4), (void*)&lineColors.front(), sgl::VERTEX_BUFFER);
+    lineShaderAttributes->addGeometryBuffer(
+            lineColorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
+    sgl::GeometryBufferPtr pointColorBuffer = sgl::Renderer->createGeometryBuffer(
+            pointColors.size()*sizeof(glm::vec4), (void*)&pointColors.front(), sgl::VERTEX_BUFFER);
+    pointShaderAttributes->addGeometryBuffer(
+            pointColorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
 
     dirty = false;
     reRender = true;
@@ -66,12 +77,17 @@ void BaseComplexRenderer::render() {
     if (shaderProgram->hasUniform("cameraPosition")) {
         shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
     }
-    if (shaderProgram->hasUniform("lightDirection")) {
-        shaderProgram->setUniform("lightDirection", sceneData.lightDirection);
+    if (shaderProgramPoints->hasUniform("cameraPosition")) {
+        shaderProgramPoints->setUniform("cameraPosition", sceneData.camera->getPosition());
     }
 
-    shaderProgram->setUniform("lineWidth", 0.002f);
-    sgl::Renderer->render(shaderAttributes);
+    glDepthMask(GL_TRUE);
+    shaderProgram->setUniform("lineWidth", 0.0015f);
+    sgl::Renderer->render(lineShaderAttributes);
+    glDepthMask(GL_FALSE);
+    shaderProgramPoints->setUniform("radius", 0.002f);
+    sgl::Renderer->render(pointShaderAttributes);
+    glDepthMask(GL_TRUE);
 }
 
 void BaseComplexRenderer::renderGui() {

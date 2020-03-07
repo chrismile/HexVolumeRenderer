@@ -333,9 +333,9 @@ void HexMesh::getBaseComplexDataWireframe(
     bc.singularity_structure(si, mesh);
     bc.base_complex_extraction(si, frame, mesh);
 
-    for (Frame_V& frameVertex : frame.FVs) {
+    /*for (Frame_V& frameVertex : frame.FVs) {
         glm::vec4 vertexColor;
-        if (frameVertex.what_type == 0) {
+        if (frameVertex.boundary == 0) {
             vertexColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
         } else {
             vertexColor = glm::vec4(0.0f, 0.2f, 1.0f, 1.0f);
@@ -360,7 +360,64 @@ void HexMesh::getBaseComplexDataWireframe(
             lineVertices.push_back(vertexPosition);
             lineColors.push_back(vertexColor);
         }
+    }*/
+
+
+    /*for (size_t partitionIndex = 0; partitionIndex < frame.FHs.size(); partitionIndex++) {
+        Frame_H& frameCell = frame.FHs.at(partitionIndex);
+        for (uint32_t i = 0; i < frameCell.es.size(); i++) {
+            Hybrid_E& edge = mesh.Es.at(frameCell.es.at(i));
+            glm::vec4 vertexColor;
+            if (true) {
+                frameCell.vs_net
+                vertexColor = glm::vec4(fmod(frameCell.Color_ID / 10.0f, 1.0f), 0.0f, 0.0f, 1.0f);
+            }
+
+            for (size_t lineVertexIndex = 0; lineVertexIndex < edge.vs.size(); lineVertexIndex++) {
+                uint32_t vertexIndex = edge.vs.at(lineVertexIndex);
+                glm::vec3 vertexPosition(mesh.V(0, vertexIndex), mesh.V(1, vertexIndex), mesh.V(2, vertexIndex));
+                lineVertices.push_back(vertexPosition);
+                lineColors.push_back(vertexColor);
+            }
+        }*/
+
+
+        /*glm::vec4 vertexColor;
+        if (frameEdge.singular) {
+            vertexColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+        } else {
+            vertexColor = glm::vec4(0.0f, 0.2f, 1.0f, 1.0f);
+        }
+
+        for (size_t lineVertexIndex = 0; lineVertexIndex < frameEdge.vs_link.size(); lineVertexIndex++) {
+            uint32_t vertexIndex = frameEdge.vs_link.at(lineVertexIndex);
+            glm::vec3 vertexPosition(mesh.V(0, vertexIndex), mesh.V(1, vertexIndex), mesh.V(2, vertexIndex));
+            lineVertices.push_back(vertexPosition);
+            lineColors.push_back(vertexColor);
+        }*/
+    //}
+
+
+    for (size_t partitionIndex = 0; partitionIndex < frame.FFs.size(); partitionIndex++) {
+        Frame_F &frameFace = frame.FFs.at(partitionIndex);
+        for (uint32_t i = 0; i < frameFace.ffs_net.size(); i++) {
+            Hybrid_F &face = mesh.Fs.at(frameFace.ffs_net.at(i));
+            glm::vec4 vertexColor;
+            if (true) {
+                vertexColor = glm::vec4(fmod(partitionIndex / 10.0f, 1.0f), 0.0f, 0.0f, 1.0f);
+            }
+            for (size_t edgeIndex : face.es) {
+                Hybrid_E& edge = mesh.Es.at(edgeIndex);
+                for (size_t lineVertexIndex = 0; lineVertexIndex < edge.vs.size(); lineVertexIndex++) {
+                    uint32_t vertexIndex = edge.vs.at(lineVertexIndex);
+                    glm::vec3 vertexPosition(mesh.V(0, vertexIndex), mesh.V(1, vertexIndex), mesh.V(2, vertexIndex));
+                    lineVertices.push_back(vertexPosition);
+                    lineColors.push_back(vertexColor);
+                }
+            }
+        }
     }
+
 }
 
 void HexMesh::getBaseComplexDataSurface(

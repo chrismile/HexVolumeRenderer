@@ -54,7 +54,9 @@ public:
 
 protected:
     sgl::ShaderProgramPtr shaderProgram;
-    sgl::ShaderAttributesPtr shaderAttributes;
+    sgl::ShaderProgramPtr shaderProgramPoints;
+    sgl::ShaderAttributesPtr lineShaderAttributes;
+    sgl::ShaderAttributesPtr pointShaderAttributes;
 };
 
 #endif //HEXVOLUMERENDERER_BASECOMPLEXRENDERER_HPP
