@@ -1,5 +1,6 @@
 /*
- * This file is the interface between the HexaMesh classes and HexVolumeRenderer.
+ * This file is the interface between HexVolumeRenderer, HexaMesh classes and
+ * the code from Robust Hexahedral Re-Meshing (see README).
  * Some functions from HexaMesh are used here, which are covered by the MIT license.
  * The changes for the interoperability are covered by the BSD 2-Clause license.
  *
@@ -58,6 +59,7 @@
 #define GENERALMAP_GENERALMAP_HPP
 
 #include <vector>
+#include <unordered_set>
 #include <memory>
 
 #include <glm/vec3.hpp>
@@ -71,6 +73,9 @@
 
 class HexMesh;
 class Mesh;
+class Singularity;
+class Frame;
+class ParametrizedGrid;
 typedef std::shared_ptr<HexMesh> HexMeshPtr;
 
 class HexMesh {
@@ -108,16 +113,35 @@ public:
             std::vector<glm::vec3>& lineVertices,
             std::vector<glm::vec4>& lineColors,
             std::vector<glm::vec3>& pointVertices,
-            std::vector<glm::vec4>& pointColors);
+            std::vector<glm::vec4>& pointColors,
+            bool drawRegularLines);
     void getBaseComplexDataSurface(
-            std::vector<glm::vec3>& triangleVertices,
-            std::vector<glm::vec4>& vertexColors);
+            std::vector<uint32_t>& indices,
+            std::vector<glm::vec3>& vertices,
+            std::vector<glm::vec3>& normals,
+            std::vector<glm::vec4>& colors,
+            bool cullInterior);
+    void getColoredPartitionLines(
+            std::vector<glm::vec3>& lineVertices,
+            std::vector<glm::vec4>& lineColors);
     void getLodRepresentation(
             std::vector<glm::vec3>& lineVertices,
             std::vector<uint32_t>& lineLodValues);
 
 private:
+    // Base-complex computations
+    /**
+     * Converts the passed vertices and cell indices (8*num_cells) of a hexahedral mesh to its singularity and
+     * base-complex representation. The data is stored in baseComplexMesh, si and frame, respectively.
+     * @param vertices The hexahedral mesh vertices
+     * @param cellIndices Cell vertex indices (8*num_cells).
+     */
     void computeBaseComplexMesh(const std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices);
+    bool indexShared(
+            uint32_t idx0, uint32_t idx1, uint32_t idxShared, uint32_t* partitionParam,
+            std::unordered_set<uint32_t>& visitedVertices);
+    std::vector<ParametrizedGrid> computeBaseComplexParametrizedGrid();
+
     void recomputeHistogram();
     QualityMeasure qualityMeasure = QUALITY_MEASURE_SCALED_JACOBIAN;
     TransferFunctionWindow &transferFunctionWindow;
@@ -125,8 +149,12 @@ private:
 
     // HexaLab data
     HexaLab::App* hexaLabApp = nullptr;
-    Mesh* baseComplexMesh = nullptr;
     HexaLab::QualityMeasureEnum hexaLabQualityMeasure;
+
+    // Base-complex data
+    Mesh* baseComplexMesh = nullptr;
+    Singularity* si;
+    Frame* frame;
 };
 
 

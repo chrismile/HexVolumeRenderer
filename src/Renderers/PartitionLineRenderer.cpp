@@ -26,47 +26,48 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "PartitionLineRenderer.hpp"
 
-#include "LodRenderer.hpp"
+#include "PartitionLineRenderer.hpp"
 
 #include <Graphics/Renderer.hpp>
 #include <Graphics/OpenGL/RendererGL.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
-#include "LodRenderer.hpp"
+#include "PartitionLineRenderer.hpp"
 
-LodRenderer::LodRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+PartitionLineRenderer::PartitionLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     shaderProgram = sgl::ShaderManager->getShaderProgram(
-            {"WireframeLod.Vertex", "WireframeLod.Geometry", "WireframeLod.Fragment"});
+            {"Wireframe.Vertex", "Wireframe.Geometry", "Wireframe.Fragment"});
 }
 
-void LodRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
-    std::vector<glm::vec3> vertices;
-    std::vector<uint32_t> lodValues;
-    meshIn->getLodRepresentation(vertices, lodValues);
+void PartitionLineRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+    std::vector<glm::vec3> lineVertices;
+    std::vector<glm::vec4> lineColors;
+    meshIn->getColoredPartitionLines(lineVertices, lineColors);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_LINES);
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertices.size()*sizeof(glm::vec3), (void*)&vertices.front(), sgl::VERTEX_BUFFER);
+            lineVertices.size()*sizeof(glm::vec3), (void*)&lineVertices.front(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the color buffer.
-    sgl::GeometryBufferPtr lodValueBuffer = sgl::Renderer->createGeometryBuffer(
-            lodValues.size()*sizeof(uint32_t), (void*)&lodValues.front(), sgl::VERTEX_BUFFER);
+    sgl::GeometryBufferPtr lineColorBuffer = sgl::Renderer->createGeometryBuffer(
+            lineColors.size()*sizeof(glm::vec4), (void*)&lineColors.front(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
-            lodValueBuffer, "vertexLodValue", sgl::ATTRIB_UNSIGNED_INT, 1, 0, 0, 0, sgl::ATTRIB_CONVERSION_INT);
+            lineColorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
 
     dirty = false;
     reRender = true;
 }
 
-void LodRenderer::render() {
+void PartitionLineRenderer::render() {
     if (shaderProgram->hasUniform("cameraPosition")) {
         shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
     }
@@ -78,6 +79,6 @@ void LodRenderer::render() {
     sgl::Renderer->render(shaderAttributes);
 }
 
-void LodRenderer::renderGui() {
+void PartitionLineRenderer::renderGui() {
     ;
 }

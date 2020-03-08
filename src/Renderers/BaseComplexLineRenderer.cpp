@@ -1,7 +1,7 @@
 /*
  * BSD 2-Clause License
  *
- * Copyright (c) 2019, Christoph Neuhauser
+ * Copyright (c) 2020, Christoph Neuhauser
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,19 +30,20 @@
 #include <Graphics/OpenGL/RendererGL.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
-#include "BaseComplexRenderer.hpp"
+#include "BaseComplexLineRenderer.hpp"
 
-BaseComplexRenderer::BaseComplexRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+BaseComplexLineRenderer::BaseComplexLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
-    shaderProgram = sgl::ShaderManager->getShaderProgram({"Wireframe.Vertex", "Wireframe.Geometry", "Wireframe.Fragment"});
+    shaderProgram = sgl::ShaderManager->getShaderProgram(
+            {"Wireframe.Vertex", "Wireframe.Geometry", "Wireframe.Fragment"});
     shaderProgramPoints = sgl::ShaderManager->getShaderProgram({"Point.Vertex", "Point.Geometry", "Point.Fragment"});
 }
 
-void BaseComplexRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+void BaseComplexLineRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
     std::vector<glm::vec3> lineVertices, pointVertices;
     std::vector<glm::vec4> lineColors, pointColors;
-    meshIn->getBaseComplexDataWireframe(lineVertices, lineColors, pointVertices, pointColors);
+    meshIn->getBaseComplexDataWireframe(lineVertices, lineColors, pointVertices, pointColors, drawRegularLines);
 
     lineShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);
     lineShaderAttributes->setVertexMode(sgl::VERTEX_MODE_LINES);
@@ -73,7 +74,7 @@ void BaseComplexRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
     reRender = true;
 }
 
-void BaseComplexRenderer::render() {
+void BaseComplexLineRenderer::render() {
     if (shaderProgram->hasUniform("cameraPosition")) {
         shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
     }
@@ -90,6 +91,11 @@ void BaseComplexRenderer::render() {
     glDepthMask(GL_TRUE);
 }
 
-void BaseComplexRenderer::renderGui() {
-    ;
+void BaseComplexLineRenderer::renderGui() {
+    if (ImGui::Begin("Base Complex Surface Renderer", &showRendererWindow)) {
+        if (ImGui::Checkbox("Draw Regular Lines", &drawRegularLines)) {
+            dirty = true;
+        }
+    }
+    ImGui::End();
 }

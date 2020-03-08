@@ -3,7 +3,8 @@ A program for rendering hexahedral meshes in the form of transparent volumes.
 
 ## Building and running the programm
 
-On Ubuntu 18.04 for example, you can install all necessary packages with this command (additionally to the prerequisites required by sgl):
+The program requires the library sgl (https://github.com/chrismile/sgl).
+On Ubuntu 18.04 for example, you can install all other necessary dependencies with this command (additionally to the prerequisites required by sgl):
 
 ```
 sudo apt-get install libjsoncpp-dev libcurl-dev libeigen3-dev
@@ -23,7 +24,7 @@ ln -s ../Data .
 The build process was also tested on Windows 10 64-bit using MSYS2 and Mingw-w64 (http://www.msys2.org/). Using MSYS2 and Pacman, the following packages need to be installed additionally to the prerequisites required by sgl.
 
 ```
-pacman -S mingw64/mingw-w64-x86_64-jsoncpp mingw64/mingw-w64-x86_64-libcurl
+pacman -S mingw64/mingw-w64-x86_64-jsoncpp mingw64/mingw-w64-x86_64-libcurl mingw64/mingw-w64-x86_64-eigen3
 ```
 
 On Windows, using MSYS2 and Mingw-w64 (http://www.msys2.org/), it is best to use the following CMake command:
@@ -61,3 +62,22 @@ Live view on [www.hexalab.net](http://www.hexalab.net)
 - <sup>2</sup> [Universit? degli Studi di Milano ("La Statale")](http://www.unimi.it)
 - <sup>3</sup> [IMATI](http://www.imati.cnr.it/) - [CNR](http://www.cnr.it)
 - <sup>4</sup> [University of Technology, Sidney](https://www.uts.edu.au/)
+
+Furthermore, the user can edit the index.json file in the directory Data/Meshes/ to add meshes manually.
+Please note that the file is overwritten when using the downloading functionality.
+
+## External Code, Assets and Data Sets
+
+The program uses code excerpts from HexaLab (https://github.com/chrismile/HexaLab, see above) and code from Robust
+Hexahedral Re-Meshing (https://github.com/gaoxifeng/Robust-Hexahedral-Re-Meshing).
+
+Robust "Structure Simplification for Hex Re-meshing",
+Xifeng Gao, Daniele Panozzo, Wenping Wang, Zhigang Deng, Guoning Chen,
+In ACM Transactions on Graphics (Proceedings of SIGGRAPH ASIA 2017)
+
+The code from HexaLab is covered by the MIT License (see LICENSE-HexaLab).
+The code from Gao et al. is covered by the MPL 2.0 License (see License-BaseComplex).
+The code of the application itself is covered by the BSD 2-Clause License (see LICENSE).
+The font Droid Sans in the directory Data/Fonts/ is covered by the Apache Version 2.0 License (see DROID-SANS-LICENSE.txt).
+
+Please note that different licenses apply to the data sets, dependencies and other assets downloaded.

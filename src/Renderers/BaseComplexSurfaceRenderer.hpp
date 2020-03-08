@@ -1,7 +1,7 @@
 /*
  * BSD 2-Clause License
  *
- * Copyright (c) 2019, Christoph Neuhauser
+ * Copyright (c) 2020, Christoph Neuhauser
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,17 +26,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_BASECOMPLEXRENDERER_HPP
-#define HEXVOLUMERENDERER_BASECOMPLEXRENDERER_HPP
+#ifndef HEXVOLUMERENDERER_BASECOMPLEXSURFACERENDERER_HPP
+#define HEXVOLUMERENDERER_BASECOMPLEXSURFACERENDERER_HPP
 
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
 #include "HexahedralMeshRenderer.hpp"
 
-class BaseComplexRenderer : public HexahedralMeshRenderer {
+class BaseComplexSurfaceRenderer : public HexahedralMeshRenderer {
 public:
-    BaseComplexRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
-    virtual ~BaseComplexRenderer() {}
+    BaseComplexSurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    virtual ~BaseComplexSurfaceRenderer() {}
 
     // Re-generates the visualization mapping.
     virtual void generateVisualizationMapping(HexMeshPtr meshIn);
@@ -54,9 +54,11 @@ public:
 
 protected:
     sgl::ShaderProgramPtr shaderProgram;
-    sgl::ShaderProgramPtr shaderProgramPoints;
-    sgl::ShaderAttributesPtr lineShaderAttributes;
-    sgl::ShaderAttributesPtr pointShaderAttributes;
+    sgl::ShaderAttributesPtr shaderAttributes;
+
+    // GUI data
+    bool showRendererWindow = true;
+    bool cullInterior = true;
 };
 
-#endif //HEXVOLUMERENDERER_BASECOMPLEXRENDERER_HPP
+#endif //HEXVOLUMERENDERER_BASECOMPLEXSURFACERENDERER_HPP

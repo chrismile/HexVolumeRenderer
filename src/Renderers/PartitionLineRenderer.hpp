@@ -26,4 +26,35 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "QualityMeasure.hpp"
+#ifndef HEXVOLUMERENDERER_PARTITIONLINERENDERER_HPP
+#define HEXVOLUMERENDERER_PARTITIONLINERENDERER_HPP
+
+#include <Graphics/Shader/ShaderAttributes.hpp>
+
+#include "HexahedralMeshRenderer.hpp"
+
+class PartitionLineRenderer : public HexahedralMeshRenderer {
+public:
+    PartitionLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    virtual ~PartitionLineRenderer() {}
+
+    // Re-generates the visualization mapping.
+    virtual void generateVisualizationMapping(HexMeshPtr meshIn);
+
+    // Renders the object to the scene framebuffer.
+    virtual void render();
+    // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
+    virtual void renderGui();
+
+    // Called when the resolution of the application window has changed.
+    virtual void onResolutionChanged() {}
+
+    // Called when the transfer function was changed.
+    virtual void onTransferFunctionMapRebuilt() {}
+
+protected:
+    sgl::ShaderProgramPtr shaderProgram;
+    sgl::ShaderAttributesPtr shaderAttributes;
+};
+
+#endif //HEXVOLUMERENDERER_PARTITIONLINERENDERER_HPP

@@ -71,7 +71,9 @@
 #include "Renderers/VolumeRenderer.hpp"
 #include "Renderers/DepthComplexityRenderer.hpp"
 #include "Renderers/SingularityRenderer.hpp"
-#include "Renderers/BaseComplexRenderer.hpp"
+#include "Renderers/BaseComplexLineRenderer.hpp"
+#include "Renderers/BaseComplexSurfaceRenderer.hpp"
+#include "Renderers/PartitionLineRenderer.hpp"
 #include "Renderers/LodRenderer.hpp"
 #include "MainApp.hpp"
 
@@ -165,8 +167,13 @@ void MainApp::setRenderers() {
         meshRenderers.push_back(new DepthComplexityRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_SINGULARITY) {
         meshRenderers.push_back(new SingularityRenderer(sceneData, transferFunctionWindow));
-    } else if (renderingMode == RENDERING_MODE_BASE_COMPLEX) {
-        meshRenderers.push_back(new BaseComplexRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_BASE_COMPLEX_LINES) {
+        meshRenderers.push_back(new BaseComplexLineRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_BASE_COMPLEX_SURFACE) {
+        meshRenderers.push_back(new BaseComplexSurfaceRenderer(sceneData, transferFunctionWindow));
+        meshRenderers.push_back(new WireframeRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_PARTITION_LINES) {
+        meshRenderers.push_back(new PartitionLineRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_LOD_LINES) {
         meshRenderers.push_back(new LodRenderer(sceneData, transferFunctionWindow));
     }

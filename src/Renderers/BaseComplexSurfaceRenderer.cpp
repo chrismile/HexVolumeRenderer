@@ -26,29 +26,34 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-#include "LodRenderer.hpp"
-
 #include <Graphics/Renderer.hpp>
-#include <Graphics/OpenGL/RendererGL.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
-#include "LodRenderer.hpp"
+#include "BaseComplexSurfaceRenderer.hpp"
 
-LodRenderer::LodRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+BaseComplexSurfaceRenderer::BaseComplexSurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
-    shaderProgram = sgl::ShaderManager->getShaderProgram(
-            {"WireframeLod.Vertex", "WireframeLod.Geometry", "WireframeLod.Fragment"});
+    sgl::ShaderManager->addPreprocessorDefine("DIRECT_BLIT_GATHER", "");
+    sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "GatherDummy.glsl");
+    shaderProgram = sgl::ShaderManager->getShaderProgram({"MeshShader.Vertex", "MeshShader.Fragment"});
+    sgl::ShaderManager->removePreprocessorDefine("DIRECT_BLIT_GATHER");
 }
 
-void LodRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+void BaseComplexSurfaceRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+    std::vector<uint32_t> indices;
     std::vector<glm::vec3> vertices;
-    std::vector<uint32_t> lodValues;
-    meshIn->getLodRepresentation(vertices, lodValues);
+    std::vector<glm::vec3> normals;
+    std::vector<glm::vec4> colors;
+    meshIn->getBaseComplexDataSurface(indices, vertices, normals, colors, cullInterior);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);
-    shaderAttributes->setVertexMode(sgl::VERTEX_MODE_LINES);
+    shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
+
+    // Add the index buffer.
+    sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
+            sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
+    shaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
@@ -56,28 +61,35 @@ void LodRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
     shaderAttributes->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
-    // Add the color buffer.
-    sgl::GeometryBufferPtr lodValueBuffer = sgl::Renderer->createGeometryBuffer(
-            lodValues.size()*sizeof(uint32_t), (void*)&lodValues.front(), sgl::VERTEX_BUFFER);
+    // Add the normal buffer.
+    sgl::GeometryBufferPtr normalBuffer = sgl::Renderer->createGeometryBuffer(
+            normals.size()*sizeof(glm::vec3), (void*)&normals.front(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
-            lodValueBuffer, "vertexLodValue", sgl::ATTRIB_UNSIGNED_INT, 1, 0, 0, 0, sgl::ATTRIB_CONVERSION_INT);
+            normalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
+
+    // Add the color buffer.
+    sgl::GeometryBufferPtr colorBuffer = sgl::Renderer->createGeometryBuffer(
+            colors.size()*sizeof(glm::vec4), (void*)&colors.front(), sgl::VERTEX_BUFFER);
+    shaderAttributes->addGeometryBuffer(
+            colorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
 
     dirty = false;
     reRender = true;
 }
 
-void LodRenderer::render() {
-    if (shaderProgram->hasUniform("cameraPosition")) {
-        shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
-    }
+void BaseComplexSurfaceRenderer::render() {
+    shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
     if (shaderProgram->hasUniform("lightDirection")) {
         shaderProgram->setUniform("lightDirection", sceneData.lightDirection);
     }
-
-    shaderProgram->setUniform("lineWidth", 0.001f);
     sgl::Renderer->render(shaderAttributes);
 }
 
-void LodRenderer::renderGui() {
-    ;
+void BaseComplexSurfaceRenderer::renderGui() {
+    if (ImGui::Begin("Base Complex Surface Renderer", &showRendererWindow)) {
+        if (ImGui::Checkbox("Cull Interior", &cullInterior)) {
+            dirty = true;
+        }
+    }
+    ImGui::End();
 }
