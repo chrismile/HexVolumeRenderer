@@ -457,15 +457,33 @@ void HexMesh::getBaseComplexDataSurface(
 #define PARAM_IDX_LIST(u, v, w) ((u) + ((v) + (w)*numVertices[1])*numVertices[0])
 #define PARAM_IDX_VEC(v) ((v).x + ((v).y + (v).z*numVertices[1])*numVertices[0])
 
+/**
+ * A parametrized, curvilinear grid line either in u, v or w direction.
+ */
 struct ParameterLine {
     std::vector<glm::vec3> points;
 };
 
+/**
+ * A parametrized, curvilinear grid. The extracted grid lines in u, v and w direction and the number of vertices in each
+ * direction are stored.
+ */
 struct ParametrizedGrid {
     int numVertices[3];
     std::vector<ParameterLine> wLine, vLine, uLine;
 };
 
+/**
+ * Traverses a base-complex frame edge starting from a vertex zero. It stops as soon as another frame corner vertex is
+ * visited. The passed callback function is called when a new vertex is visited (excluding vertex zero).
+ * @param mesh The hexahedral mesh.
+ * @param fh The frame component.
+ * @param fe The frame edge.
+ * @param zero_v The zero vertex of the parametrization to start at.
+ * @param visitCallback The callback to call when a new vertex is visited (excluding vertex zero).
+ * The vertex ID and the counter variable are passed to the callback.
+     * @return False if an error occured. True otherwise.
+ */
 bool traverseFrameEdge(Mesh& mesh, Frame_H& fh, Frame_E& fe, Hybrid_V& zero_v,
         std::function<bool(uint32_t, int)> visitCallback) {
     uint32_t last_v_id = zero_v.id;
@@ -545,6 +563,7 @@ bool HexMesh::indexShared(
     Hybrid_V& v_1 = baseComplexMesh->Vs[v_id_1];
     assert(v_id_0 != v_id_1);
 
+    // Find the common, not yet visited neighbor.
     std::vector<uint32_t> sharedNeighborVerticesAll, sharedNeighborVerticesUnvisited;
     std::sort(v_0.neighbor_vs.begin(), v_0.neighbor_vs.end());
     std::sort(v_1.neighbor_vs.begin(), v_1.neighbor_vs.end());
@@ -565,6 +584,7 @@ bool HexMesh::indexShared(
         return false;
     }
     visitedVertices.insert(sharedNeighborVerticesUnvisited.at(0));
+    // Add the neighbor to the parametrization.
     partitionParam[idxShared] = sharedNeighborVerticesUnvisited.at(0);
     return true;
 }
@@ -579,7 +599,7 @@ std::vector<ParametrizedGrid> HexMesh::computeBaseComplexParametrizedGrid() {
         Frame_H &fh = frame->FHs.at(partitionIndex);
         visitedVertices.clear();
 
-        // TODO: Support also partitions topologically equivalent to a torus instead of a cube.
+        // TODO: Support also partitions topologically equivalent to a torus instead of a cube?
         if (fh.vs.size() != 8) {
             sgl::Logfile::get()->writeError("Error in getLodRepresentation: Partition is not cubic.");
             return gridPartitions;
@@ -787,5 +807,66 @@ void HexMesh::getColoredPartitionLines(
 void HexMesh::getLodRepresentation(
         std::vector<glm::vec3>& lineVertices,
         std::vector<uint32_t>& lineLodValues) {
-    ;
+    if (dirty) {
+        hexaLabApp->update_models();
+        dirty = false;
+    }
+
+    std::vector<ParametrizedGrid> gridPartitions = computeBaseComplexParametrizedGrid();
+
+    // TODO: LODs
+    for (ParametrizedGrid& grid : gridPartitions) {
+        // Add the grid lines to the rendering data.
+        for (int w = 0; w < grid.numVertices[2]; w++) {
+            for (int v = 0; v < grid.numVertices[1]; v++) {
+                for (int u = 0; u < grid.numVertices[0] - 1; u++) {
+                    glm::vec3 vertexPosition0 = grid.uLine.at(v + w*grid.numVertices[1]).points.at(u);
+                    glm::vec3 vertexPosition1 = grid.uLine.at(v + w*grid.numVertices[1]).points.at(u+1);
+                    glm::vec4 vertexColor(
+                            float(u) / (grid.numVertices[0]-1),
+                            float(v) / (grid.numVertices[1]-1),
+                            float(w) / (grid.numVertices[2]-1),
+                            1.0f);
+                    lineVertices.push_back(vertexPosition0);
+                    lineVertices.push_back(vertexPosition1);
+                    lineLodValues.push_back(0.0f);
+                    lineLodValues.push_back(0.0f);
+                }
+            }
+        }
+        for (int w = 0; w < grid.numVertices[2]; w++) {
+            for (int u = 0; u < grid.numVertices[0]; u++) {
+                for (int v = 0; v < grid.numVertices[1] - 1; v++) {
+                    glm::vec3 vertexPosition0 = grid.vLine.at(u + w*grid.numVertices[0]).points.at(v);
+                    glm::vec3 vertexPosition1 = grid.vLine.at(u + w*grid.numVertices[0]).points.at(v+1);
+                    glm::vec4 vertexColor(
+                            float(u) / (grid.numVertices[0]-1),
+                            float(v) / (grid.numVertices[1]-1),
+                            float(w) / (grid.numVertices[2]-1),
+                            1.0f);
+                    lineVertices.push_back(vertexPosition0);
+                    lineVertices.push_back(vertexPosition1);
+                    lineLodValues.push_back(0.0f);
+                    lineLodValues.push_back(0.0f);
+                }
+            }
+        }
+        for (int v = 0; v < grid.numVertices[1]; v++) {
+            for (int u = 0; u < grid.numVertices[0]; u++) {
+                for (int w = 0; w < grid.numVertices[2] - 1; w++) {
+                    glm::vec3 vertexPosition0 = grid.wLine.at(u + v*grid.numVertices[0]).points.at(w);
+                    glm::vec3 vertexPosition1 = grid.wLine.at(u + v*grid.numVertices[0]).points.at(w+1);
+                    glm::vec4 vertexColor(
+                            float(u) / (grid.numVertices[0]-1),
+                            float(v) / (grid.numVertices[1]-1),
+                            float(w) / (grid.numVertices[2]-1),
+                            1.0f);
+                    lineVertices.push_back(vertexPosition0);
+                    lineVertices.push_back(vertexPosition1);
+                    lineLodValues.push_back(0.0f);
+                    lineLodValues.push_back(0.0f);
+                }
+            }
+        }
+    }
 }

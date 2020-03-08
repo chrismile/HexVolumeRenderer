@@ -137,9 +137,29 @@ private:
      * @param cellIndices Cell vertex indices (8*num_cells).
      */
     void computeBaseComplexMesh(const std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices);
+    /**
+     * A helper function for computeBaseComplexParametrizedGrid.
+     * It infers the vertex belonging to the parameters encoded in idxShared by using the vertices parametrized by
+     * idx0 and idx1. The indices are converted to unsigned integers from their (u,v,w) representation by using either
+     * PARAM_IDX_LIST or PARAM_IDX_VEC.
+     * The function assumes that the vertex that is an unvisited neighbor to both the vertices corresponding to idx0 and
+     * idx1 and is exactly parametrized by idxShared. For determining the neighbors, it uses set intersection
+     * operations.
+     *
+     * @param idx0 The compressed parametrization of vertex 0.
+     * @param idx1 The compressed parametrization of vertex 1.
+     * @param idxShared The compressed parametrization of the shared, not yet unvisited neighbor of vertex 0 and 1.
+     * @param partitionParam The mapping compressed parametrization index -> vertex ID.
+     * @param visitedVertices A set of already visited and parametrized vertices.
+     * @return False if an error occured. True otherwise.
+     */
     bool indexShared(
             uint32_t idx0, uint32_t idx1, uint32_t idxShared, uint32_t* partitionParam,
             std::unordered_set<uint32_t>& visitedVertices);
+    /**
+     * Computes/extracts the parametrized curvilinear grid components from the base-complex.
+     * @return The list of grid components.
+     */
     std::vector<ParametrizedGrid> computeBaseComplexParametrizedGrid();
 
     void recomputeHistogram();
@@ -156,6 +176,5 @@ private:
     Singularity* si;
     Frame* frame;
 };
-
 
 #endif //GENERALMAP_GENERALMAP_HPP
