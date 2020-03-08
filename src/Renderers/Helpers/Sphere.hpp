@@ -26,44 +26,24 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef HEXVOLUMERENDERER_SPHERE_HPP
+#define HEXVOLUMERENDERER_SPHERE_HPP
 
-#ifndef HEXVOLUMERENDERER_LODLINERENDERER_HPP
-#define HEXVOLUMERENDERER_LODLINERENDERER_HPP
+#include <vector>
+#include <glm/vec3.hpp>
 
-#include <Graphics/Shader/ShaderAttributes.hpp>
+/**
+ * Computes the surface triangle mesh of a sphere with the passed parameters.
+ * See: https://en.wikipedia.org/wiki/Spherical_coordinate_system
+ * See: http://www.songho.ca/opengl/gl_sphere.html
+ * Spherical coordinates: (r, theta, phi).
+ * r: radius
+ * theta: polar angle (sector angle)
+ * phi: azimuthal angle (stack angle)
+ */
+void getSphereSurfaceRenderData(
+        const glm::vec3& center, float radius, int sectorCount, int stackCount,
+        std::vector<glm::vec3>& vertexPositions, std::vector<glm::vec3>& vertexNormals,
+        std::vector<uint32_t>& indices);
 
-#include "HexahedralMeshRenderer.hpp"
-
-class LodLineRenderer : public HexahedralMeshRenderer {
-public:
-    LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
-    virtual ~LodLineRenderer() {}
-
-    // Re-generates the visualization mapping.
-    virtual void generateVisualizationMapping(HexMeshPtr meshIn);
-
-    // Renders the object to the scene framebuffer.
-    virtual void render();
-    // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
-    virtual void renderGui();
-
-    // Called when the resolution of the application window has changed.
-    virtual void onResolutionChanged() {}
-
-    // Called when the transfer function was changed.
-    virtual void onTransferFunctionMapRebuilt() {}
-
-protected:
-    sgl::ShaderProgramPtr shaderProgram;
-    sgl::ShaderProgramPtr shaderProgramSurface;
-    sgl::ShaderAttributesPtr shaderAttributes;
-    sgl::ShaderAttributesPtr focusPointShaderAttributes;
-
-    // GUI data
-    bool showRendererWindow = true;
-    glm::vec3 focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec4 focusPointColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-    float maxDistance = 0.1f;
-};
-
-#endif //HEXVOLUMERENDERER_LODLINERENDERER_HPP
+#endif //HEXVOLUMERENDERER_SPHERE_HPP

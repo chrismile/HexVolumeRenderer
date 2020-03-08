@@ -27,12 +27,12 @@
  */
 
 
-#include "LodLineRenderer.hpp"
-
+#include <Math/Geometry/MatrixUtil.hpp>
 #include <Graphics/Renderer.hpp>
 #include <Graphics/OpenGL/RendererGL.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
+#include "Helpers/Sphere.hpp"
 #include "LodLineRenderer.hpp"
 
 LodLineRenderer::LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
@@ -41,17 +41,27 @@ LodLineRenderer::LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &t
     shaderProgram = sgl::ShaderManager->getShaderProgram(
             {"WireframeLod.Vertex", "WireframeLod.Geometry", "WireframeLod.Fragment"});
 
-    shaderProgramPoints = sgl::ShaderManager->getShaderProgram({"Point.Vertex", "Point.Geometry", "Point.Fragment"});
-    pointShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgramPoints);
-    pointShaderAttributes->setVertexMode(sgl::VERTEX_MODE_POINTS);
-    focusPointBuffer = sgl::Renderer->createGeometryBuffer(sizeof(glm::vec3), &focusPoint.x, sgl::VERTEX_BUFFER);
-    pointShaderAttributes->addGeometryBuffer(
-            focusPointBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
-    glm::vec4 pointColor(1.0f, 0.0f, 0.0f, 1.0f);
-    sgl::GeometryBufferPtr pointColorBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(glm::vec4), &pointColor.x, sgl::VERTEX_BUFFER);
-    pointShaderAttributes->addGeometryBuffer(
-            pointColorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
+    std::vector<glm::vec3> sphereVertexPositions;
+    std::vector<glm::vec3> sphereVertexNormals;
+    std::vector<uint32_t> sphereIndices;
+    getSphereSurfaceRenderData(
+            glm::vec3(0,0,0), 0.005f, 20, 20, sphereVertexPositions, sphereVertexNormals, sphereIndices);
+
+    shaderProgramSurface = sgl::ShaderManager->getShaderProgram(
+            {"MeshShader.Vertex.Plain", "MeshShader.Fragment.Plain"});
+    focusPointShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgramSurface);
+    focusPointShaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
+    sgl::GeometryBufferPtr focusPointVertexPositionBuffer = sgl::Renderer->createGeometryBuffer(
+            sphereVertexPositions.size() * sizeof(glm::vec3), sphereVertexPositions.data(), sgl::VERTEX_BUFFER);
+    focusPointShaderAttributes->addGeometryBuffer(
+            focusPointVertexPositionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+    sgl::GeometryBufferPtr focusPointVertexNormalBuffer = sgl::Renderer->createGeometryBuffer(
+            sphereVertexNormals.size() * sizeof(glm::vec3), sphereVertexNormals.data(), sgl::VERTEX_BUFFER);
+    focusPointShaderAttributes->addGeometryBuffer(
+            focusPointVertexNormalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
+    sgl::GeometryBufferPtr focusPointIndexBuffer = sgl::Renderer->createGeometryBuffer(
+            sphereIndices.size() * sizeof(uint32_t), sphereIndices.data(), sgl::INDEX_BUFFER);
+    focusPointShaderAttributes->setIndexGeometryBuffer(focusPointIndexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 }
 
 void LodLineRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
@@ -74,9 +84,6 @@ void LodLineRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
     shaderAttributes->addGeometryBuffer(
             lodValueBuffer, "vertexLodValue", sgl::ATTRIB_FLOAT, 1);
 
-    // Update the position of the focus point.
-    focusPointBuffer->subData(0, sizeof(glm::vec3), &focusPoint.x);
-
     dirty = false;
     reRender = true;
 }
@@ -85,24 +92,30 @@ void LodLineRenderer::render() {
     shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
     shaderProgram->setUniform("focusPoint", focusPoint);
     shaderProgram->setUniform("maxDistance", maxDistance);
-    shaderProgramPoints->setUniform("cameraPosition", sceneData.camera->getPosition());
+    shaderProgramSurface->setUniform("cameraPosition", sceneData.camera->getPosition());
+    shaderProgramSurface->setUniform("lightDirection", sceneData.lightDirection);
 
     // Render the LOD lines.
     shaderProgram->setUniform("lineWidth", 0.001f);
     sgl::Renderer->render(shaderAttributes);
 
     // Render the focus point.
-    shaderProgramPoints->setUniform("radius", 0.008f);
-    sgl::Renderer->render(pointShaderAttributes);
+    shaderProgramSurface->setUniform("color", focusPointColor);
+    sgl::Renderer->setModelMatrix(sgl::matrixTranslation(focusPoint));
+    sgl::Renderer->render(focusPointShaderAttributes);
+    sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
 }
 
 void LodLineRenderer::renderGui() {
     if (ImGui::Begin("Line LOD Renderer", &showRendererWindow)) {
         if (ImGui::SliderFloat("Maximum Distance", &maxDistance, 0.0f, 1.5f)) {
-            dirty = true;
+            reRender = true;
         }
         if (ImGui::SliderFloat3("Focus Point", &focusPoint.x, -0.4f, 0.4f)) {
-            dirty = true;
+            reRender = true;
+        }
+        if (ImGui::ColorEdit4("Focus Point Color", &focusPointColor.x)) {
+            reRender = true;
         }
     }
     ImGui::End();
