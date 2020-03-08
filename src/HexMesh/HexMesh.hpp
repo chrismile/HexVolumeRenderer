@@ -91,42 +91,71 @@ public:
     // For filters
     HexaLab::Mesh& getMesh();
 
+    /**
+     * Get the triangle data of the boundary surface of the hexahedral mesh.
+     */
     void getSurfaceData(
             std::vector<uint32_t>& indices,
             std::vector<glm::vec3>& vertices,
             std::vector<glm::vec3>& normals,
             std::vector<glm::vec4>& colors);
+    /**
+     * Get the wireframe data of the boundary surface of the hexahedral mesh.
+     */
     void getWireframeData(
             std::vector<glm::vec3>& vertices,
             std::vector<glm::vec4>& colors);
+    /**
+     * Get the surface data of every cell of the hexahedral mesh.
+     */
     void getVolumeData(
             std::vector<uint32_t>& indices,
             std::vector<glm::vec3>& vertices,
             std::vector<glm::vec3>& normals,
             std::vector<glm::vec4>& colors);
+    /**
+     * Get the singular edges and points of the hexahedral mesh.
+     */
     void getSingularityData(
             std::vector<glm::vec3>& lineVertices,
             std::vector<glm::vec4>& lineColors,
             std::vector<glm::vec3>& pointVertices,
             std::vector<glm::vec4>& pointColors);
+    /**
+     * Get the base-complex edges and corner vertices of the hexahedral mesh.
+     * @param drawRegularLines If this value is true, also regular edges and corners are added.
+     */
     void getBaseComplexDataWireframe(
             std::vector<glm::vec3>& lineVertices,
             std::vector<glm::vec4>& lineColors,
             std::vector<glm::vec3>& pointVertices,
             std::vector<glm::vec4>& pointColors,
             bool drawRegularLines);
+    /**
+     * Get the base-complex partition surface data of the hexahedral mesh.
+     * @param cullInterior If this value is true, only the boundary surfaces are exported.
+     * Otherwise, also inner surfaces are also added.
+     */
     void getBaseComplexDataSurface(
             std::vector<uint32_t>& indices,
             std::vector<glm::vec3>& vertices,
             std::vector<glm::vec3>& normals,
             std::vector<glm::vec4>& colors,
             bool cullInterior);
+    /**
+     * Exports all lines of the hexahedral mesh, but colors them according to their parametrization in each base-complex
+     * partition with (R, G, B, A) = (u/u_max, v/v_max, w/w_max, 1).
+     */
     void getColoredPartitionLines(
             std::vector<glm::vec3>& lineVertices,
             std::vector<glm::vec4>& lineColors);
+    /**
+     * Get the singular edges and points of the hexahedral mesh.
+     * @param lineLodValues The LOD value normalized to [0, 1].
+     */
     void getLodRepresentation(
             std::vector<glm::vec3>& lineVertices,
-            std::vector<uint32_t>& lineLodValues);
+            std::vector<float>& lineLodValues);
 
 private:
     // Base-complex computations

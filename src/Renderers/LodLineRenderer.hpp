@@ -27,17 +27,17 @@
  */
 
 
-#ifndef HEXVOLUMERENDERER_LODRENDERER_HPP
-#define HEXVOLUMERENDERER_LODRENDERER_HPP
+#ifndef HEXVOLUMERENDERER_LODLINERENDERER_HPP
+#define HEXVOLUMERENDERER_LODLINERENDERER_HPP
 
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
 #include "HexahedralMeshRenderer.hpp"
 
-class LodRenderer : public HexahedralMeshRenderer {
+class LodLineRenderer : public HexahedralMeshRenderer {
 public:
-    LodRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
-    virtual ~LodRenderer() {}
+    LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    virtual ~LodLineRenderer() {}
 
     // Re-generates the visualization mapping.
     virtual void generateVisualizationMapping(HexMeshPtr meshIn);
@@ -55,7 +55,15 @@ public:
 
 protected:
     sgl::ShaderProgramPtr shaderProgram;
+    sgl::ShaderProgramPtr shaderProgramPoints;
     sgl::ShaderAttributesPtr shaderAttributes;
+    sgl::ShaderAttributesPtr pointShaderAttributes;
+    sgl::GeometryBufferPtr focusPointBuffer;
+
+    // GUI data
+    bool showRendererWindow = true;
+    glm::vec3 focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
+    float maxDistance = 0.1f;
 };
 
-#endif //HEXVOLUMERENDERER_LODRENDERER_HPP
+#endif //HEXVOLUMERENDERER_LODLINERENDERER_HPP

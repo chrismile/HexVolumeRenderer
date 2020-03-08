@@ -52,25 +52,25 @@ void main()
 
     vertexPosition = linePosition0 - (lineWidth / 2.0) * up;
     fragmentColor = lineColor0;
-    quadCoords = -1;
+    quadCoords = -1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
     EmitVertex();
 
     vertexPosition = linePosition1 - (lineWidth / 2.0) * up;
     fragmentColor = lineColor1;
-    quadCoords = -1;
+    quadCoords = -1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
     EmitVertex();
 
     vertexPosition = linePosition0 + (lineWidth / 2.0) * up;
     fragmentColor = lineColor0;
-    quadCoords = 1;
+    quadCoords = 1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
     EmitVertex();
 
     vertexPosition = linePosition1 + (lineWidth / 2.0) * up;
     fragmentColor = lineColor1;
-    quadCoords = 1;
+    quadCoords = 1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
     EmitVertex();
 

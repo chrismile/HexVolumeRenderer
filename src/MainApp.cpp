@@ -74,7 +74,7 @@
 #include "Renderers/BaseComplexLineRenderer.hpp"
 #include "Renderers/BaseComplexSurfaceRenderer.hpp"
 #include "Renderers/PartitionLineRenderer.hpp"
-#include "Renderers/LodRenderer.hpp"
+#include "Renderers/LodLineRenderer.hpp"
 #include "MainApp.hpp"
 
 void openglErrorCallback() {
@@ -175,7 +175,7 @@ void MainApp::setRenderers() {
     } else if (renderingMode == RENDERING_MODE_PARTITION_LINES) {
         meshRenderers.push_back(new PartitionLineRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_LOD_LINES) {
-        meshRenderers.push_back(new LodRenderer(sceneData, transferFunctionWindow));
+        meshRenderers.push_back(new LodLineRenderer(sceneData, transferFunctionWindow));
     }
 }
 

@@ -738,6 +738,24 @@ std::vector<ParametrizedGrid> HexMesh::computeBaseComplexParametrizedGrid() {
 
     return gridPartitions;
 }
+
+
+/**
+ * Helper function for getColoredPartitionLines.
+ * @param u Parameter #0.
+ * @param v Parameter #1.
+ * @param w Parameter #2.
+ * @param numVertices Number of vertices in each of the three parameter domain directions.
+ * @return The color with (R, G, B, A) = (u/u_max, v/v_max, w/w_max, 1).
+ */
+inline glm::vec4 parametersToColor(int u, int v, int w, int *numVertices) {
+    return glm::vec4(
+            float(u) / (numVertices[0]-1),
+            float(v) / (numVertices[1]-1),
+            float(w) / (numVertices[2]-1),
+            1.0f);
+}
+
 void HexMesh::getColoredPartitionLines(
         std::vector<glm::vec3>& lineVertices,
         std::vector<glm::vec4>& lineColors) {
@@ -755,15 +773,10 @@ void HexMesh::getColoredPartitionLines(
                 for (int u = 0; u < grid.numVertices[0] - 1; u++) {
                     glm::vec3 vertexPosition0 = grid.uLine.at(v + w*grid.numVertices[1]).points.at(u);
                     glm::vec3 vertexPosition1 = grid.uLine.at(v + w*grid.numVertices[1]).points.at(u+1);
-                    glm::vec4 vertexColor(
-                            float(u) / (grid.numVertices[0]-1),
-                            float(v) / (grid.numVertices[1]-1),
-                            float(w) / (grid.numVertices[2]-1),
-                            1.0f);
                     lineVertices.push_back(vertexPosition0);
                     lineVertices.push_back(vertexPosition1);
-                    lineColors.push_back(vertexColor);
-                    lineColors.push_back(vertexColor);
+                    lineColors.push_back(parametersToColor(u,   v, w, grid.numVertices));
+                    lineColors.push_back(parametersToColor(u+1, v, w, grid.numVertices));
                 }
             }
         }
@@ -772,15 +785,10 @@ void HexMesh::getColoredPartitionLines(
                 for (int v = 0; v < grid.numVertices[1] - 1; v++) {
                     glm::vec3 vertexPosition0 = grid.vLine.at(u + w*grid.numVertices[0]).points.at(v);
                     glm::vec3 vertexPosition1 = grid.vLine.at(u + w*grid.numVertices[0]).points.at(v+1);
-                    glm::vec4 vertexColor(
-                            float(u) / (grid.numVertices[0]-1),
-                            float(v) / (grid.numVertices[1]-1),
-                            float(w) / (grid.numVertices[2]-1),
-                            1.0f);
                     lineVertices.push_back(vertexPosition0);
                     lineVertices.push_back(vertexPosition1);
-                    lineColors.push_back(vertexColor);
-                    lineColors.push_back(vertexColor);
+                    lineColors.push_back(parametersToColor(u, v,   w, grid.numVertices));
+                    lineColors.push_back(parametersToColor(u, v+1, w, grid.numVertices));
                 }
             }
         }
@@ -789,82 +797,135 @@ void HexMesh::getColoredPartitionLines(
                 for (int w = 0; w < grid.numVertices[2] - 1; w++) {
                     glm::vec3 vertexPosition0 = grid.wLine.at(u + v*grid.numVertices[0]).points.at(w);
                     glm::vec3 vertexPosition1 = grid.wLine.at(u + v*grid.numVertices[0]).points.at(w+1);
-                    glm::vec4 vertexColor(
-                            float(u) / (grid.numVertices[0]-1),
-                            float(v) / (grid.numVertices[1]-1),
-                            float(w) / (grid.numVertices[2]-1),
-                            1.0f);
                     lineVertices.push_back(vertexPosition0);
                     lineVertices.push_back(vertexPosition1);
-                    lineColors.push_back(vertexColor);
-                    lineColors.push_back(vertexColor);
+                    lineColors.push_back(parametersToColor(u, v, w,   grid.numVertices));
+                    lineColors.push_back(parametersToColor(u, v, w+1, grid.numVertices));
                 }
             }
         }
     }
 }
 
+
+/**
+ * Helper function for getLodRepresentation. Assigns LOD values recursively in an 1D array by bisection.
+ * @param lodValues The LOD value array.
+ * @param minIndex The minimum index handled in this recursion step (inclusive).
+ * @param maxIndex The maximum index handled in this recursion step (inclusive).
+ * @param recursionNumber The recursion index. Starting at 1 and incremented each recursion.
+ */
+void assignSubdivisionLodValues(std::vector<float>& lodValues, int minIndex, int maxIndex, int recursionNumber) {
+    if (maxIndex - minIndex < 0) {
+        return;
+    }
+
+    int midIndex = (minIndex + maxIndex) / 2;
+    lodValues.at(midIndex) = float(recursionNumber);
+    assignSubdivisionLodValues(lodValues, minIndex, midIndex - 1, recursionNumber + 1);
+    assignSubdivisionLodValues(lodValues, midIndex + 1, maxIndex, recursionNumber + 1);
+}
+
 void HexMesh::getLodRepresentation(
         std::vector<glm::vec3>& lineVertices,
-        std::vector<uint32_t>& lineLodValues) {
+        std::vector<float>& lineLodValues) {
     if (dirty) {
         hexaLabApp->update_models();
         dirty = false;
     }
 
+    // Get a list of all parametrized base-complex grids.
     std::vector<ParametrizedGrid> gridPartitions = computeBaseComplexParametrizedGrid();
 
-    // TODO: LODs
-    for (ParametrizedGrid& grid : gridPartitions) {
+    // For three dimensions: Maps u/v/w to a LOD value.
+    std::vector<std::vector<int>> lodParametrization;
+    lodParametrization.resize(3);
+
+    // Create the three LOD base arrays for each parametrization direction for all grids.
+    std::vector<std::vector<std::vector<float>>> lodValuesAllGrids;
+    lodValuesAllGrids.resize(gridPartitions.size());
+    #pragma omp parallel for
+    for (size_t gridIdx = 0; gridIdx < gridPartitions.size(); gridIdx++) {
+        std::vector<std::vector<float>>& lodValuesAllDirections = lodValuesAllGrids.at(gridIdx);
+        lodValuesAllDirections.resize(3);
+        ParametrizedGrid& grid = gridPartitions.at(gridIdx);
+        for (int dim = 0; dim < 3; dim++) {
+            std::vector<float>& lodValues = lodValuesAllDirections.at(dim);
+            lodValues.resize(grid.numVertices[dim], 0.0f);
+            assignSubdivisionLodValues(lodValues, 0, int(lodValues.size()) - 1, 1);
+            lodValues.front() = 0;
+            lodValues.back() = 0;
+        }
+    }
+
+    // We want to normalize the LOD values to the range [0, 1]. First, compute the maximum value.
+    float maxValue = 1.0f;
+    #pragma omp parallel for reduction(max: maxValue)
+    for (size_t gridIdx = 0; gridIdx < gridPartitions.size(); gridIdx++) {
+        std::vector<std::vector<float>>& lodValuesAllDirections = lodValuesAllGrids.at(gridIdx);
+        for (int dim = 0; dim < 3; dim++) {
+            std::vector<float>& lodValues = lodValuesAllDirections.at(dim);
+            for (size_t i = 0; i < lodValues.size(); i++) {
+                maxValue = std::max(maxValue, lodValues.at(i));
+            }
+        }
+    }
+
+    // Now, normalize the values by division.
+    #pragma omp parallel for
+    for (size_t gridIdx = 0; gridIdx < gridPartitions.size(); gridIdx++) {
+        std::vector<std::vector<float>>& lodValuesAllDirections = lodValuesAllGrids.at(gridIdx);
+        for (int dim = 0; dim < 3; dim++) {
+            std::vector<float>& lodValues = lodValuesAllDirections.at(dim);
+            for (size_t i = 0; i < lodValues.size(); i++) {
+                lodValues.at(i) /= maxValue;
+            }
+        }
+    }
+
+    // Now, add all grid lines with the corresponding LOD values to the rendering data.
+    // For combining LOD values from two dimension, the maximum operator is used in order to thin more lines out.
+    for (size_t gridIdx = 0; gridIdx < gridPartitions.size(); gridIdx++) {
+        ParametrizedGrid& grid = gridPartitions.at(gridIdx);
+        std::vector<std::vector<float>>& lodValuesAllDirections = lodValuesAllGrids.at(gridIdx);
+
         // Add the grid lines to the rendering data.
         for (int w = 0; w < grid.numVertices[2]; w++) {
             for (int v = 0; v < grid.numVertices[1]; v++) {
+                float lodValue = std::max(lodValuesAllDirections.at(1).at(v), lodValuesAllDirections.at(2).at(w));
                 for (int u = 0; u < grid.numVertices[0] - 1; u++) {
                     glm::vec3 vertexPosition0 = grid.uLine.at(v + w*grid.numVertices[1]).points.at(u);
                     glm::vec3 vertexPosition1 = grid.uLine.at(v + w*grid.numVertices[1]).points.at(u+1);
-                    glm::vec4 vertexColor(
-                            float(u) / (grid.numVertices[0]-1),
-                            float(v) / (grid.numVertices[1]-1),
-                            float(w) / (grid.numVertices[2]-1),
-                            1.0f);
                     lineVertices.push_back(vertexPosition0);
                     lineVertices.push_back(vertexPosition1);
-                    lineLodValues.push_back(0.0f);
-                    lineLodValues.push_back(0.0f);
+                    lineLodValues.push_back(lodValue);
+                    lineLodValues.push_back(lodValue);
                 }
             }
         }
         for (int w = 0; w < grid.numVertices[2]; w++) {
             for (int u = 0; u < grid.numVertices[0]; u++) {
+                float lodValue = std::max(lodValuesAllDirections.at(0).at(u), lodValuesAllDirections.at(2).at(w));
                 for (int v = 0; v < grid.numVertices[1] - 1; v++) {
                     glm::vec3 vertexPosition0 = grid.vLine.at(u + w*grid.numVertices[0]).points.at(v);
                     glm::vec3 vertexPosition1 = grid.vLine.at(u + w*grid.numVertices[0]).points.at(v+1);
-                    glm::vec4 vertexColor(
-                            float(u) / (grid.numVertices[0]-1),
-                            float(v) / (grid.numVertices[1]-1),
-                            float(w) / (grid.numVertices[2]-1),
-                            1.0f);
                     lineVertices.push_back(vertexPosition0);
                     lineVertices.push_back(vertexPosition1);
-                    lineLodValues.push_back(0.0f);
-                    lineLodValues.push_back(0.0f);
+                    lineLodValues.push_back(lodValue);
+                    lineLodValues.push_back(lodValue);
                 }
             }
         }
         for (int v = 0; v < grid.numVertices[1]; v++) {
             for (int u = 0; u < grid.numVertices[0]; u++) {
+                float lodValue = std::max(lodValuesAllDirections.at(0).at(u), lodValuesAllDirections.at(1).at(v));
                 for (int w = 0; w < grid.numVertices[2] - 1; w++) {
                     glm::vec3 vertexPosition0 = grid.wLine.at(u + v*grid.numVertices[0]).points.at(w);
                     glm::vec3 vertexPosition1 = grid.wLine.at(u + v*grid.numVertices[0]).points.at(w+1);
-                    glm::vec4 vertexColor(
-                            float(u) / (grid.numVertices[0]-1),
-                            float(v) / (grid.numVertices[1]-1),
-                            float(w) / (grid.numVertices[2]-1),
-                            1.0f);
                     lineVertices.push_back(vertexPosition0);
                     lineVertices.push_back(vertexPosition1);
-                    lineLodValues.push_back(0.0f);
-                    lineLodValues.push_back(0.0f);
+                    lineLodValues.push_back(lodValue);
+                    lineLodValues.push_back(lodValue);
                 }
             }
         }

@@ -27,24 +27,36 @@
  */
 
 
-#include "LodRenderer.hpp"
+#include "LodLineRenderer.hpp"
 
 #include <Graphics/Renderer.hpp>
 #include <Graphics/OpenGL/RendererGL.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
-#include "LodRenderer.hpp"
+#include "LodLineRenderer.hpp"
 
-LodRenderer::LodRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+LodLineRenderer::LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     shaderProgram = sgl::ShaderManager->getShaderProgram(
             {"WireframeLod.Vertex", "WireframeLod.Geometry", "WireframeLod.Fragment"});
+
+    shaderProgramPoints = sgl::ShaderManager->getShaderProgram({"Point.Vertex", "Point.Geometry", "Point.Fragment"});
+    pointShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgramPoints);
+    pointShaderAttributes->setVertexMode(sgl::VERTEX_MODE_POINTS);
+    focusPointBuffer = sgl::Renderer->createGeometryBuffer(sizeof(glm::vec3), &focusPoint.x, sgl::VERTEX_BUFFER);
+    pointShaderAttributes->addGeometryBuffer(
+            focusPointBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+    glm::vec4 pointColor(1.0f, 0.0f, 0.0f, 1.0f);
+    sgl::GeometryBufferPtr pointColorBuffer = sgl::Renderer->createGeometryBuffer(
+            sizeof(glm::vec4), &pointColor.x, sgl::VERTEX_BUFFER);
+    pointShaderAttributes->addGeometryBuffer(
+            pointColorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
 }
 
-void LodRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+void LodLineRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
     std::vector<glm::vec3> vertices;
-    std::vector<uint32_t> lodValues;
+    std::vector<float> lodValues;
     meshIn->getLodRepresentation(vertices, lodValues);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);
@@ -56,28 +68,42 @@ void LodRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
     shaderAttributes->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
-    // Add the color buffer.
+    // Add the LOD value buffer.
     sgl::GeometryBufferPtr lodValueBuffer = sgl::Renderer->createGeometryBuffer(
-            lodValues.size()*sizeof(uint32_t), (void*)&lodValues.front(), sgl::VERTEX_BUFFER);
+            lodValues.size()*sizeof(float), (void*)&lodValues.front(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
-            lodValueBuffer, "vertexLodValue", sgl::ATTRIB_UNSIGNED_INT, 1, 0, 0, 0, sgl::ATTRIB_CONVERSION_INT);
+            lodValueBuffer, "vertexLodValue", sgl::ATTRIB_FLOAT, 1);
+
+    // Update the position of the focus point.
+    focusPointBuffer->subData(0, sizeof(glm::vec3), &focusPoint.x);
 
     dirty = false;
     reRender = true;
 }
 
-void LodRenderer::render() {
-    if (shaderProgram->hasUniform("cameraPosition")) {
-        shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
-    }
-    if (shaderProgram->hasUniform("lightDirection")) {
-        shaderProgram->setUniform("lightDirection", sceneData.lightDirection);
-    }
+void LodLineRenderer::render() {
+    shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
+    shaderProgram->setUniform("focusPoint", focusPoint);
+    shaderProgram->setUniform("maxDistance", maxDistance);
+    shaderProgramPoints->setUniform("cameraPosition", sceneData.camera->getPosition());
 
+    // Render the LOD lines.
     shaderProgram->setUniform("lineWidth", 0.001f);
     sgl::Renderer->render(shaderAttributes);
+
+    // Render the focus point.
+    shaderProgramPoints->setUniform("radius", 0.008f);
+    sgl::Renderer->render(pointShaderAttributes);
 }
 
-void LodRenderer::renderGui() {
-    ;
+void LodLineRenderer::renderGui() {
+    if (ImGui::Begin("Line LOD Renderer", &showRendererWindow)) {
+        if (ImGui::SliderFloat("Maximum Distance", &maxDistance, 0.0f, 1.5f)) {
+            dirty = true;
+        }
+        if (ImGui::SliderFloat3("Focus Point", &focusPoint.x, -0.4f, 0.4f)) {
+            dirty = true;
+        }
+    }
+    ImGui::End();
 }
