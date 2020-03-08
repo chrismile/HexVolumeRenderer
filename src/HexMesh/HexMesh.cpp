@@ -119,7 +119,7 @@ void HexMesh::setHexMeshData(const std::vector<glm::vec3>& vertices, std::vector
 }
 
 void HexMesh::computeBaseComplexMesh(const std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices) {
-    Mesh& mesh = *baseComplexMesh;
+    Mesh &mesh = *baseComplexMesh;
     const uint32_t numVertices = vertices.size();
     const uint32_t numCells = cellIndices.size() / 8;
 
@@ -129,7 +129,7 @@ void HexMesh::computeBaseComplexMesh(const std::vector<glm::vec3>& vertices, std
     mesh.Vs.resize(numVertices);
 
     for (uint32_t i = 0; i < numVertices; i++) {
-        const glm::vec3& vertexPosition = vertices.at(i);
+        const glm::vec3 &vertexPosition = vertices.at(i);
         mesh.V(0, i) = vertexPosition.x;
         mesh.V(1, i) = vertexPosition.y;
         mesh.V(2, i) = vertexPosition.z;
@@ -146,7 +146,7 @@ void HexMesh::computeBaseComplexMesh(const std::vector<glm::vec3>& vertices, std
     for (uint32_t i = 0; i < numCells; i++) {
         h.id = i;
         for (int vertIdx = 0; vertIdx < 8; vertIdx++) {
-            uint32_t vertexIndex = cellIndices.at(i*8 + vertIdx);
+            uint32_t vertexIndex = cellIndices.at(i * 8 + vertIdx);
             h.vs[vertIdx] = vertexIndex;
             mesh.Vs[vertexIndex].neighbor_hs.push_back(h.id);
         }
@@ -157,6 +157,18 @@ void HexMesh::computeBaseComplexMesh(const std::vector<glm::vec3>& vertices, std
     base_complex bc;
     bc.singularity_structure(*si, mesh);
     bc.base_complex_extraction(*si, *frame, mesh);
+
+    // Set the singularity attribute on the frame vertices.
+    std::unordered_set<uint32_t> singularVertexSet;
+    for (size_t i = 0; i < si->SVs.size(); i++) {
+        Singular_V &sv = si->SVs.at(i);
+        singularVertexSet.insert(sv.hid);
+    }
+
+    for (Frame_V &fv : frame->FVs) {
+        fv.singular = (singularVertexSet.find(fv.hid) != singularVertexSet.end());
+
+    }
 }
 
 
@@ -349,20 +361,12 @@ void HexMesh::getBaseComplexDataWireframe(
     Mesh* mesh = baseComplexMesh;
 
     for (Frame_V& fv : frame->FVs) {
-        bool singular = false;
-        for (uint32_t fe_id : fv.neighbor_fes) {
-            Frame_E& fe = frame->FEs[fe_id];
-            if (fe.singular) {
-                singular = true;
-            }
-        }
-
-        if (!drawRegularLines && !singular) {
+        if (!drawRegularLines && !fv.singular) {
             continue;
         }
 
         glm::vec4 vertexColor;
-        if (singular) {
+        if (fv.singular) {
             vertexColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
         } else {
             vertexColor = glm::vec4(0.0f, 0.2f, 1.0f, 1.0f);
@@ -370,7 +374,7 @@ void HexMesh::getBaseComplexDataWireframe(
 
         glm::vec3 vertexPosition(mesh->V(0, fv.hid), mesh->V(1, fv.hid), mesh->V(2, fv.hid));
         pointVertices.push_back(vertexPosition);
-        pointColors.push_back(glm::vec4(1,0,0,1));
+        pointColors.push_back(vertexColor);
     }
 
     for (Frame_E& fe : frame->FEs) {

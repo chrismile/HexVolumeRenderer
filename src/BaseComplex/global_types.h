@@ -158,6 +158,7 @@ struct Singular_E
 struct Frame_V
 {
 	uint32_t id, hid, svid;
+    bool singular = false;
 	uint32_t what_type;
 	vector<uint32_t>  neighbor_fvs;
 	vector<uint32_t>  neighbor_fes;
