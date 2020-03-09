@@ -60,8 +60,8 @@ void main()
     vec3 quadNormal1 = normalize(cameraPosition - linePosition1);
     vec3 vertexPosition;
 
-    vec3 up0 = cross(quadNormal0, right);
-    vec3 up1 = cross(quadNormal1, right);
+    vec3 up0 = normalize(cross(quadNormal0, right));
+    vec3 up1 = normalize(cross(quadNormal1, right));
 
     vertexPosition = linePosition0 - (lineWidth0 / 2.0) * up0;
     fragmentPositionWorld = vertexPosition;
@@ -127,7 +127,6 @@ void main()
     //float coverage = 1.0 - smoothstep(0.90, 1.0, abs(quadCoords));
     float coverage = 1.0 - smoothstep(1.0, 1.0, abs(quadCoords));
     fragColor = vec4(fragmentColor.rgb, fragmentColor.a * coverage);
-
 }
 
 -- Fragment.Preview
@@ -154,8 +153,7 @@ void main()
     }
 
     //float coverage = 1.0 - smoothstep(0.90, 1.0, abs(quadCoords));
-    float coverage = 1.0 - smoothstep(0.97, 1.0, abs(quadCoords));
+    float coverage = 1.0 - smoothstep(1.0, 1.0, abs(quadCoords));
     fragColor = vec4(fragmentColor.rgb, fragmentColor.a * coverage);
-
 }
 

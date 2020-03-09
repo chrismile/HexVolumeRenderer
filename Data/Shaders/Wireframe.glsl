@@ -43,32 +43,42 @@ void main()
     vec3 linePosition1 = v_in[1].linePosition;
     vec4 lineColor0 = v_in[0].lineColor;
     vec4 lineColor1 = v_in[1].lineColor;
+    vec4 linePositionNDC0 = pMatrix * vMatrix * vec4(linePosition0, 1.0);
+    vec4 linePositionNDC1 = pMatrix * vMatrix * vec4(linePosition1, 1.0);
+    linePositionNDC0.xyz /= linePositionNDC0.w;
+    linePositionNDC1.xyz /= linePositionNDC1.w;
+    vec2 linePositionScreen0 = linePositionNDC0.xy;
+    vec2 linePositionScreen1 = linePositionNDC0.xy;
+    vec2 dir = linePositionScreen1 - linePositionScreen0;
+    vec2 normalDir = vec2(-dir.y, dir.x);
 
     vec3 right = normalize(v_in[1].linePosition - v_in[0].linePosition);
-    vec3 quadNormal = normalize(cameraPosition - (linePosition0 + linePosition1) / 2.0);
+    vec3 quadNormal0 = normalize(cameraPosition - linePosition0);
+    vec3 quadNormal1 = normalize(cameraPosition - linePosition1);
     vec3 vertexPosition;
 
-    vec3 up = cross(quadNormal, right);
+    vec3 up0 = normalize(cross(quadNormal0, right));
+    vec3 up1 = normalize(cross(quadNormal1, right));
 
-    vertexPosition = linePosition0 - (lineWidth / 2.0) * up;
+    vertexPosition = linePosition0 - (lineWidth / 2.0) * up0;
     fragmentColor = lineColor0;
     quadCoords = -1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
     EmitVertex();
 
-    vertexPosition = linePosition1 - (lineWidth / 2.0) * up;
+    vertexPosition = linePosition1 - (lineWidth / 2.0) * up1;
     fragmentColor = lineColor1;
     quadCoords = -1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
     EmitVertex();
 
-    vertexPosition = linePosition0 + (lineWidth / 2.0) * up;
+    vertexPosition = linePosition0 + (lineWidth / 2.0) * up0;
     fragmentColor = lineColor0;
     quadCoords = 1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
     EmitVertex();
 
-    vertexPosition = linePosition1 + (lineWidth / 2.0) * up;
+    vertexPosition = linePosition1 + (lineWidth / 2.0) * up1;
     fragmentColor = lineColor1;
     quadCoords = 1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
