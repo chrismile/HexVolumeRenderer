@@ -99,7 +99,6 @@ void LodLineRenderer::render() {
     shaderProgram->setUniform("focusPoint", focusPoint);
     shaderProgram->setUniform("maxDistance", maxDistance);
     shaderProgramSurface->setUniform("cameraPosition", sceneData.camera->getPosition());
-    shaderProgramSurface->setUniform("lightDirection", sceneData.lightDirection);
 
     // Render the LOD lines.
     shaderProgram->setUniform("lineWidth", 0.001f);
