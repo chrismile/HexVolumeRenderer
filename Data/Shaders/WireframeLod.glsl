@@ -4,17 +4,20 @@
 
 layout(location = 0) in vec3 vertexPosition;
 layout(location = 1) in float vertexLodValue;
+layout(location = 2) in vec4 vertexColor;
 
 out VertexData
 {
     vec3 linePosition;
     float lineLodValue;
+    vec4 lineColor;
 };
 
 void main()
 {
     linePosition = (mMatrix * vec4(vertexPosition, 1.0)).xyz;
     lineLodValue = vertexLodValue;
+    lineColor = vertexColor;
     gl_Position = mvpMatrix * vec4(vertexPosition, 1.0);
 }
 
@@ -30,12 +33,14 @@ uniform float lineWidth;
 
 out vec3 fragmentPositionWorld;
 out float fragmentLodValue;
+out vec4 fragmentColor;
 out float quadCoords; // Between -1 and 1
 
 in VertexData
 {
     vec3 linePosition;
     float lineLodValue;
+    vec4 lineColor;
 } v_in[];
 
 void main()
@@ -44,37 +49,48 @@ void main()
     vec3 linePosition1 = v_in[1].linePosition;
     float lineLodValue0 = v_in[0].lineLodValue;
     float lineLodValue1 = v_in[1].lineLodValue;
+    vec4 lineColor0 = v_in[0].lineColor;
+    vec4 lineColor1 = v_in[1].lineColor;
+
+    float lineWidth0 = lineWidth * (1.3 * (1.0 - lineLodValue0) + 0.2);
+    float lineWidth1 = lineWidth * (1.3 * (1.0 - lineLodValue1) + 0.2);
 
     vec3 right = normalize(v_in[1].linePosition - v_in[0].linePosition);
-    vec3 quadNormal = normalize(cameraPosition - (linePosition0 + linePosition1) / 2.0);
+    vec3 quadNormal0 = normalize(cameraPosition - linePosition0);
+    vec3 quadNormal1 = normalize(cameraPosition - linePosition1);
     vec3 vertexPosition;
 
-    vec3 up = cross(quadNormal, right);
+    vec3 up0 = cross(quadNormal0, right);
+    vec3 up1 = cross(quadNormal1, right);
 
-    vertexPosition = linePosition0 - (lineWidth / 2.0) * up;
+    vertexPosition = linePosition0 - (lineWidth0 / 2.0) * up0;
     fragmentPositionWorld = vertexPosition;
     fragmentLodValue = lineLodValue0;
+    fragmentColor = lineColor0;
     quadCoords = -1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
     EmitVertex();
 
-    vertexPosition = linePosition1 - (lineWidth / 2.0) * up;
+    vertexPosition = linePosition1 - (lineWidth1 / 2.0) * up1;
     fragmentPositionWorld = vertexPosition;
     fragmentLodValue = lineLodValue1;
+    fragmentColor = lineColor1;
     quadCoords = -1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
     EmitVertex();
 
-    vertexPosition = linePosition0 + (lineWidth / 2.0) * up;
+    vertexPosition = linePosition0 + (lineWidth0 / 2.0) * up0;
     fragmentPositionWorld = vertexPosition;
     fragmentLodValue = lineLodValue0;
+    fragmentColor = lineColor0;
     quadCoords = 1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
     EmitVertex();
 
-    vertexPosition = linePosition1 + (lineWidth / 2.0) * up;
+    vertexPosition = linePosition1 + (lineWidth1 / 2.0) * up1;
     fragmentPositionWorld = vertexPosition;
     fragmentLodValue = lineLodValue1;
+    fragmentColor = lineColor1;
     quadCoords = 1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
     EmitVertex();
@@ -91,6 +107,7 @@ uniform float maxDistance;
 
 in vec3 fragmentPositionWorld;
 in float fragmentLodValue;
+in vec4 fragmentColor;
 in float quadCoords; // Between -1 and 1
 out vec4 fragColor;
 
@@ -100,17 +117,44 @@ void main()
 {
     // To counteract depth fighting with overlay wireframe.
     gl_FragDepth = gl_FragCoord.z - 0.00001;
-    vec4 fragmentColor = vec4(0.0, 0.0, 0.0, 1.0);
 
     float distanceToFocus = length(focusPoint - fragmentPositionWorld);
     float maxLodRenderValue = clamp(1.0 - distanceToFocus / maxDistance, 0.0, 1.0);
     if (fragmentLodValue > maxLodRenderValue + EPSILON) {
         discard;
-        //fragmentColor.a = 0.0;
     }
 
     //float coverage = 1.0 - smoothstep(0.90, 1.0, abs(quadCoords));
     float coverage = 1.0 - smoothstep(1.0, 1.0, abs(quadCoords));
+    fragColor = vec4(fragmentColor.rgb, fragmentColor.a * coverage);
+
+}
+
+-- Fragment.Preview
+
+#version 430 core
+
+uniform float maxLod;
+
+in vec3 fragmentPositionWorld;
+in float fragmentLodValue;
+in vec4 fragmentColor;
+in float quadCoords; // Between -1 and 1
+out vec4 fragColor;
+
+const float EPSILON = 0.001;
+
+void main()
+{
+    // To counteract depth fighting with overlay wireframe.
+    gl_FragDepth = gl_FragCoord.z - 0.00001;
+
+    if (fragmentLodValue > maxLod + EPSILON) {
+        discard;
+    }
+
+    //float coverage = 1.0 - smoothstep(0.90, 1.0, abs(quadCoords));
+    float coverage = 1.0 - smoothstep(0.97, 1.0, abs(quadCoords));
     fragColor = vec4(fragmentColor.rgb, fragmentColor.a * coverage);
 
 }

@@ -150,12 +150,16 @@ public:
             std::vector<glm::vec3>& lineVertices,
             std::vector<glm::vec4>& lineColors);
     /**
-     * Get the singular edges and points of the hexahedral mesh.
+     * Get the list of lines associated with LOD values. Less important lines have higher values and can be filtered
+     * out during rendering.
      * @param lineLodValues The LOD value normalized to [0, 1].
+     * @param previewColors If this value is true, more vibrant colors are assigned to the line vertices.
      */
-    void getLodRepresentation(
-            std::vector<glm::vec3>& lineVertices,
-            std::vector<float>& lineLodValues);
+    void getLodLineRepresentation(
+            std::vector<glm::vec3> &lineVertices,
+            std::vector<glm::vec4> &lineColors,
+            std::vector<float> &lineLodValues,
+            bool previewColors);
 
 private:
     // Base-complex computations

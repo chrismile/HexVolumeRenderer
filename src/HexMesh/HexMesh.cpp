@@ -583,7 +583,7 @@ bool HexMesh::indexShared(
 
     if (sharedNeighborVerticesUnvisited.size() != 1) {
         sgl::Logfile::get()->writeError(
-                "Error in getLodRepresentation: Invalid number of unvisited neighbors.");
+                "Error in HexMesh::indexShared: Invalid number of unvisited neighbors.");
         delete[] partitionParam;
         return false;
     }
@@ -605,7 +605,8 @@ std::vector<ParametrizedGrid> HexMesh::computeBaseComplexParametrizedGrid() {
 
         // TODO: Support also partitions topologically equivalent to a torus instead of a cube?
         if (fh.vs.size() != 8) {
-            sgl::Logfile::get()->writeError("Error in getLodRepresentation: Partition is not cubic.");
+            sgl::Logfile::get()->writeError(
+                    "Error in HexMesh::computeBaseComplexParametrizedGrid: Partition is not cubic.");
             return gridPartitions;
         }
 
@@ -623,7 +624,8 @@ std::vector<ParametrizedGrid> HexMesh::computeBaseComplexParametrizedGrid() {
                 std::back_inserter(neighborFEsInPartition));
         if (neighborFEsInPartition.size() != 3) {
             sgl::Logfile::get()->writeError(
-                    "Error in getLodRepresentation: Number of frame edges meeting in corner not 3.");
+                    "Error in HexMesh::computeBaseComplexParametrizedGrid: "
+                    "Number of frame edges meeting in corner not 3.");
             return gridPartitions;
         }
 
@@ -830,9 +832,11 @@ void assignSubdivisionLodValues(std::vector<float>& lodValues, int minIndex, int
     assignSubdivisionLodValues(lodValues, midIndex + 1, maxIndex, recursionNumber + 1);
 }
 
-void HexMesh::getLodRepresentation(
-        std::vector<glm::vec3>& lineVertices,
-        std::vector<float>& lineLodValues) {
+void HexMesh::getLodLineRepresentation(
+        std::vector<glm::vec3> &lineVertices,
+        std::vector<glm::vec4> &lineColors,
+        std::vector<float> &lineLodValues,
+        bool previewColors) {
     if (dirty) {
         hexaLabApp->update_models();
         dirty = false;
@@ -840,10 +844,6 @@ void HexMesh::getLodRepresentation(
 
     // Get a list of all parametrized base-complex grids.
     std::vector<ParametrizedGrid> gridPartitions = computeBaseComplexParametrizedGrid();
-
-    // For three dimensions: Maps u/v/w to a LOD value.
-    std::vector<std::vector<int>> lodParametrization;
-    lodParametrization.resize(3);
 
     // Create the three LOD base arrays for each parametrization direction for all grids.
     std::vector<std::vector<std::vector<float>>> lodValuesAllGrids;
@@ -933,5 +933,18 @@ void HexMesh::getLodRepresentation(
                 }
             }
         }
+    }
+
+    lineColors.reserve(lineLodValues.size());
+    for (size_t i = 0; i < lineLodValues.size(); i += 2) {
+        float lodValue = lineLodValues.at(i) * maxValue;
+        glm::vec4 vertexColor(0.6f, 0.0f, 0.0f, 1.0f);
+        if (lodValue > 0.0001) {
+            float interpolationFactor = (lodValue - 1.0f) / (maxValue - 1.0f);
+            vertexColor = glm::vec4(
+                    glm::mix(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.8f, 0.8f, 0.8f), interpolationFactor), 1.0f);
+        }
+        lineColors.push_back(vertexColor);
+        lineColors.push_back(vertexColor);
     }
 }
