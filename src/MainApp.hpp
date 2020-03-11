@@ -47,12 +47,14 @@
 enum RenderingMode {
     RENDERING_MODE_SURFACE, RENDERING_MODE_VOLUME, RENDERING_MODE_DEPTH_COMPLEXITY,
     RENDERING_MODE_SINGULARITY, RENDERING_MODE_BASE_COMPLEX_LINES, RENDERING_MODE_BASE_COMPLEX_SURFACE,
-    RENDERING_MODE_PARTITION_LINES, RENDERING_MODE_LOD_LINES, RENDERING_MODE_LOD_LINES_PREVIEW
+    RENDERING_MODE_PARTITION_LINES, RENDERING_MODE_LOD_LINES, RENDERING_MODE_LOD_LINES_PREVIEW,
+    RENDERING_MODE_CLEAR_VIEW
 };
 const char *const RENDERING_MODE_NAMES[] = {
         "Surface", "Volume", "Depth Complexity",
         "Singularity", "Base Complex (Lines)", "Base Complex (Surface)",
-        "Partition Lines", "LOD Lines", "LOD Lines (Preview)"
+        "Partition Lines", "LOD Lines", "LOD Lines (Preview)",
+        "ClearView"
 };
 const int NUM_RENDERING_MODES = ((int)(sizeof(QUALITY_MEASURE_NAMES) / sizeof(*QUALITY_MEASURE_NAMES)));
 

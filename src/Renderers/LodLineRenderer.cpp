@@ -46,8 +46,13 @@ LodLineRenderer::LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &t
     getSphereSurfaceRenderData(
             glm::vec3(0,0,0), 0.005f, 20, 20, sphereVertexPositions, sphereVertexNormals, sphereIndices);
 
+    sgl::ShaderManager->invalidateShaderCache();
+    sgl::ShaderManager->addPreprocessorDefine("DIRECT_BLIT_GATHER", "");
+    sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "GatherDummy.glsl");
     shaderProgramSurface = sgl::ShaderManager->getShaderProgram(
             {"MeshShader.Vertex.Plain", "MeshShader.Fragment.Plain"});
+    sgl::ShaderManager->removePreprocessorDefine("DIRECT_BLIT_GATHER");
+
     focusPointShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgramSurface);
     focusPointShaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
     sgl::GeometryBufferPtr focusPointVertexPositionBuffer = sgl::Renderer->createGeometryBuffer(

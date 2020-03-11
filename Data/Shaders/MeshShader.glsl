@@ -38,41 +38,134 @@ out vec4 fragColor;
 uniform vec3 lightDirection = vec3(1.0, 0.0, 0.0);
 uniform vec3 cameraPosition; // in world space
 
+#include "Lighting.glsl"
+
 void main()
 {
-    // Blinn-Phong Shading
-    const vec3 lightColor = vec3(1,1,1);
-    const vec3 ambientColor = fragmentColor.rgb;//vec3(0.5, fragmentPositonWorld.g, fragmentPositonWorld.b);
-    const vec3 diffuseColor = ambientColor;
-    vec3 phongColor = vec3(0);
+    vec4 colorPhong = blinnPhongShading(fragmentColor);
 
-    const float kA = 0.2;
-    const vec3 Ia = kA * ambientColor;
-    const float kD = 0.7;
-    const float kS = 0.1;
-    const float s = 10;
+    #if defined(DIRECT_BLIT_GATHER)
+    // Direct rendering, no transparency.
+    fragColor = vec4(colorPhong.rgb, 1.0);
+    #else
+    gatherFragment(colorPhong);
+    #endif
+}
 
-    const vec3 n = normalize(fragmentNormal);
-    const vec3 v = normalize(cameraPosition - fragmentPositonWorld);
-    const vec3 l = v;//normalize(lightDirection);
-    const vec3 h = normalize(v + l);
 
-    vec3 Id = kD * clamp(abs(dot(n, l)), 0.0, 1.0) * diffuseColor;
-    vec3 Is = kS * pow(clamp(abs(dot(n, h)), 0.0, 1.0), s) * lightColor;
+-- Fragment.ClearView.Context
 
-    phongColor = Ia + Id + Is;
+#version 430 core
 
-    float tempAlpha = fragmentColor.a;
-    vec4 color = vec4(phongColor, tempAlpha);
+#if !defined(DIRECT_BLIT_GATHER)
+#include OIT_GATHER_HEADER
+#endif
 
+in vec3 fragmentPositonWorld;
+in vec3 fragmentNormal;
+in vec4 fragmentColor;
 
 #if defined(DIRECT_BLIT_GATHER)
-    // Direct rendering
-    fragColor = vec4(color.rgb, 1.0);
-#else
-    gatherFragment(color);
+out vec4 fragColor;
 #endif
+
+// Camera data
+uniform vec3 cameraPosition;
+uniform vec3 lookingDirection;
+
+// Focus region data
+uniform vec3 sphereCenter;
+uniform float sphereRadius;
+
+#include "Lighting.glsl"
+
+#define SQR(x) ((x)*(x))
+
+/**
+ * Implementation of ray-sphere intersection (idea from A. Glassner et al., "An Introduction to Ray Tracing").
+ * For more details see: https://www.siggraph.org//education/materials/HyperGraph/raytrace/rtinter1.htm
+ */
+bool raySphereIntersection(
+        vec3 rayOrigin, vec3 rayDirection, vec3 sphereCenter, float sphereRadius,
+        out float t0, out float t1, out vec3 intersectionPosition)
+{
+    float A = SQR(rayDirection.x) + SQR(rayDirection.y) + SQR(rayDirection.z);
+    float B = 2.0 * (rayDirection.x * (rayOrigin.x - sphereCenter.x) + rayDirection.y * (rayOrigin.y - sphereCenter.y)
+            + rayDirection.z * (rayOrigin.z - sphereCenter.z));
+    float C = SQR(rayOrigin.x - sphereCenter.x) + SQR(rayOrigin.y - sphereCenter.y) + SQR(rayOrigin.z - sphereCenter.z)
+            - SQR(sphereRadius);
+
+    float discriminant = SQR(B) - 4.0*A*C;
+    if (discriminant < 0.0) {
+        return false; // No intersection
+    }
+
+    float discriminantSqrt = sqrt(discriminant);
+    t0 = (-B - discriminantSqrt) / (2.0 * A);
+    t1 = (-B + discriminantSqrt) / (2.0 * A);
+
+    intersectionPosition = rayOrigin + t0 * rayDirection;
+    // Intersection(s) behind the ray origin?
+    /*if (t0 >= 0.0) {
+        return true;
+    } else if (t1 >= 0) {
+        intersectionPosition = rayOrigin + t1 * rayDirection;
+        return true;
+    }
+    return false;*/
+
+    return true;
 }
+
+bool rayPlaneIntersection(
+        vec3 rayOrigin, vec3 rayDirection, vec3 planePoint, vec3 planeNormal, out vec3 intersectionPosition) {
+    float ln = dot(planeNormal, rayDirection);
+    if (abs(ln) < 1e-4) {
+        // Plane and ray are (almost) parallel.
+        return false;
+    } else {
+        float pos = dot(planeNormal, rayOrigin) + dot(planeNormal, planePoint);
+        float t = -pos / ln;
+        intersectionPosition = rayOrigin + t * rayDirection;
+        return true;
+    }
+}
+
+void main()
+{
+    vec4 colorPhong = blinnPhongShading(fragmentColor);
+
+    vec3 rayOrigin = cameraPosition;
+    vec3 rayDirection = normalize(fragmentPositonWorld - cameraPosition);
+    float fragmentDepth = length(fragmentPositonWorld - cameraPosition);
+
+    float t0, t1;
+    vec3 intersectionPosition;
+    bool intersectsSphere = raySphereIntersection(
+            rayOrigin, rayDirection, sphereCenter, sphereRadius, t0, t1, intersectionPosition);
+    bool fragmentInSphere = SQR(fragmentPositonWorld.x - sphereCenter.x) + SQR(fragmentPositonWorld.y - sphereCenter.y)
+            + SQR(fragmentPositonWorld.z - sphereCenter.z) <= SQR(sphereRadius);
+    float intersectionDepth = length(intersectionPosition - cameraPosition);
+
+    // Add opacity multiplication factor for fragments in front of or in focus region.
+    float opacityFactor = 1.0f;
+    if (intersectsSphere && (fragmentInSphere || fragmentDepth < intersectionDepth)) {
+        // Intersect view ray with plane parallel to camera looking direction containing the sphere center.
+        vec3 negativeLookingDirection = -lookingDirection; // Assuming right-handed coordinate system.
+        vec3 projectedPoint;
+        rayPlaneIntersection(rayOrigin, rayDirection, sphereCenter, negativeLookingDirection, projectedPoint);
+        opacityFactor = length(projectedPoint - sphereCenter) / sphereRadius; // linear increase
+    }
+    colorPhong.a *= opacityFactor;
+
+    #if defined(DIRECT_BLIT_GATHER)
+    // Direct rendering, no transparency.
+    fragColor = vec4(colorPhong.rgb, 1.0);
+    #else
+    gatherFragment(colorPhong);
+    #endif
+}
+
 
 -- Vertex.Plain
 
@@ -97,42 +190,32 @@ void main()
 
 #version 430 core
 
+#if !defined(DIRECT_BLIT_GATHER)
+#include OIT_GATHER_HEADER
+#endif
+
 uniform vec4 color;
 
 in vec3 fragmentPositonWorld;
 in vec3 fragmentNormal;
 
+#if defined(DIRECT_BLIT_GATHER)
 out vec4 fragColor;
+#endif
 
 uniform vec3 lightDirection = vec3(1.0, 0.0, 0.0);
 uniform vec3 cameraPosition; // in world space
 
+#include "Lighting.glsl"
+
 void main()
 {
-    // Blinn-Phong Shading
-    const vec3 lightColor = vec3(1,1,1);
-    const vec3 ambientColor = color.rgb;
-    const vec3 diffuseColor = ambientColor;
-    vec3 phongColor = vec3(0);
+    vec4 colorPhong = blinnPhongShading(color);
 
-    const float kA = 0.2;
-    const vec3 Ia = kA * ambientColor;
-    const float kD = 0.7;
-    const float kS = 0.1;
-    const float s = 10;
-
-    const vec3 n = normalize(fragmentNormal);
-    const vec3 v = normalize(cameraPosition - fragmentPositonWorld);
-    const vec3 l = v;//normalize(lightDirection);
-    const vec3 h = normalize(v + l);
-
-    vec3 Id = kD * clamp(abs(dot(n, l)), 0.0, 1.0) * diffuseColor;
-    vec3 Is = kS * pow(clamp(abs(dot(n, h)), 0.0, 1.0), s) * lightColor;
-
-    phongColor = Ia + Id + Is;
-
-    float tempAlpha = color.a;
-    vec4 color = vec4(phongColor, tempAlpha);
-
-    fragColor = vec4(color.rgb, 1.0);
+    #if defined(DIRECT_BLIT_GATHER)
+    // Direct rendering, no transparency.
+    fragColor = vec4(colorPhong.rgb, 1.0);
+    #else
+    gatherFragment(colorPhong);
+    #endif
 }

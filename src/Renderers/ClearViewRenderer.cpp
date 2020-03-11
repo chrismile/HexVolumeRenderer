@@ -1,30 +1,6 @@
-/*
- * BSD 2-Clause License
- *
- * Copyright (c) 2020, Christoph Neuhauser
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * * Redistributions of source code must retain the above copyright notice, this
- *   list of conditions and the following disclaimer.
- *
- * * Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+//
+// Created by christoph on 11.03.20.
+//
 
 #include <Math/Geometry/MatrixUtil.hpp>
 #include <Graphics/Window.hpp>
@@ -35,7 +11,8 @@
 #include <Utils/AppSettings.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
-#include "VolumeRenderer.hpp"
+#include "Helpers/Sphere.hpp"
+#include "ClearViewRenderer.hpp"
 
 const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap"};
 
@@ -60,18 +37,46 @@ struct LinkedListFragmentNode {
     uint32_t next;
 };
 
-VolumeRenderer::VolumeRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+ClearViewRenderer::ClearViewRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     setSortingAlgorithmDefine();
     sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "\"LinkedListGather.glsl\"");
     sgl::ShaderManager->addPreprocessorDefine("MAX_NUM_FRAGS", sgl::toString(maxNumFragmentsSorting));
 
-    sgl::ShaderManager->invalidateShaderCache();
-    gatherShader = sgl::ShaderManager->getShaderProgram({"MeshShader.Vertex", "MeshShader.Fragment"});
-    resolveShader = sgl::ShaderManager->getShaderProgram({"LinkedListResolve.Vertex", "LinkedListResolve.Fragment"});
-    clearShader = sgl::ShaderManager->getShaderProgram({"LinkedListClear.Vertex", "LinkedListClear.Fragment"});
+    shaderProgramSurface = sgl::ShaderManager->getShaderProgram(
+            {"MeshShader.Vertex.Plain", "MeshShader.Fragment.Plain"});
 
-    // Create blitting data (fullscreen rectangle in normalized device coordinates)
+    std::vector<glm::vec3> sphereVertexPositions;
+    std::vector<glm::vec3> sphereVertexNormals;
+    std::vector<uint32_t> sphereIndices;
+    getSphereSurfaceRenderData(
+            glm::vec3(0,0,0), 0.005f, 20, 20, sphereVertexPositions, sphereVertexNormals, sphereIndices);
+
+    focusPointShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgramSurface);
+    focusPointShaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
+    sgl::GeometryBufferPtr focusPointVertexPositionBuffer = sgl::Renderer->createGeometryBuffer(
+            sphereVertexPositions.size() * sizeof(glm::vec3), sphereVertexPositions.data(), sgl::VERTEX_BUFFER);
+    focusPointShaderAttributes->addGeometryBuffer(
+            focusPointVertexPositionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+    sgl::GeometryBufferPtr focusPointVertexNormalBuffer = sgl::Renderer->createGeometryBuffer(
+            sphereVertexNormals.size() * sizeof(glm::vec3), sphereVertexNormals.data(), sgl::VERTEX_BUFFER);
+    focusPointShaderAttributes->addGeometryBuffer(
+            focusPointVertexNormalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
+    sgl::GeometryBufferPtr focusPointIndexBuffer = sgl::Renderer->createGeometryBuffer(
+            sphereIndices.size() * sizeof(uint32_t), sphereIndices.data(), sgl::INDEX_BUFFER);
+    focusPointShaderAttributes->setIndexGeometryBuffer(focusPointIndexBuffer, sgl::ATTRIB_UNSIGNED_INT);
+
+    sgl::ShaderManager->invalidateShaderCache();
+    gatherShaderFocus = sgl::ShaderManager->getShaderProgram({
+        "MeshShader.Vertex", "MeshShader.Fragment"});
+    gatherShaderContext = sgl::ShaderManager->getShaderProgram(
+            {"MeshShader.Vertex", "MeshShader.Fragment.ClearView.Context"});
+    resolveShader = sgl::ShaderManager->getShaderProgram(
+            {"LinkedListResolve.Vertex", "LinkedListResolve.Fragment"});
+    clearShader = sgl::ShaderManager->getShaderProgram(
+            {"LinkedListClear.Vertex", "LinkedListClear.Fragment"});
+
+    // Create blitting data (fullscreen rectangle in normalized device coordinates).
     blitRenderData = sgl::ShaderManager->createShaderAttributes(resolveShader);
 
     std::vector<glm::vec3> fullscreenQuad{
@@ -89,44 +94,44 @@ VolumeRenderer::VolumeRenderer(SceneData &sceneData, TransferFunctionWindow &tra
     onResolutionChanged();
 }
 
-void VolumeRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+void ClearViewRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
     std::vector<uint32_t> indices;
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec3> normals;
     std::vector<glm::vec4> colors;
     meshIn->getVolumeData(indices, vertices, normals, colors);
 
-    shaderAttributes = sgl::ShaderManager->createShaderAttributes(gatherShader);
-    shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
+    shaderAttributesContext = sgl::ShaderManager->createShaderAttributes(gatherShaderContext);
+    shaderAttributesContext->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
             sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
-    shaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
+    shaderAttributesContext->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
             vertices.size()*sizeof(glm::vec3), (void*)&vertices.front(), sgl::VERTEX_BUFFER);
-    shaderAttributes->addGeometryBuffer(
+    shaderAttributesContext->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the normal buffer.
     sgl::GeometryBufferPtr normalBuffer = sgl::Renderer->createGeometryBuffer(
             normals.size()*sizeof(glm::vec3), (void*)&normals.front(), sgl::VERTEX_BUFFER);
-    shaderAttributes->addGeometryBuffer(
+    shaderAttributesContext->addGeometryBuffer(
             normalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
 
     // Add the color buffer.
     sgl::GeometryBufferPtr colorBuffer = sgl::Renderer->createGeometryBuffer(
             colors.size()*sizeof(glm::vec4), (void*)&colors.front(), sgl::VERTEX_BUFFER);
-    shaderAttributes->addGeometryBuffer(
+    shaderAttributesContext->addGeometryBuffer(
             colorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
 
     dirty = false;
     reRender = true;
 }
 
-void VolumeRenderer::setSortingAlgorithmDefine() {
+void ClearViewRenderer::setSortingAlgorithmDefine() {
     if (sortingAlgorithmMode == 0) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "frontToBackPQ");
     } else if (sortingAlgorithmMode == 1) {
@@ -140,7 +145,7 @@ void VolumeRenderer::setSortingAlgorithmDefine() {
     }
 }
 
-void VolumeRenderer::onResolutionChanged() {
+void ClearViewRenderer::onResolutionChanged() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
@@ -162,7 +167,7 @@ void VolumeRenderer::onResolutionChanged() {
             sizeof(uint32_t), NULL, sgl::ATOMIC_COUNTER_BUFFER);
 }
 
-void VolumeRenderer::setUniformData() {
+void ClearViewRenderer::setUniformData() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
@@ -170,15 +175,34 @@ void VolumeRenderer::setUniformData() {
     size_t fragmentBufferSize = expectedDepthComplexity * width * height;
     size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
 
-    gatherShader->setUniform("viewportW", width);
-    gatherShader->setShaderStorageBuffer(0, "FragmentBuffer", fragmentBuffer);
-    gatherShader->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
-    gatherShader->setAtomicCounterBuffer(0, atomicCounterBuffer);
-    gatherShader->setUniform("linkedListSize", (int)fragmentBufferSize);
-    gatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
-    if (gatherShader->hasUniform("lightDirection")) {
-        gatherShader->setUniform("lightDirection", sceneData.lightDirection);
-    }
+    glm::mat4 inverseViewMatrix = glm::inverse(sceneData.camera->getViewMatrix());
+    glm::vec3 lookingDirection(-inverseViewMatrix[2].x, -inverseViewMatrix[2].y, -inverseViewMatrix[2].z);
+
+    gatherShaderContext->setUniform("viewportW", width);
+    gatherShaderContext->setShaderStorageBuffer(0, "FragmentBuffer", fragmentBuffer);
+    gatherShaderContext->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
+    gatherShaderContext->setAtomicCounterBuffer(0, atomicCounterBuffer);
+    gatherShaderContext->setUniform("linkedListSize", (int)fragmentBufferSize);
+    gatherShaderContext->setUniform("cameraPosition", sceneData.camera->getPosition());
+    gatherShaderContext->setUniform("lookingDirection", lookingDirection);
+    gatherShaderContext->setUniform("sphereCenter", focusPoint);
+    gatherShaderContext->setUniform("sphereRadius", focusRadius);
+
+    gatherShaderFocus->setUniform("viewportW", width);
+    //gatherShaderFocus->setShaderStorageBuffer(0, "FragmentBuffer", fragmentBuffer);
+    //gatherShaderFocus->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
+    //gatherShaderFocus->setAtomicCounterBuffer(0, atomicCounterBuffer);
+    gatherShaderFocus->setUniform("linkedListSize", (int)fragmentBufferSize);
+    gatherShaderFocus->setUniform("cameraPosition", sceneData.camera->getPosition());
+    //gatherShaderFocus->setUniform("lineWidth", 0.001f); // TODO
+
+    shaderProgramSurface->setUniform("viewportW", width);
+    //shaderProgramSurface->setShaderStorageBuffer(0, "FragmentBuffer", fragmentBuffer);
+    //shaderProgramSurface->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
+    //shaderProgramSurface->setAtomicCounterBuffer(0, atomicCounterBuffer);
+    shaderProgramSurface->setUniform("linkedListSize", (int)fragmentBufferSize);
+    shaderProgramSurface->setUniform("cameraPosition", sceneData.camera->getPosition());
+    shaderProgramSurface->setUniform("color", focusPointColor);
 
     resolveShader->setUniform("viewportW", width);
     resolveShader->setShaderStorageBuffer(0, "FragmentBuffer", fragmentBuffer);
@@ -188,7 +212,7 @@ void VolumeRenderer::setUniformData() {
     clearShader->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
 }
 
-void VolumeRenderer::clear() {
+void ClearViewRenderer::clear() {
     //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // In the clear and gather pass, we just want to write data to an SSBO.
@@ -208,7 +232,7 @@ void VolumeRenderer::clear() {
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 }
 
-void VolumeRenderer::gather() {
+void ClearViewRenderer::gather() {
     // Enable the depth test, but disable depth write for gathering.
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -228,11 +252,21 @@ void VolumeRenderer::gather() {
     sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
 
     // Now, the final gather step.
-    sgl::Renderer->render(shaderAttributes);
+    sgl::Renderer->render(shaderAttributesContext);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    // Render the focus region lines.
+    //sgl::Renderer->render(shaderAttributesFocus);
+    //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    // Render the focus point.
+    sgl::Renderer->setModelMatrix(sgl::matrixTranslation(focusPoint));
+    sgl::Renderer->render(focusPointShaderAttributes);
+    sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
-void VolumeRenderer::resolve() {
+void ClearViewRenderer::resolve() {
     sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
     sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
     sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
@@ -252,12 +286,24 @@ void VolumeRenderer::resolve() {
     glDepthMask(GL_TRUE);
 }
 
-void VolumeRenderer::render() {
+void ClearViewRenderer::render() {
     setUniformData();
     clear();
     gather();
     resolve();
 }
 
-void VolumeRenderer::renderGui() {
+void ClearViewRenderer::renderGui() {
+    if (ImGui::Begin("Clear View Renderer", &showRendererWindow)) {
+        if (ImGui::SliderFloat("Focus Radius", &focusRadius, 0.0f, 1.5f)) {
+            reRender = true;
+        }
+        if (ImGui::SliderFloat3("Focus Point", &focusPoint.x, -0.4f, 0.4f)) {
+            reRender = true;
+        }
+        if (ImGui::ColorEdit4("Focus Point Color", &focusPointColor.x)) {
+            reRender = true;
+        }
+    }
+    ImGui::End();
 }
