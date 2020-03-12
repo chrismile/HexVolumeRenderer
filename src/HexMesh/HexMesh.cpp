@@ -408,6 +408,11 @@ void HexMesh::getBaseComplexDataSurface(
         std::vector<glm::vec3>& normals,
         std::vector<glm::vec4>& colors,
         bool cullInterior) {
+    if (dirty) {
+        hexaLabApp->update_models();
+        dirty = false;
+    }
+
     Mesh* mesh = baseComplexMesh;
     sgl::XorshiftRandomGenerator random(10203);
 
@@ -946,5 +951,36 @@ void HexMesh::getLodLineRepresentation(
         }
         lineColors.push_back(vertexColor);
         lineColors.push_back(vertexColor);
+    }
+}
+
+void HexMesh::getCompleteWireframeData(
+        std::vector<glm::vec3> &lineVertices,
+        std::vector<glm::vec4> &lineColors) {
+    if (dirty) {
+        hexaLabApp->update_models();
+        dirty = false;
+    }
+
+    Mesh* mesh = baseComplexMesh;
+
+    std::unordered_set<uint32_t> singularEdgeIDs;
+    for (Singular_E& se : si->SEs) {
+        for (uint32_t e_id : se.es_link) {
+            singularEdgeIDs.insert(e_id);
+        }
+    }
+
+    for (Hybrid_E& e : mesh->Es) {
+        bool isSingular = singularEdgeIDs.find(e.id) != singularEdgeIDs.end();
+        for (uint32_t v_id : e.vs) {
+            glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+            lineVertices.push_back(vertexPosition);
+            if (isSingular) {
+                lineColors.push_back(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+            } else {
+                lineColors.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+            }
+        }
     }
 }

@@ -1,9 +1,9 @@
 // Simplified Blinn-Phong Shading assuming the ambient and diffuse color are equal and the specular color is white.
-// Assumes the following global variables are given: cameraPosition, fragmentPositonWorld, fragmentNormal.
+// Assumes the following global variables are given: cameraPosition, fragmentPositionWorld, fragmentNormal.
 vec4 blinnPhongShading(in vec4 baseColor) {
     // Blinn-Phong Shading
     const vec3 lightColor = vec3(1,1,1);
-    const vec3 ambientColor = baseColor.rgb;//vec3(0.5, fragmentPositonWorld.g, fragmentPositonWorld.b);
+    const vec3 ambientColor = baseColor.rgb;//vec3(0.5, fragmentPositionWorld.g, fragmentPositionWorld.b);
     const vec3 diffuseColor = ambientColor;
     vec3 phongColor = vec3(0);
 
@@ -14,7 +14,7 @@ vec4 blinnPhongShading(in vec4 baseColor) {
     const float s = 10;
 
     const vec3 n = normalize(fragmentNormal);
-    const vec3 v = normalize(cameraPosition - fragmentPositonWorld);
+    const vec3 v = normalize(cameraPosition - fragmentPositionWorld);
     const vec3 l = v;//normalize(lightDirection);
     const vec3 h = normalize(v + l);
 

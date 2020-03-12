@@ -61,9 +61,9 @@ protected:
     // GUI data
     bool showRendererWindow = true;
     glm::vec3 focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec4 focusPointColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-    float focusRadius = 0.1f;
-
+    glm::vec4 focusPointColor = glm::vec4(0.2f, 0.0f, 0.0f, 1.0f);
+    float focusRadius = 0.05f;
+    float lineWidth = 0.001f;
 };
 
 #endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_HPP

@@ -20,7 +20,7 @@ const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Inse
 static bool useStencilBuffer = true;
 
 /// Expected (average) depth complexity, i.e. width*height* this value = number of fragments that can be stored.
-static int expectedDepthComplexity = 64;
+static int expectedDepthComplexity = 80;
 /// Maximum number of fragments to sort in second pass.
 static int maxNumFragmentsSorting = 256;
 
@@ -50,7 +50,7 @@ ClearViewRenderer::ClearViewRenderer(SceneData &sceneData, TransferFunctionWindo
     std::vector<glm::vec3> sphereVertexNormals;
     std::vector<uint32_t> sphereIndices;
     getSphereSurfaceRenderData(
-            glm::vec3(0,0,0), 0.005f, 20, 20, sphereVertexPositions, sphereVertexNormals, sphereIndices);
+            glm::vec3(0,0,0), 0.003f, 20, 20, sphereVertexPositions, sphereVertexNormals, sphereIndices);
 
     focusPointShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgramSurface);
     focusPointShaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -67,8 +67,8 @@ ClearViewRenderer::ClearViewRenderer(SceneData &sceneData, TransferFunctionWindo
     focusPointShaderAttributes->setIndexGeometryBuffer(focusPointIndexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     sgl::ShaderManager->invalidateShaderCache();
-    gatherShaderFocus = sgl::ShaderManager->getShaderProgram({
-        "MeshShader.Vertex", "MeshShader.Fragment"});
+    gatherShaderFocus = sgl::ShaderManager->getShaderProgram(
+            {"WireframeFocus.Vertex", "WireframeFocus.Geometry", "WireframeFocus.Fragment"});
     gatherShaderContext = sgl::ShaderManager->getShaderProgram(
             {"MeshShader.Vertex", "MeshShader.Fragment.ClearView.Context"});
     resolveShader = sgl::ShaderManager->getShaderProgram(
@@ -95,6 +95,7 @@ ClearViewRenderer::ClearViewRenderer(SceneData &sceneData, TransferFunctionWindo
 }
 
 void ClearViewRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+    // First, start with the rendering data for the context region.
     std::vector<uint32_t> indices;
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec3> normals;
@@ -126,6 +127,27 @@ void ClearViewRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
             colors.size()*sizeof(glm::vec4), (void*)&colors.front(), sgl::VERTEX_BUFFER);
     shaderAttributesContext->addGeometryBuffer(
             colorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
+
+
+    // Now, continue with the rendering data for the focus region.
+    std::vector<glm::vec3> lineVertices;
+    std::vector<glm::vec4> lineColors;
+    meshIn->getCompleteWireframeData(lineVertices, lineColors);
+
+    shaderAttributesFocus = sgl::ShaderManager->createShaderAttributes(gatherShaderFocus);
+    shaderAttributesFocus->setVertexMode(sgl::VERTEX_MODE_LINES);
+
+    // Add the position buffer.
+    sgl::GeometryBufferPtr lineVertexBuffer = sgl::Renderer->createGeometryBuffer(
+            lineVertices.size()*sizeof(glm::vec3), (void*)&lineVertices.front(), sgl::VERTEX_BUFFER);
+    shaderAttributesFocus->addGeometryBuffer(
+            lineVertexBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+
+    // Add the color buffer.
+    sgl::GeometryBufferPtr lineColorBuffer = sgl::Renderer->createGeometryBuffer(
+            lineColors.size()*sizeof(glm::vec4), (void*)&lineColors.front(), sgl::VERTEX_BUFFER);
+    shaderAttributesFocus->addGeometryBuffer(
+            lineColorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
 
     dirty = false;
     reRender = true;
@@ -194,7 +216,12 @@ void ClearViewRenderer::setUniformData() {
     //gatherShaderFocus->setAtomicCounterBuffer(0, atomicCounterBuffer);
     gatherShaderFocus->setUniform("linkedListSize", (int)fragmentBufferSize);
     gatherShaderFocus->setUniform("cameraPosition", sceneData.camera->getPosition());
-    //gatherShaderFocus->setUniform("lineWidth", 0.001f); // TODO
+    if (gatherShaderFocus->hasUniform("lookingDirection")) {
+        gatherShaderFocus->setUniform("lookingDirection", lookingDirection);
+    }
+    gatherShaderFocus->setUniform("sphereCenter", focusPoint);
+    gatherShaderFocus->setUniform("sphereRadius", focusRadius);
+    gatherShaderFocus->setUniform("lineWidth", lineWidth);
 
     shaderProgramSurface->setUniform("viewportW", width);
     //shaderProgramSurface->setShaderStorageBuffer(0, "FragmentBuffer", fragmentBuffer);
@@ -256,8 +283,8 @@ void ClearViewRenderer::gather() {
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     // Render the focus region lines.
-    //sgl::Renderer->render(shaderAttributesFocus);
-    //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    sgl::Renderer->render(shaderAttributesFocus);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     // Render the focus point.
     sgl::Renderer->setModelMatrix(sgl::matrixTranslation(focusPoint));
@@ -295,13 +322,16 @@ void ClearViewRenderer::render() {
 
 void ClearViewRenderer::renderGui() {
     if (ImGui::Begin("Clear View Renderer", &showRendererWindow)) {
-        if (ImGui::SliderFloat("Focus Radius", &focusRadius, 0.0f, 1.5f)) {
+        if (ImGui::SliderFloat("Focus Radius", &focusRadius, 0.0001f, 0.4f)) {
             reRender = true;
         }
         if (ImGui::SliderFloat3("Focus Point", &focusPoint.x, -0.4f, 0.4f)) {
             reRender = true;
         }
         if (ImGui::ColorEdit4("Focus Point Color", &focusPointColor.x)) {
+            reRender = true;
+        }
+        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.002f, "%.4f")) {
             reRender = true;
         }
     }

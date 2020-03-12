@@ -160,6 +160,12 @@ public:
             std::vector<glm::vec4> &lineColors,
             std::vector<float> &lineLodValues,
             bool previewColors);
+    /**
+     * Get a list of all wireframe lines associated with LOD values.
+     */
+    void getCompleteWireframeData(
+            std::vector<glm::vec3> &lineVertices,
+            std::vector<glm::vec4> &lineColors);
 
 private:
     // Base-complex computations
