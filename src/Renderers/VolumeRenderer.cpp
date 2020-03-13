@@ -62,6 +62,7 @@ struct LinkedListFragmentNode {
 
 VolumeRenderer::VolumeRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
+    sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
     sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "\"LinkedListGather.glsl\"");
     sgl::ShaderManager->addPreprocessorDefine("MAX_NUM_FRAGS", sgl::toString(maxNumFragmentsSorting));

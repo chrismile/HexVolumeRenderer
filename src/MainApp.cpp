@@ -83,7 +83,8 @@ void openglErrorCallback() {
     std::cerr << "Application callback" << std::endl;
 }
 
-MainApp::MainApp() : camera(new sgl::Camera()), sceneData(sceneFramebuffer, camera, lightDirection) {
+MainApp::MainApp()
+        : camera(new sgl::Camera()), sceneData(sceneFramebuffer, camera, lightDirection), videoWriter(NULL) {
     sgl::FileUtils::get()->ensureDirectoryExists(saveDirectoryScreenshots);
     setPrintFPS(false);
 
@@ -152,6 +153,10 @@ MainApp::~MainApp() {
         delete meshRenderer;
     }
     meshRenderers.clear();
+
+    if (videoWriter != NULL) {
+        delete videoWriter;
+    }
 }
 
 void MainApp::setRenderers() {
@@ -252,6 +257,10 @@ void MainApp::processSDLEvent(const SDL_Event &event) {
 }
 
 void MainApp::render() {
+    if (videoWriter == NULL && recording) {
+        videoWriter = new sgl::VideoWriter("video.mp4", 25);
+    }
+
     prepareVisualizationPipeline();
 
     for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
@@ -305,6 +314,11 @@ void MainApp::render() {
                 saveDirectoryScreenshots + saveFilenameScreenshots
                 + "_" + sgl::toString(screenshotNumber++) + ".png");
         printNow = false;
+    }
+
+    // Video recording enabled?
+    if (recording) {
+        videoWriter->pushWindowFrame();
     }
 
     renderGUI();

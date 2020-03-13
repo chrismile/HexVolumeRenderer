@@ -35,6 +35,7 @@
 
 #include <Utils/AppLogic.hpp>
 #include <Graphics/Shader/Shader.hpp>
+#include <Graphics/Video/VideoWriter.hpp>
 
 #include "QualityMeasure/QualityMeasure.hpp"
 #include "Loaders/HexaLabDatasets.hpp"
@@ -131,6 +132,10 @@ private:
 
     // For downloading files in the background.
     LoaderThread loaderThread;
+
+    // For recording videos.
+    bool recording = false;
+    sgl::VideoWriter *videoWriter;
 
 
     /// --- Visualization pipeline ---
