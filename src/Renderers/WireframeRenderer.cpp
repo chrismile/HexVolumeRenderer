@@ -36,7 +36,7 @@ WireframeRenderer::WireframeRenderer(SceneData &sceneData, TransferFunctionWindo
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     shaderProgram = sgl::ShaderManager->getShaderProgram(
-            {"Wireframe.Vertex", "Wireframe.Geometry", "Wireframe.Fragment"});
+            {"Wireframe.Vertex", "Wireframe.Geometry", "Wireframe.Fragment.NoOutline"});
 }
 
 void WireframeRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {

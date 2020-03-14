@@ -28,6 +28,7 @@ layout(triangle_strip, max_vertices = 4) out;
 uniform vec3 cameraPosition;
 uniform float lineWidth;
 
+out vec3 fragmentPositionWorld;
 out float quadCoords; // Between -1 and 1
 out vec4 fragmentColor;
 
@@ -61,24 +62,28 @@ void main()
     vec3 up1 = normalize(cross(quadNormal1, right));
 
     vertexPosition = linePosition0 - (lineWidth / 2.0) * up0;
+    fragmentPositionWorld = vertexPosition;
     fragmentColor = lineColor0;
     quadCoords = -1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
     EmitVertex();
 
     vertexPosition = linePosition1 - (lineWidth / 2.0) * up1;
+    fragmentPositionWorld = vertexPosition;
     fragmentColor = lineColor1;
     quadCoords = -1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
     EmitVertex();
 
     vertexPosition = linePosition0 + (lineWidth / 2.0) * up0;
+    fragmentPositionWorld = vertexPosition;
     fragmentColor = lineColor0;
     quadCoords = 1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
     EmitVertex();
 
     vertexPosition = linePosition1 + (lineWidth / 2.0) * up1;
+    fragmentPositionWorld = vertexPosition;
     fragmentColor = lineColor1;
     quadCoords = 1.0;
     gl_Position = pMatrix * vMatrix * vec4(vertexPosition, 1.0);
@@ -91,9 +96,39 @@ void main()
 
 #version 430 core
 
+in vec3 fragmentPositionWorld;
 in vec4 fragmentColor;
 in float quadCoords; // Between -1 and 1
 out vec4 fragColor;
+
+uniform vec3 cameraPosition;
+
+void main()
+{
+    // To counteract depth fighting with overlay wireframe.
+    gl_FragDepth = gl_FragCoord.z - 0.00001;
+
+    float absCoords = abs(quadCoords);
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    const float WHITE_THRESHOLD = 0.7;
+    float EPSILON = clamp(fragmentDepth, 0.0, 0.49);
+    float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, absCoords);
+    //float coverage = 1.0 - smoothstep(1.0, 1.0, abs(quadCoords));
+    fragColor = vec4(mix(fragmentColor.rgb, vec3(1.0, 1.0, 1.0),
+            smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, absCoords)),
+            fragmentColor.a * coverage);
+}
+
+-- Fragment.NoOutline
+
+#version 430 core
+
+in vec3 fragmentPositionWorld;
+in vec4 fragmentColor;
+in float quadCoords; // Between -1 and 1
+out vec4 fragColor;
+
+uniform vec3 cameraPosition;
 
 void main()
 {

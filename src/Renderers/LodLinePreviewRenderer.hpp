@@ -64,6 +64,7 @@ protected:
     // GUI data
     bool showRendererWindow = true;
     float maxLod = 0.1f;
+    float lineWidth = 0.001f;
 };
 
 #endif //HEXVOLUMERENDERER_LODLINEPREVIEWRENDERER_HPP

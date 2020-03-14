@@ -106,7 +106,7 @@ void LodLineRenderer::render() {
     shaderProgramSurface->setUniform("cameraPosition", sceneData.camera->getPosition());
 
     // Render the LOD lines.
-    shaderProgram->setUniform("lineWidth", 0.001f);
+    shaderProgram->setUniform("lineWidth", lineWidth);
     sgl::Renderer->render(shaderAttributes);
 
     // Render the focus point.
@@ -125,6 +125,9 @@ void LodLineRenderer::renderGui() {
             reRender = true;
         }
         if (ImGui::ColorEdit4("Focus Point Color", &focusPointColor.x)) {
+            reRender = true;
+        }
+        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.002f, "%.4f")) {
             reRender = true;
         }
     }

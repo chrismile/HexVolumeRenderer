@@ -127,7 +127,8 @@ void main()
     const float WHITE_THRESHOLD = 0.7;
     float EPSILON = clamp(fragmentDepth, 0.0, 0.49);
     float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, absCoords);
-    vec4 color = vec4(mix(fragmentColor.rgb, vec3(1.0, 1.0, 1.0), smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, absCoords)), fragmentColor.a * coverage);
+    vec4 color = vec4(mix(fragmentColor.rgb, vec3(1.0, 1.0, 1.0),
+            smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, absCoords)), fragmentColor.a * coverage);
 
     vec3 rayOrigin = cameraPosition;
     vec3 rayDirection = normalize(fragmentPositionWorld - cameraPosition);

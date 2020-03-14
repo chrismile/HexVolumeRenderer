@@ -70,6 +70,7 @@ protected:
     glm::vec3 focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec4 focusPointColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
     float maxDistance = 0.1f;
+    float lineWidth = 0.001f;
 };
 
 #endif //HEXVOLUMERENDERER_LODLINERENDERER_HPP

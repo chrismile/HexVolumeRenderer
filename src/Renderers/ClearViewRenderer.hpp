@@ -100,6 +100,11 @@ protected:
     glm::vec4 focusPointColor = glm::vec4(0.2f, 0.0f, 0.0f, 1.0f);
     float focusRadius = 0.05f;
     float lineWidth = 0.001f;
+
+    // Focus point move information.
+    bool hasHitInformation = false;
+    glm::vec3 firstHit, lastHit;
+    glm::vec3 hitLookingDirection;
 };
 
 #endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_HPP

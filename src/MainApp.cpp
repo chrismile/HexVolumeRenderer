@@ -603,7 +603,6 @@ void MainApp::update(float dt) {
             float moveAmount = sgl::Mouse->getScrollWheel()*dt*2.0;
             camera->translate(sgl::transformPoint(invRotationMatrix, glm::vec3(0.0f, 0.0f, -moveAmount*MOVE_SPEED)));
             reRender = true;
-
         }
 
         // Mouse rotation

@@ -111,7 +111,9 @@ in vec4 fragmentColor;
 in float quadCoords; // Between -1 and 1
 out vec4 fragColor;
 
-const float EPSILON = 0.001;
+uniform vec3 cameraPosition;
+
+const float LOD_EPSILON = 0.001;
 
 void main()
 {
@@ -120,13 +122,23 @@ void main()
 
     float distanceToFocus = length(focusPoint - fragmentPositionWorld);
     float maxLodRenderValue = clamp(1.0 - distanceToFocus / maxDistance, 0.0, 1.0);
-    if (fragmentLodValue > maxLodRenderValue + EPSILON) {
+    if (fragmentLodValue > maxLodRenderValue + LOD_EPSILON) {
         discard;
     }
 
     //float coverage = 1.0 - smoothstep(0.90, 1.0, abs(quadCoords));
-    float coverage = 1.0 - smoothstep(1.0, 1.0, abs(quadCoords));
-    fragColor = vec4(fragmentColor.rgb, fragmentColor.a * coverage);
+    //float coverage = 1.0 - smoothstep(1.0, 1.0, abs(quadCoords));
+    //fragColor = vec4(fragmentColor.rgb, fragmentColor.a * coverage);
+
+    float absCoords = abs(quadCoords);
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    const float WHITE_THRESHOLD = 0.7;
+    float EPSILON = clamp(fragmentDepth, 0.0, 0.49);
+    float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, absCoords);
+    //float coverage = 1.0 - smoothstep(1.0, 1.0, abs(quadCoords));
+    fragColor = vec4(mix(fragmentColor.rgb, vec3(1.0, 1.0, 1.0),
+            smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, absCoords)),
+            fragmentColor.a * coverage);
 }
 
 -- Fragment.Preview
@@ -141,19 +153,31 @@ in vec4 fragmentColor;
 in float quadCoords; // Between -1 and 1
 out vec4 fragColor;
 
-const float EPSILON = 0.001;
+uniform vec3 cameraPosition;
+
+const float LOD_EPSILON = 0.001;
 
 void main()
 {
     // To counteract depth fighting with overlay wireframe.
     gl_FragDepth = gl_FragCoord.z - 0.00001;
 
-    if (fragmentLodValue > maxLod + EPSILON) {
+    if (fragmentLodValue > maxLod + LOD_EPSILON) {
         discard;
     }
 
     //float coverage = 1.0 - smoothstep(0.90, 1.0, abs(quadCoords));
-    float coverage = 1.0 - smoothstep(1.0, 1.0, abs(quadCoords));
-    fragColor = vec4(fragmentColor.rgb, fragmentColor.a * coverage);
+    //float coverage = 1.0 - smoothstep(1.0, 1.0, abs(quadCoords));
+    //fragColor = vec4(fragmentColor.rgb, fragmentColor.a * coverage);
+
+    float absCoords = abs(quadCoords);
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    const float WHITE_THRESHOLD = 0.7;
+    float EPSILON = clamp(fragmentDepth, 0.0, 0.49);
+    float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, absCoords);
+    //float coverage = 1.0 - smoothstep(1.0, 1.0, abs(quadCoords));
+    fragColor = vec4(mix(fragmentColor.rgb, vec3(1.0, 1.0, 1.0),
+            smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, absCoords)),
+            fragmentColor.a * coverage);
 }
 

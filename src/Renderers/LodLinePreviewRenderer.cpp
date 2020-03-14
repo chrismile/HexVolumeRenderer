@@ -77,13 +77,16 @@ void LodLinePreviewRenderer::render() {
     shaderProgram->setUniform("maxLod", maxLod);
 
     // Render the LOD lines.
-    shaderProgram->setUniform("lineWidth", 0.001f);
+    shaderProgram->setUniform("lineWidth", lineWidth);
     sgl::Renderer->render(shaderAttributes);
 }
 
 void LodLinePreviewRenderer::renderGui() {
     if (ImGui::Begin("Line LOD Preview Renderer", &showRendererWindow)) {
         if (ImGui::SliderFloat("Maximum LOD", &maxLod, 0.0f, 1.0f)) {
+            reRender = true;
+        }
+        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.002f, "%.4f")) {
             reRender = true;
         }
     }
