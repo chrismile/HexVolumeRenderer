@@ -68,6 +68,7 @@
 
 #include "QualityMeasure/QualityMeasure.hpp"
 #include "Renderers/TransferFunctionWindow.hpp"
+#include "Renderers/Intersection/RayMeshIntersection.hpp"
 #include "HexaLab/builder.h"
 #include "HexaLab/app.h"
 
@@ -80,7 +81,8 @@ typedef std::shared_ptr<HexMesh> HexMeshPtr;
 
 class HexMesh {
 public:
-    HexMesh(TransferFunctionWindow &transferFunctionWindow) : transferFunctionWindow(transferFunctionWindow) {}
+    HexMesh(TransferFunctionWindow &transferFunctionWindow, RayMeshIntersection& rayMeshIntersection)
+        : transferFunctionWindow(transferFunctionWindow), rayMeshIntersection(rayMeshIntersection) {}
     ~HexMesh();
     void setHexMeshData(const std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices);
     void setQualityMeasure(QualityMeasure qualityMeasure);
@@ -168,6 +170,13 @@ public:
             std::vector<glm::vec4> &lineColors);
 
 private:
+    void rebuildInternalRepresentationIfNecessary();
+
+    /**
+     * Updates the ray-mesh intersection data structure for a newly loaded mesh.
+     */
+    void updateMeshTriangleIntersectionDataStructure();
+
     // Base-complex computations
     /**
      * Converts the passed vertices and cell indices (8*num_cells) of a hexahedral mesh to its singularity and
@@ -204,6 +213,7 @@ private:
     void recomputeHistogram();
     QualityMeasure qualityMeasure = QUALITY_MEASURE_SCALED_JACOBIAN;
     TransferFunctionWindow &transferFunctionWindow;
+    RayMeshIntersection& rayMeshIntersection;
     bool dirty = false;
 
     // HexaLab data

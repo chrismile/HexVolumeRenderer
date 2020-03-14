@@ -31,13 +31,18 @@
 
 #include <Graphics/Scene/Camera.hpp>
 #include <Graphics/Buffers/FBO.hpp>
+#include "Intersection/RayMeshIntersection.hpp"
 
 struct SceneData {
-    SceneData(sgl::FramebufferObjectPtr& framebuffer, sgl::CameraPtr& camera, glm::vec3& lightDirection)
-        : framebuffer(framebuffer), camera(camera), lightDirection(lightDirection) {}
+    SceneData(
+            sgl::FramebufferObjectPtr& framebuffer, sgl::CameraPtr& camera, glm::vec3& lightDirection,
+            RayMeshIntersection& rayMeshIntersection)
+        : framebuffer(framebuffer), camera(camera), lightDirection(lightDirection),
+        rayMeshIntersection(rayMeshIntersection) {}
     sgl::FramebufferObjectPtr& framebuffer;
     sgl::CameraPtr& camera;
     glm::vec3& lightDirection;
+    RayMeshIntersection& rayMeshIntersection;
 };
 
 #endif //RENDERERS_SCENEDATA_HPP

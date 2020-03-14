@@ -266,15 +266,31 @@ HexaLab::Mesh& HexMesh::getMesh() {
     return *hexaLabApp->get_mesh();
 }
 
+void HexMesh::rebuildInternalRepresentationIfNecessary() {
+    if (dirty) {
+        hexaLabApp->update_models();
+        updateMeshTriangleIntersectionDataStructure();
+        dirty = false;
+    }
+}
+
+void HexMesh::updateMeshTriangleIntersectionDataStructure() {
+    std::vector<glm::vec3> vertices;
+    std::vector<uint32_t> indices;
+    indices.reserve(hexaLabApp->get_visible_model()->mesh_ibuffer.size());
+    for (HexaLab::Index& idx : hexaLabApp->get_visible_model()->mesh_ibuffer) {
+        indices.push_back(idx);
+    }
+    vertices = hexaLabApp->get_visible_model()->mesh_vert_pos;
+    rayMeshIntersection.setMeshTriangleData(vertices, indices);
+}
+
 void HexMesh::getSurfaceData(
         std::vector<uint32_t>& indices,
         std::vector<glm::vec3>& vertices,
         std::vector<glm::vec3>& normals,
         std::vector<glm::vec4>& colors) {
-    if (dirty) {
-        hexaLabApp->update_models();
-        dirty = false;
-    }
+    rebuildInternalRepresentationIfNecessary();
     indices.clear();
     indices.reserve(hexaLabApp->get_visible_model()->surface_ibuffer.size());
     for (HexaLab::Index& idx : hexaLabApp->get_visible_model()->surface_ibuffer) {
@@ -288,10 +304,7 @@ void HexMesh::getSurfaceData(
 void HexMesh::getWireframeData(
         std::vector<glm::vec3>& vertices,
         std::vector<glm::vec4>& colors) {
-    if (dirty) {
-        hexaLabApp->update_models();
-        dirty = false;
-    }
+    rebuildInternalRepresentationIfNecessary();
     vertices = hexaLabApp->get_visible_model()->wireframe_vert_pos;
     colors = hexaLabApp->get_visible_model()->wireframe_vert_color;
 }
@@ -301,10 +314,7 @@ void HexMesh::getVolumeData(
         std::vector<glm::vec3>& vertices,
         std::vector<glm::vec3>& normals,
         std::vector<glm::vec4>& colors) {
-    if (dirty) {
-        hexaLabApp->update_models();
-        dirty = false;
-    }
+    rebuildInternalRepresentationIfNecessary();
     indices.clear();
     indices.reserve(hexaLabApp->get_visible_model()->mesh_ibuffer.size());
     for (HexaLab::Index& idx : hexaLabApp->get_visible_model()->mesh_ibuffer) {
@@ -320,11 +330,7 @@ void HexMesh::getSingularityData(
         std::vector<glm::vec4>& lineColors,
         std::vector<glm::vec3>& pointVertices,
         std::vector<glm::vec4>& pointColors) {
-    if (dirty) {
-        hexaLabApp->update_models();
-        dirty = false;
-    }
-
+    rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
 
     for (size_t i = 0; i < si->SVs.size(); i++) {
@@ -353,11 +359,7 @@ void HexMesh::getBaseComplexDataWireframe(
         std::vector<glm::vec3>& pointVertices,
         std::vector<glm::vec4>& pointColors,
         bool drawRegularLines) {
-    if (dirty) {
-        hexaLabApp->update_models();
-        dirty = false;
-    }
-
+    rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
 
     for (Frame_V& fv : frame->FVs) {
@@ -408,11 +410,7 @@ void HexMesh::getBaseComplexDataSurface(
         std::vector<glm::vec3>& normals,
         std::vector<glm::vec4>& colors,
         bool cullInterior) {
-    if (dirty) {
-        hexaLabApp->update_models();
-        dirty = false;
-    }
-
+    rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
     sgl::XorshiftRandomGenerator random(10203);
 
@@ -770,11 +768,7 @@ inline glm::vec4 parametersToColor(int u, int v, int w, int *numVertices) {
 void HexMesh::getColoredPartitionLines(
         std::vector<glm::vec3>& lineVertices,
         std::vector<glm::vec4>& lineColors) {
-    if (dirty) {
-        hexaLabApp->update_models();
-        dirty = false;
-    }
-
+    rebuildInternalRepresentationIfNecessary();
     std::vector<ParametrizedGrid> gridPartitions = computeBaseComplexParametrizedGrid();
 
     for (ParametrizedGrid& grid : gridPartitions) {
@@ -842,10 +836,7 @@ void HexMesh::getLodLineRepresentation(
         std::vector<glm::vec4> &lineColors,
         std::vector<float> &lineLodValues,
         bool previewColors) {
-    if (dirty) {
-        hexaLabApp->update_models();
-        dirty = false;
-    }
+    rebuildInternalRepresentationIfNecessary();
 
     // Get a list of all parametrized base-complex grids.
     std::vector<ParametrizedGrid> gridPartitions = computeBaseComplexParametrizedGrid();
@@ -957,11 +948,7 @@ void HexMesh::getLodLineRepresentation(
 void HexMesh::getCompleteWireframeData(
         std::vector<glm::vec3> &lineVertices,
         std::vector<glm::vec4> &lineColors) {
-    if (dirty) {
-        hexaLabApp->update_models();
-        dirty = false;
-    }
-
+    rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
 
     std::unordered_set<uint32_t> singularEdgeIDs;

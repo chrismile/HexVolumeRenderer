@@ -52,6 +52,8 @@ public:
     virtual void render()=0;
     // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
     virtual void renderGui()=0;
+    // Updates the internal logic (called once per frame).
+    virtual void update(float dt) {}
 
     // Called when the resolution of the application window has changed.
     virtual void onResolutionChanged() {}

@@ -33,6 +33,8 @@
 #include <Graphics/OpenGL/GeometryBuffer.hpp>
 #include <Graphics/OpenGL/Shader.hpp>
 #include <Utils/AppSettings.hpp>
+#include <Input/Keyboard.hpp>
+#include <Input/Mouse.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
 #include "Helpers/Sphere.hpp"
@@ -361,4 +363,20 @@ void ClearViewRenderer::renderGui() {
         }
     }
     ImGui::End();
+}
+
+void ClearViewRenderer::update(float dt) {
+    if (sgl::Keyboard->getModifier() & KMOD_CTRL) {
+        if (sgl::Mouse->buttonPressed(1) || (sgl::Mouse->isButtonDown(1) && sgl::Mouse->mouseMoved())) {
+            glm::vec3 firstHit, lastHit;
+            int mouseX = sgl::Mouse->getX();
+            int mouseY = sgl::Mouse->getY();
+            bool rayHasHitMesh = this->sceneData.rayMeshIntersection.pickPointScreen(
+                    mouseX, mouseY, firstHit, lastHit);
+            if (rayHasHitMesh) {
+                focusPoint = firstHit;
+                reRender = true;
+            }
+        }
+    }
 }

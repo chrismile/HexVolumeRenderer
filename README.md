@@ -38,6 +38,21 @@ export LD_LIBRARY_PATH=/usr/local/lib
 ./HexVolumeRenderer
 ```
 
+The program is also able to use Embree instead of NanoRT (which is shipped together with this application) for ray-mesh intersection tests.
+Embree is considerably faster. To enable Embree support, please use the following command.
+
+```
+cmake -DUSE_EMBREE=ON -Dembree_DIR=<path-to-embree> ..
+```
+
+The user needs to manually download Embree from its website and make sure that all its dependencies (like TBB and ISPC) are also installed.
+
+If TBB and ISPC are not found and installed manually, please use the following command.
+
+```
+cmake -DUSE_EMBREE=ON -DISPC_EXECUTABLE=<path-to-ispc-binary> -DTBB_ROOT=<path-to-tbb> -Dembree_DIR=<path-to-embree> ..
+```
+
 ## How to add new data sets
 
 This program optionally supports downloading data sets from HexaLab. The user is responsible himself or herself that he or she has the rights to do this. For more details on HexaLab see:

@@ -8,6 +8,16 @@ set (CMAKE_CXX_STANDARD 11)
 file(GLOB_RECURSE SOURCES src/*.cpp src/*.c)
 include_directories(src)
 
+option(USE_EMBREE "Build with Embree as Ray-Mesh Intersection Library" OFF)
+
+if(USE_EMBREE)
+	find_package(embree 3.0 REQUIRED)
+	include_directories(${EMBREE_INCLUDE_DIRS})
+	add_definitions(-DUSE_EMBREE)
+else()
+	list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Renderers/Intersection/RayMeshIntersection_Embree.cpp)
+endif()
+
 #make VERBOSE=1
 
 IF(WIN32)
@@ -15,6 +25,10 @@ IF(WIN32)
 ELSE()
 	add_executable(HexVolumeRenderer ${SOURCES})
 ENDIF()
+
+if(USE_EMBREE)
+	target_link_libraries(HexVolumeRenderer ${EMBREE_LIBRARIES})
+endif()
 
 IF(WIN32)
 	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")

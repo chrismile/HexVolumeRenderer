@@ -83,6 +83,7 @@ private:
 
     /// Scene data (e.g., camera, main framebuffer, ...).
     sgl::CameraPtr camera;
+    RayMeshIntersection* rayMeshIntersection;
     SceneData sceneData;
 
     // Off-screen rendering
@@ -135,7 +136,7 @@ private:
 
     // For recording videos.
     bool recording = false;
-    sgl::VideoWriter *videoWriter;
+    sgl::VideoWriter* videoWriter;
 
 
     /// --- Visualization pipeline ---

@@ -77,6 +77,9 @@
 #include "Renderers/LodLineRenderer.hpp"
 #include "Renderers/LodLinePreviewRenderer.hpp"
 #include "Renderers/ClearViewRenderer.hpp"
+#ifdef USE_EMBREE
+#include "Renderers/Intersection/RayMeshIntersection_Embree.hpp"
+#endif
 #include "MainApp.hpp"
 
 void openglErrorCallback() {
@@ -84,7 +87,14 @@ void openglErrorCallback() {
 }
 
 MainApp::MainApp()
-        : camera(new sgl::Camera()), sceneData(sceneFramebuffer, camera, lightDirection), videoWriter(NULL) {
+        : camera(new sgl::Camera()),
+#ifdef USE_EMBREE
+          rayMeshIntersection(new RayMeshIntersection_Embree(camera)),
+#else
+        rayMeshIntersection(new RayMeshIntersection_NanoRT(camera)),
+#endif
+          sceneData(sceneFramebuffer, camera, lightDirection, *rayMeshIntersection),
+          videoWriter(NULL) {
     sgl::FileUtils::get()->ensureDirectoryExists(saveDirectoryScreenshots);
     setPrintFPS(false);
 
@@ -157,6 +167,7 @@ MainApp::~MainApp() {
     if (videoWriter != NULL) {
         delete videoWriter;
     }
+    delete rayMeshIntersection;
 }
 
 void MainApp::setRenderers() {
@@ -582,26 +593,32 @@ void MainApp::update(float dt) {
         return;
     }
 
-    // Zoom in/out
-    if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
-        float moveAmount = sgl::Mouse->getScrollWheel()*dt*2.0;
-        camera->translate(sgl::transformPoint(invRotationMatrix, glm::vec3(0.0f, 0.0f, -moveAmount*MOVE_SPEED)));
-        reRender = true;
-
+    for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
+        meshRenderer->update(dt);
     }
 
-    // Mouse rotation
-    if (sgl::Mouse->isButtonDown(1) && sgl::Mouse->mouseMoved()) {
-        sgl::Point2 pixelMovement = sgl::Mouse->mouseMovement();
-        float yaw = dt*MOUSE_ROT_SPEED*pixelMovement.x;
-        float pitch = -dt*MOUSE_ROT_SPEED*pixelMovement.y;
+    if (!(sgl::Keyboard->getModifier() & (KMOD_CTRL | KMOD_SHIFT))) {
+        // Zoom in/out
+        if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
+            float moveAmount = sgl::Mouse->getScrollWheel()*dt*2.0;
+            camera->translate(sgl::transformPoint(invRotationMatrix, glm::vec3(0.0f, 0.0f, -moveAmount*MOVE_SPEED)));
+            reRender = true;
 
-        glm::quat rotYaw = glm::quat(glm::vec3(0.0f, yaw, 0.0f));
-        glm::quat rotPitch = glm::quat(pitch*glm::vec3(rotationMatrix[0][0], rotationMatrix[1][0],
-                rotationMatrix[2][0]));
-        camera->rotateYaw(yaw);
-        camera->rotatePitch(pitch);
-        reRender = true;
+        }
+
+        // Mouse rotation
+        if (sgl::Mouse->isButtonDown(1) && sgl::Mouse->mouseMoved()) {
+            sgl::Point2 pixelMovement = sgl::Mouse->mouseMovement();
+            float yaw = dt*MOUSE_ROT_SPEED*pixelMovement.x;
+            float pitch = -dt*MOUSE_ROT_SPEED*pixelMovement.y;
+
+            glm::quat rotYaw = glm::quat(glm::vec3(0.0f, yaw, 0.0f));
+            glm::quat rotPitch = glm::quat(pitch*glm::vec3(rotationMatrix[0][0], rotationMatrix[1][0],
+                                                           rotationMatrix[2][0]));
+            camera->rotateYaw(yaw);
+            camera->rotatePitch(pitch);
+            reRender = true;
+        }
     }
 }
 
@@ -647,7 +664,7 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
     bool loadingSuccessful = it->second->loadHexahedralMeshFromFile(fileName, vertices, cellIndices);
     if (loadingSuccessful) {
         normalizeVertexPositions(vertices);
-        inputData = HexMeshPtr(new HexMesh(transferFunctionWindow));
+        inputData = HexMeshPtr(new HexMesh(transferFunctionWindow, *rayMeshIntersection));
         inputData->setHexMeshData(vertices, cellIndices);
         inputData->setQualityMeasure(selectedQualityMeasure);
     }

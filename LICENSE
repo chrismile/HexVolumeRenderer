@@ -1,6 +1,6 @@
 This license applies to all files not covered by a seperate license (e.g.,
 fonts, included libraries, code from HexaLab in src/HexaLab/, code in
-src/BaseComplex).
+src/BaseComplex, nanort.h).
 
 ----------------------------------------------------------------------------
 
