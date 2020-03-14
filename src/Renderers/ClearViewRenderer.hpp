@@ -33,6 +33,16 @@
 
 #include "HexahedralMeshRenderer.hpp"
 
+/**
+ * Renders the hexahedral mesh using an approach similar to ClearView (see below).
+ * The focus region of the mesh is rendered using colored lines with white outlines that are faded out at the boundary.
+ * The context region is rendered using face-based volume rendering (@see VolumeRenderer).
+ *
+ * For more details on ClearView see: "ClearView: An Interactive Context Preserving Hotspot Visualization Technique",
+ * Jens Krüger, Jens Schneider, Rüdiger Westermann (2006)
+ * Computer Graphics and Visualization Group, Technical University Munich, Germany
+ * https://www.in.tum.de/cg/research/publications/2006/clearview-an-interactive-context-preserving-hotspot-visualization-technique/
+ */
 class ClearViewRenderer : public HexahedralMeshRenderer {
 public:
     ClearViewRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);

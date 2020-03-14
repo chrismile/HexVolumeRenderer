@@ -74,8 +74,8 @@ enum SelectedPointType {
     SELECTED_POINT_TYPE_NONE, SELECTED_POINT_TYPE_OPACITY, SELECTED_POINT_TYPE_COLOR
 };
 
-/** Stores color and opacity points and renders the GUI.
- *
+/**
+ * Stores color and opacity points and renders the GUI.
  */
 class TransferFunctionWindow
 {

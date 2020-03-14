@@ -33,6 +33,9 @@
 
 #include "HexahedralMeshRenderer.hpp"
 
+/**
+ * Renders all boundary surfaces of the hexahedral mesh.
+ */
 class SurfaceRenderer : public HexahedralMeshRenderer {
 public:
     SurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);

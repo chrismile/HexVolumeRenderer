@@ -33,6 +33,9 @@
 
 #include "HexahedralMeshRenderer.hpp"
 
+/**
+ * Renders the hexahedral mesh as a wireframe representation of its edges.
+ */
 class WireframeRenderer : public HexahedralMeshRenderer {
 public:
     WireframeRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);

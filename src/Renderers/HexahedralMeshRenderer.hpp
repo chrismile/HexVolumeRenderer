@@ -34,6 +34,9 @@
 
 class TransferFunctionWindow;
 
+/**
+ * Super-class for hexahedral mesh renderers.
+ */
 class HexahedralMeshRenderer {
 public:
     HexahedralMeshRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)

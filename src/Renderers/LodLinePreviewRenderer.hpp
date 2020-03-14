@@ -33,6 +33,11 @@
 
 #include "HexahedralMeshRenderer.hpp"
 
+/**
+ * Renders the hexahedral mesh using lines. All lines are assigned an LOD value between 0 and 1.
+ * Lines with low LOD value are displayed also on more coarse levels. The LOD renderer uses the base-complex to create
+ * an LOD hierarchy. The user can select what LOD level to display.
+ */
 class LodLinePreviewRenderer : public HexahedralMeshRenderer {
 public:
     LodLinePreviewRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);

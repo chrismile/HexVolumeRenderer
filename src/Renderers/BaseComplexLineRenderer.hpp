@@ -33,6 +33,9 @@
 
 #include "HexahedralMeshRenderer.hpp"
 
+/**
+ * Renders all base complex edges as lines and vertex corners as points.
+ */
 class BaseComplexLineRenderer : public HexahedralMeshRenderer {
 public:
     BaseComplexLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);

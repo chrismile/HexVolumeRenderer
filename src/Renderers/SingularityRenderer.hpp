@@ -33,6 +33,9 @@
 
 #include "HexahedralMeshRenderer.hpp"
 
+/**
+ * Renders all singular edges as lines and singular vertices as points.
+ */
 class SingularityRenderer : public HexahedralMeshRenderer {
 public:
     SingularityRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);

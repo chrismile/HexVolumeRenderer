@@ -33,6 +33,9 @@
 
 #include "HexahedralMeshRenderer.hpp"
 
+/**
+ * Renders the hexahedral mesh with all faces and determines the depth complexity in each pixel.
+ */
 class DepthComplexityRenderer : public HexahedralMeshRenderer {
 public:
     DepthComplexityRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);

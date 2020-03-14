@@ -33,6 +33,9 @@
 
 #include "HexahedralMeshRenderer.hpp"
 
+/**
+ * Renders all base base complex face surfaces with distinct colors.
+ */
 class BaseComplexSurfaceRenderer : public HexahedralMeshRenderer {
 public:
     BaseComplexSurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);

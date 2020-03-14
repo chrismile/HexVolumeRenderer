@@ -38,7 +38,7 @@ struct SceneData {
             sgl::FramebufferObjectPtr& framebuffer, sgl::CameraPtr& camera, glm::vec3& lightDirection,
             RayMeshIntersection& rayMeshIntersection)
         : framebuffer(framebuffer), camera(camera), lightDirection(lightDirection),
-        rayMeshIntersection(rayMeshIntersection) {}
+          rayMeshIntersection(rayMeshIntersection) {}
     sgl::FramebufferObjectPtr& framebuffer;
     sgl::CameraPtr& camera;
     glm::vec3& lightDirection;
