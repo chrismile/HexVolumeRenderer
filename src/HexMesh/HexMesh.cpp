@@ -963,40 +963,48 @@ void HexMesh::getLodLineRepresentation(
     }
 }
 
+
+/**
+ * Represents an octree for subdividing a base-complex partition into a coarser and coarser levels.
+ * It is used to get a partly-refined representation of the mesh close to a focus point by culling octree nodes that
+ * are very far away to the focus point.
+ */
 struct OctreeNode {
     OctreeNode(glm::ivec3 minRange, glm::ivec3 maxRange) : minRange(minRange), maxRange(maxRange) {}
-    glm::ivec3 minRange;
-    glm::ivec3 maxRange;
-    float minDist = FLT_MAX;
+    glm::ivec3 minRange; ///< Minimum parametrized grid vertex index in the octree node (inclusive).
+    glm::ivec3 maxRange; ///< Maximum parametrized grid vertex index in the octree node (inclusive).
+    float minDist = FLT_MAX; ///< The (minimum) distance to the focus region.
     std::vector<OctreeNode> children;
 };
 
+/**
+ * Encodes an edge defined by two vertex IDs in an order-independent way.
+ * @param ptIdx0 The vertex ID of the first point forming the edge.
+ * @param ptIdx1 The vertex ID of the second point forming the edge.
+ * @return
+ */
 inline uint64_t makeEdge(uint32_t ptIdx0, uint32_t ptIdx1) {
+    // Pack the two IDs into one 64-bit value, making sure the smaller one is always in the least significant bytes.
     uint32_t ptA = std::min(ptIdx0, ptIdx1);
     uint32_t ptB = std::max(ptIdx0, ptIdx1);
     return uint64_t(ptA) | (uint64_t(ptB) << 32ull);
 }
 
 void addChildIfNonEmpty(OctreeNode& parent, const OctreeNode& child) {
+    // Only add if we have at least one cell (i.e., two vertices in all directions).
     if (glm::any(glm::lessThan(child.maxRange - child.minRange, glm::ivec3(1)))) {
         return;
     }
     parent.children.push_back(child);
 }
 
-/**
- * Helper function for getLodRepresentation. Assigns LOD values recursively in an 1D array by bisection.
- * @param lodValues The LOD value array.
- * @param minIndex The minimum index handled in this recursion step (inclusive).
- * @param maxIndex The maximum index handled in this recursion step (inclusive).
- * @param recursionNumber The recursion index. Starting at 1 and incremented each recursion.
- */
 void subdivideEmptyOctree(OctreeNode& octree, int level, int& numLevels) {
     numLevels = std::max(numLevels, level + 1);
 
     glm::ivec3 minRange = octree.minRange;
     glm::ivec3 maxRange = octree.maxRange;
     glm::ivec3 midRange = (minRange + maxRange) / 2;
+    // Only add up to 8 children if we are not at a leaf node with one element.
     if (glm::any(glm::greaterThan(maxRange - minRange, glm::ivec3(1)))) {
         addChildIfNonEmpty(octree, OctreeNode(
                 glm::ivec3(minRange.x, minRange.y, minRange.z),
@@ -1030,6 +1038,7 @@ void subdivideEmptyOctree(OctreeNode& octree, int level, int& numLevels) {
 }
 
 void computeOctreeDistances(OctreeNode& octree, ParametrizedGrid& grid, std::vector<float>& gridPointDistances) {
+    // If we are at a leaf node: Compute the distance to the focus point as the minimum distance of all corner points.
     if (octree.children.size() == 0) {
         assert(glm::all(glm::equal(octree.maxRange - octree.minRange, glm::ivec3(1))));
         int* numVertices = grid.numVertices;
@@ -1060,13 +1069,14 @@ void computeOctreeDistances(OctreeNode& octree, ParametrizedGrid& grid, std::vec
         return;
     }
 
+    // Compute the distance of a parent node to the focus point as the minimum distance of all child nodes.
     for (OctreeNode& child : octree.children) {
         computeOctreeDistances(child, grid, gridPointDistances);
         octree.minDist = std::min(octree.minDist, child.minDist);
     }
 }
 
-void HexMesh::addEdge(
+void HexMesh::addEdgeToLodRenderData(
         const glm::ivec3 ptIdx0, const glm::ivec3 ptIdx1, ParametrizedGrid& grid,
         std::vector<glm::vec3>& lineVertices, std::vector<glm::vec4>& lineColors,
         std::unordered_set<uint64_t>& addedEdgeSet, int level, int numLevels) {
@@ -1079,21 +1089,8 @@ void HexMesh::addEdge(
         return;
     }
     addedEdgeSet.insert(vertexPair);
-    //Hybrid_V& v0 = this->baseComplexMesh->Vs.at(vertexId0);
-    //Hybrid_V& v1 = this->baseComplexMesh->Vs.at(vertexId1);
     glm::vec3 vertexPosition0(mesh->V(0, vertexId0), mesh->V(1, vertexId0), mesh->V(2, vertexId0));
     glm::vec3 vertexPosition1(mesh->V(0, vertexId1), mesh->V(1, vertexId1), mesh->V(2, vertexId1));
-
-    // Find edge connecting point 0 and point 1.
-    /*std::vector<uint32_t> commonEdgeList;
-    std::sort(v0.neighbor_es.begin(), v0.neighbor_es.end());
-    std::sort(v1.neighbor_es.begin(), v0.neighbor_es.end());
-    std::set_intersection(
-            v0.neighbor_es.begin(), v0.neighbor_es.end(),
-            v1.neighbor_es.begin(), v1.neighbor_es.end(),
-            std::back_inserter(commonEdgeList));
-    assert(commonEdgeList.size() == 1);
-    Hybrid_E& commonEdge = commonEdgeList.at(0);*/
 
     glm::vec4 vertexColor(1.0f, 0.0f, 0.0f, 1.0f);
     if (level > 0) {
@@ -1116,61 +1113,63 @@ void HexMesh::getListOfOctreeEdges(
         OctreeNode& octree, ParametrizedGrid& grid,
         std::vector<glm::vec3>& lineVertices, std::vector<glm::vec4>& lineColors,
         std::unordered_set<uint64_t>& addedEdgeSet, float focusRadius, int level, int numLevels) {
+    // Iterate over all border edges of the octree node's LOD level.
     for (int x = octree.minRange.x; x < octree.maxRange.x; x++) {
-        addEdge(
-                glm::ivec3(x,     octree.minRange.y, octree.minRange.z),
+        addEdgeToLodRenderData(
+                glm::ivec3(x, octree.minRange.y, octree.minRange.z),
                 glm::ivec3(x + 1, octree.minRange.y, octree.minRange.z),
-                grid, lineVertices,  lineColors, addedEdgeSet, level, numLevels);
-        addEdge(
-                glm::ivec3(x,     octree.maxRange.y, octree.minRange.z),
+                grid, lineVertices, lineColors, addedEdgeSet, level, numLevels);
+        addEdgeToLodRenderData(
+                glm::ivec3(x, octree.maxRange.y, octree.minRange.z),
                 glm::ivec3(x + 1, octree.maxRange.y, octree.minRange.z),
-                grid, lineVertices,  lineColors, addedEdgeSet, level, numLevels);
-        addEdge(
-                glm::ivec3(x,     octree.minRange.y, octree.maxRange.z),
+                grid, lineVertices, lineColors, addedEdgeSet, level, numLevels);
+        addEdgeToLodRenderData(
+                glm::ivec3(x, octree.minRange.y, octree.maxRange.z),
                 glm::ivec3(x + 1, octree.minRange.y, octree.maxRange.z),
-                grid, lineVertices,  lineColors, addedEdgeSet, level, numLevels);
-        addEdge(
-                glm::ivec3(x,     octree.maxRange.y, octree.maxRange.z),
+                grid, lineVertices, lineColors, addedEdgeSet, level, numLevels);
+        addEdgeToLodRenderData(
+                glm::ivec3(x, octree.maxRange.y, octree.maxRange.z),
                 glm::ivec3(x + 1, octree.maxRange.y, octree.maxRange.z),
-                grid, lineVertices,  lineColors, addedEdgeSet, level, numLevels);
+                grid, lineVertices, lineColors, addedEdgeSet, level, numLevels);
     }
     for (int y = octree.minRange.y; y < octree.maxRange.y; y++) {
-        addEdge(
-                glm::ivec3(octree.minRange.x, y,     octree.minRange.z),
+        addEdgeToLodRenderData(
+                glm::ivec3(octree.minRange.x, y, octree.minRange.z),
                 glm::ivec3(octree.minRange.x, y + 1, octree.minRange.z),
-                grid, lineVertices,  lineColors, addedEdgeSet, level, numLevels);
-        addEdge(
-                glm::ivec3(octree.maxRange.x, y,     octree.minRange.z),
+                grid, lineVertices, lineColors, addedEdgeSet, level, numLevels);
+        addEdgeToLodRenderData(
+                glm::ivec3(octree.maxRange.x, y, octree.minRange.z),
                 glm::ivec3(octree.maxRange.x, y + 1, octree.minRange.z),
-                grid, lineVertices,  lineColors, addedEdgeSet, level, numLevels);
-        addEdge(
-                glm::ivec3(octree.minRange.x, y,     octree.maxRange.z),
+                grid, lineVertices, lineColors, addedEdgeSet, level, numLevels);
+        addEdgeToLodRenderData(
+                glm::ivec3(octree.minRange.x, y, octree.maxRange.z),
                 glm::ivec3(octree.minRange.x, y + 1, octree.maxRange.z),
-                grid, lineVertices,  lineColors, addedEdgeSet, level, numLevels);
-        addEdge(
-                glm::ivec3(octree.maxRange.x, y,     octree.maxRange.z),
+                grid, lineVertices, lineColors, addedEdgeSet, level, numLevels);
+        addEdgeToLodRenderData(
+                glm::ivec3(octree.maxRange.x, y, octree.maxRange.z),
                 glm::ivec3(octree.maxRange.x, y + 1, octree.maxRange.z),
-                grid, lineVertices,  lineColors, addedEdgeSet, level, numLevels);
+                grid, lineVertices, lineColors, addedEdgeSet, level, numLevels);
     }
     for (int z = octree.minRange.z; z < octree.maxRange.z; z++) {
-        addEdge(
+        addEdgeToLodRenderData(
                 glm::ivec3(octree.minRange.x, octree.minRange.y, z),
                 glm::ivec3(octree.minRange.x, octree.minRange.y, z + 1),
-                grid, lineVertices,  lineColors, addedEdgeSet, level, numLevels);
-        addEdge(
+                grid, lineVertices, lineColors, addedEdgeSet, level, numLevels);
+        addEdgeToLodRenderData(
                 glm::ivec3(octree.maxRange.x, octree.minRange.y, z),
                 glm::ivec3(octree.maxRange.x, octree.minRange.y, z + 1),
-                grid, lineVertices,  lineColors, addedEdgeSet, level, numLevels);
-        addEdge(
+                grid, lineVertices, lineColors, addedEdgeSet, level, numLevels);
+        addEdgeToLodRenderData(
                 glm::ivec3(octree.minRange.x, octree.maxRange.y, z),
                 glm::ivec3(octree.minRange.x, octree.maxRange.y, z + 1),
-                grid, lineVertices,  lineColors, addedEdgeSet, level, numLevels);
-        addEdge(
+                grid, lineVertices, lineColors, addedEdgeSet, level, numLevels);
+        addEdgeToLodRenderData(
                 glm::ivec3(octree.maxRange.x, octree.maxRange.y, z),
                 glm::ivec3(octree.maxRange.x, octree.maxRange.y, z + 1),
-                grid, lineVertices,  lineColors, addedEdgeSet, level, numLevels);
+                grid, lineVertices, lineColors, addedEdgeSet, level, numLevels);
     }
 
+    // Only add the refined edges of the child nodes at finer LOD levels if they are in the focus region.
     if (octree.minDist > focusRadius) {
         return;
     }
@@ -1188,6 +1187,8 @@ void HexMesh::getLodLineRepresentationClosest(
         const glm::vec3& focusPoint,
         float focusRadius) {
     rebuildInternalRepresentationIfNecessary();
+
+    // Edges only need to be considered once, thus remember which we have already added.
     std::unordered_set<uint64_t> addedEdgeSet;
 
     // Get a list of all parametrized base-complex grids.
@@ -1196,21 +1197,26 @@ void HexMesh::getLodLineRepresentationClosest(
         ParametrizedGrid& grid = gridPartitions.at(gridIdx);
         int* numVertices = grid.numVertices;
         int numVerticesTotal = numVertices[0] * numVertices[1] * numVertices[2];
+
+        // Compute the distances of all grid points to the focus point.
         std::vector<float> gridPointDistances;
         gridPointDistances.resize(numVertices[0] * numVertices[1] * numVertices[2]);
         for (int vertexIdx = 0; vertexIdx < numVerticesTotal; vertexIdx++) {
             gridPointDistances.at(vertexIdx) = glm::length(focusPoint - grid.gridPoints.at(vertexIdx));
         }
 
-        std::vector<uint32_t> octreeEdgeList;
-
+        /*
+         * Construct the octree, including the distance of all levels of subdivion to the focus point.
+         * Then, add the edges of the appropriate levels to the list of rendered lines.
+         */
         OctreeNode octree(
                 glm::ivec3(0, 0, 0),
                 glm::ivec3(numVertices[0] - 1, numVertices[1] - 1, numVertices[2] - 1));
         int numLevels = 0;
         subdivideEmptyOctree(octree, 0, numLevels);
         computeOctreeDistances(octree, grid, gridPointDistances);
-        getListOfOctreeEdges(octree, grid, lineVertices, lineColors, addedEdgeSet, focusRadius, 0, numLevels);
+        getListOfOctreeEdges(
+                octree, grid, lineVertices, lineColors, addedEdgeSet, focusRadius, 0, numLevels);
     }
 }
 

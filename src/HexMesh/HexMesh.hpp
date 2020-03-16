@@ -164,7 +164,10 @@ public:
             std::vector<float> &lineLodValues,
             bool previewColors);
     /**
-     * TODO
+     * Uses an octree to construct an LOD representation of the mesh. It creates a renderable line representation of
+     * the edge meshes that is only refined in regions close to a focus point.
+     * @param focusPoint The focus point.
+     * @param focusRadius The radius that defines the 'near' region of the focus point that should be highly refined.
      */
     void getLodLineRepresentationClosest(
             std::vector<glm::vec3> &lineVertices,
@@ -220,7 +223,7 @@ private:
     std::vector<ParametrizedGrid> computeBaseComplexParametrizedGrid();
 
     // Helpers for getLodLineRepresentationClosest
-    void addEdge(
+    void addEdgeToLodRenderData(
             const glm::ivec3 ptIdx0, const glm::ivec3 ptIdx1, ParametrizedGrid& grid,
             std::vector<glm::vec3>& lineVertices, std::vector<glm::vec4>& lineColors,
             std::unordered_set<uint64_t>& addedEdgeSet, int level, int numLevels);

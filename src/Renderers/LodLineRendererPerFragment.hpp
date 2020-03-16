@@ -39,6 +39,8 @@
  * Lines with low LOD value are displayed also on more coarse levels.
  * The further line points are away from a focus center, the more coarse the line representation of the mesh is.
  * The LOD renderer uses the base-complex to create an LOD hierarchy.
+ * This renderer (in contrast to LodLineRenderer) uses use per-fragment tests, not an octree to decide what lines are
+ * filtered. This makes it considerably faster, but its quality is a bit questionable.
  */
 class LodLineRendererPerFragment : public HexahedralMeshRenderer {
 public:

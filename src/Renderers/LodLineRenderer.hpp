@@ -33,7 +33,11 @@
 #include "HexahedralMeshRenderer.hpp"
 
 /**
- * TODO
+ * Renders the hexahedral mesh using lines.
+ * The further line points are away from a focus center, the more coarse the line representation of the mesh is.
+ * The LOD renderer uses the base-complex to create an LOD hierarchy.
+ * This renderer (in contrast to LodLineRendererPerFragment) does not use per-fragment tests, but uses an octree
+ * to decide what lines are filtered.
  */
 class LodLineRenderer : public HexahedralMeshRenderer {
 public:
