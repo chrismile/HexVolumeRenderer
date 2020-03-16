@@ -74,6 +74,7 @@
 #include "Renderers/BaseComplexLineRenderer.hpp"
 #include "Renderers/BaseComplexSurfaceRenderer.hpp"
 #include "Renderers/PartitionLineRenderer.hpp"
+#include "Renderers/LodLineRendererPerFragment.hpp"
 #include "Renderers/LodLineRenderer.hpp"
 #include "Renderers/LodLinePreviewRenderer.hpp"
 #include "Renderers/ClearViewRenderer.hpp"
@@ -194,6 +195,8 @@ void MainApp::setRenderers() {
         meshRenderers.push_back(new PartitionLineRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_LOD_LINES) {
         meshRenderers.push_back(new LodLineRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_LOD_LINES_PER_FRAGMENT) {
+        meshRenderers.push_back(new LodLineRendererPerFragment(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_LOD_LINES_PREVIEW) {
         meshRenderers.push_back(new LodLinePreviewRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_CLEAR_VIEW) {

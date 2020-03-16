@@ -25,20 +25,25 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef HEXVOLUMERENDERER_LODLINERENDERER_HPP
-#define HEXVOLUMERENDERER_LODLINERENDERER_HPP
+
+
+#ifndef HEXVOLUMERENDERER_LODLINERENDERERPERFRAGMENT_HPP
+#define HEXVOLUMERENDERER_LODLINERENDERERPERFRAGMENT_HPP
 
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
 #include "HexahedralMeshRenderer.hpp"
 
 /**
- * TODO
+ * Renders the hexahedral mesh using lines. All lines are assigned an LOD value between 0 and 1.
+ * Lines with low LOD value are displayed also on more coarse levels.
+ * The further line points are away from a focus center, the more coarse the line representation of the mesh is.
+ * The LOD renderer uses the base-complex to create an LOD hierarchy.
  */
-class LodLineRenderer : public HexahedralMeshRenderer {
+class LodLineRendererPerFragment : public HexahedralMeshRenderer {
 public:
-    LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
-    virtual ~LodLineRenderer() {}
+    LodLineRendererPerFragment(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    virtual ~LodLineRendererPerFragment() {}
 
     // Re-generates the visualization mapping.
     virtual void generateVisualizationMapping(HexMeshPtr meshIn);
@@ -64,8 +69,8 @@ protected:
     bool showRendererWindow = true;
     glm::vec3 focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec4 focusPointColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-    float focusRadius = 0.05f;
+    float maxDistance = 0.1f;
     float lineWidth = 0.001f;
 };
 
-#endif //HEXVOLUMERENDERER_LODLINERENDERER_HPP
+#endif //HEXVOLUMERENDERER_LODLINERENDERERPERFRAGMENT_HPP

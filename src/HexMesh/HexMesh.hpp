@@ -77,6 +77,7 @@ class Mesh;
 class Singularity;
 class Frame;
 class ParametrizedGrid;
+class OctreeNode;
 typedef std::shared_ptr<HexMesh> HexMeshPtr;
 
 class HexMesh {
@@ -163,6 +164,14 @@ public:
             std::vector<float> &lineLodValues,
             bool previewColors);
     /**
+     * TODO
+     */
+    void getLodLineRepresentationClosest(
+            std::vector<glm::vec3> &lineVertices,
+            std::vector<glm::vec4> &lineColors,
+            const glm::vec3& focusPoint,
+            float focusRadius);
+    /**
      * Get a list of all wireframe lines associated with LOD values.
      */
     void getCompleteWireframeData(
@@ -210,7 +219,18 @@ private:
      */
     std::vector<ParametrizedGrid> computeBaseComplexParametrizedGrid();
 
-    void recomputeHistogram();
+    // Helpers for getLodLineRepresentationClosest
+    void addEdge(
+            const glm::ivec3 ptIdx0, const glm::ivec3 ptIdx1, ParametrizedGrid& grid,
+            std::vector<glm::vec3>& lineVertices, std::vector<glm::vec4>& lineColors,
+            std::unordered_set<uint64_t>& addedEdgeSet, int level, int numLevels);
+    void getListOfOctreeEdges(
+            OctreeNode& octree, ParametrizedGrid& grid,
+            std::vector<glm::vec3>& lineVertices, std::vector<glm::vec4>& lineColors,
+            std::unordered_set<uint64_t>& addedEdgeSet, float focusRadius, int level, int numLevels);
+
+
+        void recomputeHistogram();
     QualityMeasure qualityMeasure = QUALITY_MEASURE_SCALED_JACOBIAN;
     TransferFunctionWindow &transferFunctionWindow;
     RayMeshIntersection& rayMeshIntersection;

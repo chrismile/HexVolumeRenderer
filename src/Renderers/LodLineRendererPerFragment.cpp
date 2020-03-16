@@ -32,13 +32,13 @@
 #include <Graphics/Shader/ShaderManager.hpp>
 
 #include "Helpers/Sphere.hpp"
-#include "LodLineRenderer.hpp"
+#include "LodLineRendererPerFragment.hpp"
 
-LodLineRenderer::LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+LodLineRendererPerFragment::LodLineRendererPerFragment(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     shaderProgram = sgl::ShaderManager->getShaderProgram(
-            {"Wireframe.Vertex", "Wireframe.Geometry", "Wireframe.Fragment"});
+            {"WireframeLod.Vertex", "WireframeLod.Geometry", "WireframeLod.Fragment"});
 
     std::vector<glm::vec3> sphereVertexPositions;
     std::vector<glm::vec3> sphereVertexNormals;
@@ -69,10 +69,11 @@ LodLineRenderer::LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &t
     focusPointShaderAttributes->setIndexGeometryBuffer(focusPointIndexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 }
 
-void LodLineRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+void LodLineRendererPerFragment::generateVisualizationMapping(HexMeshPtr meshIn) {
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec4> colors;
-    meshIn->getLodLineRepresentationClosest(vertices, colors, focusPoint, focusRadius);
+    std::vector<float> lodValues;
+    meshIn->getLodLineRepresentation(vertices, colors, lodValues, false);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_LINES);
@@ -89,12 +90,20 @@ void LodLineRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
     shaderAttributes->addGeometryBuffer(
             colorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
 
+    // Add the LOD value buffer.
+    sgl::GeometryBufferPtr lodValueBuffer = sgl::Renderer->createGeometryBuffer(
+            lodValues.size()*sizeof(float), (void*)&lodValues.front(), sgl::VERTEX_BUFFER);
+    shaderAttributes->addGeometryBuffer(
+            lodValueBuffer, "vertexLodValue", sgl::ATTRIB_FLOAT, 1);
+
     dirty = false;
     reRender = true;
 }
 
-void LodLineRenderer::render() {
+void LodLineRendererPerFragment::render() {
     shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
+    shaderProgram->setUniform("focusPoint", focusPoint);
+    shaderProgram->setUniform("maxDistance", maxDistance);
     shaderProgramSurface->setUniform("cameraPosition", sceneData.camera->getPosition());
 
     // Render the LOD lines.
@@ -108,14 +117,12 @@ void LodLineRenderer::render() {
     sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
 }
 
-void LodLineRenderer::renderGui() {
+void LodLineRendererPerFragment::renderGui() {
     if (ImGui::Begin("Line LOD Renderer", &showRendererWindow)) {
-        if (ImGui::SliderFloat("Focus Radius", &focusRadius, 0.0f, 0.4f)) {
-            dirty = true;
+        if (ImGui::SliderFloat("Maximum Distance", &maxDistance, 0.0f, 1.5f)) {
             reRender = true;
         }
         if (ImGui::SliderFloat3("Focus Point", &focusPoint.x, -0.4f, 0.4f)) {
-            dirty = true;
             reRender = true;
         }
         if (ImGui::ColorEdit4("Focus Point Color", &focusPointColor.x)) {
