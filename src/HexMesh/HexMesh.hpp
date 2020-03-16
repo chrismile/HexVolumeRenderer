@@ -175,7 +175,7 @@ public:
             const glm::vec3& focusPoint,
             float focusRadius);
     /**
-     * Get a list of all wireframe lines associated with LOD values.
+     * Get a list of all wireframe lines
      */
     void getCompleteWireframeData(
             std::vector<glm::vec3> &lineVertices,
