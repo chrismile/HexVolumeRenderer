@@ -111,7 +111,15 @@ public:
     /**
      * Get the surface data of every cell of the hexahedral mesh.
      */
-    void getVolumeData(
+    void getVolumeData_Faces(
+            std::vector<uint32_t>& indices,
+            std::vector<glm::vec3>& vertices,
+            std::vector<glm::vec3>& normals,
+            std::vector<glm::vec4>& colors);
+    /**
+     * Get the surface data of every cell of the hexahedral mesh.
+     */
+    void getVolumeData_Volume(
             std::vector<uint32_t>& indices,
             std::vector<glm::vec3>& vertices,
             std::vector<glm::vec3>& normals,

@@ -729,8 +729,13 @@ namespace HexaLab {
         // Faces are normally shared between two cells, but their data structure references only one of them, the 'main' (the first encountered when parsing the mesh file).
         // If the normal sign is -1, it means that the cell we want to render is not the main.
         // Therefore a flip cell is performed, along with a flip edge to maintain the winding.
+        bool flip_winding = false;
         if ( normal_sign == -1 ) {
-            nav = nav.flip_cell().flip_edge();
+            if (nav.dart().cell_neighbor == -1) {
+                flip_winding = true;
+            } else {
+                nav = nav.flip_cell().flip_edge();
+            }
         }
 
         // If cell quality display is enabled, fetch the appropriate quality color.
@@ -764,6 +769,11 @@ namespace HexaLab {
 
 
     void App::prepare_geometry() {
+        visible_model.mesh_vert_pos.clear();
+        visible_model.mesh_vert_norm.clear();
+        visible_model.mesh_vert_color.clear();
+        visible_model.mesh_ibuffer.clear();
+
         for ( size_t i = 0; i < mesh->faces.size(); ++i ) {
             MeshNavigator nav = mesh->navigate ( mesh->faces[i] );
 
@@ -779,7 +789,46 @@ namespace HexaLab {
                 this->add_filtered_face ( nav.flip_edge().dart() );
             }
 
-            // Add all unfiltered cells to full mesh (front- and backfaces)
+            // Add all front faces to the full mesh.
+            if ( !mesh->is_marked ( nav.cell() ) ) {
+                this->add_mesh_face( nav.dart(), 1 );
+            }
+            if ( nav.dart().cell_neighbor != -1 && !mesh->is_marked ( nav.flip_cell().cell() ) ) {
+                this->add_mesh_face( nav.dart(), -1 );
+            }
+        }
+    }
+
+    void App::get_volume_geometry_faces() {
+        visible_model.mesh_vert_pos.clear();
+        visible_model.mesh_vert_norm.clear();
+        visible_model.mesh_vert_color.clear();
+        visible_model.mesh_ibuffer.clear();
+
+        for ( size_t i = 0; i < mesh->faces.size(); ++i ) {
+            MeshNavigator nav = mesh->navigate ( mesh->faces[i] );
+
+            // Add all unfiltered cells to the full mesh (backfaces only for boundary surface).
+            if ( !mesh->is_marked ( nav.cell() ) ) {
+                this->add_mesh_face( nav.dart(), 1 );
+            }
+            if ( !mesh->is_marked ( nav.cell() ) || (mesh->is_marked ( nav.cell() ) && nav.dart().cell_neighbor != -1
+                                                     && !mesh->is_marked ( nav.flip_cell().cell() ))) {
+                this->add_mesh_face( nav.dart(), -1 );
+            }
+        }
+    }
+
+    void App::get_volume_geometry_volume() {
+        visible_model.mesh_vert_pos.clear();
+        visible_model.mesh_vert_norm.clear();
+        visible_model.mesh_vert_color.clear();
+        visible_model.mesh_ibuffer.clear();
+
+        for ( size_t i = 0; i < mesh->faces.size(); ++i ) {
+            MeshNavigator nav = mesh->navigate ( mesh->faces[i] );
+
+            // Add all front faces to the full mesh.
             if ( !mesh->is_marked ( nav.cell() ) ) {
                 this->add_mesh_face( nav.dart(), 1 );
             }

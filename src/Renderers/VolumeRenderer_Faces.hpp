@@ -26,27 +26,29 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_CLEARVIEWRENDERER_HPP
-#define HEXVOLUMERENDERER_CLEARVIEWRENDERER_HPP
+#ifndef HEXVOLUMERENDERER_VOLUMERENDERER_H
+#define HEXVOLUMERENDERER_VOLUMERENDERER_H
 
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
 #include "HexahedralMeshRenderer.hpp"
 
 /**
- * Renders the hexahedral mesh using an approach similar to ClearView (see below).
- * The focus region of the mesh is rendered using colored lines with white outlines that are faded out at the boundary.
- * The context region is rendered using face-based volume rendering (@see VolumeRenderer).
+ * Renders all faces with transparency values determined by the transfer function set by the user.
+ * For this, the order-independent transparency (OIT) technique per-pixel linked lists are used.
+ * For more details see: Yang, J. C., Hensley, J., Grün, H. and Thibieroz, N., "Real-Time Concurrent
+ * Linked List Construction on the GPU", Computer Graphics Forum, 29, 2010.
  *
- * For more details on ClearView see: "ClearView: An Interactive Context Preserving Hotspot Visualization Technique",
- * Jens Krüger, Jens Schneider, Rüdiger Westermann (2006)
- * Computer Graphics and Visualization Group, Technical University Munich, Germany
- * https://www.in.tum.de/cg/research/publications/2006/clearview-an-interactive-context-preserving-hotspot-visualization-technique/
+ * For a comparison of different OIT algorithms see:
+ * M. Kern, C. Neuhauser, T. Maack, M. Han, W. Usher and R. Westermann, "A Comparison of Rendering Techniques for 3D
+ * Line Sets with Transparency," in IEEE Transactions on Visualization and Computer Graphics, 2020.
+ * doi: 10.1109/TVCG.2020.2975795
+ * URL: http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9007507&isnumber=4359476
  */
-class ClearViewRenderer : public HexahedralMeshRenderer {
+class VolumeRenderer_Faces : public HexahedralMeshRenderer {
 public:
-    ClearViewRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
-    virtual ~ClearViewRenderer() {}
+    VolumeRenderer_Faces(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    virtual ~VolumeRenderer_Faces() {}
 
     // Re-generates the visualization mapping.
     virtual void generateVisualizationMapping(HexMeshPtr meshIn);
@@ -55,8 +57,6 @@ public:
     virtual void render();
     // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
     virtual void renderGui();
-    // Updates the internal logic (called once per frame).
-    virtual void update(float dt);
 
     // Called when the resolution of the application window has changed.
     virtual void onResolutionChanged();
@@ -65,6 +65,7 @@ public:
     virtual void onTransferFunctionMapRebuilt() {}
 
 protected:
+    void reloadGatherShader();
     void setSortingAlgorithmDefine();
     void setUniformData();
     void clear();
@@ -72,8 +73,7 @@ protected:
     void resolve();
 
     // The rendering data for the volume object.
-    sgl::ShaderAttributesPtr shaderAttributesFocus;
-    sgl::ShaderAttributesPtr shaderAttributesContext;
+    sgl::ShaderAttributesPtr shaderAttributes;
 
     // Per-pixel linked list data.
     sgl::GeometryBufferPtr fragmentBuffer;
@@ -82,29 +82,16 @@ protected:
 
     // The shaders for rendering.
     sgl::ShaderProgramPtr clearShader;
-    sgl::ShaderProgramPtr gatherShaderFocus;
-    sgl::ShaderProgramPtr gatherShaderContext;
+    sgl::ShaderProgramPtr gatherShader;
     sgl::ShaderProgramPtr resolveShader;
 
     // Blit data (ignores model-view-projection matrix and uses normalized device coordinates)
     sgl::ShaderAttributesPtr blitRenderData;
     sgl::ShaderAttributesPtr clearRenderData;
 
-    // For rendering the focus point sphere.
-    sgl::ShaderProgramPtr shaderProgramSurface;
-    sgl::ShaderAttributesPtr focusPointShaderAttributes;
-
     // GUI data
     bool showRendererWindow = true;
-    glm::vec3 focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec4 focusPointColor = glm::vec4(0.2f, 0.0f, 0.0f, 1.0f);
-    float focusRadius = 0.05f;
-    float lineWidth = 0.001f;
-
-    // Focus point move information.
-    bool hasHitInformation = false;
-    glm::vec3 firstHit, lastHit;
-    glm::vec3 hitLookingDirection;
+    bool useShading = false;
 };
 
-#endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_HPP
+#endif //HEXVOLUMERENDERER_VOLUMERENDERER_H

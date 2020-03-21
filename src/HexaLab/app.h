@@ -122,6 +122,9 @@ namespace HexaLab {
 
         void show_visible_wireframe_singularity ( bool show );
 
+        void get_volume_geometry_faces();
+        void get_volume_geometry_volume();
+
         // Getters
         glm::vec3            get_default_outside_color()         { return this->default_outside_color; }
         glm::vec3            get_default_inside_color()          { return this->default_inside_color; }

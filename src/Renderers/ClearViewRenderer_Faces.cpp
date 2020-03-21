@@ -38,7 +38,7 @@
 #include <ImGui/ImGuiWrapper.hpp>
 
 #include "Helpers/Sphere.hpp"
-#include "ClearViewRenderer.hpp"
+#include "ClearViewRenderer_Faces.hpp"
 
 const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap"};
 
@@ -46,7 +46,7 @@ const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Inse
 static bool useStencilBuffer = true;
 
 /// Expected (average) depth complexity, i.e. width*height* this value = number of fragments that can be stored.
-static int expectedDepthComplexity = 80;
+static int expectedDepthComplexity = 100;
 /// Maximum number of fragments to sort in second pass.
 static int maxNumFragmentsSorting = 256;
 
@@ -63,7 +63,7 @@ struct LinkedListFragmentNode {
     uint32_t next;
 };
 
-ClearViewRenderer::ClearViewRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+ClearViewRenderer_Faces::ClearViewRenderer_Faces(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
@@ -121,13 +121,13 @@ ClearViewRenderer::ClearViewRenderer(SceneData &sceneData, TransferFunctionWindo
     onResolutionChanged();
 }
 
-void ClearViewRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+void ClearViewRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
     // First, start with the rendering data for the context region.
     std::vector<uint32_t> indices;
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec3> normals;
     std::vector<glm::vec4> colors;
-    meshIn->getVolumeData(indices, vertices, normals, colors);
+    meshIn->getVolumeData_Faces(indices, vertices, normals, colors);
 
     shaderAttributesContext = sgl::ShaderManager->createShaderAttributes(gatherShaderContext);
     shaderAttributesContext->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -181,7 +181,7 @@ void ClearViewRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
     hasHitInformation = false;
 }
 
-void ClearViewRenderer::setSortingAlgorithmDefine() {
+void ClearViewRenderer_Faces::setSortingAlgorithmDefine() {
     if (sortingAlgorithmMode == 0) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "frontToBackPQ");
     } else if (sortingAlgorithmMode == 1) {
@@ -195,13 +195,14 @@ void ClearViewRenderer::setSortingAlgorithmDefine() {
     }
 }
 
-void ClearViewRenderer::onResolutionChanged() {
+void ClearViewRenderer_Faces::onResolutionChanged() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
 
     size_t fragmentBufferSize = expectedDepthComplexity * width * height;
     size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
+    std::cout << "Fragment buffer size GiB: " << (fragmentBufferSizeBytes / 1024.0 / 1024.0 / 1024.0) << std::endl;
 
     fragmentBuffer = sgl::GeometryBufferPtr(); // Delete old data first (-> refcount 0)
     fragmentBuffer = sgl::Renderer->createGeometryBuffer(
@@ -217,22 +218,22 @@ void ClearViewRenderer::onResolutionChanged() {
             sizeof(uint32_t), NULL, sgl::ATOMIC_COUNTER_BUFFER);
 }
 
-void ClearViewRenderer::setUniformData() {
+void ClearViewRenderer_Faces::setUniformData() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
 
     size_t fragmentBufferSize = expectedDepthComplexity * width * height;
-    size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
 
     glm::mat4 inverseViewMatrix = glm::inverse(sceneData.camera->getViewMatrix());
     glm::vec3 lookingDirection(-inverseViewMatrix[2].x, -inverseViewMatrix[2].y, -inverseViewMatrix[2].z);
 
+    gatherShaderContext->setUniform("useShading", int(useShading));
     gatherShaderContext->setUniform("viewportW", width);
     gatherShaderContext->setShaderStorageBuffer(0, "FragmentBuffer", fragmentBuffer);
     gatherShaderContext->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
     gatherShaderContext->setAtomicCounterBuffer(0, atomicCounterBuffer);
-    gatherShaderContext->setUniform("linkedListSize", (int)fragmentBufferSize);
+    gatherShaderContext->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
     gatherShaderContext->setUniform("cameraPosition", sceneData.camera->getPosition());
     gatherShaderContext->setUniform("lookingDirection", lookingDirection);
     gatherShaderContext->setUniform("sphereCenter", focusPoint);
@@ -242,7 +243,7 @@ void ClearViewRenderer::setUniformData() {
     //gatherShaderFocus->setShaderStorageBuffer(0, "FragmentBuffer", fragmentBuffer);
     //gatherShaderFocus->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
     //gatherShaderFocus->setAtomicCounterBuffer(0, atomicCounterBuffer);
-    gatherShaderFocus->setUniform("linkedListSize", (int)fragmentBufferSize);
+    gatherShaderFocus->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
     gatherShaderFocus->setUniform("cameraPosition", sceneData.camera->getPosition());
     if (gatherShaderFocus->hasUniform("lookingDirection")) {
         gatherShaderFocus->setUniform("lookingDirection", lookingDirection);
@@ -255,7 +256,7 @@ void ClearViewRenderer::setUniformData() {
     //shaderProgramSurface->setShaderStorageBuffer(0, "FragmentBuffer", fragmentBuffer);
     //shaderProgramSurface->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
     //shaderProgramSurface->setAtomicCounterBuffer(0, atomicCounterBuffer);
-    shaderProgramSurface->setUniform("linkedListSize", (int)fragmentBufferSize);
+    shaderProgramSurface->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
     shaderProgramSurface->setUniform("cameraPosition", sceneData.camera->getPosition());
     shaderProgramSurface->setUniform("color", focusPointColor);
 
@@ -267,7 +268,7 @@ void ClearViewRenderer::setUniformData() {
     clearShader->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
 }
 
-void ClearViewRenderer::clear() {
+void ClearViewRenderer_Faces::clear() {
     //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // In the clear and gather pass, we just want to write data to an SSBO.
@@ -287,7 +288,7 @@ void ClearViewRenderer::clear() {
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 }
 
-void ClearViewRenderer::gather() {
+void ClearViewRenderer_Faces::gather() {
     // Enable the depth test, but disable depth write for gathering.
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -321,7 +322,7 @@ void ClearViewRenderer::gather() {
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
-void ClearViewRenderer::resolve() {
+void ClearViewRenderer_Faces::resolve() {
     sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
     sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
     sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
@@ -341,15 +342,15 @@ void ClearViewRenderer::resolve() {
     glDepthMask(GL_TRUE);
 }
 
-void ClearViewRenderer::render() {
+void ClearViewRenderer_Faces::render() {
     setUniformData();
     clear();
     gather();
     resolve();
 }
 
-void ClearViewRenderer::renderGui() {
-    if (ImGui::Begin("Clear View Renderer", &showRendererWindow)) {
+void ClearViewRenderer_Faces::renderGui() {
+    if (ImGui::Begin("ClearView Renderer (Faces)", &showRendererWindow)) {
         if (ImGui::SliderFloat("Focus Radius", &focusRadius, 0.001f, 0.4f)) {
             reRender = true;
         }
@@ -363,11 +364,14 @@ void ClearViewRenderer::renderGui() {
         if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.002f, "%.4f")) {
             reRender = true;
         }
+        if (ImGui::Checkbox("Use Shading", &useShading)) {
+            reRender = true;
+        }
     }
     ImGui::End();
 }
 
-void ClearViewRenderer::update(float dt) {
+void ClearViewRenderer_Faces::update(float dt) {
     if (sgl::Keyboard->getModifier() & KMOD_SHIFT) {
         if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
             float scrollAmount = sgl::Mouse->getScrollWheel() * dt * 2.0;

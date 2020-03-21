@@ -35,7 +35,7 @@ layout (std430, binding = 1) coherent buffer StartOffsetBuffer {
 layout(binding = 0, offset = 0) uniform atomic_uint fragCounter;
 
 // Number of fragments we can store in total
-uniform int linkedListSize;
+uniform uint linkedListSize;
 
 uniform int viewportW;
 //uniform int viewportH; // Not needed

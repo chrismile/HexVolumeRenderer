@@ -35,7 +35,7 @@
 #include <Utils/AppSettings.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
-#include "VolumeRenderer.hpp"
+#include "VolumeRenderer_Faces.hpp"
 
 const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap"};
 
@@ -43,7 +43,7 @@ const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Inse
 static bool useStencilBuffer = true;
 
 /// Expected (average) depth complexity, i.e. width*height* this value = number of fragments that can be stored.
-static int expectedDepthComplexity = 64;
+static int expectedDepthComplexity = 90;
 /// Maximum number of fragments to sort in second pass.
 static int maxNumFragmentsSorting = 256;
 
@@ -52,15 +52,15 @@ static int sortingAlgorithmMode = 0;
 
 // A fragment node stores rendering information about one specific fragment.
 struct LinkedListFragmentNode {
-    // RGBA color of the node.
-    uint32_t color;
-    // Depth value of the fragment (in view space).
+    // RGBA color of the node
+    uint color;
+    // Depth value of the fragment (in view space)
     float depth;
-    // The index of the next node in the "nodes" array.
-    uint32_t next;
+    // The index of the next node in "nodes" array
+    uint next;
 };
 
-VolumeRenderer::VolumeRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+VolumeRenderer_Faces::VolumeRenderer_Faces(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
@@ -90,12 +90,12 @@ VolumeRenderer::VolumeRenderer(SceneData &sceneData, TransferFunctionWindow &tra
     onResolutionChanged();
 }
 
-void VolumeRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+void VolumeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
     std::vector<uint32_t> indices;
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec3> normals;
     std::vector<glm::vec4> colors;
-    meshIn->getVolumeData(indices, vertices, normals, colors);
+    meshIn->getVolumeData_Faces(indices, vertices, normals, colors);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(gatherShader);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -127,7 +127,7 @@ void VolumeRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
     reRender = true;
 }
 
-void VolumeRenderer::setSortingAlgorithmDefine() {
+void VolumeRenderer_Faces::setSortingAlgorithmDefine() {
     if (sortingAlgorithmMode == 0) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "frontToBackPQ");
     } else if (sortingAlgorithmMode == 1) {
@@ -141,13 +141,14 @@ void VolumeRenderer::setSortingAlgorithmDefine() {
     }
 }
 
-void VolumeRenderer::onResolutionChanged() {
+void VolumeRenderer_Faces::onResolutionChanged() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
 
     size_t fragmentBufferSize = expectedDepthComplexity * width * height;
     size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
+    std::cout << "Fragment buffer size GiB: " << (fragmentBufferSizeBytes / 1024.0 / 1024.0 / 1024.0) << std::endl;
 
     fragmentBuffer = sgl::GeometryBufferPtr(); // Delete old data first (-> refcount 0)
     fragmentBuffer = sgl::Renderer->createGeometryBuffer(
@@ -163,19 +164,19 @@ void VolumeRenderer::onResolutionChanged() {
             sizeof(uint32_t), NULL, sgl::ATOMIC_COUNTER_BUFFER);
 }
 
-void VolumeRenderer::setUniformData() {
+void VolumeRenderer_Faces::setUniformData() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
 
     size_t fragmentBufferSize = expectedDepthComplexity * width * height;
-    size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
 
+    gatherShader->setUniform("useShading", int(useShading));
     gatherShader->setUniform("viewportW", width);
     gatherShader->setShaderStorageBuffer(0, "FragmentBuffer", fragmentBuffer);
     gatherShader->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
     gatherShader->setAtomicCounterBuffer(0, atomicCounterBuffer);
-    gatherShader->setUniform("linkedListSize", (int)fragmentBufferSize);
+    gatherShader->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
     gatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
     if (gatherShader->hasUniform("lightDirection")) {
         gatherShader->setUniform("lightDirection", sceneData.lightDirection);
@@ -189,7 +190,7 @@ void VolumeRenderer::setUniformData() {
     clearShader->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
 }
 
-void VolumeRenderer::clear() {
+void VolumeRenderer_Faces::clear() {
     //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // In the clear and gather pass, we just want to write data to an SSBO.
@@ -209,7 +210,7 @@ void VolumeRenderer::clear() {
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 }
 
-void VolumeRenderer::gather() {
+void VolumeRenderer_Faces::gather() {
     // Enable the depth test, but disable depth write for gathering.
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -233,7 +234,7 @@ void VolumeRenderer::gather() {
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
-void VolumeRenderer::resolve() {
+void VolumeRenderer_Faces::resolve() {
     sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
     sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
     sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
@@ -253,12 +254,18 @@ void VolumeRenderer::resolve() {
     glDepthMask(GL_TRUE);
 }
 
-void VolumeRenderer::render() {
+void VolumeRenderer_Faces::render() {
     setUniformData();
     clear();
     gather();
     resolve();
 }
 
-void VolumeRenderer::renderGui() {
+void VolumeRenderer_Faces::renderGui() {
+    if (ImGui::Begin("Volume Renderer (Faces)", &showRendererWindow)) {
+        if (ImGui::Checkbox("Use Shading", &useShading)) {
+            reRender = true;
+        }
+    }
+    ImGui::End();
 }

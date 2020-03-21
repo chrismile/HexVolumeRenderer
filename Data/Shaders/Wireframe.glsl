@@ -105,9 +105,6 @@ uniform vec3 cameraPosition;
 
 void main()
 {
-    // To counteract depth fighting with overlay wireframe.
-    gl_FragDepth = gl_FragCoord.z - 0.00001;
-
     float absCoords = abs(quadCoords);
     float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
     const float WHITE_THRESHOLD = 0.7;
@@ -117,6 +114,13 @@ void main()
     fragColor = vec4(mix(fragmentColor.rgb, vec3(1.0, 1.0, 1.0),
             smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, absCoords)),
             fragmentColor.a * coverage);
+
+    // To counteract depth fighting with overlay wireframe.
+    float depthOffset = -0.00001;
+    if (absCoords >= WHITE_THRESHOLD) {
+        depthOffset = 0.02;
+    }
+    gl_FragDepth = gl_FragCoord.z + depthOffset;
 }
 
 -- Fragment.NoOutline

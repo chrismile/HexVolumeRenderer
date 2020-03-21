@@ -44,14 +44,19 @@ void main()
     vec3 linePosition1 = v_in[1].linePosition;
     vec4 lineColor0 = v_in[0].lineColor;
     vec4 lineColor1 = v_in[1].lineColor;
-    vec4 linePositionNDC0 = pMatrix * vMatrix * vec4(linePosition0, 1.0);
-    vec4 linePositionNDC1 = pMatrix * vMatrix * vec4(linePosition1, 1.0);
-    linePositionNDC0.xyz /= linePositionNDC0.w;
-    linePositionNDC1.xyz /= linePositionNDC1.w;
-    vec2 linePositionScreen0 = linePositionNDC0.xy;
-    vec2 linePositionScreen1 = linePositionNDC0.xy;
-    vec2 dir = linePositionScreen1 - linePositionScreen0;
-    vec2 normalDir = vec2(-dir.y, dir.x);
+    //vec4 linePositionNDC0 = pMatrix * vMatrix * vec4(linePosition0, 1.0);
+    //vec4 linePositionNDC1 = pMatrix * vMatrix * vec4(linePosition1, 1.0);
+    //linePositionNDC0.xyz /= linePositionNDC0.w;
+    //linePositionNDC1.xyz /= linePositionNDC1.w;
+    //vec2 linePositionScreen0 = linePositionNDC0.xy;
+    //vec2 linePositionScreen1 = linePositionNDC0.xy;
+    //vec2 dir = linePositionScreen1 - linePositionScreen0;
+    //vec2 normalDir = vec2(-dir.y, dir.x);
+
+    const float EPSILON = 0.0001;
+    vec3 lineDir = normalize(linePosition0 - linePosition1);
+    linePosition0 = linePosition0 + EPSILON * lineDir;
+    linePosition1 = linePosition1 - EPSILON * lineDir;
 
     vec3 right = normalize(v_in[1].linePosition - v_in[0].linePosition);
     vec3 quadNormal0 = normalize(cameraPosition - linePosition0);
@@ -96,10 +101,6 @@ void main()
 
 #version 430 core
 
-#if !defined(DIRECT_BLIT_GATHER)
-#include OIT_GATHER_HEADER
-#endif
-
 in vec3 fragmentPositionWorld;
 in vec4 fragmentColor;
 in float quadCoords; // Between -1 and 1
@@ -116,12 +117,16 @@ uniform vec3 lookingDirection;
 uniform vec3 sphereCenter;
 uniform float sphereRadius;
 
+#if !defined(DIRECT_BLIT_GATHER)
+#include OIT_GATHER_HEADER
+#endif
+
 #include "RayIntersection.glsl"
 
 void main()
 {
     // To counteract depth fighting with overlay wireframe.
-    gl_FragDepth = gl_FragCoord.z - 0.00001;
+    //gl_FragDepth = gl_FragCoord.z - 0.00001;
     float absCoords = abs(quadCoords);
     float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
     const float WHITE_THRESHOLD = 0.7;
@@ -137,8 +142,9 @@ void main()
     vec3 intersectionPosition;
     bool intersectsSphere = raySphereIntersection(
     rayOrigin, rayDirection, sphereCenter, sphereRadius, t0, t1, intersectionPosition);
-    bool fragmentInSphere = SQR(fragmentPositionWorld.x - sphereCenter.x) + SQR(fragmentPositionWorld.y - sphereCenter.y)
-    + SQR(fragmentPositionWorld.z - sphereCenter.z) <= SQR(sphereRadius);
+    bool fragmentInSphere = SQR(fragmentPositionWorld.x - sphereCenter.x)
+            + SQR(fragmentPositionWorld.y - sphereCenter.y)
+            + SQR(fragmentPositionWorld.z - sphereCenter.z) <= SQR(sphereRadius);
 
     // Add opacity multiplication factor for fragments in front of or in focus region.
     float opacityFactor = 0.0f;
@@ -155,10 +161,17 @@ void main()
     }
     color.a *= opacityFactor;
 
+    // To counteract depth fighting with overlay wireframe.
+    float depthOffset = -0.00001;
+    float depth = length(fragmentPositionWorld - cameraPosition);
+    if (absCoords >= WHITE_THRESHOLD - EPSILON) {
+        depth += gl_FragCoord.z * 0.01;
+    }
+
     #if defined(DIRECT_BLIT_GATHER)
     fragColor = color;
     #else
-    gatherFragment(color);
+    gatherFragmentCustomDepth(color, depth);
     #endif
 }
 

@@ -46,16 +46,20 @@
 #include "Renderers/HexahedralMeshRenderer.hpp"
 
 enum RenderingMode {
-    RENDERING_MODE_SURFACE, RENDERING_MODE_VOLUME, RENDERING_MODE_DEPTH_COMPLEXITY,
+    RENDERING_MODE_SURFACE, RENDERING_MODE_DEPTH_COMPLEXITY,
+    RENDERING_MODE_VOLUME, RENDERING_MODE_CLEAR_VIEW,
+    RENDERING_MODE_VOLUME_FACES, RENDERING_MODE_CLEAR_VIEW_FACES,
     RENDERING_MODE_SINGULARITY, RENDERING_MODE_BASE_COMPLEX_LINES, RENDERING_MODE_BASE_COMPLEX_SURFACE,
     RENDERING_MODE_PARTITION_LINES, RENDERING_MODE_LOD_LINES, RENDERING_MODE_LOD_LINES_PER_FRAGMENT,
-    RENDERING_MODE_LOD_LINES_PREVIEW, RENDERING_MODE_CLEAR_VIEW
+    RENDERING_MODE_LOD_LINES_PREVIEW
 };
 const char *const RENDERING_MODE_NAMES[] = {
-        "Surface", "Volume", "Depth Complexity",
+        "Surface", "Depth Complexity",
+        "Volume", "ClearView",
+        "Volume (Faces)", "ClearView (Faces)",
         "Singularity", "Base Complex (Lines)", "Base Complex (Surface)",
         "Partition Lines", "LOD Lines", "LOD Lines (Per Frag.)",
-        "LOD Lines (Preview)", "ClearView"
+        "LOD Lines (Preview)"
 };
 const int NUM_RENDERING_MODES = ((int)(sizeof(QUALITY_MEASURE_NAMES) / sizeof(*QUALITY_MEASURE_NAMES)));
 

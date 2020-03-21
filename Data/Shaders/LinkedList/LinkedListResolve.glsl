@@ -15,10 +15,8 @@ void main() {
 
 #include "LinkedListHeader.glsl"
 
-//#define MAX_NUM_FRAGS 256
 uint colorList[MAX_NUM_FRAGS];
 float depthList[MAX_NUM_FRAGS];
-
 
 #include "LinkedListSort.glsl"
 

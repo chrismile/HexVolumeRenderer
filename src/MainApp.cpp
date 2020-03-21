@@ -68,7 +68,10 @@
 #include "Filters/QualityFilter.hpp"
 #include "Renderers/SurfaceRenderer.hpp"
 #include "Renderers/WireframeRenderer.hpp"
-#include "Renderers/VolumeRenderer.hpp"
+#include "Renderers/VolumeRenderer_Faces.hpp"
+#include "Renderers/VolumeRenderer_Volume.hpp"
+#include "Renderers/ClearViewRenderer_Faces.hpp"
+#include "Renderers/ClearViewRenderer_Volume.hpp"
 #include "Renderers/DepthComplexityRenderer.hpp"
 #include "Renderers/SingularityRenderer.hpp"
 #include "Renderers/BaseComplexLineRenderer.hpp"
@@ -77,7 +80,6 @@
 #include "Renderers/LodLineRendererPerFragment.hpp"
 #include "Renderers/LodLineRenderer.hpp"
 #include "Renderers/LodLinePreviewRenderer.hpp"
-#include "Renderers/ClearViewRenderer.hpp"
 #ifdef USE_EMBREE
 #include "Renderers/Intersection/RayMeshIntersection_Embree.hpp"
 #endif
@@ -92,7 +94,7 @@ MainApp::MainApp()
 #ifdef USE_EMBREE
           rayMeshIntersection(new RayMeshIntersection_Embree(camera)),
 #else
-        rayMeshIntersection(new RayMeshIntersection_NanoRT(camera)),
+          rayMeshIntersection(new RayMeshIntersection_NanoRT(camera)),
 #endif
           sceneData(sceneFramebuffer, camera, lightDirection, *rayMeshIntersection),
           videoWriter(NULL) {
@@ -104,7 +106,7 @@ MainApp::MainApp()
     sgl::EventManager::get()->addListener(sgl::RESOLUTION_CHANGED_EVENT,
             [this](sgl::EventPtr event){ this->resolutionChanged(event); });
 
-    camera->setNearClipDistance(0.01f);
+    camera->setNearClipDistance(0.001f);
     camera->setFarClipDistance(100.0f);
     camera->setOrientation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
     float fovy = atanf(1.0f / 2.0f) * 2.0f;
@@ -180,10 +182,16 @@ void MainApp::setRenderers() {
     if (renderingMode == RENDERING_MODE_SURFACE) {
         meshRenderers.push_back(new SurfaceRenderer(sceneData, transferFunctionWindow));
         meshRenderers.push_back(new WireframeRenderer(sceneData, transferFunctionWindow));
-    } else if (renderingMode == RENDERING_MODE_VOLUME) {
-        meshRenderers.push_back(new VolumeRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_DEPTH_COMPLEXITY) {
         meshRenderers.push_back(new DepthComplexityRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_VOLUME) {
+        meshRenderers.push_back(new VolumeRenderer_Volume(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_CLEAR_VIEW) {
+        meshRenderers.push_back(new ClearViewRenderer_Volume(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_VOLUME_FACES) {
+        meshRenderers.push_back(new VolumeRenderer_Faces(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_CLEAR_VIEW_FACES) {
+        meshRenderers.push_back(new ClearViewRenderer_Faces(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_SINGULARITY) {
         meshRenderers.push_back(new SingularityRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_BASE_COMPLEX_LINES) {
@@ -199,8 +207,6 @@ void MainApp::setRenderers() {
         meshRenderers.push_back(new LodLineRendererPerFragment(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_LOD_LINES_PREVIEW) {
         meshRenderers.push_back(new LodLinePreviewRenderer(sceneData, transferFunctionWindow));
-    } else if (renderingMode == RENDERING_MODE_CLEAR_VIEW) {
-        meshRenderers.push_back(new ClearViewRenderer(sceneData, transferFunctionWindow));
     }
 }
 

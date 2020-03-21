@@ -282,6 +282,11 @@ void HexMesh::updateMeshTriangleIntersectionDataStructure() {
         indices.push_back(idx);
     }
     vertices = hexaLabApp->get_visible_model()->mesh_vert_pos;
+    /*indices.reserve(hexaLabApp->get_visible_model()->surface_ibuffer.size());
+    for (HexaLab::Index& idx : hexaLabApp->get_visible_model()->surface_ibuffer) {
+        indices.push_back(idx);
+    }
+    vertices = hexaLabApp->get_visible_model()->surface_vert_pos;*/
     rayMeshIntersection.setMeshTriangleData(vertices, indices);
 }
 
@@ -309,12 +314,30 @@ void HexMesh::getWireframeData(
     colors = hexaLabApp->get_visible_model()->wireframe_vert_color;
 }
 
-void HexMesh::getVolumeData(
+void HexMesh::getVolumeData_Faces(
         std::vector<uint32_t>& indices,
         std::vector<glm::vec3>& vertices,
         std::vector<glm::vec3>& normals,
         std::vector<glm::vec4>& colors) {
     rebuildInternalRepresentationIfNecessary();
+    hexaLabApp->get_volume_geometry_faces();
+    indices.clear();
+    indices.reserve(hexaLabApp->get_visible_model()->mesh_ibuffer.size());
+    for (HexaLab::Index& idx : hexaLabApp->get_visible_model()->mesh_ibuffer) {
+        indices.push_back(idx);
+    }
+    vertices = hexaLabApp->get_visible_model()->mesh_vert_pos;
+    normals = hexaLabApp->get_visible_model()->mesh_vert_norm;
+    colors = hexaLabApp->get_visible_model()->mesh_vert_color;
+}
+
+void HexMesh::getVolumeData_Volume(
+        std::vector<uint32_t>& indices,
+        std::vector<glm::vec3>& vertices,
+        std::vector<glm::vec3>& normals,
+        std::vector<glm::vec4>& colors) {
+    rebuildInternalRepresentationIfNecessary();
+    hexaLabApp->get_volume_geometry_volume();
     indices.clear();
     indices.reserve(hexaLabApp->get_visible_model()->mesh_ibuffer.size());
     for (HexaLab::Index& idx : hexaLabApp->get_visible_model()->mesh_ibuffer) {

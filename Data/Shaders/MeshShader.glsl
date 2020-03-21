@@ -23,10 +23,6 @@ void main()
 
 #version 430 core
 
-#if !defined(DIRECT_BLIT_GATHER)
-#include OIT_GATHER_HEADER
-#endif
-
 in vec3 fragmentPositionWorld;
 in vec3 fragmentNormal;
 in vec4 fragmentColor;
@@ -37,18 +33,28 @@ out vec4 fragColor;
 
 uniform vec3 lightDirection = vec3(1.0, 0.0, 0.0);
 uniform vec3 cameraPosition; // in world space
+uniform int useShading = 1;
+
+#if !defined(DIRECT_BLIT_GATHER)
+#include OIT_GATHER_HEADER
+#endif
 
 #include "Lighting.glsl"
 
 void main()
 {
-    vec4 colorPhong = blinnPhongShading(fragmentColor);
+    vec4 color;
+    if (useShading == 1) {
+        color = blinnPhongShading(fragmentColor);
+    } else {
+        color = fragmentColor;
+    }
 
     #if defined(DIRECT_BLIT_GATHER)
     // Direct rendering, no transparency.
-    fragColor = vec4(colorPhong.rgb, 1.0);
+    fragColor = vec4(color.rgb, 1.0);
     #else
-    gatherFragment(colorPhong);
+    gatherFragment(color);
     #endif
 }
 
@@ -56,10 +62,6 @@ void main()
 -- Fragment.ClearView.Context
 
 #version 430 core
-
-#if !defined(DIRECT_BLIT_GATHER)
-#include OIT_GATHER_HEADER
-#endif
 
 in vec3 fragmentPositionWorld;
 in vec3 fragmentNormal;
@@ -69,6 +71,8 @@ in vec4 fragmentColor;
 out vec4 fragColor;
 #endif
 
+uniform int useShading = 1;
+
 // Camera data
 uniform vec3 cameraPosition;
 uniform vec3 lookingDirection;
@@ -77,12 +81,21 @@ uniform vec3 lookingDirection;
 uniform vec3 sphereCenter;
 uniform float sphereRadius;
 
+#if !defined(DIRECT_BLIT_GATHER)
+#include OIT_GATHER_HEADER
+#endif
+
 #include "Lighting.glsl"
 #include "RayIntersection.glsl"
 
 void main()
 {
-    vec4 colorPhong = blinnPhongShading(fragmentColor);
+    vec4 color;
+    if (useShading == 1) {
+        color = blinnPhongShading(fragmentColor);
+    } else {
+        color = fragmentColor;
+    }
 
     vec3 rayOrigin = cameraPosition;
     vec3 rayDirection = normalize(fragmentPositionWorld - cameraPosition);
@@ -108,13 +121,13 @@ void main()
         //}
         opacityFactor = pow(sphereDistance, 4.0); // linear increase
     }
-    colorPhong.a *= opacityFactor;
+    color.a *= opacityFactor;
 
     #if defined(DIRECT_BLIT_GATHER)
     // Direct rendering, no transparency.
-    fragColor = vec4(colorPhong.rgb, 1.0);
+    fragColor = vec4(color.rgb, 1.0);
     #else
-    gatherFragment(colorPhong);
+    gatherFragment(color);
     #endif
 }
 
@@ -142,10 +155,6 @@ void main()
 
 #version 430 core
 
-#if !defined(DIRECT_BLIT_GATHER)
-#include OIT_GATHER_HEADER
-#endif
-
 uniform vec4 color;
 
 in vec3 fragmentPositionWorld;
@@ -158,16 +167,20 @@ out vec4 fragColor;
 uniform vec3 lightDirection = vec3(1.0, 0.0, 0.0);
 uniform vec3 cameraPosition; // in world space
 
+#if !defined(DIRECT_BLIT_GATHER)
+#include OIT_GATHER_HEADER
+#endif
+
 #include "Lighting.glsl"
 
 void main()
 {
-    vec4 colorPhong = blinnPhongShading(color);
+    vec4 phongColor = blinnPhongShading(color);
 
     #if defined(DIRECT_BLIT_GATHER)
     // Direct rendering, no transparency.
-    fragColor = vec4(colorPhong.rgb, 1.0);
+    fragColor = vec4(phongColor.rgb, 1.0);
     #else
-    gatherFragment(colorPhong);
+    gatherFragment(phongColor);
     #endif
 }
