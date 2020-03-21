@@ -34,7 +34,8 @@
 #include "HexahedralMeshRenderer.hpp"
 
 /**
- * Renders all faces with transparency values determined by the transfer function set by the user.
+ * Renders all cells with transparency values determined by the transfer function set by the user.
+ * The resulting opacity value is modulated using the distance traveled in each cell.
  * For this, the order-independent transparency (OIT) technique per-pixel linked lists are used.
  * For more details see: Yang, J. C., Hensley, J., Grün, H. and Thibieroz, N., "Real-Time Concurrent
  * Linked List Construction on the GPU", Computer Graphics Forum, 29, 2010.
@@ -44,6 +45,10 @@
  * Line Sets with Transparency," in IEEE Transactions on Visualization and Computer Graphics, 2020.
  * doi: 10.1109/TVCG.2020.2975795
  * URL: http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9007507&isnumber=4359476
+ *
+ * For rendering the cells as a volume, all back faces and front faces of the cells are rendered.
+ * The distance traveled within a cell is determined as the sum of the differences in depth between consecutive pairs
+ * of back faces and front faces.
  */
 class VolumeRenderer_Volume : public HexahedralMeshRenderer {
 public:

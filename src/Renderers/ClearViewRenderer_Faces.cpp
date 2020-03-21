@@ -77,7 +77,7 @@ ClearViewRenderer_Faces::ClearViewRenderer_Faces(SceneData &sceneData, TransferF
     std::vector<glm::vec3> sphereVertexNormals;
     std::vector<uint32_t> sphereIndices;
     getSphereSurfaceRenderData(
-            glm::vec3(0,0,0), 0.003f, 20, 20, sphereVertexPositions, sphereVertexNormals, sphereIndices);
+            glm::vec3(0,0,0), 0.002f, 20, 20, sphereVertexPositions, sphereVertexNormals, sphereIndices);
 
     focusPointShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgramSurface);
     focusPointShaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);

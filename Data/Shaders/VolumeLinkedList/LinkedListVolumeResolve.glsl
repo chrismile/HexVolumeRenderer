@@ -77,6 +77,13 @@ void getNextVolumeFrontFaceFragment(
     depthListVolumeFrontFaces[0] = depthListVolumeFrontFaces[fragsCountVolumeFrontFaces-i_ff];
 }
 
+void throwAwayNextVolumeFrontFaceFragment(
+        inout uint i_ff, in uint fragsCountVolumeFrontFaces) {
+    minHeapSink4VolumeFrontFaces(0, fragsCountVolumeFrontFaces - i_ff++);
+    colorListVolumeFrontFaces[0] = colorListVolumeFrontFaces[fragsCountVolumeFrontFaces-i_ff];
+    depthListVolumeFrontFaces[0] = depthListVolumeFrontFaces[fragsCountVolumeFrontFaces-i_ff];
+}
+
 
 void swapFragsVolumeBackFaces(uint i, uint j) {
     uint cTemp = colorListVolumeBackFaces[i];
@@ -209,12 +216,24 @@ vec4 frontToBackPQ_Volume(
         volumeFrontFaceFragmentLoaded = true;
         volumeFrontFaceColor = volumeBackFaceColor;
         volumeFrontFaceDepth = 0.0;
+
+        // Make sure we don't have this rare corner case caused by unfortunate clipping.
+        while (numFragsVolumeFrontFaces + i_ff + 1 < numFragsVolumeBackFaces && i_ff < numFragsVolumeFrontFaces) {
+            throwAwayNextVolumeFrontFaceFragment(i_ff, numFragsVolumeFrontFaces);
+        }
     } else if (i_ff < numFragsVolumeFrontFaces) {
         getNextVolumeFrontFaceFragment(i_ff, numFragsVolumeFrontFaces, volumeFrontFaceColor, volumeFrontFaceDepth);
     }
     if (i_s < numFragsSurfaces) {
         getNextSurfaceFragment(i_s, numFragsSurfaces, surfaceColor, surfaceDepth);
     }
+
+    /*if (numFragsVolumeFrontFaces + 1 < numFragsVolumeBackFaces) {
+        return vec4(1.0, 0.0, 0.0, 1.0);
+    }
+    if (numFragsVolumeFrontFaces > numFragsVolumeBackFaces) {
+        return vec4(0.0, 1.0, 0.0, 1.0);
+    }*/
 
     float accumDepth = 0.0, currLengthTraveled;
 
@@ -224,7 +243,7 @@ vec4 frontToBackPQ_Volume(
     while ((volumeFrontFaceFragmentLoaded || volumeBackFaceFragmentLoaded || surfaceFragmentLoaded)
             && rayColor.a < 0.99) {
         if (volumeFrontFaceFragmentLoaded ^^ volumeBackFaceFragmentLoaded) {
-            // Make sure we don't have this rare corner case caught by unfortunate clipping.
+            // Make sure we don't have this rare corner case caused by unfortunate clipping.
             break;
         }
 

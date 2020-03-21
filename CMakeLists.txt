@@ -9,6 +9,7 @@ file(GLOB_RECURSE SOURCES src/*.cpp src/*.c)
 include_directories(src)
 
 option(USE_EMBREE "Build with Embree as Ray-Mesh Intersection Library" OFF)
+option(USE_CORK "Build with Cork as CSG Library" OFF)
 
 if(USE_EMBREE)
 	find_package(embree 3.0 REQUIRED)
@@ -16,6 +17,10 @@ if(USE_EMBREE)
 	add_definitions(-DUSE_EMBREE)
 else()
 	list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Renderers/Intersection/RayMeshIntersection_Embree.cpp)
+endif()
+
+if(USE_CORK)
+else()
 endif()
 
 #make VERBOSE=1

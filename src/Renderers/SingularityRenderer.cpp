@@ -84,13 +84,10 @@ void SingularityRenderer::render() {
         shaderProgramPoints->setUniform("cameraPosition", sceneData.camera->getPosition());
     }
 
-    glDepthMask(GL_TRUE);
     shaderProgram->setUniform("lineWidth", 0.0015f);
     sgl::Renderer->render(lineShaderAttributes);
-    glDepthMask(GL_FALSE);
     shaderProgramPoints->setUniform("radius", 0.002f);
     sgl::Renderer->render(pointShaderAttributes);
-    glDepthMask(GL_TRUE);
 }
 
 void SingularityRenderer::renderGui() {

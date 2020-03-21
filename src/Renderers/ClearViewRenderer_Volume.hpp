@@ -36,7 +36,7 @@
 /**
  * Renders the hexahedral mesh using an approach similar to ClearView (see below).
  * The focus region of the mesh is rendered using colored lines with white outlines that are faded out at the boundary.
- * The context region is rendered using face-based volume rendering (@see VolumeRenderer).
+ * The context region is rendered using volume rendering (@see VolumeRenderer_Volume).
  *
  * For more details on ClearView see: "ClearView: An Interactive Context Preserving Hotspot Visualization Technique",
  * Jens Krüger, Jens Schneider, Rüdiger Westermann (2006)

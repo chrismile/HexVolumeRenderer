@@ -117,8 +117,8 @@ void main()
 
     // To counteract depth fighting with overlay wireframe.
     float depthOffset = -0.00001;
-    if (absCoords >= WHITE_THRESHOLD) {
-        depthOffset = 0.02;
+    if (absCoords >= WHITE_THRESHOLD - EPSILON) {
+        depthOffset = 0.002;
     }
     gl_FragDepth = gl_FragCoord.z + depthOffset;
 }

@@ -109,6 +109,10 @@ out vec4 fragColor;
 
 void main()
 {
+    float distanceToCenterPercentage = length(fragmentPositionWorld - sphereCenter) / sphereRadius;
+    //vec3 lineColor = mix(fragmentColor.rgb, vec3(0.5, 0.5, 0.5), clamp(distanceToCenterPercentage*distanceToCenterPercentage, 0.0, 1.0));
+    vec3 lineColor = fragmentColor.rgb;
+
     // To counteract depth fighting with overlay wireframe.
     //gl_FragDepth = gl_FragCoord.z - 0.00001;
     float absCoords = abs(quadCoords);
@@ -116,20 +120,19 @@ void main()
     const float WHITE_THRESHOLD = 0.7;
     float EPSILON = clamp(fragmentDepth, 0.0, 0.49);
     float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, absCoords);
-    vec4 color = vec4(mix(fragmentColor.rgb, vec3(1.0, 1.0, 1.0),
+    vec4 color = vec4(mix(lineColor, vec3(1.0, 1.0, 1.0),
             smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, absCoords)), fragmentColor.a * coverage);
     color.a *= getClearViewFocusFragmentOpacityFactor();
 
     // To counteract depth fighting with overlay wireframe.
     float depthOffset = -0.00001;
-    float depth = length(fragmentPositionWorld - cameraPosition);
     if (absCoords >= WHITE_THRESHOLD - EPSILON) {
-        depth += gl_FragCoord.z * 0.01;
+        fragmentDepth += gl_FragCoord.z * 0.01;
     }
 
     #if defined(DIRECT_BLIT_GATHER)
     fragColor = color;
     #else
-    gatherFragmentCustomDepth(color, depth);
+    gatherFragmentCustomDepth(color, fragmentDepth);
     #endif
 }
