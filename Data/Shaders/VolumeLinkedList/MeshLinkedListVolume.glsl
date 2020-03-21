@@ -52,6 +52,7 @@ void main()
     #endif
 }
 
+
 -- Fragment.BackFace
 
 #version 430 core
@@ -84,3 +85,72 @@ void main()
     gatherFragmentVolumeBackFace(color);
     #endif
 }
+
+
+-- Fragment.ClearView.Context.FrontFace
+
+#version 430 core
+
+in vec3 fragmentPositionWorld;
+in vec3 fragmentNormal;
+in vec4 fragmentColor;
+
+#if defined(DIRECT_BLIT_GATHER)
+out vec4 fragColor;
+#endif
+
+#include "ClearView.glsl"
+
+#if !defined(DIRECT_BLIT_GATHER)
+#include OIT_GATHER_HEADER
+#endif
+
+#include "Lighting.glsl"
+
+void main()
+{
+    vec4 color = fragmentColor;
+    color.a *= getClearViewContextFragmentOpacityFactor();
+
+    #if defined(DIRECT_BLIT_GATHER)
+    // Direct rendering, no transparency.
+    fragColor = vec4(color.rgb, 1.0);
+    #else
+    gatherFragmentVolumeFrontFace(color);
+    #endif
+}
+
+
+-- Fragment.ClearView.Context.BackFace
+
+#version 430 core
+
+in vec3 fragmentPositionWorld;
+in vec3 fragmentNormal;
+in vec4 fragmentColor;
+
+#if defined(DIRECT_BLIT_GATHER)
+out vec4 fragColor;
+#endif
+
+#include "ClearView.glsl"
+
+#if !defined(DIRECT_BLIT_GATHER)
+#include OIT_GATHER_HEADER
+#endif
+
+#include "Lighting.glsl"
+
+void main()
+{
+    vec4 color = fragmentColor;
+    color.a *= getClearViewContextFragmentOpacityFactor();
+
+    #if defined(DIRECT_BLIT_GATHER)
+    // Direct rendering, no transparency.
+    fragColor = vec4(color.rgb, 1.0);
+    #else
+    gatherFragmentVolumeBackFace(color);
+    #endif
+}
+

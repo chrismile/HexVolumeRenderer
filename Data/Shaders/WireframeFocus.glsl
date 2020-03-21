@@ -44,14 +44,6 @@ void main()
     vec3 linePosition1 = v_in[1].linePosition;
     vec4 lineColor0 = v_in[0].lineColor;
     vec4 lineColor1 = v_in[1].lineColor;
-    //vec4 linePositionNDC0 = pMatrix * vMatrix * vec4(linePosition0, 1.0);
-    //vec4 linePositionNDC1 = pMatrix * vMatrix * vec4(linePosition1, 1.0);
-    //linePositionNDC0.xyz /= linePositionNDC0.w;
-    //linePositionNDC1.xyz /= linePositionNDC1.w;
-    //vec2 linePositionScreen0 = linePositionNDC0.xy;
-    //vec2 linePositionScreen1 = linePositionNDC0.xy;
-    //vec2 dir = linePositionScreen1 - linePositionScreen0;
-    //vec2 normalDir = vec2(-dir.y, dir.x);
 
     const float EPSILON = 0.0001;
     vec3 lineDir = normalize(linePosition0 - linePosition1);
@@ -109,19 +101,11 @@ in float quadCoords; // Between -1 and 1
 out vec4 fragColor;
 #endif
 
-// Camera data
-uniform vec3 cameraPosition;
-uniform vec3 lookingDirection;
-
-// Focus region data
-uniform vec3 sphereCenter;
-uniform float sphereRadius;
+#include "ClearView.glsl"
 
 #if !defined(DIRECT_BLIT_GATHER)
 #include OIT_GATHER_HEADER
 #endif
-
-#include "RayIntersection.glsl"
 
 void main()
 {
@@ -134,32 +118,7 @@ void main()
     float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, absCoords);
     vec4 color = vec4(mix(fragmentColor.rgb, vec3(1.0, 1.0, 1.0),
             smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, absCoords)), fragmentColor.a * coverage);
-
-    vec3 rayOrigin = cameraPosition;
-    vec3 rayDirection = normalize(fragmentPositionWorld - cameraPosition);
-
-    float t0, t1;
-    vec3 intersectionPosition;
-    bool intersectsSphere = raySphereIntersection(
-    rayOrigin, rayDirection, sphereCenter, sphereRadius, t0, t1, intersectionPosition);
-    bool fragmentInSphere = SQR(fragmentPositionWorld.x - sphereCenter.x)
-            + SQR(fragmentPositionWorld.y - sphereCenter.y)
-            + SQR(fragmentPositionWorld.z - sphereCenter.z) <= SQR(sphereRadius);
-
-    // Add opacity multiplication factor for fragments in front of or in focus region.
-    float opacityFactor = 0.0f;
-    if (intersectsSphere && fragmentInSphere) {
-        // Intersect view ray with plane parallel to camera looking direction containing the sphere center.
-        /*vec3 negativeLookingDirection = -lookingDirection; // Assuming right-handed coordinate system.
-        vec3 projectedPoint;
-        rayPlaneIntersection(rayOrigin, rayDirection, sphereCenter, negativeLookingDirection, projectedPoint);
-        float sphereDistance = length(projectedPoint - sphereCenter) / sphereRadius;
-        opacityFactor = 1.0 - sphereDistance*sphereDistance; // linear decrease
-        */
-        float sphereDistance = length(fragmentPositionWorld - sphereCenter) / sphereRadius;
-        opacityFactor = 1.0 - pow(sphereDistance, 10.0); // linear decrease
-    }
-    color.a *= opacityFactor;
+    color.a *= getClearViewFocusFragmentOpacityFactor();
 
     // To counteract depth fighting with overlay wireframe.
     float depthOffset = -0.00001;
@@ -174,4 +133,3 @@ void main()
     gatherFragmentCustomDepth(color, depth);
     #endif
 }
-

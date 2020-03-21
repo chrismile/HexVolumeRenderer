@@ -98,12 +98,10 @@ ClearViewRenderer_Volume::ClearViewRenderer_Volume(SceneData &sceneData, Transfe
             sphereIndices.size() * sizeof(uint32_t), sphereIndices.data(), sgl::INDEX_BUFFER);
     focusPointShaderAttributes->setIndexGeometryBuffer(focusPointIndexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
-    gatherShaderContext = sgl::ShaderManager->getShaderProgram(
-            {"MeshShader.Vertex", "MeshShader.Fragment.ClearView.Context"}); // TODO
     gatherShaderVolumeFrontFaces = sgl::ShaderManager->getShaderProgram(
-            {"MeshLinkedListVolume.Vertex", "MeshLinkedListVolume.Fragment.FrontFace"});
+            {"MeshLinkedListVolume.Vertex", "MeshLinkedListVolume.Fragment.ClearView.Context.FrontFace"});
     gatherShaderVolumeBackFaces = sgl::ShaderManager->getShaderProgram(
-            {"MeshLinkedListVolume.Vertex", "MeshLinkedListVolume.Fragment.BackFace"});
+            {"MeshLinkedListVolume.Vertex", "MeshLinkedListVolume.Fragment.ClearView.Context.BackFace"});
     gatherShaderFocusSurface = sgl::ShaderManager->getShaderProgram(
             {"WireframeFocus.Vertex", "WireframeFocus.Geometry", "WireframeFocus.Fragment"});
     resolveShader = sgl::ShaderManager->getShaderProgram(
