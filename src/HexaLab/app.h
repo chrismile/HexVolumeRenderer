@@ -3,6 +3,7 @@
 #include <Math/Geometry/AABB3.hpp>
 
 #include "Renderers/TransferFunctionWindow.hpp"
+#include "Utils/SearchStructures/TriangleSet.hpp"
 
 #include "mesh.h"
 #include "mesh_navigator.h"
@@ -150,13 +151,16 @@ namespace HexaLab {
         void add_filtered_wireframe ( Dart& dart );
         void add_full_face ( Dart& dart );
         void add_mesh_face ( Dart& dart, float normal_sign );
+        void add_mesh_face_volume ( Dart& dart, bool addPositiveNormal, bool addNegativeNormal );
 
         size_t add_vertex ( glm::vec3 pos, glm::vec3 norm, glm::vec4 color );
         size_t add_full_vertex ( glm::vec3 pos, glm::vec3 norm, glm::vec4 color );
         size_t add_mesh_vertex ( glm::vec3 pos, glm::vec3 norm, glm::vec4 color );
+        size_t add_mesh_vertex_volume ( glm::vec3 pos, glm::vec4 color );
         void add_triangle ( size_t i1, size_t i2, size_t i3 );
         void add_full_triangle ( size_t i1, size_t i2, size_t i3 );
         void add_mesh_triangle ( size_t i1, size_t i2, size_t i3 );
+        void add_mesh_triangle_volume ( size_t i1, size_t i2, size_t i3 );
         void add_quad ( size_t i1, size_t i2, size_t i3, size_t i4 );
 
         void prepare_geometry();

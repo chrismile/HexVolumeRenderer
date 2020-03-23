@@ -30,7 +30,7 @@ vec4 blinnPhongShading(in vec4 baseColor) {
     return color;
 }
 
-
+#ifdef TUBE_HALO_LIGHTING
 /**
  * Simplified Blinn-Phong shading for tubes assuming the ambient and diffuse color are equal and the specular color is
  * white. It adds a halo at the outline of the tube. Assumes the following global variables are given:
@@ -70,3 +70,4 @@ vec4 blinnPhongShadingHalo(in vec4 baseColor) {
     vec4 color = vec4(phongColor, baseColor.a);
     return color;
 }
+#endif

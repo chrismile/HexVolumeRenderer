@@ -81,6 +81,7 @@ void createTriangleTubesRenderDataGPU(
         std::vector<glm::vec3>& vertexTangents,
         std::vector<glm::vec4>& vertexAttributes) {
     auto start = std::chrono::system_clock::now();
+    sgl::ShaderManager->invalidateShaderCache();
     sgl::ShaderManager->addPreprocessorDefine("NUM_CIRCLE_SEGMENTS", numCircleSubdivisions);
     sgl::ShaderManager->addPreprocessorDefine("CIRCLE_RADIUS", tubeRadius);
 
@@ -279,6 +280,9 @@ void createTriangleTubesRenderDataGPU(
                               + std::to_string(elapsedIndices.count()));
 
     sgl::ShaderManager->removePreprocessorDefine("WORK_GROUP_SIZE_1D");
+    sgl::ShaderManager->removePreprocessorDefine("NUM_CIRCLE_SEGMENTS");
+    sgl::ShaderManager->removePreprocessorDefine("CIRCLE_RADIUS");
+    sgl::ShaderManager->unbindShader();
 
 
 

@@ -196,8 +196,8 @@ vec4 frontToBackPQ_Volume(
         minHeapSink4Surface(i, numFragsSurfaces);
     }
 
-    const float VOLUME_FACTOR = 100.0; // TODO - control in UI
-    const float INFINITY = 1e9; // TODO - control in UI
+    const float VOLUME_FACTOR = 255.0;
+    const float INFINITY = 1e9;
 
     // Get first fragment
     uint i_ff = 0, i_bf = 0, i_s = 0;
@@ -207,7 +207,6 @@ vec4 frontToBackPQ_Volume(
     bool volumeBackFaceFragmentLoaded = i_bf < numFragsVolumeBackFaces;
     bool surfaceFragmentLoaded = i_s < numFragsSurfaces;
 
-    // TODO: Make sure same number front faces and back faces (-> clipping)
     if (i_bf < numFragsVolumeBackFaces) {
         getNextVolumeBackFaceFragment(i_bf, numFragsVolumeBackFaces, volumeBackFaceColor, volumeBackFaceDepth);
     }
@@ -216,24 +215,12 @@ vec4 frontToBackPQ_Volume(
         volumeFrontFaceFragmentLoaded = true;
         volumeFrontFaceColor = volumeBackFaceColor;
         volumeFrontFaceDepth = 0.0;
-
-        // Make sure we don't have this rare corner case caused by unfortunate clipping.
-        while (numFragsVolumeFrontFaces + i_ff + 1 < numFragsVolumeBackFaces && i_ff < numFragsVolumeFrontFaces) {
-            throwAwayNextVolumeFrontFaceFragment(i_ff, numFragsVolumeFrontFaces);
-        }
     } else if (i_ff < numFragsVolumeFrontFaces) {
         getNextVolumeFrontFaceFragment(i_ff, numFragsVolumeFrontFaces, volumeFrontFaceColor, volumeFrontFaceDepth);
     }
     if (i_s < numFragsSurfaces) {
         getNextSurfaceFragment(i_s, numFragsSurfaces, surfaceColor, surfaceDepth);
     }
-
-    /*if (numFragsVolumeFrontFaces + 1 < numFragsVolumeBackFaces) {
-        return vec4(1.0, 0.0, 0.0, 1.0);
-    }
-    if (numFragsVolumeFrontFaces > numFragsVolumeBackFaces) {
-        return vec4(0.0, 1.0, 0.0, 1.0);
-    }*/
 
     float accumDepth = 0.0, currLengthTraveled;
 
@@ -287,8 +274,6 @@ vec4 frontToBackPQ_Volume(
     }
 
     rayColor.rgb = rayColor.rgb / rayColor.a;
-    //rayColor.rgba = vec4(vec3(accumDepth / 2.0, 0.0, 0.0), 1.0);
-    //rayColor.rgba = vec4(vec3(float(numFragsVolumeFrontFaces) / 2.0, 0.0, 0.0), 1.0);
     return rayColor;
 }
 

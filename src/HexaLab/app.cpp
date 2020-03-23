@@ -517,6 +517,13 @@ namespace HexaLab {
         return i;
     }
 
+    size_t App::add_mesh_vertex_volume ( glm::vec3 pos, glm::vec4 color ) {
+        size_t i = visible_model.mesh_vert_pos.size();
+        visible_model.mesh_vert_pos.push_back ( pos );
+        visible_model.mesh_vert_color.push_back ( color );
+        return i;
+    }
+
     void App::add_triangle ( size_t i1, size_t i2, size_t i3 ) {
         visible_model.surface_ibuffer.push_back ( i1 );
         visible_model.surface_ibuffer.push_back ( i2 );
@@ -530,6 +537,12 @@ namespace HexaLab {
     }
 
     void App::add_mesh_triangle ( size_t i1, size_t i2, size_t i3 ) {
+        visible_model.mesh_ibuffer.push_back ( i1 );
+        visible_model.mesh_ibuffer.push_back ( i2 );
+        visible_model.mesh_ibuffer.push_back ( i3 );
+    }
+
+    void App::add_mesh_triangle_volume ( size_t i1, size_t i2, size_t i3 ) {
         visible_model.mesh_ibuffer.push_back ( i1 );
         visible_model.mesh_ibuffer.push_back ( i2 );
         visible_model.mesh_ibuffer.push_back ( i3 );
@@ -767,6 +780,74 @@ namespace HexaLab {
         add_mesh_triangle ( idx + 0, idx + 3, idx + 2 );
     }
 
+    void App::add_mesh_face_volume ( Dart& dart, bool addPositiveNormal, bool addNegativeNormal ) {
+        MeshNavigator nav = mesh->navigate ( dart );
+
+        // Faces are normally shared between two cells, but their data structure references only one of them, the 'main' (the first encountered when parsing the mesh file).
+        // If the normal sign is -1, it means that the cell we want to render is not the main.
+        // Therefore a flip cell is performed, along with a flip edge to maintain the winding.
+        //if ( normal_sign == -1 ) {
+        //    nav = nav.flip_cell().flip_edge();
+        //}
+
+        // If cell quality display is enabled, fetch the appropriate quality color.
+        // Otherwise use the defautl coloration (white for outer faces, yellow for everything else)
+        glm::vec4 pos_color, neg_color;
+
+        if ( is_quality_color_mapping_enabled() ) {
+            //color = color_map.get ( mesh->normalized_hexa_quality[nav.cell_index()] );
+            if (addPositiveNormal) {
+                pos_color = transferFunctionWindow.getLinearRGBColorAtAttribute (
+                        1.0f - mesh->normalized_hexa_quality[nav.cell_index()] );
+            }
+            if (addNegativeNormal) {
+                neg_color = transferFunctionWindow.getLinearRGBColorAtAttribute (
+                        1.0f - mesh->normalized_hexa_quality[nav.flip_cell().flip_edge().cell_index()] );
+            }
+        } else {
+            pos_color = nav.is_face_boundary() ? this->default_outside_color : this->default_inside_color;
+            neg_color = pos_color;
+        }
+
+        if (addPositiveNormal) {
+            nav = mesh->navigate ( dart );
+
+            //if ( normal_sign == -1 ) {
+            //    nav = nav.flip_vert();    // TODO flip cell/edge instead? same thing?
+            //}
+
+            Vert& vert = nav.vert();
+            Index idx = visible_model.mesh_vert_pos.size();
+
+            do {
+                add_mesh_vertex_volume ( nav.vert().position, pos_color );
+                nav = nav.rotate_on_face();
+            } while ( nav.vert() != vert );
+
+            add_mesh_triangle_volume ( idx + 2, idx + 1, idx + 0 );
+            add_mesh_triangle_volume ( idx + 0, idx + 3, idx + 2 );
+        }
+
+        if (addNegativeNormal) {
+            nav = mesh->navigate ( dart );
+
+            //if ( normal_sign == -1 ) {
+            //    nav = nav.flip_vert();    // TODO flip cell/edge instead? same thing?
+            //}
+
+            Vert& vert = nav.vert();
+            Index idx = visible_model.mesh_vert_pos.size();
+
+            do {
+                add_mesh_vertex_volume ( nav.vert().position, neg_color );
+                nav = nav.rotate_on_face();
+            } while ( nav.vert() != vert );
+
+            add_mesh_triangle_volume ( idx + 0, idx + 1, idx + 2 );
+            add_mesh_triangle_volume ( idx + 2, idx + 3, idx + 0 );
+        }
+    }
+
 
     void App::prepare_geometry() {
         visible_model.mesh_vert_pos.clear();
@@ -824,16 +905,22 @@ namespace HexaLab {
         visible_model.mesh_vert_norm.clear();
         visible_model.mesh_vert_color.clear();
         visible_model.mesh_ibuffer.clear();
+        TriangleSet triangle_set;
 
         for ( size_t i = 0; i < mesh->faces.size(); ++i ) {
             MeshNavigator nav = mesh->navigate ( mesh->faces[i] );
 
+            bool addPositiveNormal = false, addNegativeNormal = false;
+
             // Add all front faces to the full mesh.
             if ( !mesh->is_marked ( nav.cell() ) ) {
-                this->add_mesh_face( nav.dart(), 1 );
+                addPositiveNormal = true;
             }
             if ( nav.dart().cell_neighbor != -1 && !mesh->is_marked ( nav.flip_cell().cell() ) ) {
-                this->add_mesh_face( nav.dart(), -1 );
+                addNegativeNormal = true;
+            }
+            if (addPositiveNormal || addNegativeNormal) {
+                this->add_mesh_face_volume( nav.dart(), addPositiveNormal, addNegativeNormal );
             }
         }
     }

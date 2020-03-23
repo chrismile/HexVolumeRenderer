@@ -71,10 +71,14 @@ protected:
     void gather();
     void resolve();
 
+    // Load either tube or line representation depending on "useTubes".
+    void loadFocusRepresentation();
+    HexMeshPtr mesh;
+
     // The rendering data for the volume object.
     sgl::ShaderAttributesPtr shaderAttributesVolumeFrontFaces; //< Context front faces (volume)
     sgl::ShaderAttributesPtr shaderAttributesVolumeBackFaces; //< Context back faces (volume)
-    sgl::ShaderAttributesPtr shaderAttributesFocusSurface; //< Focus (surface/lines)
+    sgl::ShaderAttributesPtr shaderAttributesFocus; //< Focus (surface/lines or tubes)
     sgl::ShaderAttributesPtr focusPointShaderAttributes; //< Focus sphere (surface)
 
     // Per-pixel linked list data.
@@ -92,7 +96,8 @@ protected:
     sgl::ShaderProgramPtr clearShader;
     sgl::ShaderProgramPtr gatherShaderVolumeFrontFaces; //< Context front faces (volume)
     sgl::ShaderProgramPtr gatherShaderVolumeBackFaces; //< Context back faces (volume)
-    sgl::ShaderProgramPtr gatherShaderFocusSurface; //< Focus (surface/lines)
+    sgl::ShaderProgramPtr gatherShaderFocusLines; //< Focus (surface/lines)
+    sgl::ShaderProgramPtr gatherShaderFocusTubes; //< Focus (surface/tubes)
     sgl::ShaderProgramPtr shaderProgramSurface; //< Focus sphere (surface)
     sgl::ShaderProgramPtr resolveShader;
 
@@ -106,6 +111,7 @@ protected:
     glm::vec4 focusPointColor = glm::vec4(0.2f, 0.0f, 0.0f, 1.0f);
     float focusRadius = 0.05f;
     float lineWidth = 0.001f;
+    bool useTubes = true;
 
     // Focus point move information.
     bool hasHitInformation = false;

@@ -52,6 +52,7 @@ vec4 transferFunction(float attr) {
 }
 */
 
+#define TUBE_HALO_LIGHTING
 #include "Lighting.glsl"
 
 #if !defined(DIRECT_BLIT_GATHER)
@@ -67,7 +68,7 @@ void main()
     #if defined(DIRECT_BLIT_GATHER)
     fragColor = color;
     #else
-    gatherFragmentCustomDepth(color, fragmentDepth);
+    gatherFragment(color);
     #endif
 }
 
@@ -100,6 +101,7 @@ vec4 transferFunction(float attr) {
 }
 */
 
+#define TUBE_HALO_LIGHTING
 #include "ClearView.glsl"
 #include "Lighting.glsl"
 
@@ -117,7 +119,7 @@ void main()
     #if defined(DIRECT_BLIT_GATHER)
     fragColor = color;
     #else
-    gatherFragmentCustomDepth(color, fragmentDepth);
+    gatherFragment(color);
     #endif
 }
 

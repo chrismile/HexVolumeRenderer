@@ -43,7 +43,7 @@ const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Inse
 static bool useStencilBuffer = true;
 
 /// Expected (average) depth complexity, i.e. width*height* this value = number of fragments that can be stored.
-static int expectedDepthComplexityVolume = 50; // for front and back faces each
+static int expectedDepthComplexityVolume = 60; // for front and back faces each
 static int expectedDepthComplexitySurface = 40;
 /// Maximum number of fragments to sort in second pass.
 static int maxNumFragmentsSortingVolume = 128; // for front and back faces each

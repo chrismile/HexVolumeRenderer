@@ -71,9 +71,13 @@ protected:
     void gather();
     void resolve();
 
+    // Load either tube or line representation depending on "useTubes".
+    void loadFocusRepresentation();
+    HexMeshPtr mesh;
+
     // The rendering data for the volume object.
-    sgl::ShaderAttributesPtr shaderAttributesFocus;
     sgl::ShaderAttributesPtr shaderAttributesContext;
+    sgl::ShaderAttributesPtr shaderAttributesFocus;
 
     // Per-pixel linked list data.
     sgl::GeometryBufferPtr fragmentBuffer;
@@ -82,7 +86,8 @@ protected:
 
     // The shaders for rendering.
     sgl::ShaderProgramPtr clearShader;
-    sgl::ShaderProgramPtr gatherShaderFocus;
+    sgl::ShaderProgramPtr gatherShaderFocusLines;
+    sgl::ShaderProgramPtr gatherShaderFocusTubes;
     sgl::ShaderProgramPtr gatherShaderContext;
     sgl::ShaderProgramPtr resolveShader;
 
@@ -101,6 +106,7 @@ protected:
     float focusRadius = 0.05f;
     float lineWidth = 0.001f;
     bool useShading = false;
+    bool useTubes = true;
 
     // Focus point move information.
     bool hasHitInformation = false;

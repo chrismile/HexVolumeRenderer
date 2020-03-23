@@ -44,7 +44,6 @@ void createTriangleTubesRenderDataCPU(
         std::vector<glm::vec3>& vertexTangents,
         std::vector<T>& vertexAttributes);
 
-template<typename T>
 void createTriangleTubesRenderDataGPU(
         const std::vector<std::vector<glm::vec3>>& lineCentersList,
         const std::vector<std::vector<glm::vec4>>& lineAttributesList,
