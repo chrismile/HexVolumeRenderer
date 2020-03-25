@@ -40,7 +40,8 @@
 #include "VtkLoader.hpp"
 
 bool VtkLoader::loadHexahedralMeshFromFile(
-        const std::string& filename, std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices) {
+        const std::string& filename,
+        std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices, std::vector<glm::vec3>& deformations) {
     HexMeshPtr loadedMesh;
 
     bool foundVersionHeader = false;
@@ -58,6 +59,10 @@ bool VtkLoader::loadHexahedralMeshFromFile(
     int numCellTypesLeft = 0;
     bool isCellDataReadMode = false;
     int numCellDataLinesLeft = 0;
+    bool isPointDataReadMode = false;
+    int numPointDataLinesLeft = 0;
+    bool isDeformationDataReadMode = false;
+    int numDeformationDataLinesLeft = 0;
 
     bool loadingSuccessful = readFileLineByLine(
             filename, [&](const std::string& lineString, const std::vector<std::string>& tokens) {
@@ -109,6 +114,30 @@ bool VtkLoader::loadHexahedralMeshFromFile(
             numCellDataLinesLeft--;
             if (numCellDataLinesLeft <= 0) {
                 isCellDataReadMode = false;
+            }
+            return true;
+        }
+
+        if (isPointDataReadMode) {
+            numPointDataLinesLeft--;
+            if (numPointDataLinesLeft <= 0) {
+                isPointDataReadMode = false;
+            }
+            return true;
+        }
+
+        if (isDeformationDataReadMode) {
+            if (tokens.size() != 3) {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Invalid number of point coordinates!");
+                return false;
+            }
+            deformations.push_back(glm::vec3(
+                    sgl::fromString<float>(tokens.at(0)),
+                    sgl::fromString<float>(tokens.at(1)),
+                    sgl::fromString<float>(tokens.at(2))));
+            numDeformationDataLinesLeft--;
+            if (numDeformationDataLinesLeft <= 0) {
+                isDeformationDataReadMode = false;
             }
             return true;
         }
@@ -205,6 +234,30 @@ bool VtkLoader::loadHexahedralMeshFromFile(
             isCellDataReadMode = true;
             return true;
         }
+
+        // Ignore point data
+        if (tokens.at(0) == "POINT_DATA") {
+            if (tokens.size() != 2) {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Malformed POINT_DATA declaration!");
+                return false;
+            }
+            // Number of entries + SCALARS + LOOKUP_TABLE information
+            numPointDataLinesLeft = sgl::fromString<size_t>(tokens.at(1)) + 2;
+            isPointDataReadMode = true;
+            return true;
+        }
+
+        // Read deformation data
+        if (tokens.at(0) == "Deformation") {
+            if (tokens.size() != 2) {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Malformed Deformation declaration!");
+                return false;
+            }
+            numDeformationDataLinesLeft = sgl::fromString<size_t>(tokens.at(1));
+            isDeformationDataReadMode = true;
+            return true;
+        }
+
 
         // Something unexpected happened.
         return false;

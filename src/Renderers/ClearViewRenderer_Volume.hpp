@@ -80,6 +80,9 @@ protected:
     sgl::ShaderAttributesPtr shaderAttributesVolumeBackFaces; //< Context back faces (volume)
     sgl::ShaderAttributesPtr shaderAttributesFocus; //< Focus (surface/lines or tubes)
     sgl::ShaderAttributesPtr focusPointShaderAttributes; //< Focus sphere (surface)
+    // For rendering instanced spheres for filling gaps in tube rendering.
+    sgl::ShaderAttributesPtr shaderAttributesFocusPoints; //< Focus (surface/spheres)
+    sgl::GeometryBufferPtr pointLocationsBuffer;
 
     // Per-pixel linked list data.
     sgl::GeometryBufferPtr fragmentBufferVolumeFrontFaces;
@@ -98,6 +101,7 @@ protected:
     sgl::ShaderProgramPtr gatherShaderVolumeBackFaces; //< Context back faces (volume)
     sgl::ShaderProgramPtr gatherShaderFocusLines; //< Focus (surface/lines)
     sgl::ShaderProgramPtr gatherShaderFocusTubes; //< Focus (surface/tubes)
+    sgl::ShaderProgramPtr gatherShaderFocusSpheres; //< Focus (surface/spheres)
     sgl::ShaderProgramPtr shaderProgramSurface; //< Focus sphere (surface)
     sgl::ShaderProgramPtr resolveShader;
 

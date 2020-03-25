@@ -142,7 +142,7 @@ private:
     ColorSpace interpolationColorSpace;
 
     std::string saveDirectory = "Data/TransferFunctions/";
-    std::string saveFileString = "WhiteRed.xml";
+    std::string saveFileString = "Standard.xml";
     std::vector<std::string> availableFiles;
     int selectedFileIndex = -1;
     std::vector<float> histogram;

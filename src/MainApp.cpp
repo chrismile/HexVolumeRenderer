@@ -113,7 +113,7 @@ MainApp::MainApp()
     camera->setFOVy(fovy);
     camera->setPosition(glm::vec3(0.0f, 0.0f, 0.8f));
 
-    clearColor = sgl::Color(255, 255, 255, 255);
+    clearColor = sgl::Color(0, 0, 0, 255);
     clearColorSelection = ImColor(clearColor.getColorRGBA());
     transferFunctionWindow.setClearColor(clearColor);
     transferFunctionWindow.setUseLinearRGB(useLinearRGB);
@@ -454,6 +454,17 @@ void MainApp::renderFileSelectionSettingsGui() {
         }
     }
 
+    // Assume deformed meshes only in source at index 2 for now (don't clutter the UI for other sources).
+    if (selectedFileSourceIndex == 2) {
+        if (ImGui::SliderFloat("deformationFactor", &deformationFactor, 0.0f, 1.0f)) {
+            if (selectedFileSourceIndex == currentlyLoadedFileSourceIndex
+                    && selectedMeshIndex == currentlySelectedMeshIndex) {
+                // Reload
+                loadHexahedralMesh(getSelectedMeshFilename());
+            }
+        }
+    }
+
     if (!hexaLabDataSetsDownloaded || selectedFileSourceIndex > 0) {
         ImGui::Text(
                 "By clicking the button below you confirm that you have\nthe right to download the data sets from "
@@ -634,11 +645,26 @@ void MainApp::update(float dt) {
 
 // --- Visualization pipeline ---
 
-void normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
+sgl::AABB3 computeAABB3(const std::vector<glm::vec3>& vertices) {
     sgl::AABB3 aabb;
+    float minX = FLT_MAX, minY = FLT_MAX, minZ = FLT_MAX, maxX = -FLT_MAX, maxY = -FLT_MAX, maxZ = -FLT_MAX;
+    #pragma omp parallel for reduction(min: minX) reduction(min: minY) reduction(min: minZ) reduction(max: maxX) reduction(max: maxY) reduction(max: maxZ)
     for (size_t i = 0; i < vertices.size(); i++) {
-        aabb.combine(vertices.at(i));
+        const glm::vec3& pt = vertices.at(i);
+        minX = std::min(minX, pt.x);
+        minY = std::min(minY, pt.y);
+        minZ = std::min(minZ, pt.z);
+        maxX = std::max(maxX, pt.x);
+        maxY = std::max(maxY, pt.y);
+        maxZ = std::max(maxZ, pt.z);
     }
+    aabb.min = glm::vec3(minX, minY, minZ);
+    aabb.max = glm::vec3(maxX, maxY, maxZ);
+    return aabb;
+}
+
+void normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
+    sgl::AABB3 aabb = computeAABB3(vertices);
     glm::vec3 translation = -aabb.getCenter();
     glm::vec3 scale3D = 0.5f / aabb.getDimensions();
     float scale = std::min(scale3D.x, std::min(scale3D.y, scale3D.z));
@@ -649,11 +675,29 @@ void normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
     }
 }
 
+void applyVertexDeformationsAndNormalizeVertices(
+        std::vector<glm::vec3>& vertices, std::vector<glm::vec3>& deformations, const float deformationFactor) {
+    float maxDeformation = -FLT_MAX;
+    #pragma omp parallel for reduction(max: maxDeformation)
+    for (size_t i = 0; i < deformations.size(); i++) {
+        maxDeformation = std::max(maxDeformation, glm::length(deformations.at(i)));
+    }
+
+    sgl::AABB3 aabb = computeAABB3(vertices);
+    const float deformationScalingFactor = glm::length(aabb.getDimensions()) * deformationFactor / maxDeformation;
+    #pragma omp parallel for
+    for (size_t i = 0; i < vertices.size(); i++) {
+        vertices.at(i) = vertices.at(i) + deformationScalingFactor * deformations.at(i);
+    }
+}
+
 void MainApp::loadHexahedralMesh(const std::string &fileName) {
     if (fileName.size() == 0) {
         inputData = HexMeshPtr();
         return;
     }
+    currentlyLoadedFileSourceIndex = selectedFileSourceIndex;
+    currentlySelectedMeshIndex = selectedMeshIndex;
 
     size_t extensionPos = fileName.find_last_of('.');
     if (extensionPos == std::string::npos) {
@@ -669,8 +713,14 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
 
     std::vector<glm::vec3> vertices;
     std::vector<uint32_t> cellIndices;
-    bool loadingSuccessful = it->second->loadHexahedralMeshFromFile(fileName, vertices, cellIndices);
+    std::vector<glm::vec3> deformations;
+    bool loadingSuccessful = it->second->loadHexahedralMeshFromFile(fileName, vertices, cellIndices, deformations);
     if (loadingSuccessful) {
+        // Assume deformed meshes only in source at index 2 for now (don't clutter the UI for other sources).
+        if (deformationFactor != 0.0f && selectedFileSourceIndex == 2) {
+            applyVertexDeformationsAndNormalizeVertices(vertices, deformations, deformationFactor);
+        }
+
         normalizeVertexPositions(vertices);
         inputData = HexMeshPtr(new HexMesh(transferFunctionWindow, *rayMeshIntersection));
         inputData->setHexMeshData(vertices, cellIndices);

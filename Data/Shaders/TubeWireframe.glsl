@@ -63,7 +63,8 @@ void main()
 {
     //vec4 color = transferFunction(fragmentAttribute);
     vec4 color = fragmentColor;
-    color = blinnPhongShadingHalo(color);
+    //color = blinnPhongShadingHalo(color);
+    color = flatShadingHalo(color);
 
     #if defined(DIRECT_BLIT_GATHER)
     fragColor = color;
@@ -101,25 +102,28 @@ vec4 transferFunction(float attr) {
 }
 */
 
-#define TUBE_HALO_LIGHTING
 #include "ClearView.glsl"
-#include "Lighting.glsl"
 
 #if !defined(DIRECT_BLIT_GATHER)
 #include OIT_GATHER_HEADER
 #endif
 
+#define TUBE_HALO_LIGHTING
+#include "Lighting.glsl"
+
 void main()
 {
     //vec4 color = transferFunction(fragmentAttribute);
     vec4 color = fragmentColor;
-    color = blinnPhongShadingHalo(color);
+    float fragmentDepth;
+    //color = blinnPhongShadingHalo(color);
+    color = flatShadingHalo(color, fragmentDepth);
     color.a *= getClearViewFocusFragmentOpacityFactor();
 
     #if defined(DIRECT_BLIT_GATHER)
     fragColor = color;
     #else
-    gatherFragment(color);
+    gatherFragmentCustomDepth(color, fragmentDepth);
     #endif
 }
 

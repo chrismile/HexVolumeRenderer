@@ -125,7 +125,10 @@ private:
     std::vector<std::string> selectedMeshDataSetNames; //< Contains "None" at beginning, thus starts actually at 1.
     int selectedFileSourceIndex = 0; //< Contains "Local file..." at beginning, thus starts actually at 1.
     int selectedMeshIndex = 0; //< Contains "None" at beginning, thus starts actually at 1.
+    int currentlyLoadedFileSourceIndex = -1;
+    int currentlySelectedMeshIndex = -1;
     std::string customMeshFileName;
+    float deformationFactor = 0.0f;
 
     // Continuous rendering: Re-render each frame or only when scene changes?
     bool continuousRendering = false;

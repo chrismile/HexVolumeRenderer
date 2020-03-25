@@ -89,7 +89,8 @@ HexMesh::~HexMesh() {
     }
 }
 
-void HexMesh::setHexMeshData(const std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices) {
+void HexMesh::setHexMeshData(
+        const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices) {
     if (hexaLabApp != nullptr) {
         delete hexaLabApp;
         hexaLabApp = nullptr;
@@ -97,14 +98,19 @@ void HexMesh::setHexMeshData(const std::vector<glm::vec3>& vertices, std::vector
     if (baseComplexMesh != nullptr) {
         delete baseComplexMesh;
         baseComplexMesh = nullptr;
+    }
+    if (si != nullptr) {
         delete si;
         si = nullptr;
+    }
+    if (frame != nullptr) {
         delete frame;
         frame = nullptr;
     }
+
     hexaLabApp = new HexaLab::App(transferFunctionWindow);
     std::vector<HexaLab::Index> indices;
-    for (uint32_t& idx : cellIndices) {
+    for (const uint32_t& idx : cellIndices) {
         indices.push_back(idx);
     }
     hexaLabApp->import_mesh(vertices, indices);
@@ -118,7 +124,8 @@ void HexMesh::setHexMeshData(const std::vector<glm::vec3>& vertices, std::vector
     dirty = true;
 }
 
-void HexMesh::computeBaseComplexMesh(const std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices) {
+void HexMesh::computeBaseComplexMesh(
+        const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices) {
     Mesh &mesh = *baseComplexMesh;
     const uint32_t numVertices = vertices.size();
     const uint32_t numCells = cellIndices.size() / 8;
@@ -156,7 +163,11 @@ void HexMesh::computeBaseComplexMesh(const std::vector<glm::vec3>& vertices, std
     build_connectivity(mesh);
     base_complex bc;
     bc.singularity_structure(*si, mesh);
-    bc.base_complex_extraction(*si, *frame, mesh);
+}
+
+void HexMesh::computeBaseComplexMeshFrame() {
+    base_complex bc;
+    bc.base_complex_extraction(*si, *frame, *baseComplexMesh);
 
     // Set the singularity attribute on the frame vertices.
     std::unordered_set<uint32_t> singularVertexSet;
@@ -167,9 +178,9 @@ void HexMesh::computeBaseComplexMesh(const std::vector<glm::vec3>& vertices, std
 
     for (Frame_V &fv : frame->FVs) {
         fv.singular = (singularVertexSet.find(fv.hid) != singularVertexSet.end());
-
     }
 }
+
 
 
 void HexMesh::onTransferFunctionMapRebuilt() {
@@ -383,6 +394,7 @@ void HexMesh::getBaseComplexDataWireframe(
         std::vector<glm::vec4>& pointColors,
         bool drawRegularLines) {
     rebuildInternalRepresentationIfNecessary();
+    if (!frame) computeBaseComplexMeshFrame();
     Mesh* mesh = baseComplexMesh;
 
     for (Frame_V& fv : frame->FVs) {
@@ -434,6 +446,7 @@ void HexMesh::getBaseComplexDataSurface(
         std::vector<glm::vec4>& colors,
         bool cullInterior) {
     rebuildInternalRepresentationIfNecessary();
+    if (!frame) computeBaseComplexMeshFrame();
     Mesh* mesh = baseComplexMesh;
     sgl::XorshiftRandomGenerator random(10203);
 
@@ -810,6 +823,7 @@ void HexMesh::getColoredPartitionLines(
         std::vector<glm::vec3>& lineVertices,
         std::vector<glm::vec4>& lineColors) {
     rebuildInternalRepresentationIfNecessary();
+    if (!frame) computeBaseComplexMeshFrame();
     std::vector<ParametrizedGrid> gridPartitions = computeBaseComplexParametrizedGrid();
 
     for (ParametrizedGrid& grid : gridPartitions) {
@@ -878,6 +892,7 @@ void HexMesh::getLodLineRepresentation(
         std::vector<float> &lineLodValues,
         bool previewColors) {
     rebuildInternalRepresentationIfNecessary();
+    if (!frame) computeBaseComplexMeshFrame();
 
     // Get a list of all parametrized base-complex grids.
     std::vector<ParametrizedGrid> gridPartitions = computeBaseComplexParametrizedGrid();
@@ -1210,6 +1225,7 @@ void HexMesh::getLodLineRepresentationClosest(
         const glm::vec3& focusPoint,
         float focusRadius) {
     rebuildInternalRepresentationIfNecessary();
+    if (!frame) computeBaseComplexMeshFrame();
 
     // Edges only need to be considered once, thus remember which we have already added.
     std::unordered_set<uint64_t> addedEdgeSet;
@@ -1268,6 +1284,37 @@ void HexMesh::getCompleteWireframeData(
             } else {
                 lineColors.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
             }
+        }
+    }
+}
+
+void HexMesh::getCompleteVertexData(
+        std::vector<glm::vec3> &pointVertices,
+        std::vector<glm::vec4> &pointColors) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    std::unordered_set<uint32_t> vertexOnSingularEdgeIds;
+
+    for (size_t i = 0; i < si->SEs.size(); i++) {
+        Singular_E& se = si->SEs.at(i);
+        for (size_t edgeIndex = 0; edgeIndex < se.es_link.size(); edgeIndex++) {
+            Hybrid_E& e = mesh->Es[se.es_link.at(edgeIndex)];
+            for (uint32_t v_id : e.vs) {
+                if (vertexOnSingularEdgeIds.find(v_id) == vertexOnSingularEdgeIds.end()) {
+                    vertexOnSingularEdgeIds.insert(v_id);
+                }
+            }
+        }
+    }
+
+    for (Hybrid_V& v : mesh->Vs) {
+        glm::vec3 vertexPosition(mesh->V(0, v.id), mesh->V(1, v.id), mesh->V(2, v.id));
+        pointVertices.push_back(vertexPosition);
+        if (vertexOnSingularEdgeIds.find(v.id) == vertexOnSingularEdgeIds.end()) {
+            pointColors.push_back(glm::vec4(0,0,0,1));
+        } else {
+            pointColors.push_back(glm::vec4(1,0,0,1));
         }
     }
 }

@@ -40,7 +40,8 @@
 #include "MeshLoader.hpp"
 
 bool MeshLoader::loadHexahedralMeshFromFile(
-        const std::string& filename, std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices) {
+        const std::string& filename,
+        std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices, std::vector<glm::vec3>& deformations) {
     HexMeshPtr loadedMesh;
 
     bool foundVersionHeader = false;

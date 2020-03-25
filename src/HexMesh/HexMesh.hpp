@@ -85,7 +85,7 @@ public:
     HexMesh(TransferFunctionWindow &transferFunctionWindow, RayMeshIntersection& rayMeshIntersection)
         : transferFunctionWindow(transferFunctionWindow), rayMeshIntersection(rayMeshIntersection) {}
     ~HexMesh();
-    void setHexMeshData(const std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices);
+    void setHexMeshData(const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices);
     void setQualityMeasure(QualityMeasure qualityMeasure);
     void onTransferFunctionMapRebuilt();
     void unmark();
@@ -109,7 +109,8 @@ public:
             std::vector<glm::vec3>& vertices,
             std::vector<glm::vec4>& colors);
     /**
-     * Get the surface data of every cell of the hexahedral mesh.
+     * Get the surface data of all front faces (and backfaces for boundary surface) of every cell of the hexahedral
+     * mesh.
      */
     void getVolumeData_Faces(
             std::vector<uint32_t>& indices,
@@ -117,7 +118,7 @@ public:
             std::vector<glm::vec3>& normals,
             std::vector<glm::vec4>& colors);
     /**
-     * Get the surface data of every cell of the hexahedral mesh.
+     * Get the surface data of all front faces of every cell of the hexahedral mesh.
      */
     void getVolumeData_Volume(
             std::vector<uint32_t>& indices,
@@ -183,11 +184,17 @@ public:
             const glm::vec3& focusPoint,
             float focusRadius);
     /**
-     * Get a list of all wireframe lines
+     * Get a list of all wireframe lines. The color is either black (regular edge) or red (irregular/singular edge).
      */
     void getCompleteWireframeData(
             std::vector<glm::vec3> &lineVertices,
             std::vector<glm::vec4> &lineColors);
+    /**
+     * Get a list of all vertex positions. The color is either black (regular vertex) or red (irregular vertex).
+     */
+    void getCompleteVertexData(
+            std::vector<glm::vec3> &pointVertices,
+            std::vector<glm::vec4> &pointColors);
 
 private:
     void rebuildInternalRepresentationIfNecessary();
@@ -204,7 +211,9 @@ private:
      * @param vertices The hexahedral mesh vertices
      * @param cellIndices Cell vertex indices (8*num_cells).
      */
-    void computeBaseComplexMesh(const std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices);
+    void computeBaseComplexMesh(
+            const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices);
+    void computeBaseComplexMeshFrame();
     /**
      * A helper function for computeBaseComplexParametrizedGrid.
      * It infers the vertex belonging to the parameters encoded in idxShared by using the vertices parametrized by
@@ -253,8 +262,8 @@ private:
 
     // Base-complex data
     Mesh* baseComplexMesh = nullptr;
-    Singularity* si;
-    Frame* frame;
+    Singularity* si = nullptr;
+    Frame* frame = nullptr;
 };
 
 #endif //GENERALMAP_GENERALMAP_HPP

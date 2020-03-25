@@ -78,6 +78,9 @@ protected:
     // The rendering data for the volume object.
     sgl::ShaderAttributesPtr shaderAttributesContext;
     sgl::ShaderAttributesPtr shaderAttributesFocus;
+    // For rendering instanced spheres for filling gaps in tube rendering.
+    sgl::ShaderAttributesPtr shaderAttributesFocusPoints;
+    sgl::GeometryBufferPtr pointLocationsBuffer;
 
     // Per-pixel linked list data.
     sgl::GeometryBufferPtr fragmentBuffer;
@@ -88,6 +91,7 @@ protected:
     sgl::ShaderProgramPtr clearShader;
     sgl::ShaderProgramPtr gatherShaderFocusLines;
     sgl::ShaderProgramPtr gatherShaderFocusTubes;
+    sgl::ShaderProgramPtr gatherShaderFocusSpheres;
     sgl::ShaderProgramPtr gatherShaderContext;
     sgl::ShaderProgramPtr resolveShader;
 
