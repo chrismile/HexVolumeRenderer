@@ -37,7 +37,7 @@ vec4 blinnPhongShading(in vec4 baseColor) {
  * cameraPosition, fragmentPositionWorld, fragmentNormal, fragmentTangent.
  * The camera position is assumed to be the source of a point light.
 */
-vec4 blinnPhongShadingHalo(in vec4 baseColor) {
+vec4 blinnPhongShadingTubeHalo(in vec4 baseColor) {
     // Blinn-Phong Shading
     const vec3 lightColor = vec3(1,1,1);
     const vec3 ambientColor = baseColor.rgb;
@@ -79,7 +79,7 @@ const float HALF_PI = PI / 2.0f;
  * Flat shading, but adds a constant-sized halo at the outline of the tube. Assumes the following global variables are
  * given: cameraPosition, fragmentPositionWorld, fragmentNormal, fragmentTangent.
 */
-vec4 flatShadingHalo(in vec4 baseColor, out float fragmentDepthFrag) {
+vec4 flatShadingTubeHalo(in vec4 baseColor, out float fragmentDepthFrag) {
     const vec3 n = normalize(fragmentNormal);
     const vec3 t = normalize(fragmentTangent);
     const vec3 v = normalize(cameraPosition - fragmentPositionWorld);
@@ -106,4 +106,37 @@ vec4 flatShadingHalo(in vec4 baseColor, out float fragmentDepthFrag) {
 
     return color;
 }
+
+/**
+ * Flat shading, but adds a constant-sized halo at the outline of the tube. Assumes the following global variables are
+ * given: cameraPosition, fragmentPositionWorld, fragmentNormal, fragmentTangent.
+*/
+vec4 flatShadingTubeTronHalo(in vec4 baseColor, out float fragmentDepthFrag) {
+    const vec3 n = normalize(fragmentNormal);
+    const vec3 t = normalize(fragmentTangent);
+    const vec3 v = normalize(cameraPosition - fragmentPositionWorld);
+
+    // n lies in the orthonormal space of t. Thus, project v onto this plane orthogonal to t to compute the angle to n.
+    vec3 helperVec = normalize(cross(t, v));
+    vec3 newV = normalize(cross(helperVec, t));
+
+    float angle = abs(acos(dot(newV, n)));
+
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    const float CORE_THRESHOLD = 0.4;
+    float EPSILON = clamp(fragmentDepth, 0.0, 0.49);
+
+    const float GLOW_STRENGTH = 0.5;
+    vec4 colorSolid = vec4(baseColor.rgb, 1.0 - smoothstep(CORE_THRESHOLD - EPSILON, CORE_THRESHOLD + EPSILON, angle));
+    vec4 colorGlow = vec4(baseColor.rgb, GLOW_STRENGTH * (1.0 - smoothstep(0.0, 1.2, angle)));
+
+    // Back-to-front blending:
+    float a_out = colorGlow.a + colorSolid.a * (1.0 - colorGlow.a);
+    vec3 c_out = (colorGlow.rgb * colorGlow.a + colorSolid.rgb * colorSolid.a) / a_out;
+
+    fragmentDepthFrag = fragmentDepth;
+
+    return vec4(c_out, a_out);
+}
+
 #endif

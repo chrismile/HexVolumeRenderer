@@ -68,6 +68,7 @@
 #include "Filters/QualityFilter.hpp"
 #include "Renderers/SurfaceRenderer.hpp"
 #include "Renderers/WireframeRenderer.hpp"
+#include "Renderers/WireframeRenderer_Faces.hpp"
 #include "Renderers/VolumeRenderer_Faces.hpp"
 #include "Renderers/VolumeRenderer_Volume.hpp"
 #include "Renderers/ClearViewRenderer_Faces.hpp"
@@ -181,7 +182,9 @@ void MainApp::setRenderers() {
 
     if (renderingMode == RENDERING_MODE_SURFACE) {
         meshRenderers.push_back(new SurfaceRenderer(sceneData, transferFunctionWindow));
-        meshRenderers.push_back(new WireframeRenderer(sceneData, transferFunctionWindow));
+        meshRenderers.push_back(new WireframeRenderer_Faces(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_WIREFRAME) {
+        meshRenderers.push_back(new WireframeRenderer_Faces(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_DEPTH_COMPLEXITY) {
         meshRenderers.push_back(new DepthComplexityRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_VOLUME) {

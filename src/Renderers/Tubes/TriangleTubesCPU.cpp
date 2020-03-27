@@ -62,10 +62,12 @@ void createTriangleTubesRenderDataCPU(
         int numValidLinePoints = 0;
         for (size_t i = 0; i < n; i++) {
             glm::vec3 tangent;
-            if (i == n - 1) {
+            if (i == 0) {
+                tangent = lineCenters[i+1] - lineCenters[i];
+            } else if (i == n - 1) {
                 tangent = lineCenters[i] - lineCenters[i-1];
             } else {
-                tangent = lineCenters[i+1] - lineCenters[i];
+                tangent = (lineCenters[i+1] - lineCenters[i-1]);
             }
             float lineSegmentLength = glm::length(tangent);
 

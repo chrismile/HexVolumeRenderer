@@ -56,10 +56,12 @@ void createLineTubesRenderDataCPU(
         int numValidLinePoints = 0;
         for (size_t i = 0; i < n; i++) {
             glm::vec3 tangent, normal;
-            if (i == n - 1) {
+            if (i == 0) {
+                tangent = lineCenters[i+1] - lineCenters[i];
+            } else if (i == n - 1) {
                 tangent = lineCenters[i] - lineCenters[i-1];
             } else {
-                tangent = lineCenters[i+1] - lineCenters[i];
+                tangent = (lineCenters[i+1] - lineCenters[i-1]);
             }
             float lineSegmentLength = glm::length(tangent);
 
@@ -71,8 +73,12 @@ void createLineTubesRenderDataCPU(
 
             glm::vec3 helperAxis = lastLineNormal;
             if (glm::length(glm::cross(helperAxis, tangent)) < 0.01f) {
-                // If tangent == helperAxis
+                // If tangent == lastNormal
                 helperAxis = glm::vec3(0.0f, 1.0f, 0.0f);
+                if (glm::length(glm::cross(helperAxis, normal)) < 0.01f) {
+                    // If tangent == helperAxis
+                     helperAxis = glm::vec3(0.0f, 0.0f, 1.0f);
+                }
             }
             normal = glm::normalize(helperAxis - tangent * glm::dot(helperAxis, tangent)); // Gram-Schmidt
             lastLineNormal = normal;

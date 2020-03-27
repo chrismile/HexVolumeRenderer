@@ -201,25 +201,29 @@ void ClearViewRenderer_Faces::loadFocusRepresentation() {
 
         const size_t numLines = lineVertices.size() / 2;
         std::vector<std::vector<glm::vec3>> lineCentersList;
-        std::vector<std::vector<glm::vec4>> lineAttributesList;
+        std::vector<std::vector<glm::vec4>> lineColorsList;
         lineCentersList.resize(numLines);
-        lineAttributesList.resize(numLines);
+        lineColorsList.resize(numLines);
         for (size_t i = 0; i < numLines; i++) {
             std::vector<glm::vec3>& lineCenters = lineCentersList.at(i);
-            std::vector<glm::vec4>& lineAttributes = lineAttributesList.at(i);
+            std::vector<glm::vec4>& lineAttributes = lineColorsList.at(i);
             lineCenters.push_back(lineVertices.at(i * 2));
             lineCenters.push_back(lineVertices.at(i * 2 + 1));
             lineAttributes.push_back(lineColors.at(i * 2));
             lineAttributes.push_back(lineColors.at(i * 2 + 1));
         }
 
+        /*std::vector<std::vector<glm::vec3>> lineCentersList;
+        std::vector<std::vector<glm::vec4>> lineColorsList;
+        mesh->getCompleteWireframeTubeData(lineCentersList, lineColorsList);*/
+
         std::vector<uint32_t> triangleIndices;
         std::vector<glm::vec3> vertexPositions;
         std::vector<glm::vec3> vertexNormals;
         std::vector<glm::vec3> vertexTangents;
         std::vector<glm::vec4> vertexColors;
-        createTriangleTubesRenderDataGPU(
-                lineCentersList, lineAttributesList, lineWidth * 0.5f, 8,
+        createTriangleTubesRenderDataCPU(
+                lineCentersList, lineColorsList, lineWidth * 0.5f, 8,
                 triangleIndices, vertexPositions, vertexNormals, vertexTangents, vertexColors);
 
         shaderAttributesFocus = sgl::ShaderManager->createShaderAttributes(gatherShaderFocusTubes);
@@ -257,7 +261,7 @@ void ClearViewRenderer_Faces::loadFocusRepresentation() {
         // Get points to fill holes and generate SSBOs with the point data to access when doing instancing.
         std::vector<glm::vec3> pointVertices;
         std::vector<glm::vec4> pointColors;
-        mesh->getCompleteVertexData(pointVertices, pointColors);
+        mesh->getVertexTubeData(pointVertices, pointColors);
 
         const size_t numInstancingPoints = pointVertices.size();
         std::vector<SphereInstancingData> sphereInstancingData;
@@ -464,7 +468,7 @@ void ClearViewRenderer_Faces::gather() {
 
     if (shaderAttributesFocusPoints) {
         sgl::ShaderManager->bindShaderStorageBuffer(6, pointLocationsBuffer);
-        sgl::Renderer->render(shaderAttributesFocusPoints);
+        //sgl::Renderer->render(shaderAttributesFocusPoints);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     }
 }

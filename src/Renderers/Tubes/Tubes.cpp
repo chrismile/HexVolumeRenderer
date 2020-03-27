@@ -56,8 +56,12 @@ void insertOrientedCirclePoints(
         std::vector<glm::vec3>& vertexPositions, std::vector<glm::vec3>& vertexNormals) {
     glm::vec3 helperAxis = lastTangent;
     if (glm::length(glm::cross(helperAxis, normal)) < 0.01f) {
-        // If normal == helperAxis
+        // If normal == lastTangent
         helperAxis = glm::vec3(0.0f, 1.0f, 0.0f);
+        if (glm::length(glm::cross(helperAxis, normal)) < 0.01f) {
+            // If normal == helperAxis
+            helperAxis = glm::vec3(0.0f, 0.0f, 1.0f);
+        }
     }
     glm::vec3 tangent = glm::normalize(helperAxis - glm::dot(helperAxis, normal) * normal); // Gram-Schmidt
     lastTangent = tangent;
@@ -82,8 +86,12 @@ void insertOrientedCirclePoints(
         std::vector<glm::vec3>& vertexPositions) {
     glm::vec3 helperAxis = lastTangent;
     if (glm::length(glm::cross(helperAxis, normal)) < 0.01f) {
-        // If normal == helperAxis
+        // If normal == lastTangent
         helperAxis = glm::vec3(0.0f, 1.0f, 0.0f);
+        if (glm::length(glm::cross(helperAxis, normal)) < 0.01f) {
+            // If normal == helperAxis
+            helperAxis = glm::vec3(0.0f, 0.0f, 1.0f);
+        }
     }
     glm::vec3 tangent = glm::normalize(helperAxis - glm::dot(helperAxis, normal) * normal); // Gram-Schmidt
     lastTangent = tangent;

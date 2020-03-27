@@ -117,13 +117,14 @@ void main()
     vec4 color = fragmentColor;
     float fragmentDepth;
     //color = blinnPhongShadingHalo(color);
-    color = flatShadingHalo(color, fragmentDepth);
+    //color = flatShadingTubeHalo(color, fragmentDepth);
+    color = blinnPhongShadingTubeHalo(color);
     color.a *= getClearViewFocusFragmentOpacityFactor();
 
     #if defined(DIRECT_BLIT_GATHER)
     fragColor = color;
     #else
-    gatherFragmentCustomDepth(color, fragmentDepth);
+    gatherFragment(color);
     #endif
 }
 

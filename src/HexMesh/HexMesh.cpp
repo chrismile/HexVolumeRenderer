@@ -1288,6 +1288,146 @@ void HexMesh::getCompleteWireframeData(
     }
 }
 
+
+Hybrid_E* HexMesh::pickNextUnvisitedNeighbor(std::unordered_set<uint32_t>& visitedEdgeIds, Hybrid_E& e, uint32_t v_id) {
+    Hybrid_E* neighbor_e = nullptr;
+    Hybrid_V& v = baseComplexMesh->Vs.at(v_id);
+    for (uint32_t neighbor_e_id : v.neighbor_es) {
+        if (neighbor_e_id != e.id && visitedEdgeIds.find(neighbor_e_id) == visitedEdgeIds.end()) {
+            neighbor_e = &baseComplexMesh->Es.at(neighbor_e_id);
+            break;
+        }
+    }
+    return neighbor_e;
+}
+
+void HexMesh::getCompleteWireframeTubeData(
+        std::vector<std::vector<glm::vec3>>& lineCentersList,
+        std::vector<std::vector<glm::vec4>>& lineColorsList) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    std::unordered_set<uint32_t> visitedEdgeIds;
+    std::vector<glm::vec3> lineCenters;
+    std::vector<glm::vec4> lineColors;
+    for (Singular_E& se : si->SEs) {
+        if (se.es_link.size() < 1) continue;
+
+        uint32_t last_v_id, v_id;
+
+        // Find the shared vertex between the first two edges.
+        if (se.es_link.size() == 1) {
+            v_id = se.es_link.at(0);
+        } else {
+            std::vector<uint32_t>& verticesEdge0 = mesh->Es.at(se.es_link.at(0)).vs;
+            std::vector<uint32_t>& verticesEdge1 = mesh->Es.at(se.es_link.at(1)).vs;
+            std::vector<uint32_t> sharedVertices;
+            std::sort(verticesEdge0.begin(), verticesEdge0.end());
+            std::sort(verticesEdge1.begin(), verticesEdge1.end());
+            std::set_intersection(
+                    verticesEdge0.begin(), verticesEdge0.end(),
+                    verticesEdge1.begin(), verticesEdge1.end(),
+                    std::back_inserter(sharedVertices));
+            assert(sharedVertices.size() == 1);
+            v_id = verticesEdge0.at(0) == sharedVertices.at(0) ? verticesEdge0.at(1) : verticesEdge0.at(0);
+        }
+
+        // Add the first vertex
+        glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+        lineCenters.push_back(vertexPosition);
+        // Outline shading
+        //lineColors.push_back(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+        // Glow shading
+        lineColors.push_back(glm::vec4(0.8f, 0.1f, 0.1f, 1.0f));
+
+        for (uint32_t e_id : se.es_link) {
+            Hybrid_E& e = mesh->Es.at(e_id);
+            last_v_id = v_id;
+            if (e.vs.at(0) == last_v_id) {
+                v_id = e.vs.at(1);
+            } else {
+                v_id = e.vs.at(0);
+            }
+
+            glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+            lineCenters.push_back(vertexPosition);
+            // Outline shading
+            //lineColors.push_back(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+            // Glow shading
+            lineColors.push_back(glm::vec4(0.8f, 0.1f, 0.1f, 1.0f));
+            visitedEdgeIds.insert(e_id);
+        }
+
+        lineCentersList.push_back(lineCenters);
+        lineColorsList.push_back(lineColors);
+        lineCenters.clear();
+        lineColors.clear();
+    }
+
+    // Perform greedy matching of pairs of edges and add the regular edges.
+    for (Hybrid_E& e : mesh->Es) {
+        if (visitedEdgeIds.find(e.id) != visitedEdgeIds.end())
+            continue;
+
+        uint32_t v0_id = e.vs.at(0);
+        uint32_t v1_id = e.vs.at(1);
+
+        // Outline shading
+        //lineColors.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+        // Glow shading
+        lineColors.push_back(glm::vec4(0.0f, 0.5f, 0.2f, 1.0f));
+        // Outline shading
+        //lineColors.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+        // Glow shading
+        lineColors.push_back(glm::vec4(0.0f, 0.5f, 0.2f, 1.0f));
+        visitedEdgeIds.insert(e.id);
+
+
+        Hybrid_E* current_e;
+        uint32_t last_v_id, v_id;
+
+        v_id = e.vs.at(1);
+        current_e = pickNextUnvisitedNeighbor(visitedEdgeIds, e, v_id);
+        if (!current_e) {
+            v_id = e.vs.at(0);
+            current_e = pickNextUnvisitedNeighbor(visitedEdgeIds, e, v_id);
+            lineCenters.push_back(
+                    glm::vec3(mesh->V(0, v1_id), mesh->V(1, v1_id), mesh->V(2, v1_id)));
+            lineCenters.push_back(
+                    glm::vec3(mesh->V(0, v0_id), mesh->V(1, v0_id), mesh->V(2, v0_id)));
+        } else {
+            lineCenters.push_back(
+                    glm::vec3(mesh->V(0, v0_id), mesh->V(1, v0_id), mesh->V(2, v0_id)));
+            lineCenters.push_back(
+                    glm::vec3(mesh->V(0, v1_id), mesh->V(1, v1_id), mesh->V(2, v1_id)));
+        }
+
+        while (current_e) {
+            visitedEdgeIds.insert(current_e->id);
+            last_v_id = v_id;
+
+            if (current_e->vs.at(0) == last_v_id) {
+                v_id = current_e->vs.at(1);
+            } else {
+                v_id = current_e->vs.at(0);
+            }
+
+            glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+            lineCenters.push_back(vertexPosition);
+            // Outline shading
+            //lineColors.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+            // Glow shading
+            lineColors.push_back(glm::vec4(0.0f, 0.5f, 0.2f, 1.0f));
+
+            current_e = pickNextUnvisitedNeighbor(visitedEdgeIds, *current_e, v_id);
+        }
+        lineCentersList.push_back(lineCenters);
+        lineColorsList.push_back(lineColors);
+        lineCenters.clear();
+        lineColors.clear();
+    }
+}
+
 void HexMesh::getCompleteVertexData(
         std::vector<glm::vec3> &pointVertices,
         std::vector<glm::vec4> &pointColors) {
@@ -1316,5 +1456,93 @@ void HexMesh::getCompleteVertexData(
         } else {
             pointColors.push_back(glm::vec4(1,0,0,1));
         }
+    }
+}
+
+void HexMesh::getVertexTubeData(
+        std::vector<glm::vec3> &pointVertices,
+        std::vector<glm::vec4> &pointColors) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    std::unordered_set<uint32_t> excludedVertexIds;
+
+    for (Singular_E& se : si->SEs) {
+        for (uint32_t i = 1; i < se.vs_link.size() - 1; i++) {
+            uint32_t v_id = se.vs_link.at(i);
+            excludedVertexIds.insert(v_id);
+        }
+    }
+
+    std::unordered_set<uint32_t> vertexOnSingularEdgeIds;
+
+    for (Hybrid_V& v : mesh->Vs) {
+        if (excludedVertexIds.find(v.id) != excludedVertexIds.end()) {
+            continue;
+        }
+
+        glm::vec3 vertexPosition(mesh->V(0, v.id), mesh->V(1, v.id), mesh->V(2, v.id));
+        pointVertices.push_back(vertexPosition);
+        if (vertexOnSingularEdgeIds.find(v.id) == vertexOnSingularEdgeIds.end()) {
+            pointColors.push_back(glm::vec4(0,0,0,1));
+        } else {
+            pointColors.push_back(glm::vec4(1,0,0,1));
+        }
+    }
+}
+
+
+void HexMesh::getSurfaceDataBarycentric(
+        std::vector<uint32_t>& indices,
+        std::vector<glm::vec3>& vertexPositions,
+        std::vector<glm::vec4>& vertexColors,
+        std::vector<glm::vec3>& barycentricCoordinates) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    std::unordered_set<uint32_t> singularEdgeIDs;
+    for (Singular_E& se : si->SEs) {
+        for (uint32_t e_id : se.es_link) {
+            singularEdgeIDs.insert(e_id);
+        }
+    }
+
+    size_t indexOffset = 0;
+    for (Hybrid_F& f : mesh->Fs) {
+        for (uint32_t v_id : f.vs) {
+            glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+            vertexPositions.push_back(vertexPosition);
+        }
+
+        /**
+         * 1             2
+         *  | - - - - - |
+         *  | \         |
+         *  |   \       |
+         *  |     \     |
+         *  |       \   |
+         *  |         \ |
+         *  | - - - - - |
+         * 0             3
+         */
+        indices.push_back(indexOffset + 0);
+        indices.push_back(indexOffset + 3);
+        indices.push_back(indexOffset + 1);
+        indices.push_back(indexOffset + 2);
+        indices.push_back(indexOffset + 1);
+        indices.push_back(indexOffset + 3);
+
+        glm::vec4 vertexColor(1.0f, 1.0f, 0.0f, 1.0f);
+        vertexColors.push_back(vertexColor);
+        vertexColors.push_back(vertexColor);
+        vertexColors.push_back(vertexColor);
+        vertexColors.push_back(vertexColor);
+
+        barycentricCoordinates.push_back(glm::vec3(1,0,0));
+        barycentricCoordinates.push_back(glm::vec3(0,1,0));
+        barycentricCoordinates.push_back(glm::vec3(1,0,0));
+        barycentricCoordinates.push_back(glm::vec3(0,0,1));
+
+        indexOffset += 4;
     }
 }

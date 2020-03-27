@@ -35,13 +35,16 @@ layout (std430, binding = 4) buffer OutputLinePointBuffer
 
 uniform uint numLines;
 
-
-void computeLineNormal(in vec3 tangent, out vec3 normal, in vec3 lastNormal)
+void computeLineNormal(inout vec3 tangent, out vec3 normal, in vec3 lastTangent, in vec3 lastNormal)
 {
     vec3 helperAxis = lastNormal;
     if (length(cross(helperAxis, tangent)) < 0.01) {
-        // If tangent == helperAxis
+        // If tangent == lastNormal
         helperAxis = vec3(0.0, 1.0, 0.0);
+        if (length(cross(helperAxis, tangent)) < 0.01f) {
+            // If tangent == helperAxis
+            helperAxis = vec3(0.0, 0.0, 1.0);
+        }
     }
     normal = normalize(helperAxis - tangent * dot(helperAxis, tangent)); // Gram-Schmidt
 }
@@ -56,6 +59,7 @@ void main() {
     uint numLinePoints = lineOffsets[globalID + 1] - lineOffset;
 
     OutputLinePoint outputLinePoint;
+    vec3 lastTangent = vec3(0.0, 0.0, 1.0);
     vec3 lastNormal = vec3(1.0, 0.0, 0.0);
     for (int i = 0; i < numLinePoints; i++) {
         vec3 center = inputLinePoints[lineOffset + i].linePoint;
@@ -69,15 +73,11 @@ void main() {
 
         vec3 tangent;
         if (i == 0) {
-            // First node
             tangent = inputLinePoints[lineOffset + i+1].linePoint - center;
-        } else if (i == numLinePoints-1) {
-            // Last node
+        } else if (i == numLinePoints - 1) {
             tangent = center - inputLinePoints[lineOffset + i-1].linePoint;
         } else {
-            // Node with two neighbors - use both tangents.
-            tangent = inputLinePoints[lineOffset + i+1].linePoint - center;
-            //tangent += pathLineCenters.at(i) - pathLineCenters.at(i-1);
+            tangent = (inputLinePoints[lineOffset + i+1].linePoint - inputLinePoints[lineOffset + i-1].linePoint);
         }
         if (length(tangent) < 0.0001) {
             // In case the two vertices are almost identical, just skip this path line segment.
@@ -87,7 +87,8 @@ void main() {
         tangent = normalize(tangent);
 
         vec3 normal;
-        computeLineNormal(tangent, normal, lastNormal);
+        computeLineNormal(tangent, normal, lastTangent, lastNormal);
+        lastTangent = tangent;
         lastNormal = normal;
 
         outputLinePoint.linePoint = center;

@@ -164,9 +164,13 @@ void createCappedTriangleTubesRenderDataCPU_Union(
         std::vector<glm::vec3> lineNormals;
         int numValidLinePoints = 0;
         for (size_t i = 0; i < n; i++) {
-            glm::vec3 tangent = lineCenters[(i+1)%n] - lineCenters[i];
-            if (!tubeClosed && i == n-1) {
+            glm::vec3 tangent;
+            if (!tubeClosed && i == 0) {
+                tangent = lineCenters[i+1] - lineCenters[i];
+            } else if (!tubeClosed && i == n - 1) {
                 tangent = lineCenters[i] - lineCenters[i-1];
+            } else {
+                tangent = (lineCenters[(i+1)%n] - lineCenters[(i-1+n)%n]);
             }
             float lineSegmentLength = glm::length(tangent);
 
