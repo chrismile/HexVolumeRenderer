@@ -44,10 +44,8 @@ WireframeRenderer_Faces::WireframeRenderer_Faces(SceneData &sceneData, TransferF
 
 void WireframeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
     std::vector<uint32_t> indices;
-    std::vector<glm::vec3> vertices;
-    std::vector<glm::vec4> colors;
-    std::vector<glm::vec3> barycentricCoordinates;
-    meshIn->getSurfaceDataBarycentric(indices, vertices, colors, barycentricCoordinates);
+    std::vector<HexahedralCellFace> hexahedralCellFaces;
+    meshIn->getSurfaceDataWireframeFaces(indices, hexahedralCellFaces, true);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -57,25 +55,10 @@ void WireframeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
             sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
     shaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
-    // Add the position buffer.
-    sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertices.size()*sizeof(glm::vec3), (void*)&vertices.front(), sgl::VERTEX_BUFFER);
-    shaderAttributes->addGeometryBuffer(
-            positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
-
-    // Add the color buffer.
-    sgl::GeometryBufferPtr colorBuffer = sgl::Renderer->createGeometryBuffer(
-            colors.size()*sizeof(glm::vec4), (void*)&colors.front(), sgl::VERTEX_BUFFER);
-    shaderAttributes->addGeometryBuffer(
-            colorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
-
-    // Add the normal buffer.
-    sgl::GeometryBufferPtr barycentricCoordinatesBuffer = sgl::Renderer->createGeometryBuffer(
-            barycentricCoordinates.size()*sizeof(glm::vec3),
-            (void*)&barycentricCoordinates.front(), sgl::VERTEX_BUFFER);
-    shaderAttributes->addGeometryBuffer(
-            barycentricCoordinatesBuffer, "vertexBarycentricCoordinates",
-            sgl::ATTRIB_FLOAT, 3);
+    // Create an SSBO for the hexahedral cell faces.
+    hexahedralCellFacesBuffer = sgl::Renderer->createGeometryBuffer(
+            hexahedralCellFaces.size()*sizeof(HexahedralCellFace), (void*)&hexahedralCellFaces.front(),
+            sgl::SHADER_STORAGE_BUFFER);
 
     dirty = false;
     reRender = true;
@@ -85,6 +68,8 @@ void WireframeRenderer_Faces::render() {
     if (shaderProgram->hasUniform("cameraPosition")) {
         shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
     }
+    sgl::ShaderManager->bindShaderStorageBuffer(6, hexahedralCellFacesBuffer);
+
     glDisable(GL_CULL_FACE);
     sgl::Renderer->render(shaderAttributes);
     glEnable(GL_CULL_FACE);

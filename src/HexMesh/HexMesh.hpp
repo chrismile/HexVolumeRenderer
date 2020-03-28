@@ -81,6 +81,11 @@ class ParametrizedGrid;
 class OctreeNode;
 typedef std::shared_ptr<HexMesh> HexMeshPtr;
 
+struct HexahedralCellFace {
+    glm::vec4 vertexPositions[4];
+    glm::vec4 lineColors[4];
+};
+
 class HexMesh {
 public:
     HexMesh(TransferFunctionWindow &transferFunctionWindow, RayMeshIntersection& rayMeshIntersection)
@@ -231,6 +236,24 @@ public:
             std::vector<glm::vec3>& vertexPositions,
             std::vector<glm::vec4>& vertexColors,
             std::vector<glm::vec3>& barycentricCoordinates);
+
+    /**
+     * Get all surface face triangles in a special raw format as defined in the shader "WireframeSurface.glsl".
+     *
+     * vertex 1     edge 1    vertex 2
+     *          | - - - - - |
+     *          | \         |
+     *          |   \       |
+     *   edge 0 |     \     | edge 2
+     *          |       \   |
+     *          |         \ |
+     *          | - - - - - |
+     * vertex 0     edge 3    vertex 3
+     */
+    void getSurfaceDataWireframeFaces(
+            std::vector<uint32_t>& indices,
+            std::vector<HexahedralCellFace>& hexahedralCellFaces,
+            bool useGlowColors = false);
 
 private:
     void rebuildInternalRepresentationIfNecessary();

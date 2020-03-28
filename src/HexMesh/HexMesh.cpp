@@ -1546,3 +1546,77 @@ void HexMesh::getSurfaceDataBarycentric(
         indexOffset += 4;
     }
 }
+
+
+void HexMesh::getSurfaceDataWireframeFaces(
+        std::vector<uint32_t>& indices,
+        std::vector<HexahedralCellFace>& hexahedralCellFaces,
+        bool useGlowColors) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    std::unordered_set<uint32_t> singularEdgeIDs;
+    for (Singular_E& se : si->SEs) {
+        for (uint32_t e_id : se.es_link) {
+            singularEdgeIDs.insert(e_id);
+        }
+    }
+
+    hexahedralCellFaces.resize(mesh->Fs.size());
+
+    size_t indexOffset = 0;
+    for (size_t i = 0; i < mesh->Fs.size(); i++) {
+        Hybrid_F& f = mesh->Fs.at(i);
+        HexahedralCellFace& hexahedralCellFace = hexahedralCellFaces.at(i);
+
+        assert(f.vs.size() == 4);
+        for (size_t j = 0; j < 4; j++) {
+            uint32_t v_id = f.vs.at(j);
+            glm::vec4 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
+            hexahedralCellFace.vertexPositions[j] = vertexPosition;
+        }
+
+        /**
+         * vertex 1     edge 1    vertex 2
+         *          | - - - - - |
+         *          | \         |
+         *          |   \       |
+         *   edge 0 |     \     | edge 2
+         *          |       \   |
+         *          |         \ |
+         *          | - - - - - |
+         * vertex 0     edge 3    vertex 3
+         */
+        indices.push_back(indexOffset + 0);
+        indices.push_back(indexOffset + 3);
+        indices.push_back(indexOffset + 1);
+        indices.push_back(indexOffset + 2);
+        indices.push_back(indexOffset + 1);
+        indices.push_back(indexOffset + 3);
+
+        assert(f.es.size() == 4);
+        for (size_t j = 0; j < 4; j++) {
+            uint32_t e_id = f.es.at(j);
+            if (singularEdgeIDs.find(e_id) != singularEdgeIDs.end()) {
+                if (useGlowColors) {
+                    // Glow shading
+                    hexahedralCellFace.lineColors[j] = glm::vec4(0.8f, 0.1f, 0.1f, 1.0f);
+                } else {
+                    // Outline shading
+                   hexahedralCellFace.lineColors[j] = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+                }
+            } else {
+                if (useGlowColors) {
+                    // Glow shading
+                    hexahedralCellFace.lineColors[j] = glm::vec4(0.0f, 0.5f, 0.2f, 1.0f);
+                } else {
+                    // Outline shading
+                    hexahedralCellFace.lineColors[j] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+                }
+            }
+        }
+
+        indexOffset += 4;
+    }
+}
+

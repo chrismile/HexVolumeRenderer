@@ -61,6 +61,7 @@ public:
 protected:
     sgl::ShaderProgramPtr shaderProgram;
     sgl::ShaderAttributesPtr shaderAttributes;
+    sgl::GeometryBufferPtr hexahedralCellFacesBuffer;
 };
 
 #endif //HEXVOLUMERENDERER_WIREFRAMERENDERER_FACES_HPP
