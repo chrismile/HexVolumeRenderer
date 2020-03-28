@@ -2,20 +2,45 @@
 
 #version 430 core
 
-layout(location = 0) in vec3 vertexPosition;
-layout(location = 1) in vec4 vertexColor;
-layout(location = 2) in vec3 vertexBarycentricCoordinates;
+/**
+ * vertex 1     edge 1    vertex 2
+ *          | - - - - - |
+ *          | \         |
+ *          |   \       |
+ *   edge 0 |     \     | edge 2
+ *          |       \   |
+ *          |         \ |
+ *          | - - - - - |
+ * vertex 0     edge 3    vertex 3
+*/
+struct HexahedralCellFace {
+    vec4 vertexPositions[4]; ///< Vertex positions
+    vec4 lineColors[4]; ///< Colors of the edges
+};
+
+layout (std430, binding = 6) readonly buffer HexahedralCellFaces {
+    HexahedralCellFace hexahedralCellFaces[];
+};
 
 out vec3 fragmentPositionWorld;
-out vec4 fragmentColor;
-out vec3 fragmentBarycentricCoordinates;
+flat out vec3 vertexPositions[4];
+flat out vec4 lineColors[4];
 
 void main()
 {
-    fragmentPositionWorld = (mMatrix * vec4(vertexPosition, 1.0)).xyz;
-    fragmentColor = vertexColor;
-    fragmentBarycentricCoordinates = vertexBarycentricCoordinates;
-    gl_Position = mvpMatrix * vec4(vertexPosition, 1.0);
+    int globalId = gl_VertexID;
+    int faceId = globalId / 4;
+    int vertexId = globalId % 4;
+
+    HexahedralCellFace hexahedralCellFace = hexahedralCellFaces[faceId];
+    for (int i = 0; i < 4; i++) {
+        vertexPositions[i] = hexahedralCellFace.vertexPositions[i].xyz;
+        lineColors[i] = hexahedralCellFace.lineColors[i];
+    }
+
+    vec4 vertexPosition = hexahedralCellFace.vertexPositions[vertexId];
+    fragmentPositionWorld = (mMatrix * vertexPosition).xyz;
+    gl_Position = mvpMatrix * vertexPosition;
 }
 
 
@@ -24,8 +49,8 @@ void main()
 #version 430 core
 
 in vec3 fragmentPositionWorld;
-in vec4 fragmentColor;
-in vec3 fragmentBarycentricCoordinates;
+flat in vec3 vertexPositions[4];
+flat in vec4 lineColors[4];
 
 #if defined(DIRECT_BLIT_GATHER)
 out vec4 fragColor;
@@ -37,88 +62,122 @@ uniform vec3 cameraPosition;
 #include OIT_GATHER_HEADER
 #endif
 
-#define CONSTANT_LINE_THICKNESS
+/**
+ * Computes the distance of a point to a line segment.
+ * See: http://geomalgorithms.com/a02-_lines.html
+ *
+ * @param p The position of the point.
+ * @param l0 The first line point.
+ * @param l1 The second line point.
+ * @return The distance of p to the line segment.
+ */
+float distanceToLineSegment(vec3 p, vec3 l0, vec3 l1) {
+    vec3 v = l1 - l0;
+    vec3 w = p - l0;
+    float c1 = dot(v, w);
+    if (c1 <= 0.0) {
+        return length(p - l0);
+    }
+
+    float c2 = dot(v, v);
+    if (c2 <= c1) {
+        return length(p - l1);
+    }
+
+    float b = c1 / c2;
+    vec3 pb = l0 + b * v;
+    return length(p - pb);
+}
+
+vec4 flatShadingWireframeSurfaceHalo(in vec4 baseColor, out float fragmentDepthFrag) {
+    const vec3 n = normalize(fragmentNormal);
+    const vec3 t = normalize(fragmentTangent);
+    const vec3 v = normalize(cameraPosition - fragmentPositionWorld);
+
+    // n lies in the orthonormal space of t. Thus, project v onto this plane orthogonal to t to compute the angle to n.
+    vec3 helperVec = normalize(cross(t, v));
+    vec3 newV = normalize(cross(helperVec, t));
+
+    float angle = abs(acos(dot(newV, n)));
+
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    const float WHITE_THRESHOLD = 0.65;
+    float EPSILON = clamp(fragmentDepth, 0.0, 0.49);
+    float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, angle);
+    vec4 color = vec4(mix(baseColor.rgb, vec3(1.0, 1.0, 1.0),
+    smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, angle)), baseColor.a * coverage);
+
+    // To counteract depth fighting with overlay wireframe.
+    float depthOffset = -0.00001;
+    if (angle >= WHITE_THRESHOLD - EPSILON) {
+        fragmentDepth += 0.004;
+    }
+    fragmentDepthFrag = fragmentDepth;
+
+    return color;
+}
+
+/**
+ * Flat shading, but adds a constant-sized halo at the outline of the tube. Assumes the following global variables are
+ * given: cameraPosition, fragmentPositionWorld, fragmentNormal, fragmentTangent.
+*/
+vec4 flatShadingWireframeSurfaceTronHalo(in vec4 baseColor, out float fragmentDepthFrag) {
+    const vec3 n = normalize(fragmentNormal);
+    const vec3 t = normalize(fragmentTangent);
+    const vec3 v = normalize(cameraPosition - fragmentPositionWorld);
+
+    // n lies in the orthonormal space of t. Thus, project v onto this plane orthogonal to t to compute the angle to n.
+    vec3 helperVec = normalize(cross(t, v));
+    vec3 newV = normalize(cross(helperVec, t));
+
+    float angle = abs(acos(dot(newV, n)));
+
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    const float CORE_THRESHOLD = 0.4;
+    float EPSILON = clamp(fragmentDepth, 0.0, 0.49);
+
+    const float GLOW_STRENGTH = 0.5;
+    vec4 colorSolid = vec4(baseColor.rgb, 1.0 - smoothstep(CORE_THRESHOLD - EPSILON, CORE_THRESHOLD + EPSILON, angle));
+    vec4 colorGlow = vec4(baseColor.rgb, GLOW_STRENGTH * (1.0 - smoothstep(0.0, 1.2, angle)));
+
+    // Back-to-front blending:
+    float a_out = colorGlow.a + colorSolid.a * (1.0 - colorGlow.a);
+    vec3 c_out = (colorGlow.rgb * colorGlow.a + colorSolid.rgb * colorSolid.a) / a_out;
+
+    fragmentDepthFrag = fragmentDepth;
+
+    return vec4(c_out, a_out);
+}
 
 void main()
 {
-    /*const float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
-    float minCoordinate = min(fragmentBarycentricCoordinates.y, fragmentBarycentricCoordinates.z);
-    #ifdef CONSTANT_LINE_THICKNESS
-    float delta = fwidth(minCoordinate) * 2;
-    #else
-    float delta = fwidth(minCoordinate) / fragmentDepth * 2;
-    #endif
-    minCoordinate = smoothstep(lineOffset, lineOffset + delta, minCoordinate);*/
-
-    /*const float THICKNESS = 2.0;
     const float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
-    float minCoordinate = min(fragmentBarycentricCoordinates.y, fragmentBarycentricCoordinates.z);
-    float delta = fwidth(minCoordinate);
-    #ifdef CONSTANT_LINE_THICKNESS
-    float coverage = smoothstep(0.0, 2.0 * delta, minCoordinate);
-    #else
-    float lineOffset = delta / fragmentDepth;
-    float coverage = smoothstep(lineOffset, lineOffset + delta, minCoordinate);
-    #endif*/
+    const float WIREFRAME_SMOOTHING = 0.0005 * fragmentDepth;
+    const float WIREFRAME_THICKNESS = 0.0008;
 
-    const float fragmentDepth = length(fragmentPositionWorld - cameraPosition);//gl_FragCoord.z;//length(fragmentPositionWorld - cameraPosition);
-
-    /*vec3 dir1;
-    vec3 dir2;
-    if (fragmentBarycentricCoordinates.y < fragmentBarycentricCoordinates.z) {
-        dir1 = vec3(1,0,0) - vec3(0,1,0);
-        dir2 = fragmentBarycentricCoordinates - vec3(0,1,0);
-    } else {
-        dir1 = vec3(1,0,0) - vec3(0,0,1);
-        dir2 = fragmentBarycentricCoordinates - vec3(0,0,1);
+    // Compute the distance to the edges and get the minimum distance.
+    float minDistance = 1e9;
+    int minDistanceIndex = 0;
+    float currentDistance;
+    for (int i = 0; i < 4; i++) {
+        currentDistance = distanceToLineSegment(
+                fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
+        if (currentDistance < minDistance) {
+            minDistance = currentDistance;
+            minDistanceIndex = i;
+        }
     }
-    float cosAngle = dot(normalize(dir1), normalize(dir2));
-    float sinAngle = sin(acos(cosAngle));
-    float l = sinAngle * fragmentBarycentricCoordinates.y;
 
-    float minCoordinate = l;//l < 0.1 ? 0.0 : 1.0;*/
+    vec4 lineBaseColor = lineColors[minDistanceIndex];
+    float blendFactor = smoothstep(WIREFRAME_THICKNESS - WIREFRAME_SMOOTHING, WIREFRAME_THICKNESS + WIREFRAME_SMOOTHING, minDistance);
+    vec3 baseColor = mix(lineBaseColor.rgb, vec3(1.0, 1.0, 1.0), blendFactor);
 
-    vec3 testCoords;
-    testCoords.x = 0.0;
-    testCoords.y = fragmentBarycentricCoordinates.y;
-    testCoords.z = fragmentBarycentricCoordinates.z;
-    float sum = testCoords.y + testCoords.z;
-    testCoords.y /= sum;
-    testCoords.z /= sum;
-
-    vec3 deltas = fwidth(fragmentBarycentricCoordinates);
-
-    const float WIREFRAME_SMOOTHING = 1.0;
-    const float WIREFRAME_THICKNESS = 2.0 / fragmentDepth;
-    vec3 smoothing = deltas * WIREFRAME_SMOOTHING;
-    vec3 thickness = deltas * WIREFRAME_THICKNESS;
-    vec3 barycentricCoordinates = smoothstep(thickness, thickness + smoothing, fragmentBarycentricCoordinates);
+    if (blendFactor > 0.999) {
+        discard;
+    }
 
 
-    //float minCoordinate = min(barycentricCoordinates.y, barycentricCoordinates.z);
-    //float minCoordinate = min(barycentricCoordinates.y, barycentricCoordinates.z);
-    float minCoordinate = min(barycentricCoordinates.y, barycentricCoordinates.z);
-    float minCoordinateB = min(fragmentBarycentricCoordinates.y, fragmentBarycentricCoordinates.z);
-    //float minCoordinateC = min(min(fragmentBarycentricCoordinates.x, fragmentBarycentricCoordinates.y), fragmentBarycentricCoordinates.z);
-    float minCoordinateC = min(min(barycentricCoordinates.x, barycentricCoordinates.y), barycentricCoordinates.z);
-    float coverage = minCoordinate;
-
-
-    /*if (minCoordinate > 0.01 && minCoordinate < 0.1) {
-        minCoordinate = 1.0;
-    } else if (minCoordinate < 0.01) {
-        minCoordinate = 0.5;
-    } else {
-        minCoordinate = 0.0;
-    }*/
-
-    //if (coverage > 0.999) {
-    //    discard;
-    //}
-
-    vec3 lineColor = vec3(minCoordinate);
-
-    vec4 color = vec4(lineColor, fragmentColor.a);
+    vec4 color = vec4(baseColor.rgb, lineBaseColor.a);
 
     #if defined(DIRECT_BLIT_GATHER)
     fragColor = color;
