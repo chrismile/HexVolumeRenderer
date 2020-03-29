@@ -535,7 +535,7 @@ void MainApp::renderSceneSettingsGUI() {
         reRender = true;
     }
 
-    ImGui::SliderFloat("Move Speed", &MOVE_SPEED, 0.1f, 1.0f);
+    ImGui::SliderFloat("Move Speed", &MOVE_SPEED, 0.02f, 0.5f);
 
     ImGui::Separator();
 

@@ -88,6 +88,7 @@ class OctreeNode;
 class HexMesh;
 typedef std::shared_ptr<HexMesh> HexMeshPtr;
 
+// For @see HexMesh::getSurfaceDataWireframeFaces.
 struct HexahedralCellFace {
     glm::vec4 vertexPositions[4];
     glm::vec4 lineColors[4];
@@ -250,7 +251,8 @@ public:
             bool useGlowColors = false);
 
     /**
-     * Get all surface face triangles in a special raw format as defined in the shader "WireframeSurface.glsl".
+     * Get all surface faces including the colors of their edges.
+     * For rendering, the shader "WireframeSurface.glsl" can be used.
      *
      * vertex 1     edge 1    vertex 2
      *          | - - - - - |
