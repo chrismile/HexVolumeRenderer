@@ -31,7 +31,7 @@
 
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
-#include "HexahedralMeshRenderer.hpp"
+#include "ClearViewRenderer.hpp"
 
 /**
  * Renders the hexahedral mesh using an approach similar to ClearView (see below).
@@ -43,20 +43,13 @@
  * Computer Graphics and Visualization Group, Technical University Munich, Germany
  * https://www.in.tum.de/cg/research/publications/2006/clearview-an-interactive-context-preserving-hotspot-visualization-technique/
  */
-class ClearViewRenderer_Volume : public HexahedralMeshRenderer {
+class ClearViewRenderer_Volume : public ClearViewRenderer {
 public:
     ClearViewRenderer_Volume(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
     virtual ~ClearViewRenderer_Volume() {}
 
     // Re-generates the visualization mapping.
     virtual void generateVisualizationMapping(HexMeshPtr meshIn);
-
-    // Renders the object to the scene framebuffer.
-    virtual void render();
-    // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
-    virtual void renderGui();
-    // Updates the internal logic (called once per frame).
-    virtual void update(float dt);
 
     // Called when the resolution of the application window has changed.
     virtual void onResolutionChanged();
@@ -65,24 +58,14 @@ public:
     virtual void onTransferFunctionMapRebuilt() {}
 
 protected:
-    void setSortingAlgorithmDefine();
     void setUniformData();
     void clear();
     void gather();
     void resolve();
 
-    // Load either tube or line representation depending on "useTubes".
-    void loadFocusRepresentation();
-    HexMeshPtr mesh;
-
     // The rendering data for the volume object.
     sgl::ShaderAttributesPtr shaderAttributesVolumeFrontFaces; //< Context front faces (volume)
     sgl::ShaderAttributesPtr shaderAttributesVolumeBackFaces; //< Context back faces (volume)
-    sgl::ShaderAttributesPtr shaderAttributesFocus; //< Focus (surface/lines or tubes)
-    sgl::ShaderAttributesPtr focusPointShaderAttributes; //< Focus sphere (surface)
-    // For rendering instanced spheres for filling gaps in tube rendering.
-    sgl::ShaderAttributesPtr shaderAttributesFocusPoints; //< Focus (surface/spheres)
-    sgl::GeometryBufferPtr pointLocationsBuffer;
 
     // Per-pixel linked list data.
     sgl::GeometryBufferPtr fragmentBufferVolumeFrontFaces;
@@ -99,28 +82,11 @@ protected:
     sgl::ShaderProgramPtr clearShader;
     sgl::ShaderProgramPtr gatherShaderVolumeFrontFaces; //< Context front faces (volume)
     sgl::ShaderProgramPtr gatherShaderVolumeBackFaces; //< Context back faces (volume)
-    sgl::ShaderProgramPtr gatherShaderFocusLines; //< Focus (surface/lines)
-    sgl::ShaderProgramPtr gatherShaderFocusTubes; //< Focus (surface/tubes)
-    sgl::ShaderProgramPtr gatherShaderFocusSpheres; //< Focus (surface/spheres)
-    sgl::ShaderProgramPtr shaderProgramSurface; //< Focus sphere (surface)
     sgl::ShaderProgramPtr resolveShader;
 
     // Blit data (ignores model-view-projection matrix and uses normalized device coordinates)
     sgl::ShaderAttributesPtr blitRenderData;
     sgl::ShaderAttributesPtr clearRenderData;
-
-    // GUI data
-    bool showRendererWindow = true;
-    glm::vec3 focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec4 focusPointColor = glm::vec4(0.2f, 0.0f, 0.0f, 1.0f);
-    float focusRadius = 0.05f;
-    float lineWidth = 0.001f;
-    bool useTubes = true;
-
-    // Focus point move information.
-    bool hasHitInformation = false;
-    glm::vec3 firstHit, lastHit;
-    glm::vec3 hitLookingDirection;
 };
 
 #endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_VOLUME_HPP

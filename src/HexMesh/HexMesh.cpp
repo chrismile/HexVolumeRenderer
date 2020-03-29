@@ -74,6 +74,11 @@
 
 #include "HexMesh.hpp"
 
+static const glm::vec4 glowColorRegular = glm::vec4(0.0f, 0.5f, 0.2f, 1.0f);
+static const glm::vec4 glowColorSingular = glm::vec4(0.8f, 0.1f, 0.1f, 1.0f);
+static const glm::vec4 outlineColorRegular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+static const glm::vec4 outlineColorSingular = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+
 HexMesh::~HexMesh() {
     if (hexaLabApp != nullptr) {
         delete hexaLabApp;
@@ -1263,9 +1268,12 @@ void HexMesh::getLodLineRepresentationClosest(
 
 void HexMesh::getCompleteWireframeData(
         std::vector<glm::vec3> &lineVertices,
-        std::vector<glm::vec4> &lineColors) {
+        std::vector<glm::vec4> &lineColors,
+        bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
+    const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
+    const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
     std::unordered_set<uint32_t> singularEdgeIDs;
     for (Singular_E& se : si->SEs) {
@@ -1280,9 +1288,9 @@ void HexMesh::getCompleteWireframeData(
             glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
             lineVertices.push_back(vertexPosition);
             if (isSingular) {
-                lineColors.push_back(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+                lineColors.push_back(singularColor);
             } else {
-                lineColors.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+                lineColors.push_back(regularColor);
             }
         }
     }
@@ -1303,9 +1311,12 @@ Hybrid_E* HexMesh::pickNextUnvisitedNeighbor(std::unordered_set<uint32_t>& visit
 
 void HexMesh::getCompleteWireframeTubeData(
         std::vector<std::vector<glm::vec3>>& lineCentersList,
-        std::vector<std::vector<glm::vec4>>& lineColorsList) {
+        std::vector<std::vector<glm::vec4>>& lineColorsList,
+        bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
+    const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
+    const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
     std::unordered_set<uint32_t> visitedEdgeIds;
     std::vector<glm::vec3> lineCenters;
@@ -1335,10 +1346,7 @@ void HexMesh::getCompleteWireframeTubeData(
         // Add the first vertex
         glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
         lineCenters.push_back(vertexPosition);
-        // Outline shading
-        //lineColors.push_back(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-        // Glow shading
-        lineColors.push_back(glm::vec4(0.8f, 0.1f, 0.1f, 1.0f));
+        lineColors.push_back(singularColor);
 
         for (uint32_t e_id : se.es_link) {
             Hybrid_E& e = mesh->Es.at(e_id);
@@ -1351,10 +1359,7 @@ void HexMesh::getCompleteWireframeTubeData(
 
             glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
             lineCenters.push_back(vertexPosition);
-            // Outline shading
-            //lineColors.push_back(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-            // Glow shading
-            lineColors.push_back(glm::vec4(0.8f, 0.1f, 0.1f, 1.0f));
+            lineColors.push_back(singularColor);
             visitedEdgeIds.insert(e_id);
         }
 
@@ -1372,14 +1377,8 @@ void HexMesh::getCompleteWireframeTubeData(
         uint32_t v0_id = e.vs.at(0);
         uint32_t v1_id = e.vs.at(1);
 
-        // Outline shading
-        //lineColors.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-        // Glow shading
-        lineColors.push_back(glm::vec4(0.0f, 0.5f, 0.2f, 1.0f));
-        // Outline shading
-        //lineColors.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-        // Glow shading
-        lineColors.push_back(glm::vec4(0.0f, 0.5f, 0.2f, 1.0f));
+        lineColors.push_back(regularColor);
+        lineColors.push_back(regularColor);
         visitedEdgeIds.insert(e.id);
 
 
@@ -1414,10 +1413,7 @@ void HexMesh::getCompleteWireframeTubeData(
 
             glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
             lineCenters.push_back(vertexPosition);
-            // Outline shading
-            //lineColors.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-            // Glow shading
-            lineColors.push_back(glm::vec4(0.0f, 0.5f, 0.2f, 1.0f));
+            lineColors.push_back(regularColor);
 
             current_e = pickNextUnvisitedNeighbor(visitedEdgeIds, *current_e, v_id);
         }
@@ -1430,9 +1426,12 @@ void HexMesh::getCompleteWireframeTubeData(
 
 void HexMesh::getCompleteVertexData(
         std::vector<glm::vec3> &pointVertices,
-        std::vector<glm::vec4> &pointColors) {
+        std::vector<glm::vec4> &pointColors,
+        bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
+    const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
+    const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
     std::unordered_set<uint32_t> vertexOnSingularEdgeIds;
 
@@ -1452,18 +1451,21 @@ void HexMesh::getCompleteVertexData(
         glm::vec3 vertexPosition(mesh->V(0, v.id), mesh->V(1, v.id), mesh->V(2, v.id));
         pointVertices.push_back(vertexPosition);
         if (vertexOnSingularEdgeIds.find(v.id) == vertexOnSingularEdgeIds.end()) {
-            pointColors.push_back(glm::vec4(0,0,0,1));
+            pointColors.push_back(regularColor);
         } else {
-            pointColors.push_back(glm::vec4(1,0,0,1));
+            pointColors.push_back(singularColor);
         }
     }
 }
 
 void HexMesh::getVertexTubeData(
         std::vector<glm::vec3> &pointVertices,
-        std::vector<glm::vec4> &pointColors) {
+        std::vector<glm::vec4> &pointColors,
+        bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
+    const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
+    const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
     std::unordered_set<uint32_t> excludedVertexIds;
 
@@ -1484,9 +1486,9 @@ void HexMesh::getVertexTubeData(
         glm::vec3 vertexPosition(mesh->V(0, v.id), mesh->V(1, v.id), mesh->V(2, v.id));
         pointVertices.push_back(vertexPosition);
         if (vertexOnSingularEdgeIds.find(v.id) == vertexOnSingularEdgeIds.end()) {
-            pointColors.push_back(glm::vec4(0,0,0,1));
+            pointColors.push_back(regularColor);
         } else {
-            pointColors.push_back(glm::vec4(1,0,0,1));
+            pointColors.push_back(singularColor);
         }
     }
 }
@@ -1496,9 +1498,12 @@ void HexMesh::getSurfaceDataBarycentric(
         std::vector<uint32_t>& indices,
         std::vector<glm::vec3>& vertexPositions,
         std::vector<glm::vec4>& vertexColors,
-        std::vector<glm::vec3>& barycentricCoordinates) {
+        std::vector<glm::vec3>& barycentricCoordinates,
+        bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
+    const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
+    const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
     std::unordered_set<uint32_t> singularEdgeIDs;
     for (Singular_E& se : si->SEs) {
@@ -1532,7 +1537,7 @@ void HexMesh::getSurfaceDataBarycentric(
         indices.push_back(indexOffset + 1);
         indices.push_back(indexOffset + 3);
 
-        glm::vec4 vertexColor(1.0f, 1.0f, 0.0f, 1.0f);
+        glm::vec4 vertexColor(regularColor);
         vertexColors.push_back(vertexColor);
         vertexColors.push_back(vertexColor);
         vertexColors.push_back(vertexColor);
@@ -1551,29 +1556,44 @@ void HexMesh::getSurfaceDataBarycentric(
 void HexMesh::getSurfaceDataWireframeFaces(
         std::vector<uint32_t>& indices,
         std::vector<HexahedralCellFace>& hexahedralCellFaces,
+        bool onlyBoundary,
         bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
+    const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
+    const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
-    std::unordered_set<uint32_t> singularEdgeIDs;
+    std::unordered_set<uint32_t> singularEdgeIds;
     for (Singular_E& se : si->SEs) {
         for (uint32_t e_id : se.es_link) {
-            singularEdgeIDs.insert(e_id);
+            singularEdgeIds.insert(e_id);
         }
     }
 
-    hexahedralCellFaces.resize(mesh->Fs.size());
+    if (!onlyBoundary) {
+        hexahedralCellFaces.resize(mesh->Fs.size());
+    }
 
     size_t indexOffset = 0;
     for (size_t i = 0; i < mesh->Fs.size(); i++) {
         Hybrid_F& f = mesh->Fs.at(i);
-        HexahedralCellFace& hexahedralCellFace = hexahedralCellFaces.at(i);
+        HexahedralCellFace* hexahedralCellFace;
+        if (onlyBoundary) {
+            if (f.boundary) {
+                hexahedralCellFaces.push_back(HexahedralCellFace());
+                hexahedralCellFace = &hexahedralCellFaces.back();
+            } else {
+                continue;
+            }
+        } else {
+            hexahedralCellFace = &hexahedralCellFaces.at(i);
+        }
 
         assert(f.vs.size() == 4);
         for (size_t j = 0; j < 4; j++) {
             uint32_t v_id = f.vs.at(j);
             glm::vec4 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
-            hexahedralCellFace.vertexPositions[j] = vertexPosition;
+            hexahedralCellFace->vertexPositions[j] = vertexPosition;
         }
 
         /**
@@ -1597,26 +1617,13 @@ void HexMesh::getSurfaceDataWireframeFaces(
         assert(f.es.size() == 4);
         for (size_t j = 0; j < 4; j++) {
             uint32_t e_id = f.es.at(j);
-            if (singularEdgeIDs.find(e_id) != singularEdgeIDs.end()) {
-                if (useGlowColors) {
-                    // Glow shading
-                    hexahedralCellFace.lineColors[j] = glm::vec4(0.8f, 0.1f, 0.1f, 1.0f);
-                } else {
-                    // Outline shading
-                   hexahedralCellFace.lineColors[j] = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-                }
+            if (singularEdgeIds.find(e_id) != singularEdgeIds.end()) {
+                hexahedralCellFace->lineColors[j] = singularColor;
             } else {
-                if (useGlowColors) {
-                    // Glow shading
-                    hexahedralCellFace.lineColors[j] = glm::vec4(0.0f, 0.5f, 0.2f, 1.0f);
-                } else {
-                    // Outline shading
-                    hexahedralCellFace.lineColors[j] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-                }
+                hexahedralCellFace->lineColors[j] = regularColor;
             }
         }
 
         indexOffset += 4;
     }
 }
-

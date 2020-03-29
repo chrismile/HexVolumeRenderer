@@ -113,22 +113,39 @@ void main()
     //vec3 lineColor = mix(fragmentColor.rgb, vec3(0.5, 0.5, 0.5), clamp(distanceToCenterPercentage*distanceToCenterPercentage, 0.0, 1.0));
     vec3 lineColor = fragmentColor.rgb;
 
-    // To counteract depth fighting with overlay wireframe.
-    //gl_FragDepth = gl_FragCoord.z - 0.00001;
-    float absCoords = abs(quadCoords);
     float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    float absCoords = abs(quadCoords);
+
+    #if defined(LINE_RENDERING_STYLE_HALO)
+
     const float WHITE_THRESHOLD = 0.7;
     float EPSILON = clamp(fragmentDepth, 0.0, 0.49);
     float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, absCoords);
     vec4 color = vec4(mix(lineColor, vec3(1.0, 1.0, 1.0),
-            smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, absCoords)), fragmentColor.a * coverage);
-    color.a *= getClearViewFocusFragmentOpacityFactor();
+    smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, absCoords)), fragmentColor.a * coverage);
 
     // To counteract depth fighting with overlay wireframe.
-    float depthOffset = -0.00001;
     if (absCoords >= WHITE_THRESHOLD - EPSILON) {
         fragmentDepth += gl_FragCoord.z * 0.01;
     }
+
+    #elif defined(LINE_RENDERING_STYLE_TRON)
+
+    const float CORE_THRESHOLD = 0.4;
+    float EPSILON = clamp(fragmentDepth, 0.0, 0.49);
+
+    const float GLOW_STRENGTH = 0.5;
+    vec4 colorSolid = vec4(lineColor.rgb, 1.0 - smoothstep(CORE_THRESHOLD - EPSILON, CORE_THRESHOLD + EPSILON, absCoords));
+    vec4 colorGlow = vec4(lineColor.rgb, GLOW_STRENGTH * (1.0 - smoothstep(0.0, 1.2, absCoords)));
+
+    // Back-to-front blending:
+    float a_out = colorGlow.a + colorSolid.a * (1.0 - colorGlow.a);
+    vec3 c_out = (colorGlow.rgb * colorGlow.a + colorSolid.rgb * colorSolid.a) / a_out;
+    vec4 color = vec4(c_out, a_out);
+
+    #endif
+
+    color.a *= getClearViewFocusFragmentOpacityFactor();
 
     #if defined(DIRECT_BLIT_GATHER)
     fragColor = color;

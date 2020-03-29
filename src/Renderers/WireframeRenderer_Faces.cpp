@@ -45,7 +45,7 @@ WireframeRenderer_Faces::WireframeRenderer_Faces(SceneData &sceneData, TransferF
 void WireframeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
     std::vector<uint32_t> indices;
     std::vector<HexahedralCellFace> hexahedralCellFaces;
-    meshIn->getSurfaceDataWireframeFaces(indices, hexahedralCellFaces, true);
+    meshIn->getSurfaceDataWireframeFaces(indices, hexahedralCellFaces, true, false);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -65,9 +65,8 @@ void WireframeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
 }
 
 void WireframeRenderer_Faces::render() {
-    if (shaderProgram->hasUniform("cameraPosition")) {
-        shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
-    }
+    shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
+    shaderProgram->setUniform("lineWidth", lineWidth);
     sgl::ShaderManager->bindShaderStorageBuffer(6, hexahedralCellFacesBuffer);
 
     glDisable(GL_CULL_FACE);
@@ -76,5 +75,10 @@ void WireframeRenderer_Faces::render() {
 }
 
 void WireframeRenderer_Faces::renderGui() {
-    ;
+    if (ImGui::Begin("Wireframe Renderer (Faces)", &showRendererWindow)) {
+        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.002f, "%.4f")) {
+            reRender = true;
+        }
+    }
+    ImGui::End();
 }

@@ -62,6 +62,10 @@ protected:
     sgl::ShaderProgramPtr shaderProgram;
     sgl::ShaderAttributesPtr shaderAttributes;
     sgl::GeometryBufferPtr hexahedralCellFacesBuffer;
+
+    // GUI data
+    bool showRendererWindow = true;
+    float lineWidth = 0.001f;
 };
 
 #endif //HEXVOLUMERENDERER_WIREFRAMERENDERER_FACES_HPP

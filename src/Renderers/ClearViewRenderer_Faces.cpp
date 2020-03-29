@@ -41,8 +41,6 @@
 #include "Helpers/Sphere.hpp"
 #include "ClearViewRenderer_Faces.hpp"
 
-const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap"};
-
 // Use stencil buffer to mask unused pixels
 static bool useStencilBuffer = true;
 
@@ -50,9 +48,6 @@ static bool useStencilBuffer = true;
 static int expectedDepthComplexity = 100;
 /// Maximum number of fragments to sort in second pass.
 static int maxNumFragmentsSorting = 256;
-
-// Choice of sorting algorithm
-static int sortingAlgorithmMode = 0;
 
 // A fragment node stores rendering information about one specific fragment.
 struct LinkedListFragmentNode {
@@ -64,51 +59,18 @@ struct LinkedListFragmentNode {
     uint32_t next;
 };
 
-// When rendering spheres using instancing.
-struct SphereInstancingData {
-    glm::vec3 position;
-    float padding;
-    glm::vec4 color;
-};
-
 ClearViewRenderer_Faces::ClearViewRenderer_Faces(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
-        : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
+        : ClearViewRenderer(sceneData, transferFunctionWindow) {
+    windowName = "ClearView Renderer (Faces)";
+    isVolumeRenderer = false;
+
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
     sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "\"LinkedListGather.glsl\"");
     sgl::ShaderManager->addPreprocessorDefine("MAX_NUM_FRAGS", sgl::toString(maxNumFragmentsSorting));
 
-    shaderProgramSurface = sgl::ShaderManager->getShaderProgram(
-            {"MeshShader.Vertex.Plain", "MeshShader.Fragment.Plain"});
+    loadClearViewBaseData();
 
-    std::vector<glm::vec3> sphereVertexPositions;
-    std::vector<glm::vec3> sphereVertexNormals;
-    std::vector<uint32_t> sphereIndices;
-    getSphereSurfaceRenderData(
-            glm::vec3(0,0,0), 0.002f, 20, 20,
-            sphereVertexPositions, sphereVertexNormals, sphereIndices);
-
-    focusPointShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgramSurface);
-    focusPointShaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
-    sgl::GeometryBufferPtr focusPointVertexPositionBuffer = sgl::Renderer->createGeometryBuffer(
-            sphereVertexPositions.size() * sizeof(glm::vec3), sphereVertexPositions.data(), sgl::VERTEX_BUFFER);
-    focusPointShaderAttributes->addGeometryBuffer(
-            focusPointVertexPositionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
-    sgl::GeometryBufferPtr focusPointVertexNormalBuffer = sgl::Renderer->createGeometryBuffer(
-            sphereVertexNormals.size() * sizeof(glm::vec3), sphereVertexNormals.data(), sgl::VERTEX_BUFFER);
-    focusPointShaderAttributes->addGeometryBuffer(
-            focusPointVertexNormalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
-    sgl::GeometryBufferPtr focusPointIndexBuffer = sgl::Renderer->createGeometryBuffer(
-            sphereIndices.size() * sizeof(uint32_t), sphereIndices.data(), sgl::INDEX_BUFFER);
-    focusPointShaderAttributes->setIndexGeometryBuffer(focusPointIndexBuffer, sgl::ATTRIB_UNSIGNED_INT);
-
-    sgl::ShaderManager->invalidateShaderCache();
-    gatherShaderFocusLines = sgl::ShaderManager->getShaderProgram(
-            {"WireframeFocus.Vertex", "WireframeFocus.Geometry", "WireframeFocus.Fragment"});
-    gatherShaderFocusTubes = sgl::ShaderManager->getShaderProgram(
-            {"TubeWireframe.Vertex", "TubeWireframe.Fragment.ClearView.Focus"});
-    gatherShaderFocusSpheres = sgl::ShaderManager->getShaderProgram(
-            {"InstancedSpheres.Vertex", "InstancedSpheres.Fragment"});
     gatherShaderContext = sgl::ShaderManager->getShaderProgram(
             {"MeshShader.Vertex", "MeshShader.Fragment.ClearView.Context"});
     resolveShader = sgl::ShaderManager->getShaderProgram(
@@ -182,157 +144,6 @@ void ClearViewRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
     dirty = false;
     reRender = true;
     hasHitInformation = false;
-}
-
-void ClearViewRenderer_Faces::loadFocusRepresentation() {
-    if (!mesh) {
-        return;
-    }
-
-    // Unload old data.
-    shaderAttributesFocus = sgl::ShaderAttributesPtr();
-    shaderAttributesFocusPoints = sgl::ShaderAttributesPtr();
-    pointLocationsBuffer = sgl::GeometryBufferPtr();
-
-    if (useTubes) {
-        std::vector<glm::vec3> lineVertices;
-        std::vector<glm::vec4> lineColors;
-        mesh->getCompleteWireframeData(lineVertices, lineColors);
-
-        const size_t numLines = lineVertices.size() / 2;
-        std::vector<std::vector<glm::vec3>> lineCentersList;
-        std::vector<std::vector<glm::vec4>> lineColorsList;
-        lineCentersList.resize(numLines);
-        lineColorsList.resize(numLines);
-        for (size_t i = 0; i < numLines; i++) {
-            std::vector<glm::vec3>& lineCenters = lineCentersList.at(i);
-            std::vector<glm::vec4>& lineAttributes = lineColorsList.at(i);
-            lineCenters.push_back(lineVertices.at(i * 2));
-            lineCenters.push_back(lineVertices.at(i * 2 + 1));
-            lineAttributes.push_back(lineColors.at(i * 2));
-            lineAttributes.push_back(lineColors.at(i * 2 + 1));
-        }
-
-        /*std::vector<std::vector<glm::vec3>> lineCentersList;
-        std::vector<std::vector<glm::vec4>> lineColorsList;
-        mesh->getCompleteWireframeTubeData(lineCentersList, lineColorsList);*/
-
-        std::vector<uint32_t> triangleIndices;
-        std::vector<glm::vec3> vertexPositions;
-        std::vector<glm::vec3> vertexNormals;
-        std::vector<glm::vec3> vertexTangents;
-        std::vector<glm::vec4> vertexColors;
-        createTriangleTubesRenderDataCPU(
-                lineCentersList, lineColorsList, lineWidth * 0.5f, 8,
-                triangleIndices, vertexPositions, vertexNormals, vertexTangents, vertexColors);
-
-        shaderAttributesFocus = sgl::ShaderManager->createShaderAttributes(gatherShaderFocusTubes);
-        shaderAttributesFocus->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
-
-        sgl::GeometryBufferPtr tubeIndexBuffer = sgl::Renderer->createGeometryBuffer(
-                triangleIndices.size() * sizeof(uint32_t), triangleIndices.data(), sgl::INDEX_BUFFER);
-        shaderAttributesFocus->setIndexGeometryBuffer(tubeIndexBuffer, sgl::ATTRIB_UNSIGNED_INT);
-
-        // Add the position buffer.
-        sgl::GeometryBufferPtr tubeVertexBuffer = sgl::Renderer->createGeometryBuffer(
-                vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
-        shaderAttributesFocus->addGeometryBuffer(
-                tubeVertexBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
-
-        // Add the normal buffer.
-        sgl::GeometryBufferPtr tubeNormalBuffer = sgl::Renderer->createGeometryBuffer(
-                vertexNormals.size()*sizeof(glm::vec3), (void*)&vertexNormals.front(), sgl::VERTEX_BUFFER);
-        shaderAttributesFocus->addGeometryBuffer(
-                tubeNormalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
-
-        // Add the tangent buffer.
-        sgl::GeometryBufferPtr tubeTangentBuffer = sgl::Renderer->createGeometryBuffer(
-                vertexTangents.size()*sizeof(glm::vec3), (void*)&vertexTangents.front(), sgl::VERTEX_BUFFER);
-        shaderAttributesFocus->addGeometryBuffer(
-                tubeTangentBuffer, "vertexTangent", sgl::ATTRIB_FLOAT, 3);
-
-        // Add the color buffer.
-        sgl::GeometryBufferPtr tubeColorBuffer = sgl::Renderer->createGeometryBuffer(
-                vertexColors.size()*sizeof(glm::vec4), (void*)&vertexColors.front(), sgl::VERTEX_BUFFER);
-        shaderAttributesFocus->addGeometryBuffer(
-                tubeColorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
-
-
-        // Get points to fill holes and generate SSBOs with the point data to access when doing instancing.
-        std::vector<glm::vec3> pointVertices;
-        std::vector<glm::vec4> pointColors;
-        mesh->getVertexTubeData(pointVertices, pointColors);
-
-        const size_t numInstancingPoints = pointVertices.size();
-        std::vector<SphereInstancingData> sphereInstancingData;
-        sphereInstancingData.resize(numInstancingPoints);
-        for (size_t i = 0; i < numInstancingPoints; i++) {
-            SphereInstancingData& sphereData = sphereInstancingData.at(i);
-            sphereData.position = pointVertices.at(i);
-            sphereData.color = pointColors.at(i);
-        }
-        pointLocationsBuffer = sgl::Renderer->createGeometryBuffer(
-                sizeof(SphereInstancingData) * numInstancingPoints, sphereInstancingData.data(),
-                sgl::SHADER_STORAGE_BUFFER);
-
-        // Get the sphere render data.
-        std::vector<glm::vec3> sphereVertexPositions;
-        std::vector<glm::vec3> sphereVertexNormals;
-        std::vector<uint32_t> sphereIndices;
-        getSphereSurfaceRenderData(
-                glm::vec3(0,0,0), lineWidth * 0.5f, 8, 8,
-                sphereVertexPositions, sphereVertexNormals, sphereIndices);
-
-        shaderAttributesFocusPoints = sgl::ShaderManager->createShaderAttributes(gatherShaderFocusSpheres);
-        shaderAttributesFocusPoints->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
-        sgl::GeometryBufferPtr focusPointVertexPositionBuffer = sgl::Renderer->createGeometryBuffer(
-                sphereVertexPositions.size() * sizeof(glm::vec3), sphereVertexPositions.data(), sgl::VERTEX_BUFFER);
-        shaderAttributesFocusPoints->addGeometryBuffer(
-                focusPointVertexPositionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
-        /*sgl::GeometryBufferPtr focusPointVertexNormalBuffer = sgl::Renderer->createGeometryBuffer(
-                sphereVertexNormals.size() * sizeof(glm::vec3), sphereVertexNormals.data(), sgl::VERTEX_BUFFER);
-        shaderAttributesFocusPoints->addGeometryBuffer(
-                focusPointVertexNormalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);*/
-        sgl::GeometryBufferPtr focusPointIndexBuffer = sgl::Renderer->createGeometryBuffer(
-                sphereIndices.size() * sizeof(uint32_t), sphereIndices.data(), sgl::INDEX_BUFFER);
-        shaderAttributesFocusPoints->setIndexGeometryBuffer(focusPointIndexBuffer, sgl::ATTRIB_UNSIGNED_INT);
-        shaderAttributesFocusPoints->setInstanceCount(numInstancingPoints);
-    } else {
-        std::vector<glm::vec3> lineVertices;
-        std::vector<glm::vec4> lineColors;
-        mesh->getCompleteWireframeData(lineVertices, lineColors);
-
-        shaderAttributesFocus = sgl::ShaderManager->createShaderAttributes(gatherShaderFocusLines);
-        shaderAttributesFocus->setVertexMode(sgl::VERTEX_MODE_LINES);
-
-        // Add the position buffer.
-        sgl::GeometryBufferPtr lineVertexBuffer = sgl::Renderer->createGeometryBuffer(
-                lineVertices.size()*sizeof(glm::vec3), (void*)&lineVertices.front(), sgl::VERTEX_BUFFER);
-        shaderAttributesFocus->addGeometryBuffer(
-                lineVertexBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
-
-        // Add the color buffer.
-        sgl::GeometryBufferPtr lineColorBuffer = sgl::Renderer->createGeometryBuffer(
-                lineColors.size()*sizeof(glm::vec4), (void*)&lineColors.front(), sgl::VERTEX_BUFFER);
-        shaderAttributesFocus->addGeometryBuffer(
-                lineColorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
-    }
-
-    reRender = true;
-}
-
-void ClearViewRenderer_Faces::setSortingAlgorithmDefine() {
-    if (sortingAlgorithmMode == 0) {
-        sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "frontToBackPQ");
-    } else if (sortingAlgorithmMode == 1) {
-        sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "bubbleSort");
-    } else if (sortingAlgorithmMode == 2) {
-        sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "insertionSort");
-    } else if (sortingAlgorithmMode == 3) {
-        sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "shellSort");
-    } else if (sortingAlgorithmMode == 4) {
-        sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "heapSort");
-    }
 }
 
 void ClearViewRenderer_Faces::onResolutionChanged() {
@@ -457,8 +268,15 @@ void ClearViewRenderer_Faces::gather() {
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     // Render the focus region lines.
+    if (lineRenderingMode == LINE_RENDERING_MODE_WIREFRAME_FACES) {
+        sgl::ShaderManager->bindShaderStorageBuffer(6, hexahedralCellFacesBuffer);
+        glDisable(GL_CULL_FACE);
+    }
     sgl::Renderer->render(shaderAttributesFocus);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    if (lineRenderingMode == LINE_RENDERING_MODE_WIREFRAME_FACES) {
+        glEnable(GL_CULL_FACE);
+    }
 
     // Render the focus point.
     sgl::Renderer->setModelMatrix(sgl::matrixTranslation(focusPoint));
@@ -491,89 +309,4 @@ void ClearViewRenderer_Faces::resolve() {
 
     glDisable(GL_STENCIL_TEST);
     glDepthMask(GL_TRUE);
-}
-
-void ClearViewRenderer_Faces::render() {
-    setUniformData();
-    clear();
-    gather();
-    resolve();
-}
-
-void ClearViewRenderer_Faces::renderGui() {
-    if (ImGui::Begin("ClearView Renderer (Faces)", &showRendererWindow)) {
-        if (ImGui::SliderFloat("Focus Radius", &focusRadius, 0.001f, 0.4f)) {
-            reRender = true;
-        }
-        if (ImGui::SliderFloat3("Focus Point", &focusPoint.x, -0.4f, 0.4f)) {
-            hasHitInformation = false;
-            reRender = true;
-        }
-        if (ImGui::ColorEdit4("Focus Point Color", &focusPointColor.x)) {
-            reRender = true;
-        }
-        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.002f, "%.4f")) {
-            if (useTubes) {
-                loadFocusRepresentation();
-            }
-            reRender = true;
-        }
-        if (ImGui::Checkbox("Use Shading", &useShading)) {
-            reRender = true;
-        }
-        if (ImGui::Checkbox("Use Tubes", &useTubes)) {
-            loadFocusRepresentation();
-            reRender = true;
-        }
-    }
-    ImGui::End();
-}
-
-void ClearViewRenderer_Faces::update(float dt) {
-    if (sgl::Keyboard->getModifier() & KMOD_SHIFT) {
-        if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
-            float scrollAmount = sgl::Mouse->getScrollWheel() * dt * 2.0;
-            focusRadius += scrollAmount;
-            focusRadius = glm::clamp(focusRadius, 0.001f, 0.4f);
-            reRender = true;
-        }
-    }
-
-    if (sgl::Keyboard->getModifier() & KMOD_CTRL) {
-        if (sgl::Mouse->buttonPressed(1) || (sgl::Mouse->isButtonDown(1) && sgl::Mouse->mouseMoved())) {
-            int mouseX = sgl::Mouse->getX();
-            int mouseY = sgl::Mouse->getY();
-            bool rayHasHitMesh = this->sceneData.rayMeshIntersection.pickPointScreen(
-                    mouseX, mouseY, firstHit, lastHit);
-            if (rayHasHitMesh) {
-                focusPoint = firstHit;
-                hitLookingDirection = glm::normalize(firstHit - sceneData.camera->getPosition());
-                hasHitInformation = true;
-                reRender = true;
-            }
-        }
-
-        if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
-            if (!hasHitInformation) {
-                glm::mat4 inverseViewMatrix = glm::inverse(sceneData.camera->getViewMatrix());
-                glm::vec3 lookingDirection = glm::vec3(-inverseViewMatrix[2].x, -inverseViewMatrix[2].y, -inverseViewMatrix[2].z);
-
-                float moveAmount = sgl::Mouse->getScrollWheel() * dt * 1.0;
-                glm::vec3 moveDirection = focusPoint - sceneData.camera->getPosition();
-                moveDirection *= float(sgl::sign(glm::dot(lookingDirection, moveDirection)));
-                if (glm::length(moveDirection) < 1e-4) {
-                    moveDirection = lookingDirection;
-                }
-                moveDirection = glm::normalize(moveDirection);
-                focusPoint = focusPoint + moveAmount * moveDirection;
-            } else {
-                float moveAmount = sgl::Mouse->getScrollWheel() * dt;
-                glm::vec3 newFocusPoint = focusPoint + moveAmount * hitLookingDirection;
-                float t = glm::dot(newFocusPoint - firstHit, hitLookingDirection);
-                t = glm::clamp(t, 0.0f, glm::length(lastHit - firstHit));
-                focusPoint = firstHit + t * hitLookingDirection;
-            }
-            reRender = true;
-        }
-    }
 }

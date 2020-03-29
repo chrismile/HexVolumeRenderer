@@ -1,3 +1,4 @@
+#ifndef WIREFRAME_SURFACE_HALO_LIGHTING
 /**
  * Simplified Blinn-Phong shading assuming the ambient and diffuse color are equal and the specular color is white.
  * Assumes the following global variables are given: cameraPosition, fragmentPositionWorld, fragmentNormal.
@@ -29,6 +30,8 @@ vec4 blinnPhongShading(in vec4 baseColor) {
     vec4 color = vec4(phongColor, baseColor.a);
     return color;
 }
+#endif
+
 
 #ifdef TUBE_HALO_LIGHTING
 /**
@@ -129,6 +132,56 @@ vec4 flatShadingTubeTronHalo(in vec4 baseColor, out float fragmentDepthFrag) {
     const float GLOW_STRENGTH = 0.5;
     vec4 colorSolid = vec4(baseColor.rgb, 1.0 - smoothstep(CORE_THRESHOLD - EPSILON, CORE_THRESHOLD + EPSILON, angle));
     vec4 colorGlow = vec4(baseColor.rgb, GLOW_STRENGTH * (1.0 - smoothstep(0.0, 1.2, angle)));
+
+    // Back-to-front blending:
+    float a_out = colorGlow.a + colorSolid.a * (1.0 - colorGlow.a);
+    vec3 c_out = (colorGlow.rgb * colorGlow.a + colorSolid.rgb * colorSolid.a) / a_out;
+
+    fragmentDepthFrag = fragmentDepth;
+
+    return vec4(c_out, a_out);
+}
+
+#endif
+
+
+#ifdef WIREFRAME_SURFACE_HALO_LIGHTING
+
+/**
+ * Flat shading, but adds a constant-sized halo at the outline of the surface. Assumes the following global variables
+ * are given: cameraPosition, fragmentPositionWorld.
+*/
+vec4 flatShadingWireframeSurfaceHalo(in vec4 baseColor, out float fragmentDepthFrag, in float lineCoordinates) {
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    const float WHITE_THRESHOLD = 0.7;
+    float EPSILON = clamp(fragmentDepth / 2.0, 0.0, 0.49);
+    float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
+    vec4 color = vec4(mix(baseColor.rgb, vec3(1.0, 1.0, 1.0),
+    smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), baseColor.a * coverage);
+
+    // To counteract depth fighting with overlay wireframe.
+    float depthOffset = -0.00001;
+    if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
+        fragmentDepth += 0.005;
+    }
+    fragmentDepthFrag = fragmentDepth;
+
+    return color;
+}
+
+/**
+ * Flat shading, but adds a constant-sized halo at the outline of the surface. Assumes the following global variables
+ * are given: cameraPosition, fragmentPositionWorld.
+*/
+vec4 flatShadingWireframeSurfaceTronHalo(in vec4 baseColor, out float fragmentDepthFrag, in float lineCoordinates) {
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    const float CORE_THRESHOLD = 0.4;
+    float EPSILON = clamp(fragmentDepth, 0.0, 0.49);
+
+    const float GLOW_STRENGTH = 0.5;
+    vec4 colorSolid = vec4(baseColor.rgb,
+    1.0 - smoothstep(CORE_THRESHOLD - EPSILON, CORE_THRESHOLD + EPSILON, lineCoordinates));
+    vec4 colorGlow = vec4(baseColor.rgb, GLOW_STRENGTH * (1.0 - smoothstep(0.0, 1.2, lineCoordinates)));
 
     // Back-to-front blending:
     float a_out = colorGlow.a + colorSolid.a * (1.0 - colorGlow.a);

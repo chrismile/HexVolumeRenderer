@@ -116,9 +116,11 @@ void main()
     //vec4 color = transferFunction(fragmentAttribute);
     vec4 color = fragmentColor;
     float fragmentDepth;
-    //color = blinnPhongShadingHalo(color);
-    //color = flatShadingTubeHalo(color, fragmentDepth);
-    color = blinnPhongShadingTubeHalo(color);
+    #if defined(LINE_RENDERING_STYLE_HALO)
+    color = flatShadingTubeHalo(color, fragmentDepth);
+    #elif defined(LINE_RENDERING_STYLE_TRON)
+    color = flatShadingTubeTronHalo(color, fragmentDepth);
+    #endif
     color.a *= getClearViewFocusFragmentOpacityFactor();
 
     #if defined(DIRECT_BLIT_GATHER)
