@@ -44,7 +44,7 @@ LodLineRenderer::LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &t
     std::vector<glm::vec3> sphereVertexNormals;
     std::vector<uint32_t> sphereIndices;
     getSphereSurfaceRenderData(
-            glm::vec3(0,0,0), 0.005f, 20, 20,
+            glm::vec3(0,0,0), 0.003f, 20, 20,
             sphereVertexPositions, sphereVertexNormals, sphereIndices);
 
     sgl::ShaderManager->invalidateShaderCache();

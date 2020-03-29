@@ -201,7 +201,7 @@ void MainApp::setRenderers() {
         meshRenderers.push_back(new BaseComplexLineRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_BASE_COMPLEX_SURFACE) {
         meshRenderers.push_back(new BaseComplexSurfaceRenderer(sceneData, transferFunctionWindow));
-        meshRenderers.push_back(new WireframeRenderer(sceneData, transferFunctionWindow));
+        meshRenderers.push_back(new WireframeRenderer_Faces(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_PARTITION_LINES) {
         meshRenderers.push_back(new PartitionLineRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_LOD_LINES) {
