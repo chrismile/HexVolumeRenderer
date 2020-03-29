@@ -66,19 +66,26 @@
 
 #include <Math/Geometry/AABB3.hpp>
 
+#include "HexaLab/hex_quality_color_maps.h"
+#include "HexaLab/mesh.h"
 #include "QualityMeasure/QualityMeasure.hpp"
 #include "Renderers/TransferFunctionWindow.hpp"
 #include "Renderers/Intersection/RayMeshIntersection.hpp"
-#include "HexaLab/builder.h"
-#include "HexaLab/app.h"
 
-class HexMesh;
 class Mesh;
 class Singularity;
 class Hybrid_E;
 class Frame;
+
+namespace HexaLab {
+    class App;
+    class Mesh;
+}
+
 class ParametrizedGrid;
 class OctreeNode;
+
+class HexMesh;
 typedef std::shared_ptr<HexMesh> HexMeshPtr;
 
 struct HexahedralCellFace {
@@ -104,33 +111,33 @@ public:
      * Get the triangle data of the boundary surface of the hexahedral mesh.
      */
     void getSurfaceData(
-            std::vector<uint32_t>& indices,
-            std::vector<glm::vec3>& vertices,
-            std::vector<glm::vec3>& normals,
-            std::vector<glm::vec4>& colors);
+            std::vector<uint32_t>& triangleIndices,
+            std::vector<glm::vec3>& vertexPositions,
+            std::vector<glm::vec3>& vertexNormals,
+            std::vector<float>& vertexAttributes);
     /**
      * Get the wireframe data of the boundary surface of the hexahedral mesh.
      */
     void getWireframeData(
-            std::vector<glm::vec3>& vertices,
-            std::vector<glm::vec4>& colors);
+            std::vector<glm::vec3>& lineVertices,
+            std::vector<glm::vec4>& lineColors);
     /**
      * Get the surface data of all front faces (and backfaces for boundary surface) of every cell of the hexahedral
      * mesh.
      */
     void getVolumeData_Faces(
-            std::vector<uint32_t>& indices,
-            std::vector<glm::vec3>& vertices,
-            std::vector<glm::vec3>& normals,
-            std::vector<glm::vec4>& colors);
+            std::vector<uint32_t>& triangleIndices,
+            std::vector<glm::vec3>& vertexPositions,
+            std::vector<glm::vec3>& vertexNormals,
+            std::vector<float>& vertexAttributes);
     /**
      * Get the surface data of all front faces of every cell of the hexahedral mesh.
      */
     void getVolumeData_Volume(
-            std::vector<uint32_t>& indices,
-            std::vector<glm::vec3>& vertices,
-            std::vector<glm::vec3>& normals,
-            std::vector<glm::vec4>& colors);
+            std::vector<uint32_t>& triangleIndices,
+            std::vector<glm::vec3>& vertexPositions,
+            std::vector<glm::vec3>& vertexNormals,
+            std::vector<float>& vertexAttributes);
     /**
      * Get the singular edges and points of the hexahedral mesh.
      */
@@ -155,10 +162,10 @@ public:
      * Otherwise, also inner surfaces are also added.
      */
     void getBaseComplexDataSurface(
-            std::vector<uint32_t>& indices,
-            std::vector<glm::vec3>& vertices,
-            std::vector<glm::vec3>& normals,
-            std::vector<glm::vec4>& colors,
+            std::vector<uint32_t>& triangleIndices,
+            std::vector<glm::vec3>& vertexPositions,
+            std::vector<glm::vec3>& vertexNormals,
+            std::vector<glm::vec4>& vertexColors,
             bool cullInterior);
     /**
      * Exports all lines of the hexahedral mesh, but colors them according to their parametrization in each base-complex
@@ -236,7 +243,7 @@ public:
      * (1,0,0)     (0,0,1)
      */
     void getSurfaceDataBarycentric(
-            std::vector<uint32_t>& indices,
+            std::vector<uint32_t>& triangleIndices,
             std::vector<glm::vec3>& vertexPositions,
             std::vector<glm::vec4>& vertexColors,
             std::vector<glm::vec3>& barycentricCoordinates,

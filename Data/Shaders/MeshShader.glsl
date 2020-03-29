@@ -1,4 +1,4 @@
--- Vertex
+-- Vertex.Color
 
 #version 430 core
 
@@ -14,6 +14,29 @@ void main()
 {
     fragmentNormal = vertexNormal;
     fragmentColor = vertexColor;
+    fragmentPositionWorld = (mMatrix * vec4(vertexPosition, 1.0)).xyz;
+    gl_Position = mvpMatrix * vec4(vertexPosition, 1.0);
+}
+
+
+-- Vertex.Attribute
+
+#version 430 core
+
+layout(location = 0) in vec3 vertexPosition;
+layout(location = 1) in vec3 vertexNormal;
+layout(location = 2) in float vertexAttribute;
+
+out vec3 fragmentPositionWorld;
+out vec3 fragmentNormal;
+out vec4 fragmentColor;
+
+#include "TransferFunction.glsl"
+
+void main()
+{
+    fragmentNormal = vertexNormal;
+    fragmentColor = transferFunction(vertexAttribute);
     fragmentPositionWorld = (mMatrix * vec4(vertexPosition, 1.0)).xyz;
     gl_Position = mvpMatrix * vec4(vertexPosition, 1.0);
 }

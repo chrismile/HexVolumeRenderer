@@ -29,6 +29,7 @@
 #ifndef HEXVOLUMERENDERER_TRIANGLESET_HPP
 #define HEXVOLUMERENDERER_TRIANGLESET_HPP
 
+#include <algorithm>
 #include <unordered_set>
 
 struct TriangleKey {

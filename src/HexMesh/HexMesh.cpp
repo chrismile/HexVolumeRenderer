@@ -65,6 +65,8 @@
 #include <Utils/File/Logfile.hpp>
 #include <Utils/Random/Xorshift.hpp>
 
+#include "HexaLab/builder.h"
+#include "HexaLab/app.h"
 #include "HexaLab/hex_quality.h"
 #include "HexaLab/hex_quality_color_maps.h"
 #include "HexaLab/mesh.h"
@@ -113,7 +115,7 @@ void HexMesh::setHexMeshData(
         frame = nullptr;
     }
 
-    hexaLabApp = new HexaLab::App(transferFunctionWindow);
+    hexaLabApp = new HexaLab::App();
     std::vector<HexaLab::Index> indices;
     for (const uint32_t& idx : cellIndices) {
         indices.push_back(idx);
@@ -123,7 +125,6 @@ void HexMesh::setHexMeshData(
 
     baseComplexMesh = new Mesh;
     si = new Singularity;
-    frame = new Frame;
     computeBaseComplexMesh(vertices, cellIndices);
 
     dirty = true;
@@ -171,6 +172,8 @@ void HexMesh::computeBaseComplexMesh(
 }
 
 void HexMesh::computeBaseComplexMeshFrame() {
+    assert(frame == nullptr);
+    frame = new Frame;
     base_complex bc;
     bc.base_complex_extraction(*si, *frame, *baseComplexMesh);
 
@@ -189,8 +192,8 @@ void HexMesh::computeBaseComplexMeshFrame() {
 
 
 void HexMesh::onTransferFunctionMapRebuilt() {
-    dirty = true;
-    hexaLabApp->onTransferFunctionMapRebuilt();
+    //dirty = true;
+    //hexaLabApp->onTransferFunctionMapRebuilt();
 }
 
 void HexMesh::unmark() {
@@ -307,61 +310,61 @@ void HexMesh::updateMeshTriangleIntersectionDataStructure() {
 }
 
 void HexMesh::getSurfaceData(
-        std::vector<uint32_t>& indices,
-        std::vector<glm::vec3>& vertices,
-        std::vector<glm::vec3>& normals,
-        std::vector<glm::vec4>& colors) {
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<glm::vec3>& vertexPositions,
+        std::vector<glm::vec3>& vertexNormals,
+        std::vector<float>& vertexAttributes) {
     rebuildInternalRepresentationIfNecessary();
-    indices.clear();
-    indices.reserve(hexaLabApp->get_visible_model()->surface_ibuffer.size());
+    triangleIndices.clear();
+    triangleIndices.reserve(hexaLabApp->get_visible_model()->surface_ibuffer.size());
     for (HexaLab::Index& idx : hexaLabApp->get_visible_model()->surface_ibuffer) {
-        indices.push_back(idx);
+        triangleIndices.push_back(idx);
     }
-    vertices = hexaLabApp->get_visible_model()->surface_vert_pos;
-    normals = hexaLabApp->get_visible_model()->surface_vert_norm;
-    colors = hexaLabApp->get_visible_model()->surface_vert_color;
+    vertexPositions = hexaLabApp->get_visible_model()->surface_vert_pos;
+    vertexNormals = hexaLabApp->get_visible_model()->surface_vert_norm;
+    vertexAttributes = hexaLabApp->get_visible_model()->surface_vert_attribute;
 }
 
 void HexMesh::getWireframeData(
-        std::vector<glm::vec3>& vertices,
-        std::vector<glm::vec4>& colors) {
+        std::vector<glm::vec3>& lineVertices,
+        std::vector<glm::vec4>& lineColors) {
     rebuildInternalRepresentationIfNecessary();
-    vertices = hexaLabApp->get_visible_model()->wireframe_vert_pos;
-    colors = hexaLabApp->get_visible_model()->wireframe_vert_color;
+    lineVertices = hexaLabApp->get_visible_model()->wireframe_vert_pos;
+    lineColors = hexaLabApp->get_visible_model()->wireframe_vert_color;
 }
 
 void HexMesh::getVolumeData_Faces(
-        std::vector<uint32_t>& indices,
-        std::vector<glm::vec3>& vertices,
-        std::vector<glm::vec3>& normals,
-        std::vector<glm::vec4>& colors) {
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<glm::vec3>& vertexPositions,
+        std::vector<glm::vec3>& vertexNormals,
+        std::vector<float>& vertexAttributes) {
     rebuildInternalRepresentationIfNecessary();
     hexaLabApp->get_volume_geometry_faces();
-    indices.clear();
-    indices.reserve(hexaLabApp->get_visible_model()->mesh_ibuffer.size());
+    triangleIndices.clear();
+    triangleIndices.reserve(hexaLabApp->get_visible_model()->mesh_ibuffer.size());
     for (HexaLab::Index& idx : hexaLabApp->get_visible_model()->mesh_ibuffer) {
-        indices.push_back(idx);
+        triangleIndices.push_back(idx);
     }
-    vertices = hexaLabApp->get_visible_model()->mesh_vert_pos;
-    normals = hexaLabApp->get_visible_model()->mesh_vert_norm;
-    colors = hexaLabApp->get_visible_model()->mesh_vert_color;
+    vertexPositions = hexaLabApp->get_visible_model()->mesh_vert_pos;
+    vertexNormals = hexaLabApp->get_visible_model()->mesh_vert_norm;
+    vertexAttributes = hexaLabApp->get_visible_model()->mesh_vert_attribute;
 }
 
 void HexMesh::getVolumeData_Volume(
-        std::vector<uint32_t>& indices,
-        std::vector<glm::vec3>& vertices,
-        std::vector<glm::vec3>& normals,
-        std::vector<glm::vec4>& colors) {
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<glm::vec3>& vertexPositions,
+        std::vector<glm::vec3>& vertexNormals,
+        std::vector<float>& vertexAttributes) {
     rebuildInternalRepresentationIfNecessary();
     hexaLabApp->get_volume_geometry_volume();
-    indices.clear();
-    indices.reserve(hexaLabApp->get_visible_model()->mesh_ibuffer.size());
+    triangleIndices.clear();
+    triangleIndices.reserve(hexaLabApp->get_visible_model()->mesh_ibuffer.size());
     for (HexaLab::Index& idx : hexaLabApp->get_visible_model()->mesh_ibuffer) {
-        indices.push_back(idx);
+        triangleIndices.push_back(idx);
     }
-    vertices = hexaLabApp->get_visible_model()->mesh_vert_pos;
-    normals = hexaLabApp->get_visible_model()->mesh_vert_norm;
-    colors = hexaLabApp->get_visible_model()->mesh_vert_color;
+    vertexPositions = hexaLabApp->get_visible_model()->mesh_vert_pos;
+    vertexNormals = hexaLabApp->get_visible_model()->mesh_vert_norm;
+    vertexAttributes = hexaLabApp->get_visible_model()->mesh_vert_attribute;
 }
 
 void HexMesh::getSingularityData(
@@ -445,10 +448,10 @@ void HexMesh::getBaseComplexDataWireframe(
 }
 
 void HexMesh::getBaseComplexDataSurface(
-        std::vector<uint32_t>& indices,
-        std::vector<glm::vec3>& vertices,
-        std::vector<glm::vec3>& normals,
-        std::vector<glm::vec4>& colors,
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<glm::vec3>& vertexPositions,
+        std::vector<glm::vec3>& vertexNormals,
+        std::vector<glm::vec4>& vertexColors,
         bool cullInterior) {
     rebuildInternalRepresentationIfNecessary();
     if (!frame) computeBaseComplexMeshFrame();
@@ -485,14 +488,14 @@ void HexMesh::getBaseComplexDataSurface(
                     glm::vec3 v1 = quadBuffer.at(2) - quadBuffer.at(0);
                     glm::vec3 vertexNormal = glm::normalize(glm::cross(v0, v1));
 
-                    uint32_t offset = vertices.size();
+                    uint32_t offset = vertexPositions.size();
                     for (int i = 0; i < 12; i++) {
-                        indices.push_back(offset + vertexIndices[i]);
+                        triangleIndices.push_back(offset + vertexIndices[i]);
                     }
                     for (size_t i = 0; i < f.vs.size(); i++) {
-                        vertices.push_back(quadBuffer.at(i));
-                        normals.push_back(vertexNormal);
-                        colors.push_back(vertexColor);
+                        vertexPositions.push_back(quadBuffer.at(i));
+                        vertexNormals.push_back(vertexNormal);
+                        vertexColors.push_back(vertexColor);
                     }
                     quadBuffer.clear();
                 }
@@ -1495,7 +1498,7 @@ void HexMesh::getVertexTubeData(
 
 
 void HexMesh::getSurfaceDataBarycentric(
-        std::vector<uint32_t>& indices,
+        std::vector<uint32_t>& triangleIndices,
         std::vector<glm::vec3>& vertexPositions,
         std::vector<glm::vec4>& vertexColors,
         std::vector<glm::vec3>& barycentricCoordinates,
@@ -1530,12 +1533,12 @@ void HexMesh::getSurfaceDataBarycentric(
          *  | - - - - - |
          * 0             3
          */
-        indices.push_back(indexOffset + 0);
-        indices.push_back(indexOffset + 3);
-        indices.push_back(indexOffset + 1);
-        indices.push_back(indexOffset + 2);
-        indices.push_back(indexOffset + 1);
-        indices.push_back(indexOffset + 3);
+        triangleIndices.push_back(indexOffset + 0);
+        triangleIndices.push_back(indexOffset + 3);
+        triangleIndices.push_back(indexOffset + 1);
+        triangleIndices.push_back(indexOffset + 2);
+        triangleIndices.push_back(indexOffset + 1);
+        triangleIndices.push_back(indexOffset + 3);
 
         glm::vec4 vertexColor(regularColor);
         vertexColors.push_back(vertexColor);
@@ -1554,7 +1557,7 @@ void HexMesh::getSurfaceDataBarycentric(
 
 
 void HexMesh::getSurfaceDataWireframeFaces(
-        std::vector<uint32_t>& indices,
+        std::vector<uint32_t>& triangleIndices,
         std::vector<HexahedralCellFace>& hexahedralCellFaces,
         bool onlyBoundary,
         bool useGlowColors) {
@@ -1607,12 +1610,12 @@ void HexMesh::getSurfaceDataWireframeFaces(
          *          | - - - - - |
          * vertex 0     edge 3    vertex 3
          */
-        indices.push_back(indexOffset + 0);
-        indices.push_back(indexOffset + 3);
-        indices.push_back(indexOffset + 1);
-        indices.push_back(indexOffset + 2);
-        indices.push_back(indexOffset + 1);
-        indices.push_back(indexOffset + 3);
+        triangleIndices.push_back(indexOffset + 0);
+        triangleIndices.push_back(indexOffset + 3);
+        triangleIndices.push_back(indexOffset + 1);
+        triangleIndices.push_back(indexOffset + 2);
+        triangleIndices.push_back(indexOffset + 1);
+        triangleIndices.push_back(indexOffset + 3);
 
         assert(f.es.size() == 4);
         for (size_t j = 0; j < 4; j++) {

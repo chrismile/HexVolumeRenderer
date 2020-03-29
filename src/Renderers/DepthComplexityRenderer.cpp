@@ -41,9 +41,12 @@
 DepthComplexityRenderer::DepthComplexityRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
-    gatherShader = sgl::ShaderManager->getShaderProgram({"DepthComplexityGather.Vertex", "DepthComplexityGather.Fragment"});
-    resolveShader = sgl::ShaderManager->getShaderProgram({"DepthComplexityResolve.Vertex", "DepthComplexityResolve.Fragment"});
-    clearShader = sgl::ShaderManager->getShaderProgram({"DepthComplexityClear.Vertex", "DepthComplexityClear.Fragment"});
+    gatherShader = sgl::ShaderManager->getShaderProgram(
+            {"DepthComplexityGather.Vertex", "DepthComplexityGather.Fragment"});
+    resolveShader = sgl::ShaderManager->getShaderProgram(
+            {"DepthComplexityResolve.Vertex", "DepthComplexityResolve.Fragment"});
+    clearShader = sgl::ShaderManager->getShaderProgram(
+            {"DepthComplexityClear.Vertex", "DepthComplexityClear.Fragment"});
 
     // Create blitting data (fullscreen rectangle in normalized device coordinates)
     blitRenderData = sgl::ShaderManager->createShaderAttributes(resolveShader);
@@ -64,23 +67,23 @@ DepthComplexityRenderer::DepthComplexityRenderer(SceneData &sceneData, TransferF
 }
 
 void DepthComplexityRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
-    std::vector<uint32_t> indices;
-    std::vector<glm::vec3> vertices;
-    std::vector<glm::vec3> normals;
-    std::vector<glm::vec4> colors;
-    meshIn->getVolumeData_Faces(indices, vertices, normals, colors);
+    std::vector<uint32_t> triangleIndices;
+    std::vector<glm::vec3> vertexPositions;
+    std::vector<glm::vec3> vertexNormals;
+    std::vector<float> vertexAttributes;
+    meshIn->getVolumeData_Faces(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(gatherShader);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
     shaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertices.size()*sizeof(glm::vec3), (void*)&vertices.front(), sgl::VERTEX_BUFFER);
+            vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 

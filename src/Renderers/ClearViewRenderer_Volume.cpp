@@ -89,9 +89,11 @@ ClearViewRenderer_Volume::ClearViewRenderer_Volume(SceneData &sceneData, Transfe
     loadClearViewBaseData();
 
     gatherShaderVolumeFrontFaces = sgl::ShaderManager->getShaderProgram(
-            {"MeshLinkedListVolume.Vertex", "MeshLinkedListVolume.Fragment.ClearView.Context.FrontFace"});
+            {"MeshLinkedListVolume.Vertex.Attribute",
+             "MeshLinkedListVolume.Fragment.ClearView.Context.FrontFace"});
     gatherShaderVolumeBackFaces = sgl::ShaderManager->getShaderProgram(
-            {"MeshLinkedListVolume.Vertex", "MeshLinkedListVolume.Fragment.ClearView.Context.BackFace"});
+            {"MeshLinkedListVolume.Vertex.Attribute",
+             "MeshLinkedListVolume.Fragment.ClearView.Context.BackFace"});
     resolveShader = sgl::ShaderManager->getShaderProgram(
             {"LinkedListVolumeResolve.Vertex", "LinkedListVolumeResolve.Fragment"});
     clearShader = sgl::ShaderManager->getShaderProgram(
@@ -125,37 +127,37 @@ void ClearViewRenderer_Volume::generateVisualizationMapping(HexMeshPtr meshIn) {
     shaderAttributesVolumeBackFaces = sgl::ShaderAttributesPtr();
 
     // First, start with the rendering data for the context region.
-    std::vector<uint32_t> indices;
-    std::vector<glm::vec3> vertices;
-    std::vector<glm::vec3> normals;
-    std::vector<glm::vec4> colors;
-    meshIn->getVolumeData_Volume(indices, vertices, normals, colors);
+    std::vector<uint32_t> triangleIndices;
+    std::vector<glm::vec3> vertexPositions;
+    std::vector<glm::vec3> vertexNormals;
+    std::vector<float> vertexAttributes;
+    meshIn->getVolumeData_Volume(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
 
     shaderAttributesVolumeFrontFaces = sgl::ShaderManager->createShaderAttributes(gatherShaderVolumeFrontFaces);
     shaderAttributesVolumeFrontFaces->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
     shaderAttributesVolumeFrontFaces->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertices.size()*sizeof(glm::vec3), (void*)&vertices.front(), sgl::VERTEX_BUFFER);
+            vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
     shaderAttributesVolumeFrontFaces->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the normal buffer.
     /*sgl::GeometryBufferPtr normalBuffer = sgl::Renderer->createGeometryBuffer(
-            normals.size()*sizeof(glm::vec3), (void*)&normals.front(), sgl::VERTEX_BUFFER);
+            vertexNormals.size()*sizeof(glm::vec3), (void*)&vertexNormals.front(), sgl::VERTEX_BUFFER);
     shaderAttributesVolumeFrontFaces->addGeometryBuffer(
             normalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);*/
 
     // Add the color buffer.
-    sgl::GeometryBufferPtr colorBuffer = sgl::Renderer->createGeometryBuffer(
-            colors.size()*sizeof(glm::vec4), (void*)&colors.front(), sgl::VERTEX_BUFFER);
+    sgl::GeometryBufferPtr attributeBuffer = sgl::Renderer->createGeometryBuffer(
+            vertexAttributes.size()*sizeof(float), (void*)&vertexAttributes.front(), sgl::VERTEX_BUFFER);
     shaderAttributesVolumeFrontFaces->addGeometryBuffer(
-            colorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
+            attributeBuffer, "vertexAttribute", sgl::ATTRIB_FLOAT, 1);
 
     shaderAttributesVolumeBackFaces = shaderAttributesVolumeFrontFaces->copy(gatherShaderVolumeBackFaces);
 
@@ -259,6 +261,10 @@ void ClearViewRenderer_Volume::setUniformData() {
             "linkedListVolumeFrontFacesCapacity", (unsigned int)fragmentBufferSizeVolume);
     gatherShaderVolumeBackFaces->setUniform(
             "linkedListVolumeBackFacesCapacity", (unsigned int)fragmentBufferSizeVolume);
+    gatherShaderVolumeFrontFaces->setUniform(
+            "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
+    gatherShaderVolumeBackFaces->setUniform(
+            "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
     gatherShaderFocus->setUniform(
             "linkedListSurfaceCapacity", (unsigned int)fragmentBufferSizeSurface);
     if (gatherShaderFocus->hasUniform("lineWidth")) {

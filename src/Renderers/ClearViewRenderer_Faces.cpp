@@ -72,7 +72,7 @@ ClearViewRenderer_Faces::ClearViewRenderer_Faces(SceneData &sceneData, TransferF
     loadClearViewBaseData();
 
     gatherShaderContext = sgl::ShaderManager->getShaderProgram(
-            {"MeshShader.Vertex", "MeshShader.Fragment.ClearView.Context"});
+            {"MeshShader.Vertex.Attribute", "MeshShader.Fragment.ClearView.Context"});
     resolveShader = sgl::ShaderManager->getShaderProgram(
             {"LinkedListResolve.Vertex", "LinkedListResolve.Fragment"});
     clearShader = sgl::ShaderManager->getShaderProgram(
@@ -105,37 +105,37 @@ void ClearViewRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
     shaderAttributesContext = sgl::ShaderAttributesPtr();
 
     // First, start with the rendering data for the context region.
-    std::vector<uint32_t> indices;
-    std::vector<glm::vec3> vertices;
-    std::vector<glm::vec3> normals;
-    std::vector<glm::vec4> colors;
-    meshIn->getVolumeData_Faces(indices, vertices, normals, colors);
+    std::vector<uint32_t> triangleIndices;
+    std::vector<glm::vec3> vertexPositions;
+    std::vector<glm::vec3> vertexNormals;
+    std::vector<float> vertexAttributes;
+    meshIn->getVolumeData_Faces(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
 
     shaderAttributesContext = sgl::ShaderManager->createShaderAttributes(gatherShaderContext);
     shaderAttributesContext->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
     shaderAttributesContext->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertices.size()*sizeof(glm::vec3), (void*)&vertices.front(), sgl::VERTEX_BUFFER);
+            vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
     shaderAttributesContext->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the normal buffer.
     sgl::GeometryBufferPtr normalBuffer = sgl::Renderer->createGeometryBuffer(
-            normals.size()*sizeof(glm::vec3), (void*)&normals.front(), sgl::VERTEX_BUFFER);
+            vertexNormals.size()*sizeof(glm::vec3), (void*)&vertexNormals.front(), sgl::VERTEX_BUFFER);
     shaderAttributesContext->addGeometryBuffer(
             normalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
 
     // Add the color buffer.
-    sgl::GeometryBufferPtr colorBuffer = sgl::Renderer->createGeometryBuffer(
-            colors.size()*sizeof(glm::vec4), (void*)&colors.front(), sgl::VERTEX_BUFFER);
+    sgl::GeometryBufferPtr attributeBuffer = sgl::Renderer->createGeometryBuffer(
+            vertexAttributes.size()*sizeof(float), (void*)&vertexAttributes.front(), sgl::VERTEX_BUFFER);
     shaderAttributesContext->addGeometryBuffer(
-            colorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
+            attributeBuffer, "vertexAttribute", sgl::ATTRIB_FLOAT, 1);
 
 
     // Now, continue with the rendering data for the focus region.
@@ -190,6 +190,8 @@ void ClearViewRenderer_Faces::setUniformData() {
     gatherShaderContext->setUniform("lookingDirection", lookingDirection);
     gatherShaderContext->setUniform("sphereCenter", focusPoint);
     gatherShaderContext->setUniform("sphereRadius", focusRadius);
+    gatherShaderContext->setUniform(
+            "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
 
     sgl::ShaderProgram* gatherShaderFocus = shaderAttributesFocus->getShaderProgram();
     gatherShaderFocus->setUniform("viewportW", width);

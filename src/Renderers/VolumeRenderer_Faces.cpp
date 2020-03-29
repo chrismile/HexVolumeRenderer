@@ -68,9 +68,12 @@ VolumeRenderer_Faces::VolumeRenderer_Faces(SceneData &sceneData, TransferFunctio
     sgl::ShaderManager->addPreprocessorDefine("MAX_NUM_FRAGS", sgl::toString(maxNumFragmentsSorting));
 
     sgl::ShaderManager->invalidateShaderCache();
-    gatherShader = sgl::ShaderManager->getShaderProgram({"MeshShader.Vertex", "MeshShader.Fragment"});
-    resolveShader = sgl::ShaderManager->getShaderProgram({"LinkedListResolve.Vertex", "LinkedListResolve.Fragment"});
-    clearShader = sgl::ShaderManager->getShaderProgram({"LinkedListClear.Vertex", "LinkedListClear.Fragment"});
+    gatherShader = sgl::ShaderManager->getShaderProgram(
+            {"MeshShader.Vertex.Attribute", "MeshShader.Fragment"});
+    resolveShader = sgl::ShaderManager->getShaderProgram(
+            {"LinkedListResolve.Vertex", "LinkedListResolve.Fragment"});
+    clearShader = sgl::ShaderManager->getShaderProgram(
+            {"LinkedListClear.Vertex", "LinkedListClear.Fragment"});
 
     // Create blitting data (fullscreen rectangle in normalized device coordinates)
     blitRenderData = sgl::ShaderManager->createShaderAttributes(resolveShader);
@@ -91,37 +94,37 @@ VolumeRenderer_Faces::VolumeRenderer_Faces(SceneData &sceneData, TransferFunctio
 }
 
 void VolumeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
-    std::vector<uint32_t> indices;
-    std::vector<glm::vec3> vertices;
-    std::vector<glm::vec3> normals;
-    std::vector<glm::vec4> colors;
-    meshIn->getVolumeData_Faces(indices, vertices, normals, colors);
+    std::vector<uint32_t> triangleIndices;
+    std::vector<glm::vec3> vertexPositions;
+    std::vector<glm::vec3> vertexNormals;
+    std::vector<float> vertexAttributes;
+    meshIn->getVolumeData_Faces(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(gatherShader);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
     shaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertices.size()*sizeof(glm::vec3), (void*)&vertices.front(), sgl::VERTEX_BUFFER);
+            vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the normal buffer.
     sgl::GeometryBufferPtr normalBuffer = sgl::Renderer->createGeometryBuffer(
-            normals.size()*sizeof(glm::vec3), (void*)&normals.front(), sgl::VERTEX_BUFFER);
+            vertexNormals.size()*sizeof(glm::vec3), (void*)&vertexNormals.front(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             normalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
 
     // Add the color buffer.
-    sgl::GeometryBufferPtr colorBuffer = sgl::Renderer->createGeometryBuffer(
-            colors.size()*sizeof(glm::vec4), (void*)&colors.front(), sgl::VERTEX_BUFFER);
+    sgl::GeometryBufferPtr attributeBuffer = sgl::Renderer->createGeometryBuffer(
+            vertexAttributes.size()*sizeof(float), (void*)&vertexAttributes.front(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
-            colorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
+            attributeBuffer, "vertexAttribute", sgl::ATTRIB_FLOAT, 1);
 
     dirty = false;
     reRender = true;
@@ -181,6 +184,8 @@ void VolumeRenderer_Faces::setUniformData() {
     if (gatherShader->hasUniform("lightDirection")) {
         gatherShader->setUniform("lightDirection", sceneData.lightDirection);
     }
+    gatherShader->setUniform(
+            "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
 
     resolveShader->setUniform("viewportW", width);
     resolveShader->setShaderStorageBuffer(0, "FragmentBuffer", fragmentBuffer);

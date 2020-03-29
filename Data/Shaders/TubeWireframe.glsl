@@ -37,21 +37,6 @@ out vec4 fragColor;
 
 uniform vec3 cameraPosition;
 
-/*
-uniform float minCriterionValue = 0.0;
-uniform float maxCriterionValue = 1.0;
-
-// Transfer function color lookup table
-uniform sampler1D transferFunctionTexture;
-
-vec4 transferFunction(float attr) {
-    // Transfer to range [0,1]
-    float posFloat = clamp((attr - minCriterionValue) / (maxCriterionValue - minCriterionValue), 0.0, 1.0);
-    // Look up the color value
-    return texture(transferFunctionTexture, posFloat);
-}
-*/
-
 #define TUBE_HALO_LIGHTING
 #include "Lighting.glsl"
 
@@ -61,7 +46,6 @@ vec4 transferFunction(float attr) {
 
 void main()
 {
-    //vec4 color = transferFunction(fragmentAttribute);
     vec4 color = fragmentColor;
     //color = blinnPhongShadingHalo(color);
     color = flatShadingHalo(color);
@@ -87,21 +71,6 @@ in vec4 fragmentColor;
 out vec4 fragColor;
 #endif
 
-/*
-uniform float minCriterionValue = 0.0;
-uniform float maxCriterionValue = 1.0;
-
-// Transfer function color lookup table
-uniform sampler1D transferFunctionTexture;
-
-vec4 transferFunction(float attr) {
-    // Transfer to range [0,1]
-    float posFloat = clamp((attr - minCriterionValue) / (maxCriterionValue - minCriterionValue), 0.0, 1.0);
-    // Look up the color value
-    return texture(transferFunctionTexture, posFloat);
-}
-*/
-
 #include "ClearView.glsl"
 
 #if !defined(DIRECT_BLIT_GATHER)
@@ -113,7 +82,6 @@ vec4 transferFunction(float attr) {
 
 void main()
 {
-    //vec4 color = transferFunction(fragmentAttribute);
     vec4 color = fragmentColor;
     float fragmentDepth;
     #if defined(LINE_RENDERING_STYLE_HALO)

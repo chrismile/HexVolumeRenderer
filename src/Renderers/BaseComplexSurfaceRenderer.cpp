@@ -36,7 +36,7 @@ BaseComplexSurfaceRenderer::BaseComplexSurfaceRenderer(SceneData &sceneData, Tra
     sgl::ShaderManager->invalidateShaderCache();
     sgl::ShaderManager->addPreprocessorDefine("DIRECT_BLIT_GATHER", "");
     sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "GatherDummy.glsl");
-    shaderProgram = sgl::ShaderManager->getShaderProgram({"MeshShader.Vertex", "MeshShader.Fragment"});
+    shaderProgram = sgl::ShaderManager->getShaderProgram({"MeshShader.Vertex.Color", "MeshShader.Fragment"});
     sgl::ShaderManager->removePreprocessorDefine("DIRECT_BLIT_GATHER");
 }
 

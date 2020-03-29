@@ -36,42 +36,42 @@ SurfaceRenderer::SurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &t
     sgl::ShaderManager->invalidateShaderCache();
     sgl::ShaderManager->addPreprocessorDefine("DIRECT_BLIT_GATHER", "");
     sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "GatherDummy.glsl");
-    shaderProgram = sgl::ShaderManager->getShaderProgram({"MeshShader.Vertex", "MeshShader.Fragment"});
+    shaderProgram = sgl::ShaderManager->getShaderProgram({"MeshShader.Vertex.Attribute", "MeshShader.Fragment"});
     sgl::ShaderManager->removePreprocessorDefine("DIRECT_BLIT_GATHER");
 }
 
 void SurfaceRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
-    std::vector<uint32_t> indices;
-    std::vector<glm::vec3> vertices;
-    std::vector<glm::vec3> normals;
-    std::vector<glm::vec4> colors;
-    meshIn->getSurfaceData(indices, vertices, normals, colors);
+    std::vector<uint32_t> triangleIndices;
+    std::vector<glm::vec3> vertexPositions;
+    std::vector<glm::vec3> vertexNormals;
+    std::vector<float> vertexAttributes;
+    meshIn->getSurfaceData(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
     shaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertices.size()*sizeof(glm::vec3), (void*)&vertices.front(), sgl::VERTEX_BUFFER);
+            vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the normal buffer.
     sgl::GeometryBufferPtr normalBuffer = sgl::Renderer->createGeometryBuffer(
-            normals.size()*sizeof(glm::vec3), (void*)&normals.front(), sgl::VERTEX_BUFFER);
+            vertexNormals.size()*sizeof(glm::vec3), (void*)&vertexNormals.front(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             normalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
 
     // Add the color buffer.
-    sgl::GeometryBufferPtr colorBuffer = sgl::Renderer->createGeometryBuffer(
-            colors.size()*sizeof(glm::vec4), (void*)&colors.front(), sgl::VERTEX_BUFFER);
+    sgl::GeometryBufferPtr attributeBuffer = sgl::Renderer->createGeometryBuffer(
+            vertexAttributes.size()*sizeof(float), (void*)&vertexAttributes.front(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
-            colorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
+            attributeBuffer, "vertexAttribute", sgl::ATTRIB_FLOAT, 1);
 
     dirty = false;
     reRender = true;
@@ -82,6 +82,8 @@ void SurfaceRenderer::render() {
     if (shaderProgram->hasUniform("lightDirection")) {
         shaderProgram->setUniform("lightDirection", sceneData.lightDirection);
     }
+    shaderProgram->setUniform(
+            "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
     sgl::Renderer->render(shaderAttributes);
 }
 

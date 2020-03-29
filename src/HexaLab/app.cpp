@@ -82,8 +82,7 @@ namespace HexaLab {
         // build buffers
         this->flag_models_as_dirty();
         //this->update_models();
-        this->build_base_complex();
-        this->build_singularity_models();
+        //this->build_singularity_models();
         this->build_full_model();
         return true;
     }
@@ -93,11 +92,6 @@ namespace HexaLab {
         this->quality_color_mapping_enabled = true;
         this->flag_models_as_dirty();   // TODO update color only
     }*/
-    void App::onTransferFunctionMapRebuilt() {
-        this->quality_color_mapping_enabled = true;
-        this->flag_models_as_dirty();
-    }
-
     void App::disable_quality_color_mapping() {
         this->quality_color_mapping_enabled = false;
         this->flag_models_as_dirty();   // TODO update color only
@@ -118,16 +112,16 @@ namespace HexaLab {
         this->flag_models_as_dirty();
     }
 
-    void App::set_default_outside_color ( float r, float g, float b ) {
-        this->default_outside_color = glm::vec4 ( r, g, b, 1.0 );
+    void App::set_default_outside_attribute ( float val ) {
+        this->default_outside_attribute = val;
 
         if ( !this->is_quality_color_mapping_enabled() ) {
             this->flag_models_as_dirty();
         }
     }
 
-    void App::set_default_inside_color ( float r, float g, float b ) {
-        this->default_inside_color = glm::vec4 ( r, g, b, 1.0 );
+    void App::set_default_inside_attribute ( float val ) {
+        this->default_inside_attribute = val;
 
         if ( !this->is_quality_color_mapping_enabled() ) {
             this->flag_models_as_dirty();
@@ -239,7 +233,7 @@ namespace HexaLab {
         HL_LOG ( "[QUALITY: %s] %f %f - norm %f %f.\n", get_quality_name(this->quality_measure), mesh_stats.quality_min,mesh_stats.quality_max,mesh_stats.normalized_quality_min,mesh_stats.normalized_quality_max );
     }
 
-    void App::build_singularity_model(
+    /*void App::build_singularity_model(
             std::vector<glm::vec3>& lineVertices,
             std::vector<glm::vec4>& lineColors,
             std::vector<glm::vec3>& pointVertices,
@@ -282,61 +276,6 @@ namespace HexaLab {
             if ((vertValence != 4 && isBoundary) || (vertValence != 8 && !isBoundary)) {
                 pointVertices.push_back(nav.vert().position);
                 pointColors.push_back(glm::vec4(0.4f, 0.0f, 0.0f, 1.0f));
-            }
-        }
-    }
-
-    void App::build_lod_representation(
-            std::vector<glm::vec3>& lineVertices,
-            std::vector<uint32_t>& lineLodValues) {
-        // TODO: For now only one base-complex component supported
-        bool edgeVisitedArray = new bool[mesh->edges.size()];
-        for (size_t i = 0; i < mesh->edges.size(); ++i) {
-            int direction = i % 3;
-            MeshNavigator nav = mesh->navigate(mesh->edges[i]);
-            int edgeValence = nav.edge().valence;
-            bool isBoundary = nav.edge().is_surface;
-            /*if ((edgeValence != 2 && isBoundary) || (edgeValence != 4 && !isBoundary)) {
-                ;
-            }*/
-            lineVertices.push_back(nav.vert().position);
-            lineVertices.push_back(nav.flip_vert().vert().position);
-            uint32_t lodValue = i;
-            lineLodValues.push_back(lodValue);
-            lineLodValues.push_back(lodValue);
-        }
-        for (size_t i = 0; i < mesh->edges.size(); ++i) {
-            MeshNavigator nav = mesh->navigate(mesh->edges[i]);
-            int edgeValence = nav.edge().valence;
-            bool isBoundary = nav.edge().is_surface;
-            /*if ((edgeValence != 2 && isBoundary) || (edgeValence != 4 && !isBoundary)) {
-                ;
-            }*/
-            lineVertices.push_back(nav.vert().position);
-            lineVertices.push_back(nav.flip_vert().vert().position);
-            uint32_t lodValue = i;
-            lineLodValues.push_back(lodValue);
-            lineLodValues.push_back(lodValue);
-        }
-    }
-
-    void App::build_base_complex() {
-        // Mark irregular edges.
-        for (size_t i = 0; i < mesh->edges.size(); ++i) {
-            MeshNavigator nav = mesh->navigate(mesh->edges[i]);
-            int edgeValence = nav.edge().valence;
-            bool isBoundary = nav.edge().is_surface;
-            if ((edgeValence != 2 && isBoundary) || (edgeValence != 4 && !isBoundary)) {
-                ;
-            }
-        }
-        // Mark irregular vertices.
-        for (size_t i = 0; i < mesh->verts.size(); ++i) {
-            MeshNavigator nav = mesh->navigate(mesh->verts[i]);
-            int vertValence = nav.vert().valence;
-            bool isBoundary = nav.vert().is_surface;
-            if ((vertValence != 4 && isBoundary) || (vertValence != 8 && !isBoundary)) {
-                ;
             }
         }
     }
@@ -460,12 +399,12 @@ namespace HexaLab {
                 full_singularity_model.add_wire_vert( v2, glm::vec4(colSE, 1.0f) );
 
                 // add two tris
-                full_singularity_model.add_surf_vert( v0,glm::vec4(colSI, 1.0f) );
-                full_singularity_model.add_surf_vert( v1,glm::vec4(colSI, 1.0f) );
-                full_singularity_model.add_surf_vert( v2,glm::vec4(colSE, 1.0f) );
-                full_singularity_model.add_surf_vert( v2,glm::vec4(colSE, 1.0f) );
-                full_singularity_model.add_surf_vert( v3,glm::vec4(colSE, 1.0f) );
-                full_singularity_model.add_surf_vert( v0,glm::vec4(colSI, 1.0f) );
+                full_singularity_model.add_surf_vert( v0, glm::vec4(colSI, 1.0f) );
+                full_singularity_model.add_surf_vert( v1, glm::vec4(colSI, 1.0f) );
+                full_singularity_model.add_surf_vert( v2, glm::vec4(colSE, 1.0f) );
+                full_singularity_model.add_surf_vert( v2, glm::vec4(colSE, 1.0f) );
+                full_singularity_model.add_surf_vert( v3, glm::vec4(colSE, 1.0f) );
+                full_singularity_model.add_surf_vert( v0, glm::vec4(colSI, 1.0f) );
 
                 nav = nav.rotate_on_edge();
             } while ( nav.face() != begin );
@@ -480,47 +419,47 @@ namespace HexaLab {
 
 
         }
-    }
+    }*/
 
-    void App::add_visible_vert ( Dart& dart, float normal_sign, glm::vec4 color ) {
+    void App::add_visible_vert ( Dart& dart, float normal_sign, float cellAttribute ) {
         MeshNavigator nav = mesh->navigate ( dart );
         visible_model.surface_vert_pos.push_back ( nav.vert().position );
         visible_model.surface_vert_norm.push_back ( nav.face().normal * normal_sign );
-        visible_model.surface_vert_color.push_back ( color );
+        visible_model.surface_vert_attribute.push_back ( cellAttribute );
         HL_ASSERT ( visible_model.surface_vert_pos.size() == visible_model.surface_vert_norm.size() &&
-                    visible_model.surface_vert_pos.size() == visible_model.surface_vert_color.size() );
+                    visible_model.surface_vert_pos.size() == visible_model.surface_vert_attribute.size() );
         Index idx = visible_model.surface_vert_pos.size() - 1;
         visible_model.surface_ibuffer.push_back ( idx );
     }
 
-    size_t App::add_vertex ( glm::vec3 pos, glm::vec3 norm, glm::vec4 color ) {
+    size_t App::add_vertex ( glm::vec3 pos, glm::vec3 norm, float cellAttribute ) {
         size_t i = visible_model.surface_vert_pos.size();
         visible_model.surface_vert_pos.push_back ( pos );
         visible_model.surface_vert_norm.push_back ( norm );
-        visible_model.surface_vert_color.push_back ( color );
+        visible_model.surface_vert_attribute.push_back ( cellAttribute );
         return i;
     }
 
-    size_t App::add_full_vertex ( glm::vec3 pos, glm::vec3 norm, glm::vec4 color ) {
+    size_t App::add_full_vertex ( glm::vec3 pos, glm::vec3 norm, float cellAttribute ) {
         size_t i = full_model.surface_vert_pos.size();
         full_model.surface_vert_pos.push_back ( pos );
         full_model.surface_vert_norm.push_back ( norm );
-        full_model.surface_vert_color.push_back ( color );
+        full_model.surface_vert_attribute.push_back ( cellAttribute );
         return i;
     }
 
-    size_t App::add_mesh_vertex ( glm::vec3 pos, glm::vec3 norm, glm::vec4 color ) {
+    size_t App::add_mesh_vertex ( glm::vec3 pos, glm::vec3 norm, float cellAttribute ) {
         size_t i = visible_model.mesh_vert_pos.size();
         visible_model.mesh_vert_pos.push_back ( pos );
         visible_model.mesh_vert_norm.push_back ( norm );
-        visible_model.mesh_vert_color.push_back ( color );
+        visible_model.mesh_vert_attribute.push_back ( cellAttribute );
         return i;
     }
 
-    size_t App::add_mesh_vertex_volume ( glm::vec3 pos, glm::vec4 color ) {
+    size_t App::add_mesh_vertex_volume ( glm::vec3 pos, float cellAttribute ) {
         size_t i = visible_model.mesh_vert_pos.size();
         visible_model.mesh_vert_pos.push_back ( pos );
-        visible_model.mesh_vert_color.push_back ( color );
+        visible_model.mesh_vert_attribute.push_back ( cellAttribute );
         return i;
     }
 
@@ -565,14 +504,14 @@ namespace HexaLab {
         }
 
         // If cell quality display is enabled, fetch the appropriate quality color.
-        // Otherwise use the defautl coloration (white for outer faces, yellow for everything else)
-        glm::vec4 color;
+        // Otherwise use the default coloration (white for outer faces, yellow for everything else)
+        float cellAttribute;
 
         if ( is_quality_color_mapping_enabled() ) {
             //color = color_map.get ( mesh->normalized_hexa_quality[nav.cell_index()] );
-            color = transferFunctionWindow.getLinearRGBColorAtAttribute ( 1.0f - mesh->normalized_hexa_quality[nav.cell_index()] );
+            cellAttribute = 1.0f - mesh->normalized_hexa_quality[nav.cell_index()];
         } else {
-            color = nav.is_face_boundary() ? this->default_outside_color : this->default_inside_color;
+            cellAttribute = nav.is_face_boundary() ? this->default_outside_attribute : this->default_inside_attribute;
         }
 
         for ( int i = 0; i < 2; ++i ) {
@@ -593,7 +532,7 @@ namespace HexaLab {
         Index idx = visible_model.surface_vert_pos.size();
 
         do {
-            add_vertex ( nav.vert().position, nav.face().normal * normal_sign, color );
+            add_vertex ( nav.vert().position, nav.face().normal * normal_sign, cellAttribute );
             nav = nav.rotate_on_face();
         } while ( nav.vert() != vert );
 
@@ -725,10 +664,9 @@ namespace HexaLab {
         MeshNavigator nav = mesh->navigate ( dart );
         Vert& vert = nav.vert();
         Index idx = full_model.surface_vert_pos.size();
-        glm::vec4 color{ 1, 1, 1, 1 };
 
         do {
-            add_full_vertex ( nav.vert().position, nav.face().normal, color );
+            add_full_vertex ( nav.vert().position, nav.face().normal, 0.0f );
             nav = nav.rotate_on_face();
         } while ( nav.vert() != vert );
 
@@ -753,13 +691,13 @@ namespace HexaLab {
 
         // If cell quality display is enabled, fetch the appropriate quality color.
         // Otherwise use the defautl coloration (white for outer faces, yellow for everything else)
-        glm::vec4 color;
+        float cellAttribute;
 
         if ( is_quality_color_mapping_enabled() ) {
             //color = color_map.get ( mesh->normalized_hexa_quality[nav.cell_index()] );
-            color = transferFunctionWindow.getLinearRGBColorAtAttribute ( 1.0f - mesh->normalized_hexa_quality[nav.cell_index()] );
+            cellAttribute = 1.0f - mesh->normalized_hexa_quality[nav.cell_index()];
         } else {
-            color = nav.is_face_boundary() ? this->default_outside_color : this->default_inside_color;
+            cellAttribute = nav.is_face_boundary() ? this->default_outside_attribute : this->default_inside_attribute;
         }
 
         nav = mesh->navigate ( dart );
@@ -772,7 +710,7 @@ namespace HexaLab {
         Index idx = visible_model.mesh_vert_pos.size();
 
         do {
-            add_mesh_vertex ( nav.vert().position, nav.face().normal * normal_sign, color );
+            add_mesh_vertex ( nav.vert().position, nav.face().normal * normal_sign, cellAttribute );
             nav = nav.rotate_on_face();
         } while ( nav.vert() != vert );
 
@@ -792,21 +730,19 @@ namespace HexaLab {
 
         // If cell quality display is enabled, fetch the appropriate quality color.
         // Otherwise use the defautl coloration (white for outer faces, yellow for everything else)
-        glm::vec4 pos_color, neg_color;
+        float pos_attribute, neg_attribute;
 
         if ( is_quality_color_mapping_enabled() ) {
             //color = color_map.get ( mesh->normalized_hexa_quality[nav.cell_index()] );
             if (addPositiveNormal) {
-                pos_color = transferFunctionWindow.getLinearRGBColorAtAttribute (
-                        1.0f - mesh->normalized_hexa_quality[nav.cell_index()] );
+                pos_attribute = 1.0f - mesh->normalized_hexa_quality[nav.cell_index()];
             }
             if (addNegativeNormal) {
-                neg_color = transferFunctionWindow.getLinearRGBColorAtAttribute (
-                        1.0f - mesh->normalized_hexa_quality[nav.flip_cell().flip_edge().cell_index()] );
+                neg_attribute = 1.0f - mesh->normalized_hexa_quality[nav.flip_cell().flip_edge().cell_index()];
             }
         } else {
-            pos_color = nav.is_face_boundary() ? this->default_outside_color : this->default_inside_color;
-            neg_color = pos_color;
+            pos_attribute = nav.is_face_boundary() ? this->default_outside_attribute : this->default_inside_attribute;
+            neg_attribute = pos_attribute;
         }
 
         if (addPositiveNormal) {
@@ -820,7 +756,7 @@ namespace HexaLab {
             Index idx = visible_model.mesh_vert_pos.size();
 
             do {
-                add_mesh_vertex_volume ( nav.vert().position, pos_color );
+                add_mesh_vertex_volume ( nav.vert().position, pos_attribute );
                 nav = nav.rotate_on_face();
             } while ( nav.vert() != vert );
 
@@ -839,7 +775,7 @@ namespace HexaLab {
             Index idx = visible_model.mesh_vert_pos.size();
 
             do {
-                add_mesh_vertex_volume ( nav.vert().position, neg_color );
+                add_mesh_vertex_volume ( nav.vert().position, neg_attribute );
                 nav = nav.rotate_on_face();
             } while ( nav.vert() != vert );
 
@@ -852,7 +788,7 @@ namespace HexaLab {
     void App::prepare_geometry() {
         visible_model.mesh_vert_pos.clear();
         visible_model.mesh_vert_norm.clear();
-        visible_model.mesh_vert_color.clear();
+        visible_model.mesh_vert_attribute.clear();
         visible_model.mesh_ibuffer.clear();
 
         for ( size_t i = 0; i < mesh->faces.size(); ++i ) {
@@ -883,7 +819,7 @@ namespace HexaLab {
     void App::get_volume_geometry_faces() {
         visible_model.mesh_vert_pos.clear();
         visible_model.mesh_vert_norm.clear();
-        visible_model.mesh_vert_color.clear();
+        visible_model.mesh_vert_attribute.clear();
         visible_model.mesh_ibuffer.clear();
 
         for ( size_t i = 0; i < mesh->faces.size(); ++i ) {
@@ -903,7 +839,7 @@ namespace HexaLab {
     void App::get_volume_geometry_volume() {
         visible_model.mesh_vert_pos.clear();
         visible_model.mesh_vert_norm.clear();
-        visible_model.mesh_vert_color.clear();
+        visible_model.mesh_vert_attribute.clear();
         visible_model.mesh_ibuffer.clear();
         TriangleSet triangle_set;
 
@@ -925,7 +861,7 @@ namespace HexaLab {
         }
     }
 
-    void App::build_gap_hexa ( const glm::vec3 pp[8], const glm::vec3 nn[6], const bool vv[8], const glm::vec4 ww[6] ) {
+    void App::build_gap_hexa ( const glm::vec3 pp[8], const glm::vec3 nn[6], const bool vv[8], const float ww[6] ) {
         if ( !vv[0] && !vv[1] && !vv[2] && !vv[3] && !vv[4] && !vv[5] && !vv[6] && !vv[7] ) {
             return;
         }
@@ -1143,16 +1079,16 @@ namespace HexaLab {
                         continue;    // midpoint: never show
                     }
 
-                    glm::vec4 c;
+                    float attr;
 
                     if ( is_quality_color_mapping_enabled() ) {
                         //c = color_map.get ( mesh->normalized_hexa_quality[cell_idx] );
-                        c = transferFunctionWindow.getLinearRGBColorAtAttribute ( 1.0f - mesh->normalized_hexa_quality[cell_idx] );
+                        attr = 1.0f - mesh->normalized_hexa_quality[cell_idx];
                     } else {
-                        c = w[x][y][z] ? this->default_outside_color : this->default_inside_color;
+                        attr = w[x][y][z] ? this->default_outside_attribute : this->default_inside_attribute;
                     }
 
-                    iv[x][y][z] = add_vertex ( p[x][y][z], n[x][y][z], c );
+                    iv[x][y][z] = add_vertex ( p[x][y][z], n[x][y][z], attr );
                     //std::cout<<"Range = "<<len(p[x][y][z]-vec3(1,1,1))<<"\n"; // test: smooth = 0.5 --> perfect sphere
                 }
             }
@@ -1227,16 +1163,16 @@ namespace HexaLab {
             //  | P4----|--P5
             //  | /     | /
             //  P0------P1
-            glm::vec3    verts_pos[8];
-            bool        verts_vis[8];
-            glm::vec4    faces_colors[6];
-            glm::vec3    faces_norms[6];
+            glm::vec3 verts_pos[8];
+            bool      verts_vis[8];
+            float     faces_attributes[6];
+            glm::vec3 faces_norms[6];
             // ******
             // Extract face normals
             MeshNavigator nav = this->mesh->navigate ( mesh->cells[i] );
             Face& face = nav.face();
             glm::vec3    norms_buffer[6];
-            glm::vec4    colors_buffer[6];
+            float        attributes_buffer[6];
 
             for ( size_t f = 0; f < 6; ++f ) {
                 MeshNavigator n2 = this->mesh->navigate ( nav.face() );
@@ -1254,9 +1190,10 @@ namespace HexaLab {
                 // color
                 if ( is_quality_color_mapping_enabled() ) {
                     //colors_buffer[f] = color_map.get ( mesh->normalized_hexa_quality[nav.cell_index()] );
-                    colors_buffer[f] = transferFunctionWindow.getLinearRGBColorAtAttribute ( 1.0f - mesh->normalized_hexa_quality[nav.cell_index()] );
+                    attributes_buffer[f] = 1.0f - mesh->normalized_hexa_quality[nav.cell_index()];
                 } else {
-                    colors_buffer[f] = nav.is_face_boundary() ? this->default_outside_color : this->default_inside_color;
+                    attributes_buffer[f] =
+                            nav.is_face_boundary() ? this->default_outside_attribute : this->default_inside_attribute;
                 }
 
                 nav = nav.next_cell_face();
@@ -1268,12 +1205,12 @@ namespace HexaLab {
             faces_norms[3] = norms_buffer[2];
             faces_norms[4] = norms_buffer[0];
             faces_norms[5] = norms_buffer[3];
-            faces_colors[0] = colors_buffer[4];
-            faces_colors[1] = colors_buffer[1];
-            faces_colors[2] = colors_buffer[5];
-            faces_colors[3] = colors_buffer[2];
-            faces_colors[4] = colors_buffer[0];
-            faces_colors[5] = colors_buffer[3];
+            faces_attributes[0] = attributes_buffer[4];
+            faces_attributes[1] = attributes_buffer[1];
+            faces_attributes[2] = attributes_buffer[5];
+            faces_attributes[3] = attributes_buffer[2];
+            faces_attributes[4] = attributes_buffer[0];
+            faces_attributes[5] = attributes_buffer[3];
             // Extract vertices
             nav = mesh->navigate ( mesh->cells[i] );
             auto store_vert = [&] ( size_t i ) {
@@ -1296,7 +1233,7 @@ namespace HexaLab {
             store_vert ( 7 );
             nav = mesh->navigate ( mesh->cells[i] ).flip_side().flip_edge().flip_vert();
             store_vert ( 6 );
-            build_gap_hexa ( verts_pos, faces_norms, verts_vis, faces_colors );
+            build_gap_hexa ( verts_pos, faces_norms, verts_vis, faces_attributes );
         }
     }
     void App::prepare_smooth_geometry() {

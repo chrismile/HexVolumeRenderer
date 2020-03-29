@@ -2,7 +2,6 @@
 
 #include <Math/Geometry/AABB3.hpp>
 
-#include "Renderers/TransferFunctionWindow.hpp"
 #include "Utils/SearchStructures/TriangleSet.hpp"
 
 #include "mesh.h"
@@ -36,8 +35,7 @@ namespace HexaLab {
 
     class App {
     public:
-        App(TransferFunctionWindow& transferFunctionWindow) : transferFunctionWindow(transferFunctionWindow) {}
-        TransferFunctionWindow& transferFunctionWindow;
+        App() {}
 
         // Currently loaded mesh. Initially a nullptr.
         Mesh* mesh = nullptr;
@@ -58,8 +56,8 @@ namespace HexaLab {
         bool do_show_boundary_creases = false;
 
         // Colors selected for the visible_model in the .js app. They are used when hexa quality color mapping is off.
-        glm::vec4 default_outside_color = glm::vec4 ( 1, 1, 1, 1 );
-        glm::vec4 default_inside_color  = glm::vec4 ( 1, 1, 0, 1 );
+        float default_outside_attribute = 0.0f;
+        float default_inside_attribute  = 1.0f;
 
         // Selected quality measure. The evaluated values are stored inside the mesh, for each hexa.
         // Automatically updated on mesh or measure change.
@@ -99,13 +97,12 @@ namespace HexaLab {
 
         // Updates the selected color map, enabled quality color mapping and flags the model color buffer as dirty.
         //void enable_quality_color_mapping ( ColorMap::Palette palette );
-        void onTransferFunctionMapRebuilt();
         // Disables quality color mapping and flags the model color buffer as dirty (it will be rebuilt using the default colors).
         void disable_quality_color_mapping();
 
-        // Updates the default colors and if quality color mapping is disabled, it flags the model color buffer as dirty.
-        void set_default_outside_color ( float r, float g, float b );
-        void set_default_inside_color ( float r, float g, float b );
+        // Updates the default attributes and if quality color mapping is disabled, it flags the model attribute buffer as dirty.
+        void set_default_outside_attribute ( float val );
+        void set_default_inside_attribute ( float val );
 
         // Flags as dirty the model quality buffers, and also the model color buffer if quality color mapping is enabled.
         void set_quality_measure ( QualityMeasureEnum e );
@@ -127,8 +124,8 @@ namespace HexaLab {
         void get_volume_geometry_volume();
 
         // Getters
-        glm::vec3            get_default_outside_color()         { return this->default_outside_color; }
-        glm::vec3            get_default_inside_color()          { return this->default_inside_color; }
+        float               get_default_outside_attribute()     { return this->default_outside_attribute; }
+        float               get_default_inside_attribute()      { return this->default_inside_attribute; }
         Model*              get_visible_model()                 { return &this->visible_model; }
         Model*              get_filtered_model()                { return &this->filtered_model; }
         Model*              get_line_singularity_model()        { return &this->line_singularity_model; }
@@ -144,7 +141,7 @@ namespace HexaLab {
         QualityMeasureEnum  get_quality_measure()               { return this->quality_measure; }
 
       private:
-        void add_visible_vert ( Dart& dart, float normal_sign, glm::vec4 color );
+        void add_visible_vert ( Dart& dart, float normal_sign, float cellAttribute );
         void add_visible_face ( Dart& dart, float normal_sign );
         void add_visible_wireframe ( Dart& dart );
         void add_filtered_face ( Dart& dart );
@@ -153,10 +150,10 @@ namespace HexaLab {
         void add_mesh_face ( Dart& dart, float normal_sign );
         void add_mesh_face_volume ( Dart& dart, bool addPositiveNormal, bool addNegativeNormal );
 
-        size_t add_vertex ( glm::vec3 pos, glm::vec3 norm, glm::vec4 color );
-        size_t add_full_vertex ( glm::vec3 pos, glm::vec3 norm, glm::vec4 color );
-        size_t add_mesh_vertex ( glm::vec3 pos, glm::vec3 norm, glm::vec4 color );
-        size_t add_mesh_vertex_volume ( glm::vec3 pos, glm::vec4 color );
+        size_t add_vertex ( glm::vec3 pos, glm::vec3 norm, float cellAttribute );
+        size_t add_full_vertex ( glm::vec3 pos, glm::vec3 norm, float cellAttribute );
+        size_t add_mesh_vertex ( glm::vec3 pos, glm::vec3 norm, float cellAttribute );
+        size_t add_mesh_vertex_volume ( glm::vec3 pos, float cellAttribute );
         void add_triangle ( size_t i1, size_t i2, size_t i3 );
         void add_full_triangle ( size_t i1, size_t i2, size_t i3 );
         void add_mesh_triangle ( size_t i1, size_t i2, size_t i3 );
@@ -173,23 +170,19 @@ namespace HexaLab {
 
         void build_full_model();
 
-        void build_gap_hexa ( const glm::vec3 pp[8], const glm::vec3 nn[6], const bool vv[8], const glm::vec4 ww[6] );
+        void build_gap_hexa ( const glm::vec3 pp[8], const glm::vec3 nn[6], const bool vv[8], const float ww[6] );
         void build_smooth_hexa ( const glm::vec3 pp[8], const glm::vec3 nn[6], const bool vv[8], const bool ww[6], Index hexa_idx );
 
         void compute_hexa_quality();
         void build_surface_models();
-        void build_singularity_models();
+        //void build_singularity_models();
 
         // Singularity structure visualization
     public:
-        void build_singularity_model(
+        /*void build_singularity_model(
                 std::vector<glm::vec3>& lineVertices,
                 std::vector<glm::vec4>& lineColors,
                 std::vector<glm::vec3>& pointVertices,
-                std::vector<glm::vec4>& pointColors);
-        void build_lod_representation(
-                std::vector<glm::vec3>& lineVertices,
-                std::vector<uint32_t>& lineLodValues);
-        void build_base_complex();
+                std::vector<glm::vec4>& pointColors);*/
     };
 }
