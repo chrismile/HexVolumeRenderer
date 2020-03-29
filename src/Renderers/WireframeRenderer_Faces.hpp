@@ -41,7 +41,14 @@
  */
 class WireframeRenderer_Faces : public HexahedralMeshRenderer {
 public:
-    WireframeRenderer_Faces(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    /**
+     * @param sceneData A reference to the scene data object.
+     * @param transferFunctionWindow The transfer function editor window.
+     * @param useOutline Whether to apply a white outline around the edges of the wireframe grid.
+     * @param onlyBoundary Whether only to show the wireframe grid on the boundary surface of the mesh or all lines.
+     */
+    WireframeRenderer_Faces(
+            SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow, bool useOutline, bool onlyBoundary);
     virtual ~WireframeRenderer_Faces() {}
 
     // Re-generates the visualization mapping.
@@ -56,6 +63,7 @@ protected:
     sgl::ShaderProgramPtr shaderProgram;
     sgl::ShaderAttributesPtr shaderAttributes;
     sgl::GeometryBufferPtr hexahedralCellFacesBuffer;
+    bool onlyBoundary;
 
     // GUI data
     bool showRendererWindow = true;

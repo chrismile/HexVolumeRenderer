@@ -85,7 +85,14 @@ void main()
     vec4 lineBaseColor = lineColors[minDistanceIndex];
     float lineCoordinates = clamp(minDistance / lineWidth * 2.0, 0.0, 1.0);
     float fragmentDepth;
+    //vec4 color = flatShadingWireframeSurfaceHalo(lineBaseColor, fragmentDepth, lineCoordinates);
+    #if defined(LINE_RENDERING_STYLE_HALO)
     vec4 color = flatShadingWireframeSurfaceHalo(lineBaseColor, fragmentDepth, lineCoordinates);
+    #elif defined(LINE_RENDERING_STYLE_TRON)
+    vec4 color = flatShadingWireframeSurfaceTronHalo(lineBaseColor, fragmentDepth, lineCoordinates);
+    #else //#elif defined(LINE_RENDERING_STYLE_SINGLE_COLOR)
+    vec4 color = flatShadingWireframeSingleColor(lineBaseColor, fragmentDepth, lineCoordinates);
+    #endif
     //vec4 color = flatShadingWireframeSurfaceTronHalo(lineBaseColor, fragmentDepth, lineCoordinates);
 
     #if defined(DIRECT_BLIT_GATHER)
@@ -150,6 +157,8 @@ void main()
     vec4 color = flatShadingWireframeSurfaceHalo(lineBaseColor, fragmentDepth, lineCoordinates);
     #elif defined(LINE_RENDERING_STYLE_TRON)
     vec4 color = flatShadingWireframeSurfaceTronHalo(lineBaseColor, fragmentDepth, lineCoordinates);
+    #else //#elif defined(LINE_RENDERING_STYLE_SINGLE_COLOR)
+    vec4 color = flatShadingWireframeSingleColor(lineBaseColor, fragmentDepth, lineCoordinates);
     #endif
     color.a *= getClearViewFocusFragmentOpacityFactor();
 

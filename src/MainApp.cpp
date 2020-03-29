@@ -182,9 +182,11 @@ void MainApp::setRenderers() {
 
     if (renderingMode == RENDERING_MODE_SURFACE) {
         meshRenderers.push_back(new SurfaceRenderer(sceneData, transferFunctionWindow));
-        meshRenderers.push_back(new WireframeRenderer_Faces(sceneData, transferFunctionWindow));
+        meshRenderers.push_back(new WireframeRenderer_Faces(
+                sceneData, transferFunctionWindow, false, true));
     } else if (renderingMode == RENDERING_MODE_WIREFRAME) {
-        meshRenderers.push_back(new WireframeRenderer_Faces(sceneData, transferFunctionWindow));
+        meshRenderers.push_back(new WireframeRenderer_Faces(
+                sceneData, transferFunctionWindow, true, false));
     } else if (renderingMode == RENDERING_MODE_DEPTH_COMPLEXITY) {
         meshRenderers.push_back(new DepthComplexityRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_VOLUME) {
@@ -201,7 +203,8 @@ void MainApp::setRenderers() {
         meshRenderers.push_back(new BaseComplexLineRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_BASE_COMPLEX_SURFACE) {
         meshRenderers.push_back(new BaseComplexSurfaceRenderer(sceneData, transferFunctionWindow));
-        meshRenderers.push_back(new WireframeRenderer_Faces(sceneData, transferFunctionWindow));
+        meshRenderers.push_back(new WireframeRenderer_Faces(
+                sceneData, transferFunctionWindow, false, true));
     } else if (renderingMode == RENDERING_MODE_PARTITION_LINES) {
         meshRenderers.push_back(new PartitionLineRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_LOD_LINES) {
@@ -418,9 +421,11 @@ void MainApp::loadSelectedMeshDataSetNames() {
     selectedMeshIndex = 0;
     selectedMeshDataSetNames.clear();
     selectedMeshDataSetNames.push_back("None");
-    MeshSourceDescription& sourceDescription = meshSourceDescriptions.at(selectedFileSourceIndex - 1);
-    for (std::string& dataSetName : sourceDescription.data) {
-        selectedMeshDataSetNames.push_back(dataSetName);
+    if (selectedFileSourceIndex != 0) {
+        MeshSourceDescription& sourceDescription = meshSourceDescriptions.at(selectedFileSourceIndex - 1);
+        for (std::string& dataSetName : sourceDescription.data) {
+            selectedMeshDataSetNames.push_back(dataSetName);
+        }
     }
 }
 

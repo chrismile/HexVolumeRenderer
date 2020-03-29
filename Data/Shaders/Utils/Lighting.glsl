@@ -180,7 +180,7 @@ vec4 flatShadingWireframeSurfaceTronHalo(in vec4 baseColor, out float fragmentDe
 
     const float GLOW_STRENGTH = 0.5;
     vec4 colorSolid = vec4(baseColor.rgb,
-    1.0 - smoothstep(CORE_THRESHOLD - EPSILON, CORE_THRESHOLD + EPSILON, lineCoordinates));
+            1.0 - smoothstep(CORE_THRESHOLD - EPSILON, CORE_THRESHOLD + EPSILON, lineCoordinates));
     vec4 colorGlow = vec4(baseColor.rgb, GLOW_STRENGTH * (1.0 - smoothstep(0.0, 1.2, lineCoordinates)));
 
     // Back-to-front blending:
@@ -190,6 +190,20 @@ vec4 flatShadingWireframeSurfaceTronHalo(in vec4 baseColor, out float fragmentDe
     fragmentDepthFrag = fragmentDepth;
 
     return vec4(c_out, a_out);
+}
+
+/**
+* Normal flat shading.
+*/
+vec4 flatShadingWireframeSingleColor(in vec4 baseColor, out float fragmentDepthFrag, in float lineCoordinates) {
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    fragmentDepthFrag = fragmentDepth;
+
+    float EPSILON = clamp(fragmentDepth / 2.0, 0.0, 0.49);
+    float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
+    vec4 color = vec4(baseColor.rgb, baseColor.a * coverage);
+
+    return color;
 }
 
 #endif

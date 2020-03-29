@@ -32,20 +32,27 @@
 
 #include "WireframeRenderer_Faces.hpp"
 
-WireframeRenderer_Faces::WireframeRenderer_Faces(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
-        : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
+WireframeRenderer_Faces::WireframeRenderer_Faces(
+        SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow, bool useOutline, bool onlyBoundary)
+        : HexahedralMeshRenderer(sceneData, transferFunctionWindow), onlyBoundary(onlyBoundary) {
     sgl::ShaderManager->invalidateShaderCache();
     sgl::ShaderManager->addPreprocessorDefine("DIRECT_BLIT_GATHER", "");
     sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "GatherDummy.glsl");
+    if (useOutline) {
+        sgl::ShaderManager->addPreprocessorDefine("LINE_RENDERING_STYLE_HALO", "");
+    }
     shaderProgram = sgl::ShaderManager->getShaderProgram(
             {"WireframeSurface.Vertex", "WireframeSurface.Fragment"});
     sgl::ShaderManager->removePreprocessorDefine("DIRECT_BLIT_GATHER");
+    if (useOutline) {
+        sgl::ShaderManager->removePreprocessorDefine("LINE_RENDERING_STYLE_HALO");
+    }
 }
 
 void WireframeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
     std::vector<uint32_t> indices;
     std::vector<HexahedralCellFace> hexahedralCellFaces;
-    meshIn->getSurfaceDataWireframeFaces(indices, hexahedralCellFaces, true, false);
+    meshIn->getSurfaceDataWireframeFaces(indices, hexahedralCellFaces, onlyBoundary, false);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
