@@ -26,32 +26,27 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_SURFACERENDERER_H
-#define HEXVOLUMERENDERER_SURFACERENDERER_H
+#ifndef HEXVOLUMERENDERER_PICKABLE_HPP
+#define HEXVOLUMERENDERER_PICKABLE_HPP
 
-#include <Graphics/Shader/ShaderAttributes.hpp>
+#include "Renderers/SceneData.hpp"
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
-#include "HexahedralMeshRenderer.hpp"
-
-/**
- * Renders all boundary surfaces of the hexahedral mesh.
- */
-class SurfaceRenderer : public HexahedralMeshRenderer {
+class Pickable {
 public:
-    SurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
-    virtual ~SurfaceRenderer() {}
-
-    // Re-generates the visualization mapping.
-    virtual void generateVisualizationMapping(HexMeshPtr meshIn);
-
-    // Renders the object to the scene framebuffer.
-    virtual void render();
-    // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
-    virtual void renderGui();
+    virtual void updatePickable(float dt, bool& reRender, SceneData& sceneData);
 
 protected:
-    sgl::ShaderProgramPtr shaderProgram;
-    sgl::ShaderAttributesPtr shaderAttributes;
+    // GUI data
+    glm::vec3 focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec4 focusPointColor = glm::vec4(0.75f, 1.0f, 0.0f, 1.0f);//glm::vec4(0.2f, 0.0f, 0.0f, 1.0f);
+
+    // Focus point picking/moving information.
+    bool hasHitInformation = false;
+    glm::vec3 firstHit, lastHit;
+    glm::vec3 hitLookingDirection;
 };
 
-#endif //HEXVOLUMERENDERER_SURFACERENDERER_H
+
+#endif //HEXVOLUMERENDERER_PICKABLE_HPP

@@ -55,6 +55,10 @@ public:
 protected:
     sgl::ShaderProgramPtr shaderProgram;
     sgl::ShaderAttributesPtr shaderAttributes;
+
+    // GUI data
+    bool showRendererWindow = true;
+    float lineWidth = 0.0015f;
 };
 
 #endif //HEXVOLUMERENDERER_PARTITIONLINERENDERER_HPP

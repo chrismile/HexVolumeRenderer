@@ -301,7 +301,7 @@ void ClearViewRenderer::renderGui() {
         if (ImGui::ColorEdit4("Focus Point Color", &focusPointColor.x)) {
             reRender = true;
         }
-        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.002f, "%.4f")) {
+        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.004f, "%.4f")) {
             if (lineRenderingMode == LINE_RENDERING_MODE_TUBES) {
                 loadFocusRepresentation();
             }
@@ -337,41 +337,5 @@ void ClearViewRenderer::update(float dt) {
         }
     }
 
-    if (sgl::Keyboard->getModifier() & KMOD_CTRL) {
-        if (sgl::Mouse->buttonPressed(1) || (sgl::Mouse->isButtonDown(1) && sgl::Mouse->mouseMoved())) {
-            int mouseX = sgl::Mouse->getX();
-            int mouseY = sgl::Mouse->getY();
-            bool rayHasHitMesh = this->sceneData.rayMeshIntersection.pickPointScreen(
-                    mouseX, mouseY, firstHit, lastHit);
-            if (rayHasHitMesh) {
-                focusPoint = firstHit;
-                hitLookingDirection = glm::normalize(firstHit - sceneData.camera->getPosition());
-                hasHitInformation = true;
-                reRender = true;
-            }
-        }
-
-        if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
-            if (!hasHitInformation) {
-                glm::mat4 inverseViewMatrix = glm::inverse(sceneData.camera->getViewMatrix());
-                glm::vec3 lookingDirection = glm::vec3(-inverseViewMatrix[2].x, -inverseViewMatrix[2].y, -inverseViewMatrix[2].z);
-
-                float moveAmount = sgl::Mouse->getScrollWheel() * dt * 1.0;
-                glm::vec3 moveDirection = focusPoint - sceneData.camera->getPosition();
-                moveDirection *= float(sgl::sign(glm::dot(lookingDirection, moveDirection)));
-                if (glm::length(moveDirection) < 1e-4) {
-                    moveDirection = lookingDirection;
-                }
-                moveDirection = glm::normalize(moveDirection);
-                focusPoint = focusPoint + moveAmount * moveDirection;
-            } else {
-                float moveAmount = sgl::Mouse->getScrollWheel() * dt;
-                glm::vec3 newFocusPoint = focusPoint + moveAmount * hitLookingDirection;
-                float t = glm::dot(newFocusPoint - firstHit, hitLookingDirection);
-                t = glm::clamp(t, 0.0f, glm::length(lastHit - firstHit));
-                focusPoint = firstHit + t * hitLookingDirection;
-            }
-            reRender = true;
-        }
-    }
+    Pickable::updatePickable(dt, reRender, sceneData);
 }

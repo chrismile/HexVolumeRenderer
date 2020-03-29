@@ -120,7 +120,7 @@ void main()
     if (absCoords >= WHITE_THRESHOLD - EPSILON) {
         depthOffset = 0.002;
     }
-    gl_FragDepth = gl_FragCoord.z + depthOffset;
+    gl_FragDepth = clamp(gl_FragCoord.z + depthOffset, 0.0, 0.999);
 }
 
 -- Fragment.NoOutline

@@ -54,9 +54,6 @@ public:
     // Called when the resolution of the application window has changed.
     virtual void onResolutionChanged();
 
-    // Called when the transfer function was changed.
-    virtual void onTransferFunctionMapRebuilt() {}
-
 protected:
     void setUniformData();
     void clear();

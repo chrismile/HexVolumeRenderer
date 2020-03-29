@@ -32,6 +32,7 @@
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
 #include "HexahedralMeshRenderer.hpp"
+#include "Intersection/Pickable.hpp"
 
 /**
  * Renders the hexahedral mesh using an approach similar to ClearView (see below).
@@ -42,7 +43,7 @@
  * Computer Graphics and Visualization Group, Technical University Munich, Germany
  * https://www.in.tum.de/cg/research/publications/2006/clearview-an-interactive-context-preserving-hotspot-visualization-technique/
  */
-class ClearViewRenderer : public HexahedralMeshRenderer {
+class ClearViewRenderer : public HexahedralMeshRenderer, protected Pickable {
 public:
     ClearViewRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
 
@@ -108,18 +109,11 @@ protected:
 
     // GUI data
     bool showRendererWindow = true;
-    glm::vec3 focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec4 focusPointColor = glm::vec4(0.75f, 1.0f, 0.0f, 1.0f);//glm::vec4(0.2f, 0.0f, 0.0f, 1.0f);
     float focusRadius = 0.05f;
-    float lineWidth = 0.001f;
+    float lineWidth = 0.0015f;
     bool useShading = false;
     LineRenderingMode lineRenderingMode = LINE_RENDERING_MODE_WIREFRAME_FACES;
     LineRenderingStyle lineRenderingStyle = LINE_RENDERING_STYLE_HALO;
-
-    // Focus point move information.
-    bool hasHitInformation = false;
-    glm::vec3 firstHit, lastHit;
-    glm::vec3 hitLookingDirection;
 };
 
 #endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_HPP

@@ -76,7 +76,7 @@ void WireframeRenderer_Faces::render() {
 
 void WireframeRenderer_Faces::renderGui() {
     if (ImGui::Begin("Wireframe Renderer (Faces)", &showRendererWindow)) {
-        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.002f, "%.4f")) {
+        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.004f, "%.4f")) {
             reRender = true;
         }
     }

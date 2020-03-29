@@ -82,7 +82,7 @@ void BaseComplexLineRenderer::render() {
         shaderProgramPoints->setUniform("cameraPosition", sceneData.camera->getPosition());
     }
 
-    shaderProgram->setUniform("lineWidth", 0.0015f);
+    shaderProgram->setUniform("lineWidth", lineWidth);
     sgl::Renderer->render(lineShaderAttributes);
     shaderProgramPoints->setUniform("radius", 0.002f);
     sgl::Renderer->render(pointShaderAttributes);
@@ -92,6 +92,9 @@ void BaseComplexLineRenderer::renderGui() {
     if (ImGui::Begin("Base Complex Surface Renderer", &showRendererWindow)) {
         if (ImGui::Checkbox("Draw Regular Lines", &drawRegularLines)) {
             dirty = true;
+        }
+        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.004f, "%.4f")) {
+            reRender = true;
         }
     }
     ImGui::End();

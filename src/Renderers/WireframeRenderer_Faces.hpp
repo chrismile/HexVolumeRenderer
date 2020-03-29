@@ -52,12 +52,6 @@ public:
     // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
     virtual void renderGui();
 
-    // Called when the resolution of the application window has changed.
-    virtual void onResolutionChanged() {}
-
-    // Called when the transfer function was changed.
-    virtual void onTransferFunctionMapRebuilt() {}
-
 protected:
     sgl::ShaderProgramPtr shaderProgram;
     sgl::ShaderAttributesPtr shaderAttributes;
@@ -65,7 +59,7 @@ protected:
 
     // GUI data
     bool showRendererWindow = true;
-    float lineWidth = 0.001f;
+    float lineWidth = 0.0015f;
 };
 
 #endif //HEXVOLUMERENDERER_WIREFRAMERENDERER_FACES_HPP

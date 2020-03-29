@@ -31,6 +31,7 @@
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
 #include "HexahedralMeshRenderer.hpp"
+#include "Intersection/Pickable.hpp"
 
 /**
  * Renders the hexahedral mesh using lines.
@@ -39,7 +40,7 @@
  * This renderer (in contrast to LodLineRendererPerFragment) does not use per-fragment tests, but uses an octree
  * to decide what lines are filtered.
  */
-class LodLineRenderer : public HexahedralMeshRenderer {
+class LodLineRenderer : public HexahedralMeshRenderer, protected Pickable {
 public:
     LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
     virtual ~LodLineRenderer() {}
@@ -51,12 +52,8 @@ public:
     virtual void render();
     // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
     virtual void renderGui();
-
-    // Called when the resolution of the application window has changed.
-    virtual void onResolutionChanged() {}
-
-    // Called when the transfer function was changed.
-    virtual void onTransferFunctionMapRebuilt() {}
+    // Updates the internal logic (called once per frame).
+    virtual void update(float dt);
 
 protected:
     sgl::ShaderProgramPtr shaderProgram;
@@ -66,10 +63,8 @@ protected:
 
     // GUI data
     bool showRendererWindow = true;
-    glm::vec3 focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec4 focusPointColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
     float focusRadius = 0.05f;
-    float lineWidth = 0.001f;
+    float lineWidth = 0.0015f;
 };
 
 #endif //HEXVOLUMERENDERER_LODLINERENDERER_HPP

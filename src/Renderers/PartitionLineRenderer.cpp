@@ -75,10 +75,15 @@ void PartitionLineRenderer::render() {
         shaderProgram->setUniform("lightDirection", sceneData.lightDirection);
     }
 
-    shaderProgram->setUniform("lineWidth", 0.001f);
+    shaderProgram->setUniform("lineWidth", lineWidth);
     sgl::Renderer->render(shaderAttributes);
 }
 
 void PartitionLineRenderer::renderGui() {
-    ;
+    if (ImGui::Begin("Partition Lines Renderer", &showRendererWindow)) {
+        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.004f, "%.4f")) {
+            reRender = true;
+        }
+    }
+    ImGui::End();
 }

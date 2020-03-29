@@ -84,12 +84,17 @@ void SingularityRenderer::render() {
         shaderProgramPoints->setUniform("cameraPosition", sceneData.camera->getPosition());
     }
 
-    shaderProgram->setUniform("lineWidth", 0.0015f);
+    shaderProgram->setUniform("lineWidth", lineWidth);
     sgl::Renderer->render(lineShaderAttributes);
     shaderProgramPoints->setUniform("radius", 0.002f);
     sgl::Renderer->render(pointShaderAttributes);
 }
 
 void SingularityRenderer::renderGui() {
-    ;
+    if (ImGui::Begin("Singularity Renderer", &showRendererWindow)) {
+        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.004f, "%.4f")) {
+            reRender = true;
+        }
+    }
+    ImGui::End();
 }

@@ -74,11 +74,16 @@ void WireframeRenderer::render() {
     //glEnable(GL_POLYGON_OFFSET_FILL);
     //glPolygonOffset(1, 1);
     ///glDepthFunc(GL_LEQUAL);
-    shaderProgram->setUniform("lineWidth", 0.001f);
+    shaderProgram->setUniform("lineWidth", lineWidth);
     sgl::Renderer->render(shaderAttributes);
     //glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
 void WireframeRenderer::renderGui() {
-    ;
+    if (ImGui::Begin("Wireframe Renderer", &showRendererWindow)) {
+        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.004f, "%.4f")) {
+            reRender = true;
+        }
+    }
+    ImGui::End();
 }

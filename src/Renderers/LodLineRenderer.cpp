@@ -121,9 +121,17 @@ void LodLineRenderer::renderGui() {
         if (ImGui::ColorEdit4("Focus Point Color", &focusPointColor.x)) {
             reRender = true;
         }
-        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.002f, "%.4f")) {
+        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.004f, "%.4f")) {
             reRender = true;
         }
     }
     ImGui::End();
+}
+
+void LodLineRenderer::update(float dt) {
+    bool reRenderOld = reRender;
+    Pickable::updatePickable(dt, reRender, sceneData);
+    if (!reRenderOld && reRender) {
+        dirty = true;
+    }
 }
