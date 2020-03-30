@@ -32,7 +32,7 @@
 
 void PlaneFilter::filterMesh(HexMeshPtr meshIn) {
     output = meshIn;
-    HexaLab::Mesh& mesh = meshIn->getMesh();
+    HexaLab::Mesh& mesh = meshIn->getHexaLabMesh();
     glm::vec3 normalizedDirection = glm::normalize(direction);
 
     float minOffset = FLT_MAX;

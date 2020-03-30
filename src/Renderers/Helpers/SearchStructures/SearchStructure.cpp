@@ -1,3 +1,4 @@
+
 /*
  * BSD 2-Clause License
  *
@@ -26,28 +27,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ImGui/ImGuiWrapper.hpp>
+#include "SearchStructure.hpp"
 
-#include "QualityFilter.hpp"
-
-void QualityFilter::filterMesh(HexMeshPtr meshIn) {
-    output = meshIn;
-    HexaLab::Mesh& mesh = meshIn->getHexaLabMesh();
-
-    for (size_t i = 0; i < mesh.cells.size(); ++i) {
-        HexaLab::Cell& cell = mesh.cells.at(i);
-        if (1.0f - mesh.normalized_hexa_quality.at(i) < filterRatio) {
-            mesh.mark(cell);
-        }
-    }
-    dirty = false;
-}
-
-void QualityFilter::renderGui() {
-    if (ImGui::Begin("Quality Filter", &showFilterWindow)) {
-        if (ImGui::SliderFloat("Threshold", &filterRatio, 0.0f, 1.0f)) {
-            dirty = true;
-        }
-    }
-    ImGui::End();
+bool AxisAlignedBox::contains(const glm::vec3 &pt) const {
+    if (pt.x >= min.x && pt.y >= min.y && pt.z >= min.z
+        && pt.x <= max.x && pt.y <= max.y && pt.z <= max.z)
+        return true;
+    return false;
 }

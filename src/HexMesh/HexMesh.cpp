@@ -76,10 +76,10 @@
 
 #include "HexMesh.hpp"
 
-static const glm::vec4 glowColorRegular = glm::vec4(0.0f, 0.5f, 0.2f, 1.0f);
-static const glm::vec4 glowColorSingular = glm::vec4(0.8f, 0.1f, 0.1f, 1.0f);
-static const glm::vec4 outlineColorRegular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-static const glm::vec4 outlineColorSingular = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+const glm::vec4 HexMesh::glowColorRegular = glm::vec4(0.0f, 0.5f, 0.2f, 1.0f);
+const glm::vec4 HexMesh::glowColorSingular = glm::vec4(0.8f, 0.1f, 0.1f, 1.0f);
+const glm::vec4 HexMesh::outlineColorRegular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+const glm::vec4 HexMesh::outlineColorSingular = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 
 HexMesh::~HexMesh() {
     if (hexaLabApp != nullptr) {
@@ -281,8 +281,24 @@ void HexMesh::recomputeHistogram() {
     transferFunctionWindow.computeHistogram(qualityMeasures, minValue, maxValue);
 }
 
-HexaLab::Mesh& HexMesh::getMesh() {
+HexaLab::Mesh& HexMesh::getHexaLabMesh() {
     return *hexaLabApp->get_mesh();
+}
+
+Mesh& HexMesh::getBaseComplexMesh(){
+    rebuildInternalRepresentationIfNecessary();
+    return *baseComplexMesh;
+}
+
+Singularity& HexMesh::getBaseComplexMeshSingularity(){
+    rebuildInternalRepresentationIfNecessary();
+    return *si;
+}
+
+Frame& HexMesh::getBaseComplexMeshFrame(){
+    rebuildInternalRepresentationIfNecessary();
+    if (!frame) computeBaseComplexMeshFrame();
+    return *frame;
 }
 
 void HexMesh::rebuildInternalRepresentationIfNecessary() {
@@ -1278,15 +1294,15 @@ void HexMesh::getCompleteWireframeData(
     const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
     const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
-    std::unordered_set<uint32_t> singularEdgeIDs;
+    std::unordered_set<uint32_t> singularEdgeIds;
     for (Singular_E& se : si->SEs) {
         for (uint32_t e_id : se.es_link) {
-            singularEdgeIDs.insert(e_id);
+            singularEdgeIds.insert(e_id);
         }
     }
 
     for (Hybrid_E& e : mesh->Es) {
-        bool isSingular = singularEdgeIDs.find(e.id) != singularEdgeIDs.end();
+        bool isSingular = singularEdgeIds.find(e.id) != singularEdgeIds.end();
         for (uint32_t v_id : e.vs) {
             glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
             lineVertices.push_back(vertexPosition);
@@ -1508,10 +1524,10 @@ void HexMesh::getSurfaceDataBarycentric(
     const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
     const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
-    std::unordered_set<uint32_t> singularEdgeIDs;
+    std::unordered_set<uint32_t> singularEdgeIds;
     for (Singular_E& se : si->SEs) {
         for (uint32_t e_id : se.es_link) {
-            singularEdgeIDs.insert(e_id);
+            singularEdgeIds.insert(e_id);
         }
     }
 
@@ -1595,7 +1611,8 @@ void HexMesh::getSurfaceDataWireframeFaces(
         assert(f.vs.size() == 4);
         for (size_t j = 0; j < 4; j++) {
             uint32_t v_id = f.vs.at(j);
-            glm::vec4 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
+            glm::vec4 vertexPosition(
+                    mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
             hexahedralCellFace->vertexPositions[j] = vertexPosition;
         }
 

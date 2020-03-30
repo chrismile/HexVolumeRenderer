@@ -26,28 +26,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ImGui/ImGuiWrapper.hpp>
+#ifndef HEXVOLUMERENDERER_POINTTOLINEDISTANCE_HPP
+#define HEXVOLUMERENDERER_POINTTOLINEDISTANCE_HPP
 
-#include "QualityFilter.hpp"
+#include <glm/glm.hpp>
 
-void QualityFilter::filterMesh(HexMeshPtr meshIn) {
-    output = meshIn;
-    HexaLab::Mesh& mesh = meshIn->getHexaLabMesh();
+/**
+ * Computes the distance of a point to a line segment.
+ * See: http://geomalgorithms.com/a02-_lines.html
+ *
+ * @param p The position of the point.
+ * @param l0 The first line point.
+ * @param l1 The second line point.
+ * @return The distance of p to the line segment.
+ */
+float distanceToLineSegment(const glm::vec3& p, const glm::vec3& l0, const glm::vec3& l1);
 
-    for (size_t i = 0; i < mesh.cells.size(); ++i) {
-        HexaLab::Cell& cell = mesh.cells.at(i);
-        if (1.0f - mesh.normalized_hexa_quality.at(i) < filterRatio) {
-            mesh.mark(cell);
-        }
-    }
-    dirty = false;
-}
-
-void QualityFilter::renderGui() {
-    if (ImGui::Begin("Quality Filter", &showFilterWindow)) {
-        if (ImGui::SliderFloat("Threshold", &filterRatio, 0.0f, 1.0f)) {
-            dirty = true;
-        }
-    }
-    ImGui::End();
-}
+#endif //HEXVOLUMERENDERER_POINTTOLINEDISTANCE_HPP

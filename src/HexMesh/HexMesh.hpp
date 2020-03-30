@@ -106,7 +106,13 @@ public:
     bool isDirty() { return dirty; }
 
     // For filters
-    HexaLab::Mesh& getMesh();
+    HexaLab::Mesh& getHexaLabMesh();
+
+    // For tube generation
+    Mesh& getBaseComplexMesh();
+    Singularity& getBaseComplexMeshSingularity();
+    Frame& getBaseComplexMeshFrame();
+
 
     /**
      * Get the triangle data of the boundary surface of the hexahedral mesh.
@@ -269,6 +275,11 @@ public:
             std::vector<HexahedralCellFace>& hexahedralCellFaces,
             bool onlyBoundary = false,
             bool useGlowColors = false);
+
+    static const glm::vec4 glowColorRegular;
+    static const glm::vec4 glowColorSingular;
+    static const glm::vec4 outlineColorRegular;
+    static const glm::vec4 outlineColorSingular;
 
 private:
     void rebuildInternalRepresentationIfNecessary();

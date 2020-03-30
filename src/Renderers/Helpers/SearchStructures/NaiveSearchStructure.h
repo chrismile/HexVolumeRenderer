@@ -26,28 +26,47 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ImGui/ImGuiWrapper.hpp>
+#ifndef NAIVE_SEARCH_STRUCTURE_H_
+#define NAIVE_SEARCH_STRUCTURE_H_
 
-#include "QualityFilter.hpp"
+#include <vector>
+#include "SearchStructure.hpp"
 
-void QualityFilter::filterMesh(HexMeshPtr meshIn) {
-    output = meshIn;
-    HexaLab::Mesh& mesh = meshIn->getHexaLabMesh();
-
-    for (size_t i = 0; i < mesh.cells.size(); ++i) {
-        HexaLab::Cell& cell = mesh.cells.at(i);
-        if (1.0f - mesh.normalized_hexa_quality.at(i) < filterRatio) {
-            mesh.mark(cell);
-        }
+/**
+ * A naive O(n^2) search structure that always returns all points.
+ */
+class NaiveSearchStructure : public SearchStructure
+{
+public:
+    /**
+     * Builds a k-d-tree from the passed point array.
+     * @param points The point array.
+     */
+    void build(const std::vector<IndexedPoint*>& points) {
+        this->points = points;
     }
-    dirty = false;
-}
 
-void QualityFilter::renderGui() {
-    if (ImGui::Begin("Quality Filter", &showFilterWindow)) {
-        if (ImGui::SliderFloat("Threshold", &filterRatio, 0.0f, 1.0f)) {
-            dirty = true;
-        }
+    /**
+     * Performs an area search in the k-d-tree and returns all points within a certain bounding box.
+     * @param box The bounding box.
+     * @return The points stored in the k-d-tree inside of the bounding box.
+     */
+    std::vector<IndexedPoint*> findPointsInAxisAlignedBox(const AxisAlignedBox &box) {
+        return points;
     }
-    ImGui::End();
-}
+
+    /**
+     * Performs an area search in the k-d-tree and returns all points within a certain distance to some center point.
+     * @param centerPoint The center point.
+     * @param radius The search radius.
+     * @return The points stored in the k-d-tree inside of the search radius.
+     */
+    std::vector<IndexedPoint*> findPointsInSphere(const Vec3& center, Real radius) {
+        return points;
+    }
+
+private:
+    std::vector<IndexedPoint*> points;
+};
+
+#endif //NAIVE_SEARCH_STRUCTURE_H_

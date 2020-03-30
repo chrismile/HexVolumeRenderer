@@ -26,12 +26,28 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <unordered_set>
+#include <queue>
+#include <omp.h>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/norm.hpp>
+
+#ifdef USE_CORK
+#include <cork.h>
+#endif
+
 #include <Math/Math.hpp>
 #include <Utils/File/Logfile.hpp>
+
+#include "BaseComplex/global_types.h"
+#include "Renderers/Helpers/PointToLineDistance.hpp"
+#include "Renderers/Helpers/SearchStructures/KDTree.hpp"
+#include "HexMesh/HexMesh.hpp"
 #include "Tubes.hpp"
 
 void addHemisphereToMesh_Union(
-        const glm::vec3& center, glm::vec3 tangent, glm::vec3 normal, size_t indexOffset,
+        const glm::vec3& center, glm::vec3 tangent, glm::vec3 normal,
         float tubeRadius, int numLongitudeSubdivisions, int numLatitudeSubdivisions, bool isStartHemisphere,
         std::vector<uint32_t>& triangleIndices, std::vector<glm::vec3>& vertexPositions) {
     glm::vec3 binormal = glm::cross(normal, tangent);
@@ -42,9 +58,9 @@ void addHemisphereToMesh_Union(
     float theta; // azimuth;
     float phi; // zenith;
 
-    size_t vertexIndexOffset = vertexPositions.size() - indexOffset - numLongitudeSubdivisions;
+    size_t vertexIndexOffset = vertexPositions.size() - numLongitudeSubdivisions;
     for (int lat = 1; lat <= numLatitudeSubdivisions; lat++) {
-        float phi = sgl::HALF_PI * (1.0f - float(lat) / numLatitudeSubdivisions);
+        phi = sgl::HALF_PI * (1.0f - float(lat) / numLatitudeSubdivisions);
         for (int lon = 0; lon < numLongitudeSubdivisions; lon++) {
             theta = -sgl::TWO_PI * float(lon) / numLongitudeSubdivisions;
 
@@ -75,51 +91,51 @@ void addHemisphereToMesh_Union(
     for (int lat = 0; lat < numLatitudeSubdivisions; lat++) {
         for (int lon = 0; lon < numLongitudeSubdivisions; lon++) {
             if (isStartHemisphere && lat == 0) {
-                triangleIndices.push_back(indexOffset +
+                triangleIndices.push_back(
                                           (2*numLongitudeSubdivisions-lon)%numLongitudeSubdivisions
                                           + (lat)*numLongitudeSubdivisions);
-                triangleIndices.push_back(indexOffset +
+                triangleIndices.push_back(
                                           (2*numLongitudeSubdivisions-lon-1)%numLongitudeSubdivisions
                                           + (lat)*numLongitudeSubdivisions);
-                triangleIndices.push_back(indexOffset + vertexIndexOffset
+                triangleIndices.push_back(vertexIndexOffset
                                           + (lon)%numLongitudeSubdivisions
                                           + (lat+1)*numLongitudeSubdivisions);
-                triangleIndices.push_back(indexOffset +
+                triangleIndices.push_back(
                                           (2*numLongitudeSubdivisions-lon-1)%numLongitudeSubdivisions
                                           + (lat)*numLongitudeSubdivisions);
-                triangleIndices.push_back(indexOffset + vertexIndexOffset
+                triangleIndices.push_back(vertexIndexOffset
                                           + (lon+1)%numLongitudeSubdivisions
                                           + (lat+1)*numLongitudeSubdivisions);
-                triangleIndices.push_back(indexOffset + vertexIndexOffset
+                triangleIndices.push_back(vertexIndexOffset
                                           + (lon)%numLongitudeSubdivisions
                                           + (lat+1)*numLongitudeSubdivisions);
             } else if (lat < numLatitudeSubdivisions-1) {
-                triangleIndices.push_back(indexOffset + vertexIndexOffset
+                triangleIndices.push_back(vertexIndexOffset
                                           + (lon)%numLongitudeSubdivisions
                                           + (lat)*numLongitudeSubdivisions);
-                triangleIndices.push_back(indexOffset + vertexIndexOffset
+                triangleIndices.push_back(vertexIndexOffset
                                           + (lon+1)%numLongitudeSubdivisions
                                           + (lat)*numLongitudeSubdivisions);
-                triangleIndices.push_back(indexOffset + vertexIndexOffset
+                triangleIndices.push_back(vertexIndexOffset
                                           + (lon)%numLongitudeSubdivisions
                                           + (lat+1)*numLongitudeSubdivisions);
-                triangleIndices.push_back(indexOffset + vertexIndexOffset
+                triangleIndices.push_back(vertexIndexOffset
                                           + (lon+1)%numLongitudeSubdivisions
                                           + (lat)*numLongitudeSubdivisions);
-                triangleIndices.push_back(indexOffset + vertexIndexOffset
+                triangleIndices.push_back(vertexIndexOffset
                                           + (lon+1)%numLongitudeSubdivisions
                                           + (lat+1)*numLongitudeSubdivisions);
-                triangleIndices.push_back(indexOffset + vertexIndexOffset
+                triangleIndices.push_back(vertexIndexOffset
                                           + (lon)%numLongitudeSubdivisions
                                           + (lat+1)*numLongitudeSubdivisions);
             } else {
-                triangleIndices.push_back(indexOffset + vertexIndexOffset
+                triangleIndices.push_back(vertexIndexOffset
                                           + (lon)%numLongitudeSubdivisions
                                           + (lat)*numLongitudeSubdivisions);
-                triangleIndices.push_back(indexOffset + vertexIndexOffset
+                triangleIndices.push_back(vertexIndexOffset
                                           + (lon+1)%numLongitudeSubdivisions
                                           + (lat)*numLongitudeSubdivisions);
-                triangleIndices.push_back(indexOffset + vertexIndexOffset
+                triangleIndices.push_back(vertexIndexOffset
                                           + 0
                                           + (lat+1)*numLongitudeSubdivisions);
             }
@@ -127,12 +143,9 @@ void addHemisphereToMesh_Union(
     }
 }
 
-template<typename T>
-void createCappedTriangleTubesRenderDataCPU_Union(
-        const std::vector<std::vector<glm::vec3>>& lineCentersList,
-        const std::vector<std::vector<T>>& lineAttributesList,
+void createCappedTubeCylinder(
+        const glm::vec3& point0, const glm::vec3& point1,
         float tubeRadius,
-        bool tubeClosed,
         int numCircleSubdivisions,
         std::vector<uint32_t>& triangleIndices,
         std::vector<glm::vec3>& vertexPositions) {
@@ -140,155 +153,266 @@ void createCappedTriangleTubesRenderDataCPU_Union(
         initGlobalCircleVertexPositions(numCircleSubdivisions, tubeRadius);
     }
 
-    assert(lineCentersList.size() == lineAttributesList.size());
-    for (size_t lineId = 0; lineId < lineCentersList.size(); lineId++) {
-        const std::vector<glm::vec3>& lineCenters = lineCentersList.at(lineId);
-        const std::vector<T>& lineAttributes = lineAttributesList.at(lineId);
-        assert(lineCenters.size() == lineAttributes.size());
-        size_t n = lineCenters.size();
-        size_t indexOffset = vertexPositions.size();
+    glm::vec3 normal0, normal1;
 
-        // Assert that we have a valid input data range
-        if (tubeClosed && n < 3) {
-            sgl::Logfile::get()->writeError(
-                    "ERROR in createCappedTriangleTubesRenderDataCPU: Closed tube too short.");
-            return;
-        }
-        if (!tubeClosed && n < 2) {
-            sgl::Logfile::get()->writeError(
-                    "ERROR in createCappedTriangleTubesRenderDataCPU: Open tube too short.");
-            return;
-        }
+    glm::vec3 lastLineNormal(1.0f, 0.0f, 0.0f);
+    std::vector<glm::vec3> lineNormals;
+    glm::vec3 tangent = point1 - point0;
+    float lineSegmentLength = glm::length(tangent);
 
-        glm::vec3 lastLineNormal(1.0f, 0.0f, 0.0f);
-        std::vector<glm::vec3> lineNormals;
-        int numValidLinePoints = 0;
-        for (size_t i = 0; i < n; i++) {
-            glm::vec3 tangent;
-            if (!tubeClosed && i == 0) {
-                tangent = lineCenters[i+1] - lineCenters[i];
-            } else if (!tubeClosed && i == n - 1) {
-                tangent = lineCenters[i] - lineCenters[i-1];
-            } else {
-                tangent = (lineCenters[(i+1)%n] - lineCenters[(i-1+n)%n]);
+    if (lineSegmentLength < 0.0001f) {
+        // In case the two vertices are almost identical, just skip this path line segment
+        return;
+    }
+    tangent = glm::normalize(tangent);
+
+    insertOrientedCirclePoints(
+            point0, tangent, lastLineNormal, vertexPositions);
+    normal0 = glm::vec3(lastLineNormal.x, lastLineNormal.y, lastLineNormal.z);
+    insertOrientedCirclePoints(
+            point1, tangent, lastLineNormal, vertexPositions);
+    normal1 = glm::vec3(lastLineNormal.x, lastLineNormal.y, lastLineNormal.z);
+
+    for (int j = 0; j < numCircleSubdivisions; j++) {
+        // Build two CCW triangles (one quad) for each side
+        // Triangle 1
+        triangleIndices.push_back(0*numCircleSubdivisions+j);
+        triangleIndices.push_back(0*numCircleSubdivisions+(j+1)%numCircleSubdivisions);
+        triangleIndices.push_back(1*numCircleSubdivisions+(j+1)%numCircleSubdivisions);
+
+        // Triangle 2
+        triangleIndices.push_back(0*numCircleSubdivisions+j);
+        triangleIndices.push_back(1*numCircleSubdivisions+(j+1)%numCircleSubdivisions);
+        triangleIndices.push_back(1*numCircleSubdivisions+j);
+    }
+
+    /*
+     * Close the tube with two hemisphere caps at the ends.
+     */
+    int numLongitudeSubdivisions = numCircleSubdivisions; // azimuth
+    int numLatitudeSubdivisions = std::ceil(numCircleSubdivisions/2); // zenith
+
+    // Hemisphere at the start
+    glm::vec3 center0 = point0;
+    glm::vec3 tangent0 = point0 - point1;
+    tangent0 = glm::normalize(tangent0);
+
+    // Hemisphere at the end
+    glm::vec3 center1 = point1;
+    glm::vec3 tangent1 = point1 - point0;
+    tangent1 = glm::normalize(tangent1);
+
+
+    addHemisphereToMesh_Union(
+            center1, tangent1, normal1, tubeRadius,
+            numLongitudeSubdivisions, numLatitudeSubdivisions, false,
+            triangleIndices, vertexPositions);
+    addHemisphereToMesh_Union(
+            center0, tangent0, normal0, tubeRadius,
+            numLongitudeSubdivisions, numLatitudeSubdivisions, true,
+            triangleIndices, vertexPositions);
+}
+
+
+void createCappedTriangleTubesUnionRenderDataCPU(
+        HexMeshPtr hexMesh,
+        float tubeRadius,
+        int numCircleSubdivisions,
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<glm::vec3>& vertexPositions,
+        std::vector<glm::vec3>& vertexNormals,
+        std::vector<glm::vec3>& vertexTangents,
+        std::vector<glm::vec4>& vertexColors,
+        bool useGlowColors) {
+    /*
+     * TODO:
+     * - Build computation tree.
+     * - Compute union of all tubes.
+     *
+     * When we have the merged mesh:
+     * - For all vertices: Get closest line segment, and closest of two line segment points.
+     * - Simplification: We know that the tube radius is the maximum search radius for any point.
+     * => Rather:
+     * - Get closest grid vertex.
+     * - For all edges incident with grid vertex: See which one has the lowest point to line segment distance.
+     * - Assign normal and color based on direction from grid vertex to triangle mesh vertex.
+     * - Assign tangent based on line segment direction.
+     *
+     * In the end:
+     * - Parallelize.
+     */
+    Mesh& mesh = hexMesh->getBaseComplexMesh();
+    Singularity& si = hexMesh->getBaseComplexMeshSingularity();
+    int maxNumThreads = omp_get_max_threads();
+
+    if (mesh.Es.size() == 0) {
+        return;
+    }
+
+    // Reserve data outside of loop to make sure that memory reservations are kept to a minimum.
+    std::vector<uint32_t>& unionMeshTriangleIndices = triangleIndices;
+    std::vector<glm::vec3>& unionMeshVertexPositions = vertexPositions;
+    std::vector<uint32_t> currentTubeTriangleIndices;
+    std::vector<glm::vec3> currentTubeVertexPositions;
+    std::vector<glm::vec3> edgeVertexPositions;
+    edgeVertexPositions.reserve(2);
+
+    // Successively compute the union with newly added edges sharing a hex mesh vertex with the previous union elements.
+    std::queue<uint32_t> openEdgeQueue;
+    std::unordered_set<uint32_t> closedEdgeSet;
+    openEdgeQueue.push(mesh.Es.front().id);
+    closedEdgeSet.insert(mesh.Es.front().id);
+    while (!openEdgeQueue.empty()) {
+        uint32_t& e_id = openEdgeQueue.front();
+        Hybrid_E& e = mesh.Es.at(e_id);
+        openEdgeQueue.pop();
+
+        // Add all neighbors and get the vertex positions of the two points connected by the edge.
+        for (uint32_t v_id : e.vs) {
+            Hybrid_V& v = mesh.Vs.at(v_id);
+            edgeVertexPositions.push_back(
+                    glm::vec3(mesh.V(0, v_id), mesh.V(1, v_id), mesh.V(2, v_id)));
+            for (uint32_t neighbor_e_id : v.neighbor_es) {
+                if (closedEdgeSet.find(neighbor_e_id) == closedEdgeSet.end()) {
+                    openEdgeQueue.push(neighbor_e_id);
+                    closedEdgeSet.insert(neighbor_e_id);
+                }
             }
-            float lineSegmentLength = glm::length(tangent);
-
-            if (lineSegmentLength < 0.0001f) {
-                // In case the two vertices are almost identical, just skip this path line segment
-                continue;
-            }
-            tangent = glm::normalize(tangent);
-
-            insertOrientedCirclePoints(
-                    lineCenters.at(i), tangent, lastLineNormal, vertexPositions);
-            lineNormals.push_back(glm::vec3(lastLineNormal.x, lastLineNormal.y, lastLineNormal.z));
-            numValidLinePoints++;
         }
 
-        if (numValidLinePoints == 1) {
-            // Only one vertex left -> Output nothing (tube consisting only of one point).
-            vertexPositions.pop_back();
-            continue;
+        // Get the mesh for the current edge.
+        createCappedTubeCylinder(
+                edgeVertexPositions.at(0), edgeVertexPositions.at(1), tubeRadius,
+                numCircleSubdivisions, currentTubeTriangleIndices, currentTubeVertexPositions);
+
+        // In first iteration: Just set the union mesh to the first tube.
+        if (unionMeshTriangleIndices.size() == 0) {
+            unionMeshTriangleIndices = currentTubeTriangleIndices;
+            unionMeshVertexPositions = currentTubeVertexPositions;
         }
 
-        for (int i = 0; i < numValidLinePoints-1; i++) {
-            for (int j = 0; j < numCircleSubdivisions; j++) {
-                // Build two CCW triangles (one quad) for each side
-                // Triangle 1
-                triangleIndices.push_back(indexOffset + i*numCircleSubdivisions+j);
-                triangleIndices.push_back(indexOffset + i*numCircleSubdivisions+(j+1)%numCircleSubdivisions);
-                triangleIndices.push_back(indexOffset + ((i+1)%numValidLinePoints)*numCircleSubdivisions+(j+1)%numCircleSubdivisions);
-
-                // Triangle 2
-                triangleIndices.push_back(indexOffset + i*numCircleSubdivisions+j);
-                triangleIndices.push_back(indexOffset + ((i+1)%numValidLinePoints)*numCircleSubdivisions+(j+1)%numCircleSubdivisions);
-                triangleIndices.push_back(indexOffset + ((i+1)%numValidLinePoints)*numCircleSubdivisions+j);
-            }
+#ifdef USE_CORK
+        CorkTriMesh inputUnionTriMesh, inputTubeMesh, outputUnionTriMesh;
+        inputUnionTriMesh.n_triangles = unionMeshTriangleIndices.size() / 3;
+        inputUnionTriMesh.n_vertices = unionMeshVertexPositions.size();
+        inputUnionTriMesh.triangles = &unionMeshTriangleIndices.front();
+        inputUnionTriMesh.vertices = &unionMeshVertexPositions.front().x;
+        inputTubeMesh.n_triangles = currentTubeTriangleIndices.size() / 3;
+        inputTubeMesh.n_vertices = currentTubeVertexPositions.size();
+        inputTubeMesh.triangles = &currentTubeTriangleIndices.front();
+        inputTubeMesh.vertices = &currentTubeVertexPositions.front().x;
+        computeUnion(inputUnionTriMesh, inputTubeMesh, &outputUnionTriMesh);
+        unionMeshTriangleIndices.resize(outputUnionTriMesh.n_triangles * 3);
+        unionMeshVertexPositions.resize(outputUnionTriMesh.n_vertices);
+        for (size_t i = 0; i < unionMeshTriangleIndices.size(); i++) {
+            unionMeshTriangleIndices.at(i) = outputUnionTriMesh.triangles[i];
         }
+        for (size_t i = 0; i < unionMeshVertexPositions.size(); i++) {
+            unionMeshVertexPositions.at(i) = glm::vec3(
+                    outputUnionTriMesh.vertices[i*3],
+                    outputUnionTriMesh.vertices[i*3+1],
+                    outputUnionTriMesh.vertices[i*3+2]);
+        }
+        freeCorkTriMesh(&outputUnionTriMesh);
+#else
+        // CSG not supported - just append the triangle data.
+        sgl::Logfile::get()->write("createCappedTriangleTubesUnionRenderDataCPU: CSG not supported.");
+        uint32_t indexOffset = unionMeshVertexPositions.size();
+        for (uint32_t idx : currentTubeTriangleIndices) {
+            unionMeshTriangleIndices.push_back(indexOffset + idx);
+        }
+        unionMeshVertexPositions.insert(
+                unionMeshVertexPositions.end(), currentTubeVertexPositions.begin(), currentTubeVertexPositions.end());
+#endif
 
-        if (tubeClosed) {
-            /*
-             * The tube is supposed to be closed. However, as we iteratively construct an artificial normal for
-             * each line point perpendicular to the approximated line tangent, the normals at the begin and the
-             * end of the tube do not match (i.e. the normal is not continuous).
-             * Thus, the idea is to connect the begin and the end of the tube in such a way that the length of
-             * the connecting edges is minimized. This is done by computing the angle between the two line
-             * normals and shifting the edge indices by a necessary offset.
-             */
-            glm::vec3 normalA = lineNormals[numValidLinePoints-1];
-            glm::vec3 normalB = lineNormals[0];
-            float normalAngleDifference = std::atan2(
-                    glm::length(glm::cross(normalA, normalB)), glm::dot(normalA, normalB));
-            normalAngleDifference = std::fmod(normalAngleDifference + sgl::TWO_PI, sgl::TWO_PI);
-            int jOffset = std::round(normalAngleDifference / (sgl::TWO_PI) * numCircleSubdivisions);
-            for (int j = 0; j < numCircleSubdivisions; j++) {
-                // Build two CCW triangles (one quad) for each side
-                // Triangle 1
-                triangleIndices.push_back(indexOffset + (numValidLinePoints-1)*numCircleSubdivisions+(j)%numCircleSubdivisions);
-                triangleIndices.push_back(indexOffset + (numValidLinePoints-1)*numCircleSubdivisions+(j+1)%numCircleSubdivisions);
-                triangleIndices.push_back(indexOffset + 0*numCircleSubdivisions+(j+1+jOffset)%numCircleSubdivisions);
+        // Clean-up.
+        edgeVertexPositions.clear();
+        currentTubeTriangleIndices.clear();
+        currentTubeVertexPositions.clear();
+    }
 
-                // Triangle 2
-                triangleIndices.push_back(indexOffset + (numValidLinePoints-1)*numCircleSubdivisions+(j)%numCircleSubdivisions);
-                triangleIndices.push_back(indexOffset + 0*numCircleSubdivisions+(j+1+jOffset)%numCircleSubdivisions);
-                triangleIndices.push_back(indexOffset + 0*numCircleSubdivisions+(j+jOffset)%numCircleSubdivisions);
-            }
-        } else {
-            /*
-             * If the tube is open, close it with two hemisphere caps at the ends.
-             */
-            int numLongitudeSubdivisions = numCircleSubdivisions; // azimuth
-            int numLatitudeSubdivisions = std::ceil(numCircleSubdivisions/2); // zenith
+    // Build a search structure on the hexahedral mesh vertices.
+    KDTree kdTree;
+    std::vector<IndexedPoint> indexedPoints;
+    std::vector<IndexedPoint*> indexedPointsPointers;
+    indexedPoints.resize(mesh.Vs.size());
+    indexedPointsPointers.reserve(mesh.Vs.size());
+    for (size_t i = 0; i < mesh.Vs.size(); i++) {
+        Hybrid_V& v = mesh.Vs.at(i);
+        IndexedPoint* point = &indexedPoints.at(i);
+        point->index = v.id;
+        point->position = glm::vec3(mesh.V(0, v.id), mesh.V(1, v.id), mesh.V(2, v.id));
+        indexedPointsPointers.push_back(point);
+    }
+    kdTree.build(indexedPointsPointers);
 
-            // Hemisphere at the start
-            glm::vec3 center0 = lineCenters[0];
-            glm::vec3 tangent0 = lineCenters[0] - lineCenters[1];
-            tangent0 = glm::normalize(tangent0);
-            glm::vec3 normal0 = lineNormals[0];
-
-            // Hemisphere at the end
-            glm::vec3 center1 = lineCenters[n-1];
-            glm::vec3 tangent1 = lineCenters[n-1] - lineCenters[n-2];
-            tangent1 = glm::normalize(tangent1);
-            glm::vec3 normal1 = lineNormals[numValidLinePoints-1];
-
-
-            addHemisphereToMesh_Union(
-                    center1, tangent1, normal1, tubeRadius, indexOffset,
-                    numLongitudeSubdivisions, numLatitudeSubdivisions, false,
-                    triangleIndices, vertexPositions);
-            addHemisphereToMesh_Union(
-                    center0, tangent0, normal0, tubeRadius, indexOffset,
-                    numLongitudeSubdivisions, numLatitudeSubdivisions, true,
-                    triangleIndices, vertexPositions);
+    // Determine which edges are regular and which singular.
+    const glm::vec4 regularColor = useGlowColors ? HexMesh::glowColorRegular : HexMesh::outlineColorRegular;
+    const glm::vec4 singularColor = useGlowColors ? HexMesh::glowColorSingular : HexMesh::outlineColorSingular;
+    std::unordered_set<uint32_t> singularEdgeIds;
+    for (Singular_E& se : si.SEs) {
+        for (uint32_t e_id : se.es_link) {
+            singularEdgeIds.insert(e_id);
         }
     }
+
+    // Now, for all triangle mesh vertices, find the closest point and take the attributes of the closest edge.
+    const float EPSILON = 1e-5f;
+    vertexNormals.reserve(unionMeshVertexPositions.size());
+    vertexTangents.reserve(unionMeshVertexPositions.size());
+    vertexColors.reserve(unionMeshVertexPositions.size());
+    for (size_t i = 0; i < unionMeshVertexPositions.size(); i++) {
+        // Find the closest vertex in the hexahedral mesh for the current triangle mesh vertex.
+        glm::vec3& triangleMeshVertexPosition = unionMeshVertexPositions.at(i);
+        std::vector<IndexedPoint*> pointsInRadius =
+                kdTree.findPointsInSphere(triangleMeshVertexPosition, tubeRadius + EPSILON);
+        assert(!pointsInRadius.empty());
+        std::sort(pointsInRadius.begin(), pointsInRadius.end(),
+                [triangleMeshVertexPosition](IndexedPoint* a, IndexedPoint* b) {
+            return glm::length2(triangleMeshVertexPosition - a->position)
+                    > glm::length2(triangleMeshVertexPosition - b->position);
+        });
+        IndexedPoint* closestPoint = pointsInRadius.front();
+        Hybrid_V& v = mesh.Vs.at(closestPoint->index);
+
+        // Now, find out which hexahedral mesh edge is closest to the triangle mesh vertex.
+        float minimumEdgeDistance = -FLT_MAX;
+        int minimumEdgeDistanceIndex = 0;
+        int currentIndex = 0;
+        for (uint32_t e_id : v.neighbor_es) {
+            Hybrid_E& e = mesh.Es.at(e_id);
+            for (uint32_t v_id : e.vs) {
+                Hybrid_V& v = mesh.Vs.at(v_id);
+                edgeVertexPositions.push_back(
+                        glm::vec3(mesh.V(0, v_id), mesh.V(1, v_id), mesh.V(2, v_id)));
+            }
+            float edgeDistance = distanceToLineSegment(
+                    unionMeshVertexPositions.at(i), edgeVertexPositions.at(0), edgeVertexPositions.at(1));
+            if (edgeDistance < minimumEdgeDistance) {
+                minimumEdgeDistance = edgeDistance;
+                minimumEdgeDistanceIndex = currentIndex;
+            }
+            currentIndex++;
+            edgeVertexPositions.clear();
+        }
+
+        // Get the positions of the vertices connected by the edge.
+        Hybrid_E& minimum_dist_e = mesh.Es.at(v.neighbor_es.at(minimumEdgeDistanceIndex));
+        for (uint32_t v_id : minimum_dist_e.vs) {
+            Hybrid_V& v = mesh.Vs.at(v_id);
+            edgeVertexPositions.push_back(
+                    glm::vec3(mesh.V(0, v_id), mesh.V(1, v_id), mesh.V(2, v_id)));
+        }
+
+        // Get the attributes of the edge and associate them with the vertex.
+        vertexNormals.push_back(glm::normalize(unionMeshVertexPositions.at(i) - closestPoint->position));
+        vertexTangents.push_back(glm::normalize(edgeVertexPositions.at(1) - edgeVertexPositions.at(0)));
+        bool isSingular = singularEdgeIds.find(minimum_dist_e.id) != singularEdgeIds.end();
+        if (isSingular) {
+            vertexColors.push_back(singularColor);
+        } else {
+            vertexColors.push_back(regularColor);
+        }
+        edgeVertexPositions.clear();
+    }
 }
-
-
-template<typename T>
-void createCappedTriangleTubesUnionRenderDataCPU(
-        const std::vector<std::vector<glm::vec3>>& lineCentersList,
-        const std::vector<std::vector<T>>& lineAttributesList,
-        float tubeRadius,
-        int numCircleSubdivisions,
-        std::vector<uint32_t>& triangleIndices,
-        std::vector<glm::vec3>& vertexPositions,
-        std::vector<glm::vec3>& vertexNormals,
-        std::vector<glm::vec3>& vertexTangents,
-        std::vector<T>& vertexAttributes) {
-    ;
-}
-
-template
-void createCappedTriangleTubesUnionRenderDataCPU<glm::vec4>(
-        const std::vector<std::vector<glm::vec3>>& lineCentersList,
-        const std::vector<std::vector<glm::vec4>>& lineAttributesList,
-        float tubeRadius,
-        int numCircleSubdivisions,
-        std::vector<uint32_t>& triangleIndices,
-        std::vector<glm::vec3>& vertexPositions,
-        std::vector<glm::vec3>& vertexNormals,
-        std::vector<glm::vec3>& vertexTangents,
-        std::vector<glm::vec4>& vertexAttributes);

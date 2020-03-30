@@ -30,7 +30,11 @@
 #define HEXVOLUMERENDERER_TUBES_HPP
 
 #include <vector>
+#include <memory>
 #include <glm/glm.hpp>
+
+class HexMesh;
+typedef std::shared_ptr<HexMesh> HexMeshPtr;
 
 template<typename T>
 void createTriangleTubesRenderDataCPU(
@@ -68,17 +72,16 @@ void createCappedTriangleTubesRenderDataCPU(
         std::vector<glm::vec3>& vertexTangents,
         std::vector<T>& vertexAttributes);
 
-template<typename T>
 void createCappedTriangleTubesUnionRenderDataCPU(
-        const std::vector<std::vector<glm::vec3>>& lineCentersList,
-        const std::vector<std::vector<T>>& lineAttributesList,
+        HexMeshPtr hexMesh,
         float tubeRadius,
         int numCircleSubdivisions,
         std::vector<uint32_t>& triangleIndices,
         std::vector<glm::vec3>& vertexPositions,
         std::vector<glm::vec3>& vertexNormals,
         std::vector<glm::vec3>& vertexTangents,
-        std::vector<T>& vertexAttributes);
+        std::vector<glm::vec4>& vertexColors,
+        bool useGlowColors = false);
 
 template<typename T>
 void createLineTubesRenderDataCPU(
@@ -140,18 +143,6 @@ void createCappedTriangleTubesRenderDataCPU<glm::vec4>(
         const std::vector<std::vector<glm::vec4>>& lineAttributesList,
         float tubeRadius,
         bool tubeClosed,
-        int numCircleSubdivisions,
-        std::vector<uint32_t>& triangleIndices,
-        std::vector<glm::vec3>& vertexPositions,
-        std::vector<glm::vec3>& vertexNormals,
-        std::vector<glm::vec3>& vertexTangents,
-        std::vector<glm::vec4>& vertexAttributes);
-
-extern template
-void createCappedTriangleTubesUnionRenderDataCPU<glm::vec4>(
-        const std::vector<std::vector<glm::vec3>>& lineCentersList,
-        const std::vector<std::vector<glm::vec4>>& lineAttributesList,
-        float tubeRadius,
         int numCircleSubdivisions,
         std::vector<uint32_t>& triangleIndices,
         std::vector<glm::vec3>& vertexPositions,

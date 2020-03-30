@@ -137,7 +137,8 @@ void ClearViewRenderer::loadFocusRepresentation() {
         hexahedralCellFacesBuffer = sgl::Renderer->createGeometryBuffer(
                 hexahedralCellFaces.size()*sizeof(HexahedralCellFace), (void*)&hexahedralCellFaces.front(),
                 sgl::SHADER_STORAGE_BUFFER);
-    } else if (lineRenderingMode == LINE_RENDERING_MODE_TUBES) {
+    } else if (lineRenderingMode == LINE_RENDERING_MODE_TUBES || lineRenderingMode == LINE_RENDERING_MODE_TUBES_CAPPED
+            || lineRenderingMode == LINE_RENDERING_MODE_TUBES_UNION) {
         std::vector<glm::vec3> lineVertices;
         std::vector<glm::vec4> lineColors;
         mesh->getCompleteWireframeData(
@@ -167,9 +168,20 @@ void ClearViewRenderer::loadFocusRepresentation() {
         std::vector<glm::vec3> vertexNormals;
         std::vector<glm::vec3> vertexTangents;
         std::vector<glm::vec4> vertexColors;
-        createTriangleTubesRenderDataCPU(
-                lineCentersList, lineColorsList, lineWidth * 0.5f, 8,
-                triangleIndices, vertexPositions, vertexNormals, vertexTangents, vertexColors);
+        if (lineRenderingMode == LINE_RENDERING_MODE_TUBES) {
+            createTriangleTubesRenderDataGPU(
+                    lineCentersList, lineColorsList, lineWidth * 0.5f, 8,
+                    triangleIndices, vertexPositions, vertexNormals, vertexTangents, vertexColors);
+        } else if (lineRenderingMode == LINE_RENDERING_MODE_TUBES_CAPPED) {
+            createCappedTriangleTubesRenderDataCPU(
+                    lineCentersList, lineColorsList, lineWidth * 0.5f, false, 8,
+                    triangleIndices, vertexPositions, vertexNormals, vertexTangents, vertexColors);
+        } else if (lineRenderingMode == LINE_RENDERING_MODE_TUBES_UNION) {
+            createCappedTriangleTubesUnionRenderDataCPU(
+                    mesh, lineWidth * 0.5f, 8, triangleIndices, vertexPositions,
+                    vertexNormals, vertexTangents, vertexColors,
+                    lineRenderingStyle == LINE_RENDERING_STYLE_TRON);
+        }
 
         shaderAttributesFocus = sgl::ShaderManager->createShaderAttributes(gatherShaderFocusTubes);
         shaderAttributesFocus->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -302,7 +314,8 @@ void ClearViewRenderer::renderGui() {
             reRender = true;
         }
         if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.004f, "%.4f")) {
-            if (lineRenderingMode == LINE_RENDERING_MODE_TUBES) {
+            if (lineRenderingMode == LINE_RENDERING_MODE_TUBES || lineRenderingMode == LINE_RENDERING_MODE_TUBES_CAPPED
+                    || lineRenderingMode == LINE_RENDERING_MODE_TUBES_UNION) {
                 loadFocusRepresentation();
             }
             reRender = true;
@@ -312,7 +325,7 @@ void ClearViewRenderer::renderGui() {
         }
         if (ImGui::Combo(
                 "Line Rendering", (int*)&lineRenderingMode, LINE_RENDERING_MODE_NAMES,
-                IM_ARRAYSIZE(LINE_RENDERING_MODE_NAMES))) {
+                NUM_LINE_RENDERING_MODES)) {
             loadFocusRepresentation();
             reRender = true;
         }

@@ -19,10 +19,6 @@ else()
 	list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Renderers/Intersection/RayMeshIntersection_Embree.cpp)
 endif()
 
-if(USE_CORK)
-else()
-endif()
-
 #make VERBOSE=1
 
 IF(WIN32)
@@ -30,6 +26,16 @@ IF(WIN32)
 ELSE()
 	add_executable(HexVolumeRenderer ${SOURCES})
 ENDIF()
+
+if(USE_CORK)
+	find_package(Cork REQUIRED)
+	find_package(GMP REQUIRED)
+	include_directories(${CORK_INCLUDE_DIR})
+	add_definitions(-DUSE_CORK)
+	add_definitions(-DUSE_CSG)
+	target_link_libraries(HexVolumeRenderer ${CORK_LIBRARIES})
+	target_link_libraries(HexVolumeRenderer ${GMP_LIBRARIES})
+endif()
 
 if(USE_EMBREE)
 	target_link_libraries(HexVolumeRenderer ${EMBREE_LIBRARIES})

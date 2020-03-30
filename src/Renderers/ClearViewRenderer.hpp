@@ -63,16 +63,25 @@ protected:
     virtual void gather()=0;
     virtual void resolve()=0;
 
+#ifdef USE_CSG
+#else
+#endif
     enum LineRenderingMode {
         LINE_RENDERING_MODE_WIREFRAME_FACES,
         LINE_RENDERING_MODE_BILLBOARD_LINES,
-        LINE_RENDERING_MODE_TUBES
+        LINE_RENDERING_MODE_TUBES,
+        LINE_RENDERING_MODE_TUBES_CAPPED,
+        LINE_RENDERING_MODE_TUBES_UNION,
     };
-    const char *const LINE_RENDERING_MODE_NAMES[3] = {
-            "Wireframe (Faces)", "Billboard Lines", "Tubes"
+    const char *const LINE_RENDERING_MODE_NAMES[5] = {
+            "Wireframe (Faces)", "Billboard Lines", "Tubes", "Tubes (Capped)", "Tubes (Union)"
     };
     const int NUM_LINE_RENDERING_MODES =
-            ((int)(sizeof(LINE_RENDERING_MODE_NAMES) / sizeof(*LINE_RENDERING_MODE_NAMES)));
+#ifdef USE_CSG
+        5;
+#else
+        4;
+#endif
 
     enum LineRenderingStyle {
         LINE_RENDERING_STYLE_HALO,

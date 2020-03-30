@@ -26,28 +26,22 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ImGui/ImGuiWrapper.hpp>
+#include "PointToLineDistance.hpp"
 
-#include "QualityFilter.hpp"
-
-void QualityFilter::filterMesh(HexMeshPtr meshIn) {
-    output = meshIn;
-    HexaLab::Mesh& mesh = meshIn->getHexaLabMesh();
-
-    for (size_t i = 0; i < mesh.cells.size(); ++i) {
-        HexaLab::Cell& cell = mesh.cells.at(i);
-        if (1.0f - mesh.normalized_hexa_quality.at(i) < filterRatio) {
-            mesh.mark(cell);
-        }
+float distanceToLineSegment(const glm::vec3& p, const glm::vec3& l0, const glm::vec3& l1) {
+    glm::vec3 v = l1 - l0;
+    glm::vec3 w = p - l0;
+    float c1 = glm::dot(v, w);
+    if (c1 <= 0.0) {
+        return glm::length(p - l0);
     }
-    dirty = false;
-}
 
-void QualityFilter::renderGui() {
-    if (ImGui::Begin("Quality Filter", &showFilterWindow)) {
-        if (ImGui::SliderFloat("Threshold", &filterRatio, 0.0f, 1.0f)) {
-            dirty = true;
-        }
+    float c2 = glm::dot(v, v);
+    if (c2 <= c1) {
+        return glm::length(p - l1);
     }
-    ImGui::End();
+
+    float b = c1 / c2;
+    glm::vec3 pb = l0 + b * v;
+    return glm::length(p - pb);
 }

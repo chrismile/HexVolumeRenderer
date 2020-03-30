@@ -35,11 +35,12 @@ void addHemisphereToMesh(
         const glm::vec3& center, glm::vec3 tangent, glm::vec3 normal, size_t indexOffset,
         float tubeRadius, int numLongitudeSubdivisions, int numLatitudeSubdivisions, bool isStartHemisphere,
         std::vector<uint32_t>& triangleIndices, std::vector<glm::vec3>& vertexPositions,
-        std::vector<glm::vec3>& vertexNormals, std::vector<T>& vertexAttributes) {
+        std::vector<glm::vec3>& vertexNormals, std::vector<glm::vec3>& vertexTangents,
+        std::vector<T>& vertexAttributes) {
     glm::vec3 binormal = glm::cross(normal, tangent);
-    tangent = tubeRadius * tangent;
-    normal = tubeRadius * normal;
-    binormal = tubeRadius * binormal;
+    glm::vec3 scaledTangent = tubeRadius * tangent;
+    glm::vec3 scaledNormal = tubeRadius * normal;
+    glm::vec3 scaledBinormal = tubeRadius * binormal;
     T attributeValue;
     if (isStartHemisphere) {
         attributeValue = vertexAttributes.at(indexOffset);
@@ -52,7 +53,7 @@ void addHemisphereToMesh(
 
     size_t vertexIndexOffset = vertexPositions.size() - indexOffset - numLongitudeSubdivisions;
     for (int lat = 1; lat <= numLatitudeSubdivisions; lat++) {
-        float phi = sgl::HALF_PI * (1.0f - float(lat) / numLatitudeSubdivisions);
+        phi = sgl::HALF_PI * (1.0f - float(lat) / numLatitudeSubdivisions);
         for (int lon = 0; lon < numLongitudeSubdivisions; lon++) {
             theta = -sgl::TWO_PI * float(lon) / numLongitudeSubdivisions;
 
@@ -63,18 +64,19 @@ void addHemisphereToMesh(
             );
 
             glm::vec3 trafoPt(
-                    pt.x * normal.x + pt.y * binormal.x + pt.z * tangent.x + center.x,
-                    pt.x * normal.y + pt.y * binormal.y + pt.z * tangent.y + center.y,
-                    pt.x * normal.z + pt.y * binormal.z + pt.z * tangent.z + center.z
+                    pt.x * scaledNormal.x + pt.y * scaledBinormal.x + pt.z * scaledTangent.x + center.x,
+                    pt.x * scaledNormal.y + pt.y * scaledBinormal.y + pt.z * scaledTangent.y + center.y,
+                    pt.x * scaledNormal.z + pt.y * scaledBinormal.z + pt.z * scaledTangent.z + center.z
             );
             glm::vec3 normal = glm::normalize(glm::vec3(
-                    pt.x * normal.x + pt.y * binormal.x + pt.z * tangent.x,
-                    pt.x * normal.y + pt.y * binormal.y + pt.z * tangent.y,
-                    pt.x * normal.z + pt.y * binormal.z + pt.z * tangent.z
+                    pt.x * scaledNormal.x + pt.y * scaledBinormal.x + pt.z * scaledTangent.x,
+                    pt.x * scaledNormal.y + pt.y * scaledBinormal.y + pt.z * scaledTangent.y,
+                    pt.x * scaledNormal.z + pt.y * scaledBinormal.z + pt.z * scaledTangent.z
             ));
 
             vertexPositions.push_back(trafoPt);
             vertexNormals.push_back(normal);
+            vertexTangents.push_back(tangent);
             vertexAttributes.push_back(attributeValue);
 
             if (lat == numLatitudeSubdivisions) {
@@ -276,13 +278,13 @@ void createCappedTriangleTubesRenderDataCPU(
 
 
             addHemisphereToMesh(
-                    center1, tangent1, normal1, tubeRadius, indexOffset,
+                    center1, tangent1, normal1, indexOffset, tubeRadius,
                     numLongitudeSubdivisions, numLatitudeSubdivisions, false,
-                    triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
+                    triangleIndices, vertexPositions, vertexNormals, vertexTangents, vertexAttributes);
             addHemisphereToMesh(
-                    center0, tangent0, normal0, tubeRadius, indexOffset,
+                    center0, tangent0, normal0, indexOffset, tubeRadius,
                     numLongitudeSubdivisions, numLatitudeSubdivisions, true,
-                    triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
+                    triangleIndices, vertexPositions, vertexNormals, vertexTangents, vertexAttributes);
         }
     }
 }
