@@ -441,6 +441,11 @@ std::string MainApp::getSelectedMeshFilename() {
     return meshDirectory + sourceDescription.path + "/" + sourceDescription.data.at(selectedMeshIndex - 1);
 }
 
+bool MainApp::getFileSourceContainsDeformationMeshes() {
+    return selectedFileSourceIndex == 2
+            && boost::ends_with(meshDataSetSources[selectedFileSourceIndex], "Deformation");
+}
+
 void MainApp::renderFileSelectionSettingsGui() {
     if (ImGui::Combo(
             "Source", &selectedFileSourceIndex, meshDataSetSources.data(),
@@ -463,12 +468,12 @@ void MainApp::renderFileSelectionSettingsGui() {
     }
 
     // Assume deformed meshes only in source at index 2 for now (don't clutter the UI for other sources).
-    if (selectedFileSourceIndex == 2) {
+    if (getFileSourceContainsDeformationMeshes()) {
         if (ImGui::SliderFloat("deformationFactor", &deformationFactor, 0.0f, 1.0f)) {
             if (selectedFileSourceIndex == currentlyLoadedFileSourceIndex
                     && selectedMeshIndex == currentlySelectedMeshIndex) {
                 // Reload
-                loadHexahedralMesh(getSelectedMeshFilename());
+                onDeformationFactorChanged();
             }
         }
     }
@@ -683,8 +688,8 @@ void normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
     }
 }
 
-void applyVertexDeformationsAndNormalizeVertices(
-        std::vector<glm::vec3>& vertices, std::vector<glm::vec3>& deformations, const float deformationFactor) {
+void applyVertexDeformations(
+        std::vector<glm::vec3>& vertices, const std::vector<glm::vec3>& deformations, const float deformationFactor) {
     float maxDeformation = -FLT_MAX;
     #pragma omp parallel for reduction(max: maxDeformation)
     for (size_t i = 0; i < deformations.size(); i++) {
@@ -719,21 +724,36 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         return;
     }
 
-    std::vector<glm::vec3> vertices;
-    std::vector<uint32_t> cellIndices;
-    std::vector<glm::vec3> deformations;
-    bool loadingSuccessful = it->second->loadHexahedralMeshFromFile(fileName, vertices, cellIndices, deformations);
+    hexMeshVertices.clear();
+    hexMeshCellIndices.clear();
+    hexMeshDeformations.clear();
+    bool loadingSuccessful = it->second->loadHexahedralMeshFromFile(
+            fileName, hexMeshVertices, hexMeshCellIndices, hexMeshDeformations);
     if (loadingSuccessful) {
+        // A copy of the mesh data is stored for allowing the user to alter the deformation factor also after loading.
+        std::vector<glm::vec3> vertices;
+        vertices = hexMeshVertices;
+
         // Assume deformed meshes only in source at index 2 for now (don't clutter the UI for other sources).
-        if (deformationFactor != 0.0f && selectedFileSourceIndex == 2) {
-            applyVertexDeformationsAndNormalizeVertices(vertices, deformations, deformationFactor);
+        if (deformationFactor != 0.0f && getFileSourceContainsDeformationMeshes()) {
+            applyVertexDeformations(vertices, hexMeshDeformations, deformationFactor);
         }
 
         normalizeVertexPositions(vertices);
         inputData = HexMeshPtr(new HexMesh(transferFunctionWindow, *rayMeshIntersection));
-        inputData->setHexMeshData(vertices, cellIndices);
+        inputData->setHexMeshData(vertices, hexMeshCellIndices);
         inputData->setQualityMeasure(selectedQualityMeasure);
     }
+}
+
+void MainApp::onDeformationFactorChanged() {
+    //loadHexahedralMesh(getSelectedMeshFilename());
+    std::vector<glm::vec3> vertices = hexMeshVertices;
+    if (deformationFactor != 0.0f) {
+        applyVertexDeformations(vertices, hexMeshDeformations, deformationFactor);
+    }
+    normalizeVertexPositions(vertices);
+    inputData->updateVertexPositions(vertices);
 }
 
 void MainApp::prepareVisualizationPipeline() {

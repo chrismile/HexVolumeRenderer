@@ -82,7 +82,7 @@ private:
     void renderSceneSettingsGUI();
     /// Update the color space (linear RGB vs. sRGB).
     void updateColorSpaceMode();
-    // Override screenshot function to exclude GUI (if wanted by the user)
+    /// Override screenshot function to exclude GUI (if wanted by the user)
     void saveScreenshot(const std::string &filename);
 
     /// Scene data (e.g., camera, main framebuffer, ...).
@@ -119,6 +119,8 @@ private:
     void loadAvailableDataSetSources();
     void loadSelectedMeshDataSetNames();
     std::string getSelectedMeshFilename();
+    /// Returns true if the selected file source supports deformation meshes (for now a hardcoded feature).
+    bool getFileSourceContainsDeformationMeshes();
     bool hexaLabDataSetsDownloaded = false;
     std::vector<MeshSourceDescription> meshSourceDescriptions;
     std::vector<std::string> meshDataSetSources; //< Contains "Local file..." at beginning, thus starts actually at 1.
@@ -150,6 +152,8 @@ private:
 
     /// Loads a hexahedral mesh from a file.
     void loadHexahedralMesh(const std::string &fileName);
+    /// Updates the internal representation of a deformable mesh.
+    void onDeformationFactorChanged();
     /// Prepares the visualization pipeline for rendering.
     void prepareVisualizationPipeline();
     /// Returns the filtered mesh that is passed to the renderers.
@@ -161,6 +165,11 @@ private:
 
     /// The data loaded from the input file (or a wrapped nullptr).
     HexMeshPtr inputData;
+
+    /// A copy of the mesh data is stored for allowing the user to alter the deformation factor also after loading.
+    std::vector<glm::vec3> hexMeshVertices;
+    std::vector<uint32_t> hexMeshCellIndices;
+    std::vector<glm::vec3> hexMeshDeformations;
 
     /// A list of filters that are applied sequentially on the data.
     std::vector<HexahedralMeshFilter*> meshFilters;

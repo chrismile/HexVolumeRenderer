@@ -105,6 +105,13 @@ public:
     void unmark();
     bool isDirty() { return dirty; }
 
+    /**
+     * Updates the vertex positions of a deformable mesh. Thus, also the quality measure is recomputed for all cells.
+     * The connectivity of the hexahedral mesh vertices does not change.
+     * @param vertices The new mesh vertices.
+     */
+    void updateVertexPositions(const std::vector<glm::vec3>& vertices);
+
     // For filters
     HexaLab::Mesh& getHexaLabMesh();
 

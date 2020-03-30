@@ -191,6 +191,28 @@ void HexMesh::computeBaseComplexMeshFrame() {
 
 
 
+void HexMesh::updateVertexPositions(const std::vector<glm::vec3>& vertices) {
+    // Update the base-complex mesh.
+    for (size_t i = 0; i < vertices.size(); i++) {
+        Hybrid_V& v = baseComplexMesh->Vs.at(i);
+        const glm::vec3& vertPos = vertices.at(i);
+        for (int j = 0; j < 3; j++) {
+            baseComplexMesh->V(j, v.id) = vertPos[j];
+        }
+    }
+
+    // Update the HexaLab mesh.
+    HexaLab::Mesh* hexaLabMesh = hexaLabApp->get_mesh();
+    for (size_t i = 0; i < vertices.size(); i++) {
+        HexaLab::Vert& v = hexaLabMesh->verts.at(i);
+        const glm::vec3& vertPos = vertices.at(i);
+        v.position = vertPos;
+    }
+    setQualityMeasure(qualityMeasure);
+
+    dirty = true;
+}
+
 void HexMesh::onTransferFunctionMapRebuilt() {
     //dirty = true;
     //hexaLabApp->onTransferFunctionMapRebuilt();
