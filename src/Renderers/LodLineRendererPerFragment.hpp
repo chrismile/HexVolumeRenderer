@@ -59,6 +59,7 @@ public:
     virtual void update(float dt);
 
 protected:
+    void reloadSphereRenderData();
     sgl::ShaderProgramPtr shaderProgram;
     sgl::ShaderProgramPtr shaderProgramSurface;
     sgl::ShaderAttributesPtr shaderAttributes;

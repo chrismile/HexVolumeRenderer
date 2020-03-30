@@ -40,19 +40,24 @@ LodLineRenderer::LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &t
     shaderProgram = sgl::ShaderManager->getShaderProgram(
             {"Wireframe.Vertex", "Wireframe.Geometry", "Wireframe.Fragment"});
 
-    std::vector<glm::vec3> sphereVertexPositions;
-    std::vector<glm::vec3> sphereVertexNormals;
-    std::vector<uint32_t> sphereIndices;
-    getSphereSurfaceRenderData(
-            glm::vec3(0,0,0), 0.003f, 20, 20,
-            sphereVertexPositions, sphereVertexNormals, sphereIndices);
-
     sgl::ShaderManager->invalidateShaderCache();
     sgl::ShaderManager->addPreprocessorDefine("DIRECT_BLIT_GATHER", "");
     sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "GatherDummy.glsl");
     shaderProgramSurface = sgl::ShaderManager->getShaderProgram(
             {"MeshShader.Vertex.Plain", "MeshShader.Fragment.Plain"});
     sgl::ShaderManager->removePreprocessorDefine("DIRECT_BLIT_GATHER");
+
+    reloadSphereRenderData();
+}
+
+void LodLineRenderer::reloadSphereRenderData() {
+    std::vector<glm::vec3> sphereVertexPositions;
+    std::vector<glm::vec3> sphereVertexNormals;
+    std::vector<uint32_t> sphereIndices;
+    float scaleFactor = glm::clamp(focusRadius / 0.05f, 0.4f, 1.2f);
+    getSphereSurfaceRenderData(
+            glm::vec3(0,0,0), 0.003f * scaleFactor, 20, 20,
+            sphereVertexPositions, sphereVertexNormals, sphereIndices);
 
     focusPointShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgramSurface);
     focusPointShaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);

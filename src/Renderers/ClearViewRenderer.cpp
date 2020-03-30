@@ -61,11 +61,17 @@ void ClearViewRenderer::loadClearViewBaseData() {
     shaderProgramSurface = sgl::ShaderManager->getShaderProgram(
             {"MeshShader.Vertex.Plain", "MeshShader.Fragment.Plain"});
 
+    reloadSphereRenderData();
+    reloadFocusShaders();
+}
+
+void ClearViewRenderer::reloadSphereRenderData() {
     std::vector<glm::vec3> sphereVertexPositions;
     std::vector<glm::vec3> sphereVertexNormals;
     std::vector<uint32_t> sphereIndices;
+    float scaleFactor = glm::clamp(focusRadius / 0.05f, 0.4f, 1.2f);
     getSphereSurfaceRenderData(
-            glm::vec3(0,0,0), 0.003f, 20, 20,
+            glm::vec3(0,0,0), 0.003f * scaleFactor, 20, 20,
             sphereVertexPositions, sphereVertexNormals, sphereIndices);
 
     focusPointShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgramSurface);
@@ -81,8 +87,6 @@ void ClearViewRenderer::loadClearViewBaseData() {
     sgl::GeometryBufferPtr focusPointIndexBuffer = sgl::Renderer->createGeometryBuffer(
             sphereIndices.size() * sizeof(uint32_t), sphereIndices.data(), sgl::INDEX_BUFFER);
     focusPointShaderAttributes->setIndexGeometryBuffer(focusPointIndexBuffer, sgl::ATTRIB_UNSIGNED_INT);
-
-    reloadFocusShaders();
 }
 
 void ClearViewRenderer::reloadFocusShaders() {
@@ -304,6 +308,7 @@ void ClearViewRenderer::render() {
 void ClearViewRenderer::renderGui() {
     if (ImGui::Begin("ClearView Renderer (Faces)", &showRendererWindow)) {
         if (ImGui::SliderFloat("Focus Radius", &focusRadius, 0.001f, 0.4f)) {
+            reloadSphereRenderData();
             reRender = true;
         }
         if (ImGui::SliderFloat3("Focus Point", &focusPoint.x, -0.4f, 0.4f)) {

@@ -56,6 +56,7 @@ public:
 
 protected:
     void loadClearViewBaseData();
+    void reloadSphereRenderData();
     void reloadFocusShaders();
     void setSortingAlgorithmDefine();
     virtual void setUniformData()=0;
