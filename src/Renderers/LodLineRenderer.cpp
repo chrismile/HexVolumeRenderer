@@ -116,6 +116,7 @@ void LodLineRenderer::render() {
 void LodLineRenderer::renderGui() {
     if (ImGui::Begin("Line LOD Renderer", &showRendererWindow)) {
         if (ImGui::SliderFloat("Focus Radius", &focusRadius, 0.0f, 0.4f)) {
+            reloadSphereRenderData();
             dirty = true;
             reRender = true;
         }

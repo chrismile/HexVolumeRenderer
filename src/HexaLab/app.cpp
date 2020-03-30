@@ -83,7 +83,7 @@ namespace HexaLab {
         this->flag_models_as_dirty();
         //this->update_models();
         //this->build_singularity_models();
-        this->build_full_model();
+        //this->build_full_model(); // TODO: Uncommented, as not needed in HexVolumeRenderer at the moment.
         return true;
     }
 
