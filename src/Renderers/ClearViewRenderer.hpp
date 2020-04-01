@@ -122,6 +122,7 @@ protected:
     float focusRadius = 0.05f;
     float lineWidth = 0.0015f;
     bool useShading = false;
+    bool useWeightedVertexAttributes = false;
     LineRenderingMode lineRenderingMode = LINE_RENDERING_MODE_WIREFRAME_FACES;
     LineRenderingStyle lineRenderingStyle = LINE_RENDERING_STYLE_HALO;
 };

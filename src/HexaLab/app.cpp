@@ -237,6 +237,10 @@ namespace HexaLab {
         return mesh->normalized_hexa_quality.at(cell_id);
     }
 
+    bool App::is_cell_marked(uint32_t cell_id) {
+        return mesh->is_marked(mesh->cells.at(cell_id));
+    }
+
     /*void App::build_singularity_model(
             std::vector<glm::vec3>& lineVertices,
             std::vector<glm::vec4>& lineColors,
@@ -864,6 +868,40 @@ namespace HexaLab {
             }
         }
     }
+
+    void App::get_volume_geometry_faces_shared() {
+        /*visible_model.mesh_vert_pos.clear();
+        visible_model.mesh_vert_norm.clear();
+        visible_model.mesh_vert_attribute.clear();
+        visible_model.mesh_ibuffer.clear();
+
+        for ( size_t i = 0; i < mesh->verts.size(); ++i ) {
+            visible_model.mesh_vert_pos.push_back(mesh->verts[i].position);
+            visible_model.mesh_vert_norm.push_back(glm::vec3(1.0f)); // arbitrary, dummy data
+
+            MeshNavigator nav = mesh->navigate ( mesh->verts[i] );
+            nav.rotate_on_edge();
+            visible_model.mesh_vert_attribute.push_back();
+            nav.vert_index();
+        }
+
+        for ( size_t i = 0; i < mesh->faces.size(); ++i ) {
+            MeshNavigator nav = mesh->navigate ( mesh->faces[i] );
+
+            // Add all unfiltered cells to the full mesh (backfaces only for boundary surface).
+            if ( !mesh->is_marked ( nav.cell() ) ) {
+                this->add_mesh_face_shared( nav.dart(), 1 );
+            }
+            if ( !mesh->is_marked ( nav.cell() ) || (mesh->is_marked ( nav.cell() ) && nav.dart().cell_neighbor != -1
+                                                     && !mesh->is_marked ( nav.flip_cell().cell() ))) {
+                this->add_mesh_face_shared( nav.dart(), -1 );
+            }
+        }*/
+    }
+
+    void App::get_volume_geometry_volume_shared() {
+    }
+
 
     void App::build_gap_hexa ( const glm::vec3 pp[8], const glm::vec3 nn[6], const bool vv[8], const float ww[6] ) {
         if ( !vv[0] && !vv[1] && !vv[2] && !vv[3] && !vv[4] && !vv[5] && !vv[6] && !vv[7] ) {

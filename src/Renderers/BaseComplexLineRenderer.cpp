@@ -41,6 +41,8 @@ BaseComplexLineRenderer::BaseComplexLineRenderer(SceneData &sceneData, TransferF
 }
 
 void BaseComplexLineRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+    lineWidth = glm::clamp(std::cbrt(meshIn->getAverageCellVolume()) * 0.1f, 0.001f, 0.004f);
+
     std::vector<glm::vec3> lineVertices, pointVertices;
     std::vector<glm::vec4> lineColors, pointColors;
     meshIn->getBaseComplexDataWireframe(lineVertices, lineColors, pointVertices, pointColors, drawRegularLines);

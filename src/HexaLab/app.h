@@ -122,6 +122,8 @@ namespace HexaLab {
 
         void get_volume_geometry_faces();
         void get_volume_geometry_volume();
+        void get_volume_geometry_faces_shared();
+        void get_volume_geometry_volume_shared();
 
         // Getters
         float               get_default_outside_attribute()     { return this->default_outside_attribute; }
@@ -180,6 +182,7 @@ namespace HexaLab {
         // Singularity structure visualization
     public:
         float get_normalized_hexa_quality_cell(uint32_t cell_id);
+        bool is_cell_marked(uint32_t cell_id);
         /*void build_singularity_model(
                 std::vector<glm::vec3>& lineVertices,
                 std::vector<glm::vec4>& lineColors,

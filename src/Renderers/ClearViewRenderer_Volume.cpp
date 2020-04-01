@@ -121,6 +121,7 @@ ClearViewRenderer_Volume::ClearViewRenderer_Volume(SceneData &sceneData, Transfe
 
 void ClearViewRenderer_Volume::generateVisualizationMapping(HexMeshPtr meshIn) {
     mesh = meshIn;
+    lineWidth = glm::clamp(std::cbrt(meshIn->getAverageCellVolume()) * 0.1f, 0.001f, 0.004f);
 
     // Unload old data.
     shaderAttributesVolumeFrontFaces = sgl::ShaderAttributesPtr();
@@ -129,9 +130,13 @@ void ClearViewRenderer_Volume::generateVisualizationMapping(HexMeshPtr meshIn) {
     // First, start with the rendering data for the context region.
     std::vector<uint32_t> triangleIndices;
     std::vector<glm::vec3> vertexPositions;
-    std::vector<glm::vec3> vertexNormals;
     std::vector<float> vertexAttributes;
-    meshIn->getVolumeData_Volume(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
+    meshIn->getVolumeData_Volume(triangleIndices, vertexPositions, vertexAttributes);
+    if (useWeightedVertexAttributes) {
+        meshIn->getVolumeData_VolumeShared(triangleIndices, vertexPositions, vertexAttributes);
+    } else {
+        meshIn->getVolumeData_Volume(triangleIndices, vertexPositions, vertexAttributes);
+    }
 
     shaderAttributesVolumeFrontFaces = sgl::ShaderManager->createShaderAttributes(gatherShaderVolumeFrontFaces);
     shaderAttributesVolumeFrontFaces->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -146,12 +151,6 @@ void ClearViewRenderer_Volume::generateVisualizationMapping(HexMeshPtr meshIn) {
             vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
     shaderAttributesVolumeFrontFaces->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
-
-    // Add the normal buffer.
-    /*sgl::GeometryBufferPtr normalBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexNormals.size()*sizeof(glm::vec3), (void*)&vertexNormals.front(), sgl::VERTEX_BUFFER);
-    shaderAttributesVolumeFrontFaces->addGeometryBuffer(
-            normalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);*/
 
     // Add the color buffer.
     sgl::GeometryBufferPtr attributeBuffer = sgl::Renderer->createGeometryBuffer(

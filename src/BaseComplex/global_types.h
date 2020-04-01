@@ -71,12 +71,21 @@ const int tet_edges[6][2] = {
 
 const int hex_face_table[6][4] =
 {
-	{ 0,1,2,3 },
-	{ 4,5,6,7 },
-	{ 0,1,5,4 },
-	{ 0,4,7,3 },
-	{ 3,2,6,7 },
-	{ 1,5,6,2 },
+    // Edit 2020-04-01 Christoph Neuhauser:
+    // Use consistent winding for faces at the boundary (normals pointing out of the cell - no arbitrary decisions!).
+    { 0,1,2,3 },
+    { 5,4,7,6 },
+    { 4,5,1,0 },
+    { 4,0,3,7 },
+    { 6,7,3,2 },
+    { 1,5,6,2 },
+
+    /*{ 0,1,2,3 },
+    { 4,5,6,7 },
+    { 0,1,5,4 },
+    { 0,4,7,3 },
+    { 3,2,6,7 },
+    { 1,5,6,2 },*/
 };
 const int hex_tetra_table[8][4] =
 {

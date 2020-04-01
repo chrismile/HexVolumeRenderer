@@ -94,11 +94,19 @@ VolumeRenderer_Faces::VolumeRenderer_Faces(SceneData &sceneData, TransferFunctio
 }
 
 void VolumeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
+    this->mesh = meshIn;
+    
     std::vector<uint32_t> triangleIndices;
     std::vector<glm::vec3> vertexPositions;
     std::vector<glm::vec3> vertexNormals;
     std::vector<float> vertexAttributes;
-    meshIn->getVolumeData_Faces(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
+    if (useWeightedVertexAttributes) {
+        meshIn->getVolumeData_FacesShared(triangleIndices, vertexPositions, vertexAttributes);
+        // Just fill with dummy data for now
+        vertexNormals.resize(vertexPositions.size(), glm::vec3(1.0f));
+    } else {
+        meshIn->getVolumeData_Faces(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
+    }
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(gatherShader);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -268,8 +276,12 @@ void VolumeRenderer_Faces::render() {
 
 void VolumeRenderer_Faces::renderGui() {
     if (ImGui::Begin("Volume Renderer (Faces)", &showRendererWindow)) {
-        if (ImGui::Checkbox("Use Shading", &useShading)) {
+        if (!useWeightedVertexAttributes && ImGui::Checkbox("Use Shading", &useShading)) {
             reRender = true;
+        }
+        if (ImGui::Checkbox("Use Weighted Vertex Attributes", &useWeightedVertexAttributes)) {
+            useShading = false;
+            if (this->mesh) generateVisualizationMapping(mesh);
         }
     }
     ImGui::End();

@@ -86,7 +86,7 @@ Please note that the file is overwritten when using the downloading functionalit
 The program uses code excerpts from HexaLab (https://github.com/chrismile/HexaLab, see above) and code from Robust
 Hexahedral Re-Meshing (https://github.com/gaoxifeng/Robust-Hexahedral-Re-Meshing).
 
-Robust "Structure Simplification for Hex Re-meshing",
+"Robust Structure Simplification for Hex Re-meshing",
 Xifeng Gao, Daniele Panozzo, Wenping Wang, Zhigang Deng, Guoning Chen,
 In ACM Transactions on Graphics (Proceedings of SIGGRAPH ASIA 2017)
 
@@ -96,3 +96,22 @@ The code of the application itself is covered by the BSD 2-Clause License (see L
 The font Droid Sans in the directory Data/Fonts/ is covered by the Apache Version 2.0 License (see DROID-SANS-LICENSE.txt).
 
 Please note that different licenses apply to the data sets, dependencies and other assets downloaded.
+License information of used libraries can be found in the directory 'LICENSE-Libraries'. These libraries are used
+without modifications to the upstream version of the code of the respective libraries.
+Thus, the code is not provided in the repository.
+
+
+## Optional CSG Code
+
+The program can make use of CSG libraries to compute the union of tube meshes for optimal line rendering.
+Please note, however, that this requires a very slow preprocess step. At the moment, only the CSG library Cork
+(https://github.com/gilbo/cork) is supported. It is licensed under the LGPL license. For more details on the license,
+please refer to 'LICENSE-Libraries/LICENSE-Cork'. To enable Cork support, run
+
+```
+cmake .. -DUSE_CORK=ON -DCORK_LIBRARIES=/home/christoph/Programming/HiwiCG/cork/lib/libcork.so -DCORK_INCLUDE_DIR=/home/christoph/Programming/HiwiCG/cork/include
+```
+
+Please note that compiling Cork requires `libgmp-dev` and that you need to dynamically link to it to fulfill the
+licensing terms of the LGPL. By default, Cork builds a static library.
+Make sure to edit the Makefile and add the `-fPIC -shared` flags for compiling and linking, respectively.

@@ -43,6 +43,8 @@ SingularityRenderer::SingularityRenderer(SceneData &sceneData, TransferFunctionW
 }
 
 void SingularityRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+    lineWidth = glm::clamp(std::cbrt(meshIn->getAverageCellVolume()) * 0.1f, 0.001f, 0.004f);
+
     std::vector<glm::vec3> lineVertices, pointVertices;
     std::vector<glm::vec4> lineColors, pointColors;
     meshIn->getSingularityData(lineVertices, lineColors, pointVertices, pointColors);

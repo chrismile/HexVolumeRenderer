@@ -73,6 +73,8 @@ protected:
     void gather();
     void resolve();
 
+    HexMeshPtr mesh;
+
     // The rendering data for the volume object.
     sgl::ShaderAttributesPtr shaderAttributesVolumeFrontFaces;
     sgl::ShaderAttributesPtr shaderAttributesVolumeBackFaces;
@@ -98,6 +100,10 @@ protected:
     // Blit data (ignores model-view-projection matrix and uses normalized device coordinates)
     sgl::ShaderAttributesPtr blitRenderData;
     sgl::ShaderAttributesPtr clearRenderData;
+
+    // GUI data
+    bool showRendererWindow = true;
+    bool useWeightedVertexAttributes = false;
 };
 
 #endif //HEXVOLUMERENDERER_VOLUMERENDERER_VOLUME_HPP

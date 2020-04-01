@@ -325,8 +325,13 @@ void ClearViewRenderer::renderGui() {
             }
             reRender = true;
         }
-        if (!isVolumeRenderer && ImGui::Checkbox("Use Shading", &useShading)) {
+        if (!isVolumeRenderer && !useWeightedVertexAttributes && ImGui::Checkbox("Use Shading", &useShading)) {
             reRender = true;
+        }
+        if (!isVolumeRenderer
+                && ImGui::Checkbox("Use Weighted Vertex Attributes", &useWeightedVertexAttributes)) {
+            useShading = false;
+            if (this->mesh) generateVisualizationMapping(mesh);
         }
         if (ImGui::Combo(
                 "Line Rendering", (int*)&lineRenderingMode, LINE_RENDERING_MODE_NAMES,

@@ -75,6 +75,8 @@ void LodLineRendererPerFragment::reloadSphereRenderData() {
 }
 
 void LodLineRendererPerFragment::generateVisualizationMapping(HexMeshPtr meshIn) {
+    lineWidth = glm::clamp(std::cbrt(meshIn->getAverageCellVolume()) * 0.1f, 0.001f, 0.004f);
+
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec4> colors;
     std::vector<float> lodValues;

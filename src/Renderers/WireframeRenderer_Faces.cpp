@@ -50,6 +50,8 @@ WireframeRenderer_Faces::WireframeRenderer_Faces(
 }
 
 void WireframeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
+    lineWidth = glm::clamp(std::cbrt(meshIn->getAverageCellVolume()) * 0.1f, 0.001f, 0.004f);
+
     std::vector<uint32_t> indices;
     std::vector<HexahedralCellFace> hexahedralCellFaces;
     meshIn->getSurfaceDataWireframeFaces(indices, hexahedralCellFaces, onlyBoundary, false);

@@ -100,6 +100,7 @@ ClearViewRenderer_Faces::ClearViewRenderer_Faces(SceneData &sceneData, TransferF
 
 void ClearViewRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
     mesh = meshIn;
+    lineWidth = glm::clamp(std::cbrt(meshIn->getAverageCellVolume()) * 0.1f, 0.001f, 0.004f);
 
     // Unload old data.
     shaderAttributesContext = sgl::ShaderAttributesPtr();
@@ -109,7 +110,13 @@ void ClearViewRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
     std::vector<glm::vec3> vertexPositions;
     std::vector<glm::vec3> vertexNormals;
     std::vector<float> vertexAttributes;
-    meshIn->getVolumeData_Faces(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
+    if (useWeightedVertexAttributes) {
+        meshIn->getVolumeData_FacesShared(triangleIndices, vertexPositions, vertexAttributes);
+        // Just fill with dummy data for now
+        vertexNormals.resize(vertexPositions.size(), glm::vec3(1.0f));
+    } else {
+        meshIn->getVolumeData_Faces(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
+    }
 
     shaderAttributesContext = sgl::ShaderManager->createShaderAttributes(gatherShaderContext);
     shaderAttributesContext->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);

@@ -432,7 +432,6 @@ void HexMesh::getVolumeData_Faces(
 void HexMesh::getVolumeData_Volume(
         std::vector<uint32_t>& triangleIndices,
         std::vector<glm::vec3>& vertexPositions,
-        std::vector<glm::vec3>& vertexNormals,
         std::vector<float>& vertexAttributes) {
     rebuildInternalRepresentationIfNecessary();
     hexaLabApp->get_volume_geometry_volume();
@@ -442,7 +441,6 @@ void HexMesh::getVolumeData_Volume(
         triangleIndices.push_back(idx);
     }
     vertexPositions = hexaLabApp->get_visible_model()->mesh_vert_pos;
-    vertexNormals = hexaLabApp->get_visible_model()->mesh_vert_norm;
     vertexAttributes = hexaLabApp->get_visible_model()->mesh_vert_attribute;
 }
 
@@ -464,13 +462,13 @@ void HexMesh::getVolumeData_FacesShared(
     // Add all hexahedral mesh vertices to the triangle mesh vertex data.
     for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
         Hybrid_V& v = mesh->Vs.at(v_id);
-        float volumeSum = 0.0f, volumeWeightedAttributeSum;
+        float volumeSum = 0.0f, volumeWeightedAttributeSum = 0.0f;
         for (uint32_t h_id : v.neighbor_hs) {
             volumeSum += cellVolumes.at(h_id);
         }
         for (uint32_t h_id : v.neighbor_hs) {
             float cellVolume = cellVolumes.at(h_id);
-            float cellAttribute = hexaLabApp->get_normalized_hexa_quality_cell(h_id);
+            float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
             volumeWeightedAttributeSum += cellVolume * cellAttribute;
         }
 
@@ -481,15 +479,99 @@ void HexMesh::getVolumeData_FacesShared(
     }
 
     // Add all triangle indices.
-    triangleIndices.reserve(mesh->Fs.size() * 6);
+    triangleIndices.reserve(mesh->Fs.size() * 12);
     for (Hybrid_F& f : mesh->Fs) {
+        if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+            return hexaLabApp->is_cell_marked(h_id);
+        })) {
+            continue;
+        }
+
         assert(f.vs.size() == 4);
+        triangleIndices.push_back(f.vs[2]);
+        triangleIndices.push_back(f.vs[1]);
+        triangleIndices.push_back(f.vs[0]);
+        triangleIndices.push_back(f.vs[3]);
+        triangleIndices.push_back(f.vs[2]);
+        triangleIndices.push_back(f.vs[0]);
+
         triangleIndices.push_back(f.vs[0]);
         triangleIndices.push_back(f.vs[1]);
         triangleIndices.push_back(f.vs[2]);
         triangleIndices.push_back(f.vs[0]);
         triangleIndices.push_back(f.vs[2]);
         triangleIndices.push_back(f.vs[3]);
+    }
+
+    /*hexaLabApp->get_volume_geometry_faces_shared();
+    triangleIndices.clear();
+    triangleIndices.reserve(hexaLabApp->get_visible_model()->mesh_ibuffer.size());
+    for (HexaLab::Index& idx : hexaLabApp->get_visible_model()->mesh_ibuffer) {
+        triangleIndices.push_back(idx);
+    }
+    vertexPositions = hexaLabApp->get_visible_model()->mesh_vert_pos;
+    vertexAttributes = hexaLabApp->get_visible_model()->mesh_vert_attribute;*/
+}
+
+void HexMesh::getVolumeData_VolumeShared(
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<glm::vec3>& vertexPositions,
+        std::vector<float>& vertexAttributes) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    // Compute all cell volumes.
+    std::vector<float> cellVolumes(mesh->Hs.size());
+    std::vector<glm::vec3> cellPointsArray;
+    cellPointsArray.reserve(8);
+    for (uint32_t h_id = 0; h_id < mesh->Hs.size(); h_id++) {
+        cellVolumes.at(h_id) = getCellVolume(h_id, cellPointsArray);
+    }
+
+    // Add all hexahedral mesh vertices to the triangle mesh vertex data.
+    for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
+        Hybrid_V& v = mesh->Vs.at(v_id);
+        float volumeSum = 0.0f, volumeWeightedAttributeSum = 0.0f;
+        for (uint32_t h_id : v.neighbor_hs) {
+            volumeSum += cellVolumes.at(h_id);
+        }
+        for (uint32_t h_id : v.neighbor_hs) {
+            float cellVolume = cellVolumes.at(h_id);
+            float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
+            volumeWeightedAttributeSum += cellVolume * cellAttribute;
+        }
+
+        float vertexAttribute = volumeWeightedAttributeSum / volumeSum;
+        vertexAttributes.push_back(vertexAttribute);
+        glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+        vertexPositions.push_back(vertexPosition);
+    }
+
+    // Add all triangle indices.
+    triangleIndices.reserve(mesh->Fs.size() * 12);
+    for (Hybrid_F& f : mesh->Fs) {
+        if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+            return hexaLabApp->is_cell_marked(h_id);
+        })) {
+            continue;
+        }
+
+        assert(f.vs.size() == 4);
+        triangleIndices.push_back(f.vs[2]);
+        triangleIndices.push_back(f.vs[1]);
+        triangleIndices.push_back(f.vs[0]);
+        triangleIndices.push_back(f.vs[3]);
+        triangleIndices.push_back(f.vs[2]);
+        triangleIndices.push_back(f.vs[0]);
+
+        if (!f.boundary) {
+            triangleIndices.push_back(f.vs[0]);
+            triangleIndices.push_back(f.vs[1]);
+            triangleIndices.push_back(f.vs[2]);
+            triangleIndices.push_back(f.vs[0]);
+            triangleIndices.push_back(f.vs[2]);
+            triangleIndices.push_back(f.vs[3]);
+        }
     }
 }
 

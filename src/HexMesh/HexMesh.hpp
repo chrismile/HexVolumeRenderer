@@ -160,7 +160,6 @@ public:
     void getVolumeData_Volume(
             std::vector<uint32_t>& triangleIndices,
             std::vector<glm::vec3>& vertexPositions,
-            std::vector<glm::vec3>& vertexNormals,
             std::vector<float>& vertexAttributes);
     /**
      * Get the surface data of all front faces (and backfaces for boundary surface) of every cell of the hexahedral
@@ -168,6 +167,15 @@ public:
      * cells to get the vertex attributes as a weighted average of its incident cells.
      */
     void getVolumeData_FacesShared(
+            std::vector<uint32_t>& triangleIndices,
+            std::vector<glm::vec3>& vertexPositions,
+            std::vector<float>& vertexAttributes);
+    /**
+     * Get the surface data of all front faces of every cell of the hexahedral mesh. The vertices between hexahedral
+     * cells are shared and the cell attributes are weighted by the volume of the cells to get the vertex attributes as
+     * a weighted average of its incident cells.
+     */
+    void getVolumeData_VolumeShared(
             std::vector<uint32_t>& triangleIndices,
             std::vector<glm::vec3>& vertexPositions,
             std::vector<float>& vertexAttributes);

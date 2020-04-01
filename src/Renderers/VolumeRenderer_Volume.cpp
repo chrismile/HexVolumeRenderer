@@ -102,11 +102,16 @@ VolumeRenderer_Volume::VolumeRenderer_Volume(SceneData &sceneData, TransferFunct
 }
 
 void VolumeRenderer_Volume::generateVisualizationMapping(HexMeshPtr meshIn) {
+    this->mesh = meshIn;
+
     std::vector<uint32_t> triangleIndices;
     std::vector<glm::vec3> vertexPositions;
-    std::vector<glm::vec3> vertexNormals;
     std::vector<float> vertexAttributes;
-    meshIn->getVolumeData_Volume(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
+    if (useWeightedVertexAttributes) {
+        meshIn->getVolumeData_VolumeShared(triangleIndices, vertexPositions, vertexAttributes);
+    } else {
+        meshIn->getVolumeData_Volume(triangleIndices, vertexPositions, vertexAttributes);
+    }
 
     shaderAttributesVolumeFrontFaces = sgl::ShaderManager->createShaderAttributes(gatherShaderVolumeFrontFaces);
     shaderAttributesVolumeFrontFaces->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -121,12 +126,6 @@ void VolumeRenderer_Volume::generateVisualizationMapping(HexMeshPtr meshIn) {
             vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
     shaderAttributesVolumeFrontFaces->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
-
-    // Add the normal buffer.
-    /*sgl::GeometryBufferPtr normalBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexNormals.size()*sizeof(glm::vec3), (void*)&vertexNormals.front(), sgl::VERTEX_BUFFER);
-    shaderAttributesVolumeFrontFaces->addGeometryBuffer(
-            normalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);*/
 
     // Add the color buffer.
     sgl::GeometryBufferPtr attributeBuffer = sgl::Renderer->createGeometryBuffer(
@@ -331,4 +330,10 @@ void VolumeRenderer_Volume::render() {
 }
 
 void VolumeRenderer_Volume::renderGui() {
+    if (ImGui::Begin("Volume Renderer ( (Volume))", &showRendererWindow)) {
+        if (ImGui::Checkbox("Use Weighted Vertex Attributes", &useWeightedVertexAttributes)) {
+            if (this->mesh) generateVisualizationMapping(mesh);
+        }
+    }
+    ImGui::End();
 }
