@@ -39,6 +39,7 @@
 
 #include "Tubes/Tubes.hpp"
 #include "Helpers/Sphere.hpp"
+#include "Helpers/LineRenderingDefines.hpp"
 #include "ClearViewRenderer.hpp"
 
 const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap"};
@@ -307,7 +308,7 @@ void ClearViewRenderer::render() {
 
 void ClearViewRenderer::renderGui() {
     if (ImGui::Begin("ClearView Renderer (Faces)", &showRendererWindow)) {
-        if (ImGui::SliderFloat("Focus Radius", &focusRadius, 0.001f, 0.4f)) {
+        if (ImGui::SliderFloat("Focus Radius", &focusRadius, MIN_FOCUS_RADIUS, MAX_FOCUS_RADIUS)) {
             reloadSphereRenderData();
             reRender = true;
         }
@@ -318,7 +319,7 @@ void ClearViewRenderer::renderGui() {
         if (ImGui::ColorEdit4("Focus Point Color", &focusPointColor.x)) {
             reRender = true;
         }
-        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.004f, "%.4f")) {
+        if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             if (lineRenderingMode == LINE_RENDERING_MODE_TUBES || lineRenderingMode == LINE_RENDERING_MODE_TUBES_CAPPED
                     || lineRenderingMode == LINE_RENDERING_MODE_TUBES_UNION) {
                 loadFocusRepresentation();

@@ -30,6 +30,7 @@
 #include <Graphics/OpenGL/RendererGL.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
+#include "Helpers/LineRenderingDefines.hpp"
 #include "BaseComplexLineRenderer.hpp"
 
 BaseComplexLineRenderer::BaseComplexLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
@@ -41,7 +42,9 @@ BaseComplexLineRenderer::BaseComplexLineRenderer(SceneData &sceneData, TransferF
 }
 
 void BaseComplexLineRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
-    lineWidth = glm::clamp(std::cbrt(meshIn->getAverageCellVolume()) * 0.1f, 0.001f, 0.004f);
+    lineWidth = glm::clamp(
+            std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
+            MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
 
     std::vector<glm::vec3> lineVertices, pointVertices;
     std::vector<glm::vec4> lineColors, pointColors;
@@ -95,7 +98,7 @@ void BaseComplexLineRenderer::renderGui() {
         if (ImGui::Checkbox("Draw Regular Lines", &drawRegularLines)) {
             dirty = true;
         }
-        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.004f, "%.4f")) {
+        if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             reRender = true;
         }
     }

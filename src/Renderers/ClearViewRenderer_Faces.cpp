@@ -39,6 +39,7 @@
 
 #include "Tubes/Tubes.hpp"
 #include "Helpers/Sphere.hpp"
+#include "Helpers/LineRenderingDefines.hpp"
 #include "ClearViewRenderer_Faces.hpp"
 
 // Use stencil buffer to mask unused pixels
@@ -100,7 +101,11 @@ ClearViewRenderer_Faces::ClearViewRenderer_Faces(SceneData &sceneData, TransferF
 
 void ClearViewRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
     mesh = meshIn;
-    lineWidth = glm::clamp(std::cbrt(meshIn->getAverageCellVolume()) * 0.1f, 0.001f, 0.004f);
+    const float avgCellVolumeCbrt = std::cbrt(meshIn->getAverageCellVolume());
+    lineWidth = glm::clamp(
+            avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
+    focusRadius = glm::clamp(
+            avgCellVolumeCbrt * FOCUS_RADIUS_VOLUME_CBRT_FACTOR, MIN_FOCUS_RADIUS_AUTO, MAX_FOCUS_RADIUS_AUTO);
 
     // Unload old data.
     shaderAttributesContext = sgl::ShaderAttributesPtr();

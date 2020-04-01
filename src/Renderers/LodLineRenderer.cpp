@@ -32,6 +32,7 @@
 #include <Graphics/Shader/ShaderManager.hpp>
 
 #include "Helpers/Sphere.hpp"
+#include "Helpers/LineRenderingDefines.hpp"
 #include "LodLineRenderer.hpp"
 
 LodLineRenderer::LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
@@ -75,7 +76,9 @@ void LodLineRenderer::reloadSphereRenderData() {
 }
 
 void LodLineRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
-    lineWidth = glm::clamp(std::cbrt(meshIn->getAverageCellVolume()) * 0.1f, 0.001f, 0.004f);
+    lineWidth = glm::clamp(
+            std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
+            MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
 
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec4> colors;
@@ -129,7 +132,7 @@ void LodLineRenderer::renderGui() {
         if (ImGui::ColorEdit4("Focus Point Color", &focusPointColor.x)) {
             reRender = true;
         }
-        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.004f, "%.4f")) {
+        if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             reRender = true;
         }
     }

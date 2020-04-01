@@ -26,25 +26,24 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "HexahedronVolume.hpp"
+#ifndef HEXVOLUMERENDERER_LINERENDERINGDEFINES_HPP
+#define HEXVOLUMERENDERER_LINERENDERINGDEFINES_HPP
 
-float det3(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3) {
-    return v1.x*v2.y*v3.z + v2.x*v3.y*v1.z + v3.x*v1.y*v2.z
-           - v3.x*v2.y*v1.z - v1.x*v3.y*v2.z - v2.x*v1.y*v3.z;
-}
+// Minimum and maximum values in the UI.
+const float MIN_LINE_WIDTH = 0.0001f;
+const float MAX_LINE_WIDTH = 0.004f;
 
-float computeHexahedralCellVolume_TetrakisHexahedron(const std::vector<glm::vec3>& v) {
-    assert(v.size() == 8);
-    return 1.0f / 12.0f *
-           det3((v[6] - v[1]) + (v[7] - v[0]), (v[6] - v[2]), (v[2] - v[0]))
-           + det3((v[7] - v[0]), (v[6] - v[3]) + (v[5] - v[0]), (v[6] - v[4]))
-           + det3((v[6] - v[1]), (v[5] - v[0]), (v[6] - v[4]) + (v[2] - v[0]));
-}
+// The standard line size is computed depending on the cube root of the average cell volume times the factor below.
+const float LINE_WIDTH_VOLUME_CBRT_FACTOR = 0.08f;
+const float MIN_LINE_WIDTH_AUTO = 0.0005f;
+const float MAX_LINE_WIDTH_AUTO = 0.004f;
 
-float computeHexahedralCellVolume_LongDiagonal(const std::vector<glm::vec3>& v) {
-    assert(v.size() == 8);
-    return 1.0f / 6.0f *
-           det3((v[6] - v[0]), (v[1] - v[0]), (v[2] - v[5]))
-           + det3((v[6] - v[0]), (v[4] - v[0]), (v[5] - v[6]))
-           + det3((v[6] - v[0]), (v[3] - v[0]), (v[6] - v[2]));
-}
+// Ranges for ClearView.
+const float MIN_FOCUS_RADIUS = 0.001f;
+const float MAX_FOCUS_RADIUS = 0.4f;
+const float FOCUS_RADIUS_VOLUME_CBRT_FACTOR = 3.0f;
+const float MIN_FOCUS_RADIUS_AUTO = 0.001f;
+const float MAX_FOCUS_RADIUS_AUTO = 0.4f;
+
+
+#endif //HEXVOLUMERENDERER_LINERENDERINGDEFINES_HPP

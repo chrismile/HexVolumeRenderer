@@ -44,7 +44,7 @@ float det3(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3);
  * This function computes the volume of a tetrakis hexahedron (TH).
  * It is assumed that we have the following cell point layout:
  *
- *     6 ---------------- 7
+ *     7 ---------------- 6
  *      /|             /|
  *     /              / |
  *    /  |           /  |
@@ -52,7 +52,7 @@ float det3(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3);
  *   |   |          |   |
  *   |              |   |
  *   |   |          |   |
- *   | 2  - - - - - | - / 3
+ *   | 3  - - - - - | - / 2
  *   | /            |  /
  *   |              | /
  * 0 ----------------/ 1
@@ -69,7 +69,7 @@ float computeHexahedralCellVolume_TetrakisHexahedron(const std::vector<glm::vec3
  * This function computes the volume of a hexahedron using the long diagonal (LD) method.
  * It is assumed that we have the following cell point layout:
  *
- *     6 ---------------- 7
+ *     7 ---------------- 6
  *      /|             /|
  *     /              / |
  *    /  |           /  |
@@ -77,7 +77,7 @@ float computeHexahedralCellVolume_TetrakisHexahedron(const std::vector<glm::vec3
  *   |   |          |   |
  *   |              |   |
  *   |   |          |   |
- *   | 2  - - - - - | - / 3
+ *   | 3  - - - - - | - / 2
  *   | /            |  /
  *   |              | /
  * 0 ----------------/ 1

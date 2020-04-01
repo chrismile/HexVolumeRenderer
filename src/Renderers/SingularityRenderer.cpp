@@ -26,12 +26,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "SingularityRenderer.hpp"
-
 #include <Graphics/Renderer.hpp>
 #include <Graphics/OpenGL/RendererGL.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
+#include "Helpers/LineRenderingDefines.hpp"
 #include "SingularityRenderer.hpp"
 
 SingularityRenderer::SingularityRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
@@ -43,7 +42,9 @@ SingularityRenderer::SingularityRenderer(SceneData &sceneData, TransferFunctionW
 }
 
 void SingularityRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
-    lineWidth = glm::clamp(std::cbrt(meshIn->getAverageCellVolume()) * 0.1f, 0.001f, 0.004f);
+    lineWidth = glm::clamp(
+            std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
+            MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
 
     std::vector<glm::vec3> lineVertices, pointVertices;
     std::vector<glm::vec4> lineColors, pointColors;
@@ -94,7 +95,7 @@ void SingularityRenderer::render() {
 
 void SingularityRenderer::renderGui() {
     if (ImGui::Begin("Singularity Renderer", &showRendererWindow)) {
-        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.004f, "%.4f")) {
+        if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             reRender = true;
         }
     }

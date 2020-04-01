@@ -30,6 +30,7 @@
 #include <Graphics/OpenGL/RendererGL.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
+#include "Helpers/LineRenderingDefines.hpp"
 #include "WireframeRenderer.hpp"
 
 WireframeRenderer::WireframeRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
@@ -40,7 +41,9 @@ WireframeRenderer::WireframeRenderer(SceneData &sceneData, TransferFunctionWindo
 }
 
 void WireframeRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
-    lineWidth = glm::clamp(std::cbrt(meshIn->getAverageCellVolume()) * 0.1f, 0.001f, 0.004f);
+    lineWidth = glm::clamp(
+            std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
+            MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
 
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec4> colors;
@@ -83,7 +86,7 @@ void WireframeRenderer::render() {
 
 void WireframeRenderer::renderGui() {
     if (ImGui::Begin("Wireframe Renderer", &showRendererWindow)) {
-        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.004f, "%.4f")) {
+        if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             reRender = true;
         }
     }

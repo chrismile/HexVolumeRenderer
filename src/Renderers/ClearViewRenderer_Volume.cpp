@@ -39,6 +39,7 @@
 
 #include "Tubes/Tubes.hpp"
 #include "Helpers/Sphere.hpp"
+#include "Helpers/LineRenderingDefines.hpp"
 #include "ClearViewRenderer_Volume.hpp"
 
 const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap"};
@@ -121,7 +122,10 @@ ClearViewRenderer_Volume::ClearViewRenderer_Volume(SceneData &sceneData, Transfe
 
 void ClearViewRenderer_Volume::generateVisualizationMapping(HexMeshPtr meshIn) {
     mesh = meshIn;
-    lineWidth = glm::clamp(std::cbrt(meshIn->getAverageCellVolume()) * 0.1f, 0.001f, 0.004f);
+    const float avgCellVolumeCbrt = std::cbrt(meshIn->getAverageCellVolume());
+    lineWidth = glm::clamp(
+            avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
+    focusRadius = glm::clamp(avgCellVolumeCbrt * 10.0f, 0.001f, 0.1f);
 
     // Unload old data.
     shaderAttributesVolumeFrontFaces = sgl::ShaderAttributesPtr();

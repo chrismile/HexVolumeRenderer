@@ -30,6 +30,7 @@
 #include <Graphics/OpenGL/RendererGL.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
+#include "Helpers/LineRenderingDefines.hpp"
 #include "WireframeRenderer_Faces.hpp"
 
 WireframeRenderer_Faces::WireframeRenderer_Faces(
@@ -50,7 +51,9 @@ WireframeRenderer_Faces::WireframeRenderer_Faces(
 }
 
 void WireframeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
-    lineWidth = glm::clamp(std::cbrt(meshIn->getAverageCellVolume()) * 0.1f, 0.001f, 0.004f);
+    lineWidth = glm::clamp(
+            std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
+            MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
 
     std::vector<uint32_t> indices;
     std::vector<HexahedralCellFace> hexahedralCellFaces;
@@ -85,7 +88,7 @@ void WireframeRenderer_Faces::render() {
 
 void WireframeRenderer_Faces::renderGui() {
     if (ImGui::Begin("Wireframe Renderer (Faces)", &showRendererWindow)) {
-        if (ImGui::SliderFloat("Line Width", &lineWidth, 0.0001f, 0.004f, "%.4f")) {
+        if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             reRender = true;
         }
     }
