@@ -233,6 +233,10 @@ namespace HexaLab {
         HL_LOG ( "[QUALITY: %s] %f %f - norm %f %f.\n", get_quality_name(this->quality_measure), mesh_stats.quality_min,mesh_stats.quality_max,mesh_stats.normalized_quality_min,mesh_stats.normalized_quality_max );
     }
 
+    float App::get_normalized_hexa_quality_cell(uint32_t cell_id) {
+        return mesh->normalized_hexa_quality.at(cell_id);
+    }
+
     /*void App::build_singularity_model(
             std::vector<glm::vec3>& lineVertices,
             std::vector<glm::vec4>& lineColors,

@@ -154,7 +154,7 @@ void main()
     }
     float fragmentDepth;
     #if defined(LINE_RENDERING_STYLE_HALO)
-    vec4 color = flatShadingWireframeSurfaceHalo(lineBaseColor, fragmentDepth, lineCoordinates);
+    vec4 color = flatShadingWireframeSurfaceHalo_DepthCue(lineBaseColor, fragmentDepth, lineCoordinates);
     #elif defined(LINE_RENDERING_STYLE_TRON)
     vec4 color = flatShadingWireframeSurfaceTronHalo(lineBaseColor, fragmentDepth, lineCoordinates);
     #else //#elif defined(LINE_RENDERING_STYLE_SINGLE_COLOR)

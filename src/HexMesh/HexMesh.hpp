@@ -122,6 +122,16 @@ public:
 
 
     /**
+     * Returns the total volume (i.e., summed up) of all cells.
+     */
+    float getTotalCellVolume();
+    /**
+     * Returns the average volume of all cells.
+     */
+    float getAverageCellVolume();
+
+
+    /**
      * Get the triangle data of the boundary surface of the hexahedral mesh.
      */
     void getSurfaceData(
@@ -151,6 +161,15 @@ public:
             std::vector<uint32_t>& triangleIndices,
             std::vector<glm::vec3>& vertexPositions,
             std::vector<glm::vec3>& vertexNormals,
+            std::vector<float>& vertexAttributes);
+    /**
+     * Get the surface data of all front faces (and backfaces for boundary surface) of every cell of the hexahedral
+     * mesh. The vertices between hexahedral cells are shared and the cell attributes are weighted by the volume of the
+     * cells to get the vertex attributes as a weighted average of its incident cells.
+     */
+    void getVolumeData_FacesShared(
+            std::vector<uint32_t>& triangleIndices,
+            std::vector<glm::vec3>& vertexPositions,
             std::vector<float>& vertexAttributes);
     /**
      * Get the singular edges and points of the hexahedral mesh.
@@ -290,6 +309,11 @@ public:
 
 private:
     void rebuildInternalRepresentationIfNecessary();
+
+    /**
+     * Returns the volume of the cell with the passed index/ID.
+     */
+    float getCellVolume(uint32_t h_id, std::vector<glm::vec3>& cellPointsArray);
 
     /**
      * Updates the ray-mesh intersection data structure for a newly loaded mesh.

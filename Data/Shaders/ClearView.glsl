@@ -6,6 +6,8 @@ uniform vec3 lookingDirection;
 uniform vec3 sphereCenter;
 uniform float sphereRadius;
 
+#define USE_CLEAR_VIEW
+
 #include "RayIntersection.glsl"
 
 float getClearViewContextFragmentOpacityFactor() {
@@ -17,8 +19,9 @@ float getClearViewContextFragmentOpacityFactor() {
     vec3 intersectionPosition;
     bool intersectsSphere = raySphereIntersection(
     rayOrigin, rayDirection, sphereCenter, sphereRadius, t0, t1, intersectionPosition);
-    bool fragmentInSphere = SQR(fragmentPositionWorld.x - sphereCenter.x) + SQR(fragmentPositionWorld.y - sphereCenter.y)
-    + SQR(fragmentPositionWorld.z - sphereCenter.z) <= SQR(sphereRadius);
+    bool fragmentInSphere = SQR(fragmentPositionWorld.x - sphereCenter.x)
+            + SQR(fragmentPositionWorld.y - sphereCenter.y)
+            + SQR(fragmentPositionWorld.z - sphereCenter.z) <= SQR(sphereRadius);
 
     // Add opacity multiplication factor for fragments in front of or in focus region.
     float opacityFactor = 1.0f;
@@ -46,8 +49,8 @@ float getClearViewFocusFragmentOpacityFactor() {
     bool intersectsSphere = raySphereIntersection(
     rayOrigin, rayDirection, sphereCenter, sphereRadius, t0, t1, intersectionPosition);
     bool fragmentInSphere = SQR(fragmentPositionWorld.x - sphereCenter.x)
-    + SQR(fragmentPositionWorld.y - sphereCenter.y)
-    + SQR(fragmentPositionWorld.z - sphereCenter.z) <= SQR(sphereRadius);
+            + SQR(fragmentPositionWorld.y - sphereCenter.y)
+            + SQR(fragmentPositionWorld.z - sphereCenter.z) <= SQR(sphereRadius);
 
     // Add opacity multiplication factor for fragments in front of or in focus region.
     float opacityFactor = 0.0f;

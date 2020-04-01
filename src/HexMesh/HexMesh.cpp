@@ -72,6 +72,7 @@
 #include "HexaLab/mesh.h"
 #include "HexaLab/mesh_navigator.h"
 
+#include "Renderers/Helpers/HexahedronVolume.hpp"
 #include "BaseComplex/base_complex.h"
 
 #include "HexMesh.hpp"
@@ -347,6 +348,46 @@ void HexMesh::updateMeshTriangleIntersectionDataStructure() {
     rayMeshIntersection.setMeshTriangleData(vertices, indices);
 }
 
+
+float HexMesh::getCellVolume(uint32_t h_id, std::vector<glm::vec3>& cellPointsArray) {
+    Mesh* mesh = baseComplexMesh;
+    Hybrid& h = mesh->Hs.at(h_id);
+    for (uint32_t v_id : h.vs) {
+        glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+        cellPointsArray.push_back(vertexPosition);
+    }
+    float cellVolume = computeHexahedralCellVolume_TetrakisHexahedron(cellPointsArray);
+    cellPointsArray.clear();
+    return cellVolume;
+}
+
+/**
+ * Returns the total volume (i.e., summed up) of all cells.
+ */
+float HexMesh::getTotalCellVolume() {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    float totalVolume = 0.0f;
+    std::vector<glm::vec3> cellPointsArray;
+    cellPointsArray.reserve(8);
+    for (uint32_t i = 0; i < mesh->Hs.size(); i++) {
+        totalVolume += getCellVolume(i, cellPointsArray);
+    }
+    return totalVolume;
+}
+
+/**
+ * Returns the average volume of all cells.
+ */
+float HexMesh::getAverageCellVolume() {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+    return getTotalCellVolume() / float(mesh->Hs.size());
+}
+
+
+
 void HexMesh::getSurfaceData(
         std::vector<uint32_t>& triangleIndices,
         std::vector<glm::vec3>& vertexPositions,
@@ -403,6 +444,53 @@ void HexMesh::getVolumeData_Volume(
     vertexPositions = hexaLabApp->get_visible_model()->mesh_vert_pos;
     vertexNormals = hexaLabApp->get_visible_model()->mesh_vert_norm;
     vertexAttributes = hexaLabApp->get_visible_model()->mesh_vert_attribute;
+}
+
+void HexMesh::getVolumeData_FacesShared(
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<glm::vec3>& vertexPositions,
+        std::vector<float>& vertexAttributes) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    // Compute all cell volumes.
+    std::vector<float> cellVolumes(mesh->Hs.size());
+    std::vector<glm::vec3> cellPointsArray;
+    cellPointsArray.reserve(8);
+    for (uint32_t h_id = 0; h_id < mesh->Hs.size(); h_id++) {
+        cellVolumes.at(h_id) = getCellVolume(h_id, cellPointsArray);
+    }
+
+    // Add all hexahedral mesh vertices to the triangle mesh vertex data.
+    for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
+        Hybrid_V& v = mesh->Vs.at(v_id);
+        float volumeSum = 0.0f, volumeWeightedAttributeSum;
+        for (uint32_t h_id : v.neighbor_hs) {
+            volumeSum += cellVolumes.at(h_id);
+        }
+        for (uint32_t h_id : v.neighbor_hs) {
+            float cellVolume = cellVolumes.at(h_id);
+            float cellAttribute = hexaLabApp->get_normalized_hexa_quality_cell(h_id);
+            volumeWeightedAttributeSum += cellVolume * cellAttribute;
+        }
+
+        float vertexAttribute = volumeWeightedAttributeSum / volumeSum;
+        vertexAttributes.push_back(vertexAttribute);
+        glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+        vertexPositions.push_back(vertexPosition);
+    }
+
+    // Add all triangle indices.
+    triangleIndices.reserve(mesh->Fs.size() * 6);
+    for (Hybrid_F& f : mesh->Fs) {
+        assert(f.vs.size() == 4);
+        triangleIndices.push_back(f.vs[0]);
+        triangleIndices.push_back(f.vs[1]);
+        triangleIndices.push_back(f.vs[2]);
+        triangleIndices.push_back(f.vs[0]);
+        triangleIndices.push_back(f.vs[2]);
+        triangleIndices.push_back(f.vs[3]);
+    }
 }
 
 void HexMesh::getSingularityData(

@@ -179,6 +179,7 @@ namespace HexaLab {
 
         // Singularity structure visualization
     public:
+        float get_normalized_hexa_quality_cell(uint32_t cell_id);
         /*void build_singularity_model(
                 std::vector<glm::vec3>& lineVertices,
                 std::vector<glm::vec4>& lineColors,

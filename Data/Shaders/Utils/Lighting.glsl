@@ -206,4 +206,52 @@ vec4 flatShadingWireframeSingleColor(in vec4 baseColor, out float fragmentDepthF
     return color;
 }
 
+
+#ifdef USE_CLEAR_VIEW
+
+#define DEPTH_CUE_MAIN_COLOR
+#define DEPTH_CUE_OUTLINE_COLOR
+#define DEPTH_CUE_LINE_WIDTH
+
+/**
+* Flat shading, but adds a constant-sized halo at the outline of the surface. Assumes the following global variables
+* are given: cameraPosition, fragmentPositionWorld.
+*/
+vec4 flatShadingWireframeSurfaceHalo_DepthCue(in vec4 baseColor, out float fragmentDepthFrag, in float lineCoordinates) {
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+
+    float distanceToFocusPointNormalized = length(fragmentPositionWorld - sphereCenter) / sphereRadius;
+    float depthCueFactor = pow(distanceToFocusPointNormalized, 2.0);
+    //smoothstep(0.0, 1.0, distanceToFocusPointNormalized);//clamp(distanceToFocusPointNormalized, 0.0, 1.0);
+
+    #ifdef DEPTH_CUE_MAIN_COLOR
+    baseColor.rgb = mix(baseColor.rgb, vec3(0.5, 0.5, 0.5), depthCueFactor / 2.0);
+    #endif
+
+    vec3 outlineColor = vec3(1.0, 1.0, 1.0);
+    #ifdef DEPTH_CUE_OUTLINE_COLOR
+    outlineColor = mix(outlineColor, baseColor.rgb, depthCueFactor);
+    #endif
+
+    #ifdef DEPTH_CUE_LINE_WIDTH
+    lineCoordinates /= -distanceToFocusPointNormalized * 0.6 + 1.0;
+    #endif
+
+    const float WHITE_THRESHOLD = 0.7;
+    float EPSILON = clamp(fragmentDepth / 2.0, 0.0, 0.49);
+    float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
+    vec4 color = vec4(mix(baseColor.rgb, outlineColor,
+            smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), baseColor.a * coverage);
+
+    // To counteract depth fighting with overlay wireframe.
+    float depthOffset = -0.00001;
+    if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
+        fragmentDepth += 0.005;
+    }
+    fragmentDepthFrag = fragmentDepth;
+
+    return color;
+}
+#endif
+
 #endif
