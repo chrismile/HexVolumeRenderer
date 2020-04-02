@@ -730,6 +730,8 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
     bool loadingSuccessful = it->second->loadHexahedralMeshFromFile(
             fileName, hexMeshVertices, hexMeshCellIndices, hexMeshDeformations);
     if (loadingSuccessful) {
+        newMeshLoaded = true;
+
         // A copy of the mesh data is stored for allowing the user to alter the deformation factor also after loading.
         std::vector<glm::vec3> vertices;
         vertices = hexMeshVertices;
@@ -764,10 +766,11 @@ void MainApp::prepareVisualizationPipeline() {
         // changed).
         for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
             if (meshRenderer->isDirty() || isPreviousNodeDirty) {
-                meshRenderer->generateVisualizationMapping(filteredMesh);
+                meshRenderer->generateVisualizationMapping(filteredMesh, newMeshLoaded);
             }
         }
     }
+    newMeshLoaded = false;
 }
 
 HexMeshPtr MainApp::getFilteredMesh(bool& isDirty) {

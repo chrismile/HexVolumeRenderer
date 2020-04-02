@@ -333,7 +333,7 @@ void ClearViewRenderer::renderGui() {
         if (!isVolumeRenderer
                 && ImGui::Checkbox("Use Weighted Vertex Attributes", &useWeightedVertexAttributes)) {
             useShading = false;
-            if (this->mesh) generateVisualizationMapping(mesh);
+            if (this->mesh) generateVisualizationMapping(mesh, false);
         }
         if (ImGui::Combo(
                 "Line Rendering", (int*)&lineRenderingMode, LINE_RENDERING_MODE_NAMES,

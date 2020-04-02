@@ -50,7 +50,7 @@ WireframeRenderer_Faces::WireframeRenderer_Faces(
     }
 }
 
-void WireframeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
+void WireframeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     lineWidth = glm::clamp(
             std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
             MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);

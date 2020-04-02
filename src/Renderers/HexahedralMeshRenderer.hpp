@@ -48,8 +48,13 @@ public:
     // Returns if the data needs to be re-rendered, but the visualization mapping is valid.
     virtual bool needsReRender() { bool tmp = reRender; reRender = false; return tmp; }
 
-    // Re-generates the visualization mapping.
-    virtual void generateVisualizationMapping(HexMeshPtr meshIn)=0;
+    // Re-generates the visualization mapping. "isNewMesh" indicates if a neew
+    /**
+     * e-generates the visualization mapping.
+     * @param meshIn The mesh to generate a visualization mapping for.
+     * @param isNewMesh Whether a new mesh is loaded or just a new renderer is used.
+     */
+    virtual void generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh)=0;
 
     // Renders the object to the scene framebuffer.
     virtual void render()=0;

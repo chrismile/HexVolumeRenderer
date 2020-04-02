@@ -42,7 +42,7 @@ LodLinePreviewRenderer::LodLinePreviewRenderer(SceneData &sceneData, TransferFun
             {"WireframeLod.Vertex", "WireframeLod.Geometry", "WireframeLod.Fragment.Preview"});
 }
 
-void LodLinePreviewRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+void LodLinePreviewRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     lineWidth = glm::clamp(
             std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
             MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);

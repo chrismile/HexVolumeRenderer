@@ -38,8 +38,12 @@ public:
     PartitionLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
     virtual ~PartitionLineRenderer() {}
 
-    // Re-generates the visualization mapping.
-    virtual void generateVisualizationMapping(HexMeshPtr meshIn);
+    /**
+     * Re-generates the visualization mapping.
+     * @param meshIn The mesh to generate a visualization mapping for.
+     * @param isNewMesh Whether a new mesh is loaded or just a new renderer is used.
+     */
+    virtual void generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
 
     // Renders the object to the scene framebuffer.
     virtual void render();

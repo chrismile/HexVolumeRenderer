@@ -66,7 +66,7 @@ DepthComplexityRenderer::DepthComplexityRenderer(SceneData &sceneData, TransferF
     onResolutionChanged();
 }
 
-void DepthComplexityRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+void DepthComplexityRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     std::vector<uint32_t> triangleIndices;
     std::vector<glm::vec3> vertexPositions;
     std::vector<glm::vec3> vertexNormals;

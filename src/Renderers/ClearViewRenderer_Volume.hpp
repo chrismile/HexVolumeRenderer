@@ -48,8 +48,12 @@ public:
     ClearViewRenderer_Volume(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
     virtual ~ClearViewRenderer_Volume() {}
 
-    // Re-generates the visualization mapping.
-    virtual void generateVisualizationMapping(HexMeshPtr meshIn);
+    /**
+     * Re-generates the visualization mapping.
+     * @param meshIn The mesh to generate a visualization mapping for.
+     * @param isNewMesh Whether a new mesh is loaded or just a new renderer is used.
+     */
+    virtual void generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
 
     // Called when the resolution of the application window has changed.
     virtual void onResolutionChanged();

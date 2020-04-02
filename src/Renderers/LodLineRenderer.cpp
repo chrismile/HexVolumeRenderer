@@ -76,7 +76,11 @@ void LodLineRenderer::reloadSphereRenderData() {
     focusPointShaderAttributes->setIndexGeometryBuffer(focusPointIndexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 }
 
-void LodLineRenderer::generateVisualizationMapping(HexMeshPtr meshIn) {
+void LodLineRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+    if (isNewMesh) {
+        Pickable::focusPoint = glm::vec3(0.0f);
+    }
+
     const float avgCellVolumeCbrt = std::cbrt(meshIn->getAverageCellVolume());
     lineWidth = glm::clamp(
             avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);

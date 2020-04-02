@@ -165,6 +165,7 @@ private:
 
     /// The data loaded from the input file (or a wrapped nullptr).
     HexMeshPtr inputData;
+    bool newMeshLoaded = true;
 
     /// A copy of the mesh data is stored for allowing the user to alter the deformation factor also after loading.
     std::vector<glm::vec3> hexMeshVertices;

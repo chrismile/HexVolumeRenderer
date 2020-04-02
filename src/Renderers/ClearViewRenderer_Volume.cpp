@@ -120,7 +120,11 @@ ClearViewRenderer_Volume::ClearViewRenderer_Volume(SceneData &sceneData, Transfe
     onResolutionChanged();
 }
 
-void ClearViewRenderer_Volume::generateVisualizationMapping(HexMeshPtr meshIn) {
+void ClearViewRenderer_Volume::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+    if (isNewMesh) {
+        Pickable::focusPoint = glm::vec3(0.0f);
+    }
+
     mesh = meshIn;
     const float avgCellVolumeCbrt = std::cbrt(meshIn->getAverageCellVolume());
     lineWidth = glm::clamp(

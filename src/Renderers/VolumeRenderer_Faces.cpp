@@ -93,7 +93,7 @@ VolumeRenderer_Faces::VolumeRenderer_Faces(SceneData &sceneData, TransferFunctio
     onResolutionChanged();
 }
 
-void VolumeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
+void VolumeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     this->mesh = meshIn;
     
     std::vector<uint32_t> triangleIndices;
@@ -281,7 +281,7 @@ void VolumeRenderer_Faces::renderGui() {
         }
         if (ImGui::Checkbox("Use Weighted Vertex Attributes", &useWeightedVertexAttributes)) {
             useShading = false;
-            if (this->mesh) generateVisualizationMapping(mesh);
+            if (this->mesh) generateVisualizationMapping(mesh, false);
         }
     }
     ImGui::End();
