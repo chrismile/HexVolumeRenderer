@@ -39,8 +39,8 @@ public:
 
 protected:
     // GUI data
-    glm::vec3 focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec4 focusPointColor = glm::vec4(0.75f, 1.0f, 0.0f, 1.0f);//glm::vec4(0.2f, 0.0f, 0.0f, 1.0f);
+    static glm::vec3 focusPoint;
+    static glm::vec4 focusPointColor;
 
     // Focus point picking/moving information.
     bool hasHitInformation = false;

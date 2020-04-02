@@ -33,6 +33,10 @@
 #include <Input/Mouse.hpp>
 
 #include "Pickable.hpp"
+#include "../Helpers/LineRenderingDefines.hpp"
+
+glm::vec3 Pickable::focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec4 Pickable::focusPointColor = FOCUS_SPHERE_COLOR;
 
 void Pickable::updatePickable(float dt, bool& reRender, SceneData& sceneData) {
     if (sgl::Keyboard->getModifier() & KMOD_CTRL) {

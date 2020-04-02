@@ -106,6 +106,7 @@ void ClearViewRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn) {
             avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
     focusRadius = glm::clamp(
             avgCellVolumeCbrt * FOCUS_RADIUS_VOLUME_CBRT_FACTOR, MIN_FOCUS_RADIUS_AUTO, MAX_FOCUS_RADIUS_AUTO);
+    reloadSphereRenderData();
 
     // Unload old data.
     shaderAttributesContext = sgl::ShaderAttributesPtr();

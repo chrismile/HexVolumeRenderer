@@ -29,6 +29,8 @@
 #ifndef HEXVOLUMERENDERER_LINERENDERINGDEFINES_HPP
 #define HEXVOLUMERENDERER_LINERENDERINGDEFINES_HPP
 
+#include <glm/vec4.hpp>
+
 // Minimum and maximum values in the UI.
 const float MIN_LINE_WIDTH = 0.0001f;
 const float MAX_LINE_WIDTH = 0.004f;
@@ -45,5 +47,10 @@ const float FOCUS_RADIUS_VOLUME_CBRT_FACTOR = 3.0f;
 const float MIN_FOCUS_RADIUS_AUTO = 0.001f;
 const float MAX_FOCUS_RADIUS_AUTO = 0.4f;
 
+// Focus sphere indicator size and color for ClearView renderers and LOD renderers.
+const float MIN_FOCUS_SPHERE_RADIUS = 0.001f;
+const float MAX_FOCUS_SPHERE_RADIUS = 0.003f;
+const float FOCUS_SPHERE_SIZE_FACTOR = 0.05f;
+const glm::vec4 FOCUS_SPHERE_COLOR = glm::vec4(0.75f, 1.0f, 0.0f, 1.0f);//glm::vec4(0.2f, 0.0f, 0.0f, 1.0f);
 
 #endif //HEXVOLUMERENDERER_LINERENDERINGDEFINES_HPP

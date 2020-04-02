@@ -55,9 +55,10 @@ void LodLineRendererPerFragment::reloadSphereRenderData() {
     std::vector<glm::vec3> sphereVertexPositions;
     std::vector<glm::vec3> sphereVertexNormals;
     std::vector<uint32_t> sphereIndices;
-    float scaleFactor = glm::clamp(maxDistance / 0.1f, 0.4f, 1.2f);
+    float sphereRadius = glm::clamp(
+            maxDistance * FOCUS_SPHERE_SIZE_FACTOR / 2.0f, MIN_FOCUS_SPHERE_RADIUS, MAX_FOCUS_SPHERE_RADIUS);
     getSphereSurfaceRenderData(
-            glm::vec3(0,0,0), 0.003f * scaleFactor, 20, 20,
+            glm::vec3(0,0,0), sphereRadius, 20, 20,
             sphereVertexPositions, sphereVertexNormals, sphereIndices);
 
     focusPointShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgramSurface);
@@ -76,9 +77,12 @@ void LodLineRendererPerFragment::reloadSphereRenderData() {
 }
 
 void LodLineRendererPerFragment::generateVisualizationMapping(HexMeshPtr meshIn) {
+    const float avgCellVolumeCbrt = std::cbrt(meshIn->getAverageCellVolume());
     lineWidth = glm::clamp(
-            std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
-            MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
+            avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
+    maxDistance = 2.0f * glm::clamp(
+            avgCellVolumeCbrt * FOCUS_RADIUS_VOLUME_CBRT_FACTOR, MIN_FOCUS_RADIUS_AUTO, MAX_FOCUS_RADIUS_AUTO);
+    reloadSphereRenderData();
 
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec4> colors;
