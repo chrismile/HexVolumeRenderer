@@ -77,7 +77,7 @@ struct SphereInstancingData {
 ClearViewRenderer_Volume::ClearViewRenderer_Volume(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : ClearViewRenderer(sceneData, transferFunctionWindow) {
     windowName = "ClearView Renderer (Volume)";
-    isVolumeRenderer = true;
+    clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_VOLUME;
 
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();

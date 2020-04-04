@@ -72,6 +72,7 @@
 #include "Renderers/VolumeRenderer_Faces.hpp"
 #include "Renderers/VolumeRenderer_Volume.hpp"
 #include "Renderers/ClearViewRenderer_Faces.hpp"
+#include "Renderers/ClearViewRenderer_FacesUnified.hpp"
 #include "Renderers/ClearViewRenderer_Volume.hpp"
 #include "Renderers/DepthComplexityRenderer.hpp"
 #include "Renderers/SingularityRenderer.hpp"
@@ -197,6 +198,8 @@ void MainApp::setRenderers() {
         meshRenderers.push_back(new VolumeRenderer_Faces(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_CLEAR_VIEW_FACES) {
         meshRenderers.push_back(new ClearViewRenderer_Faces(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED) {
+        meshRenderers.push_back(new ClearViewRenderer_FacesUnified(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_SINGULARITY) {
         meshRenderers.push_back(new SingularityRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_BASE_COMPLEX_LINES) {

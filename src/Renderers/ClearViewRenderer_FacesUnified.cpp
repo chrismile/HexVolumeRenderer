@@ -40,7 +40,7 @@
 #include "Tubes/Tubes.hpp"
 #include "Helpers/Sphere.hpp"
 #include "Helpers/LineRenderingDefines.hpp"
-#include "ClearViewRenderer_Faces.hpp"
+#include "ClearViewRenderer_FacesUnified.hpp"
 
 // Use stencil buffer to mask unused pixels
 static bool useStencilBuffer = true;
@@ -60,20 +60,25 @@ struct LinkedListFragmentNode {
     uint32_t next;
 };
 
-ClearViewRenderer_Faces::ClearViewRenderer_Faces(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : ClearViewRenderer(sceneData, transferFunctionWindow) {
-    windowName = "ClearView Renderer (Faces)";
-    clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_FACES;
+    windowName = "ClearView Renderer (Unified)";
+    clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED;
 
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
     sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "\"LinkedListGather.glsl\"");
     sgl::ShaderManager->addPreprocessorDefine("MAX_NUM_FRAGS", sgl::toString(maxNumFragmentsSorting));
 
-    loadClearViewBaseData();
+    shaderProgramSurface = sgl::ShaderManager->getShaderProgram(
+            {"MeshShader.Vertex.Plain", "MeshShader.Fragment.Plain"});
+    reloadSphereRenderData();
 
-    gatherShaderContext = sgl::ShaderManager->getShaderProgram(
-            {"MeshShader.Vertex.Attribute", "MeshShader.Fragment.ClearView.Context"});
+    std::string lineRenderingStyleDefineName = "LINE_RENDERING_STYLE_HALO";
+    sgl::ShaderManager->addPreprocessorDefine(lineRenderingStyleDefineName, "");
+    gatherShader = sgl::ShaderManager->getShaderProgram(
+            {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView"});
+    sgl::ShaderManager->removePreprocessorDefine(lineRenderingStyleDefineName);
     resolveShader = sgl::ShaderManager->getShaderProgram(
             {"LinkedListResolve.Vertex", "LinkedListResolve.Fragment"});
     clearShader = sgl::ShaderManager->getShaderProgram(
@@ -99,7 +104,7 @@ ClearViewRenderer_Faces::ClearViewRenderer_Faces(SceneData &sceneData, TransferF
     onResolutionChanged();
 }
 
-void ClearViewRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     if (isNewMesh) {
         Pickable::focusPoint = glm::vec3(0.0f);
     }
@@ -113,57 +118,40 @@ void ClearViewRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn, bo
     reloadSphereRenderData();
 
     // Unload old data.
-    shaderAttributesContext = sgl::ShaderAttributesPtr();
+    shaderAttributes = sgl::ShaderAttributesPtr();
+    hexahedralCellFacesBuffer = sgl::GeometryBufferPtr();
 
-    // First, start with the rendering data for the context region.
-    std::vector<uint32_t> triangleIndices;
-    std::vector<glm::vec3> vertexPositions;
-    std::vector<glm::vec3> vertexNormals;
-    std::vector<float> vertexAttributes;
+    // Load the unified data for the focus and context region.
+    std::vector<uint32_t> indices;
+    std::vector<HexahedralCellFaceUnified> hexahedralCellFaces;
     if (useWeightedVertexAttributes) {
-        meshIn->getVolumeData_FacesShared(triangleIndices, vertexPositions, vertexAttributes);
-        // Just fill with dummy data for now
-        vertexNormals.resize(vertexPositions.size(), glm::vec3(1.0f));
+        mesh->getSurfaceDataWireframeFacesUnified_AttributePerVertex(
+                indices, hexahedralCellFaces, false);
     } else {
-        meshIn->getVolumeData_Faces(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
+        mesh->getSurfaceDataWireframeFacesUnified_AttributePerCell(
+                indices, hexahedralCellFaces, false);
     }
 
-    shaderAttributesContext = sgl::ShaderManager->createShaderAttributes(gatherShaderContext);
-    shaderAttributesContext->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
+    shaderAttributes = sgl::ShaderManager->createShaderAttributes(gatherShader);
+    shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
-    shaderAttributesContext->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
+            sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
+    shaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
-    // Add the position buffer.
-    sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
-    shaderAttributesContext->addGeometryBuffer(
-            positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+    // Create an SSBO for the hexahedral cell faces.
+    hexahedralCellFacesBuffer = sgl::Renderer->createGeometryBuffer(
+            hexahedralCellFaces.size()*sizeof(HexahedralCellFaceUnified), (void*)&hexahedralCellFaces.front(),
+            sgl::SHADER_STORAGE_BUFFER);
 
-    // Add the normal buffer.
-    sgl::GeometryBufferPtr normalBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexNormals.size()*sizeof(glm::vec3), (void*)&vertexNormals.front(), sgl::VERTEX_BUFFER);
-    shaderAttributesContext->addGeometryBuffer(
-            normalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
-
-    // Add the color buffer.
-    sgl::GeometryBufferPtr attributeBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexAttributes.size()*sizeof(float), (void*)&vertexAttributes.front(), sgl::VERTEX_BUFFER);
-    shaderAttributesContext->addGeometryBuffer(
-            attributeBuffer, "vertexAttribute", sgl::ATTRIB_FLOAT, 1);
-
-
-    // Now, continue with the rendering data for the focus region.
-    loadFocusRepresentation();
 
     dirty = false;
     reRender = true;
     hasHitInformation = false;
 }
 
-void ClearViewRenderer_Faces::onResolutionChanged() {
+void ClearViewRenderer_FacesUnified::onResolutionChanged() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
@@ -186,7 +174,7 @@ void ClearViewRenderer_Faces::onResolutionChanged() {
             sizeof(uint32_t), NULL, sgl::ATOMIC_COUNTER_BUFFER);
 }
 
-void ClearViewRenderer_Faces::setUniformData() {
+void ClearViewRenderer_FacesUnified::setUniformData() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
@@ -200,50 +188,26 @@ void ClearViewRenderer_Faces::setUniformData() {
     sgl::ShaderManager->bindShaderStorageBuffer(1, startOffsetBuffer);
     sgl::ShaderManager->bindAtomicCounterBuffer(0, atomicCounterBuffer);
 
-    gatherShaderContext->setUniform("useShading", int(useShading));
-    gatherShaderContext->setUniform("viewportW", width);
-    gatherShaderContext->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
-    gatherShaderContext->setUniform("cameraPosition", sceneData.camera->getPosition());
-    gatherShaderContext->setUniform("lookingDirection", lookingDirection);
-    gatherShaderContext->setUniform("sphereCenter", focusPoint);
-    gatherShaderContext->setUniform("sphereRadius", focusRadius);
-    gatherShaderContext->setUniform(
+    gatherShader->setUniform("viewportW", width);
+    gatherShader->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
+    gatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
+    gatherShader->setUniform("lookingDirection", lookingDirection);
+    gatherShader->setUniform("sphereCenter", focusPoint);
+    gatherShader->setUniform("sphereRadius", focusRadius);
+    gatherShader->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
-
-    sgl::ShaderProgram* gatherShaderFocus = shaderAttributesFocus->getShaderProgram();
-    gatherShaderFocus->setUniform("viewportW", width);
-    gatherShaderFocus->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
-    gatherShaderFocus->setUniform("cameraPosition", sceneData.camera->getPosition());
-    if (gatherShaderFocus->hasUniform("lookingDirection")) {
-        gatherShaderFocus->setUniform("lookingDirection", lookingDirection);
-    }
-    gatherShaderFocus->setUniform("sphereCenter", focusPoint);
-    gatherShaderFocus->setUniform("sphereRadius", focusRadius);
-    if (gatherShaderFocus->hasUniform("lineWidth")) {
-        gatherShaderFocus->setUniform("lineWidth", lineWidth);
-    }
+    gatherShader->setUniform("lineWidth", lineWidth);
 
     shaderProgramSurface->setUniform("viewportW", width);
     shaderProgramSurface->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
     shaderProgramSurface->setUniform("cameraPosition", sceneData.camera->getPosition());
     shaderProgramSurface->setUniform("color", focusPointColor);
 
-    if (shaderAttributesFocusPoints) {
-        gatherShaderFocusSpheres->setUniform("viewportW", width);
-        gatherShaderFocusSpheres->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
-        gatherShaderFocusSpheres->setUniform("cameraPosition", sceneData.camera->getPosition());
-        if (gatherShaderFocusSpheres->hasUniform("lookingDirection")) {
-            gatherShaderFocusSpheres->setUniform("lookingDirection", lookingDirection);
-        }
-        gatherShaderFocusSpheres->setUniform("sphereCenter", focusPoint);
-        gatherShaderFocusSpheres->setUniform("sphereRadius", focusRadius);
-    }
-
     resolveShader->setUniform("viewportW", width);
     clearShader->setUniform("viewportW", width);
 }
 
-void ClearViewRenderer_Faces::clear() {
+void ClearViewRenderer_FacesUnified::clear() {
     //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // In the clear and gather pass, we just want to write data to an SSBO.
@@ -263,7 +227,7 @@ void ClearViewRenderer_Faces::clear() {
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 }
 
-void ClearViewRenderer_Faces::gather() {
+void ClearViewRenderer_FacesUnified::gather() {
     // Enable the depth test, but disable depth write for gathering.
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -283,34 +247,24 @@ void ClearViewRenderer_Faces::gather() {
     sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
 
     // Now, the final gather step.
-    sgl::Renderer->render(shaderAttributesContext);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-    // Render the focus region lines.
-    if (lineRenderingMode == LINE_RENDERING_MODE_WIREFRAME_FACES) {
-        sgl::ShaderManager->bindShaderStorageBuffer(6, hexahedralCellFacesBuffer);
+    sgl::ShaderManager->bindShaderStorageBuffer(6, hexahedralCellFacesBuffer);
+    if (useWeightedVertexAttributes) {
         glDisable(GL_CULL_FACE);
     }
-    sgl::Renderer->render(shaderAttributesFocus);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-    if (lineRenderingMode == LINE_RENDERING_MODE_WIREFRAME_FACES) {
+    sgl::Renderer->render(shaderAttributes);
+    if (useWeightedVertexAttributes) {
         glEnable(GL_CULL_FACE);
     }
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     // Render the focus point.
     sgl::Renderer->setModelMatrix(sgl::matrixTranslation(focusPoint));
     sgl::Renderer->render(focusPointShaderAttributes);
     sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-    if (shaderAttributesFocusPoints) {
-        sgl::ShaderManager->bindShaderStorageBuffer(6, pointLocationsBuffer);
-        //sgl::Renderer->render(shaderAttributesFocusPoints);
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-    }
 }
 
-void ClearViewRenderer_Faces::resolve() {
+void ClearViewRenderer_FacesUnified::resolve() {
     sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
     sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
     sgl::Renderer->setModelMatrix(sgl::matrixIdentity());

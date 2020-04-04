@@ -5,7 +5,11 @@ out vec4 fragColor;
 
 void gatherFragment(vec4 color) {
     if (color.a < 0.001) {
+#ifndef GATHER_NO_DISCARD
         discard;
+#else
+        return;
+#endif
     }
 
     int x = int(gl_FragCoord.x);
@@ -28,7 +32,11 @@ void gatherFragment(vec4 color) {
 
 void gatherFragmentCustomDepth(vec4 color, float depth) {
     if (color.a < 0.001) {
+#ifndef GATHER_NO_DISCARD
         discard;
+#else
+        return;
+#endif
     }
 
     int x = int(gl_FragCoord.x);

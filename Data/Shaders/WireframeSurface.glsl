@@ -170,7 +170,7 @@ void main()
     //gl_FragDepth = gl_FragCoord.z + fragmentDepth - length(fragmentPositionWorld - cameraPosition);
     fragColor = color;
     #else
-    gl_FragDepth = gl_FragCoord.z - 0.00001;
+    fragmentDepth += 0.00001;
     //fragmentDepth = fragmentDepth + 0.00004;
     gatherFragmentCustomDepth(color, fragmentDepth);
     #endif

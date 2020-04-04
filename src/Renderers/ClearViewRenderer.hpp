@@ -94,8 +94,11 @@ protected:
     const int NUM_LINE_RENDERING_STYLES =
             ((int)(sizeof(LINE_RENDERING_STYLE_NAMES) / sizeof(*LINE_RENDERING_STYLE_NAMES)));
 
+    enum ClearViewRendererType {
+        CLEAR_VIEW_RENDERER_TYPE_FACES, CLEAR_VIEW_RENDERER_TYPE_VOLUME, CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED
+    };
     std::string windowName;
-    bool isVolumeRenderer;
+    ClearViewRendererType clearViewRendererType;
 
     // Load either tube or line representation depending on "useTubes".
     void loadFocusRepresentation();

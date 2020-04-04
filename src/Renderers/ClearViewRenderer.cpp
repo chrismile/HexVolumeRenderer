@@ -327,21 +327,22 @@ void ClearViewRenderer::renderGui() {
             }
             reRender = true;
         }
-        if (!isVolumeRenderer && !useWeightedVertexAttributes && ImGui::Checkbox("Use Shading", &useShading)) {
+        if (clearViewRendererType == CLEAR_VIEW_RENDERER_TYPE_FACES
+                && !useWeightedVertexAttributes && ImGui::Checkbox("Use Shading", &useShading)) {
             reRender = true;
         }
-        if (!isVolumeRenderer
+        if (clearViewRendererType != CLEAR_VIEW_RENDERER_TYPE_VOLUME
                 && ImGui::Checkbox("Use Weighted Vertex Attributes", &useWeightedVertexAttributes)) {
             useShading = false;
             if (this->mesh) generateVisualizationMapping(mesh, false);
         }
-        if (ImGui::Combo(
+        if (clearViewRendererType != CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED && ImGui::Combo(
                 "Line Rendering", (int*)&lineRenderingMode, LINE_RENDERING_MODE_NAMES,
                 NUM_LINE_RENDERING_MODES)) {
             loadFocusRepresentation();
             reRender = true;
         }
-        if (ImGui::Combo(
+        if (clearViewRendererType != CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED && ImGui::Combo(
                 "Line Style", (int*)&lineRenderingStyle, LINE_RENDERING_STYLE_NAMES,
                 IM_ARRAYSIZE(LINE_RENDERING_STYLE_NAMES))) {
             reloadFocusShaders();

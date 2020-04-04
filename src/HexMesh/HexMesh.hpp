@@ -94,6 +94,13 @@ struct HexahedralCellFace {
     glm::vec4 lineColors[4];
 };
 
+// For @see HexMesh::getSurfaceDataWireframeFacesUnified.
+struct HexahedralCellFaceUnified {
+    glm::vec4 vertexPositions[4];
+    float vertexAttributes[4];
+    glm::vec4 lineColors[4];
+};
+
 class HexMesh {
 public:
     HexMesh(TransferFunctionWindow &transferFunctionWindow, RayMeshIntersection& rayMeshIntersection)
@@ -308,6 +315,46 @@ public:
             std::vector<uint32_t>& indices,
             std::vector<HexahedralCellFace>& hexahedralCellFaces,
             bool onlyBoundary = false,
+            bool useGlowColors = false);
+
+    /**
+     * Get all surface faces including the colors of their edges.
+     * For rendering, the shader "MeshWireframe.glsl" can be used.
+     * Backface culling needs to be enabled.
+     *
+     * vertex 1     edge 1    vertex 2
+     *          | - - - - - |
+     *          | \         |
+     *          |   \       |
+     *   edge 0 |     \     | edge 2
+     *          |       \   |
+     *          |         \ |
+     *          | - - - - - |
+     * vertex 0     edge 3    vertex 3
+     */
+    void getSurfaceDataWireframeFacesUnified_AttributePerCell(
+            std::vector<uint32_t>& indices,
+            std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
+            bool useGlowColors = false);
+
+    /**
+     * Get all surface faces including the colors of their edges.
+     * For rendering, the shader "MeshWireframe.glsl" can be used.
+     * Backface culling needs to be disabled.
+     *
+     * vertex 1     edge 1    vertex 2
+     *          | - - - - - |
+     *          | \         |
+     *          |   \       |
+     *   edge 0 |     \     | edge 2
+     *          |       \   |
+     *          |         \ |
+     *          | - - - - - |
+     * vertex 0     edge 3    vertex 3
+     */
+    void getSurfaceDataWireframeFacesUnified_AttributePerVertex(
+            std::vector<uint32_t>& indices,
+            std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
             bool useGlowColors = false);
 
     static const glm::vec4 glowColorRegular;

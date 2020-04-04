@@ -6,7 +6,11 @@ out vec4 fragColor;
 void gatherFragmentVolumeFrontFace(vec4 color) {
     // TODO: Test if this could possibly make problems (i.e., back face culled but not front face or vice versa).
     /*if (color.a < 0.001) {
+#ifndef GATHER_NO_DISCARD
         discard;
+#else
+        return;
+#endif
     }*/
 
     int x = int(gl_FragCoord.x);
@@ -30,7 +34,11 @@ void gatherFragmentVolumeFrontFace(vec4 color) {
 void gatherFragmentVolumeBackFace(vec4 color) {
     // TODO: Test if this could possibly make problems (i.e., back face culled but not front face or vice versa).
     /*if (color.a < 0.001) {
+#ifndef GATHER_NO_DISCARD
         discard;
+#else
+        return;
+#endif
     }*/
 
     int x = int(gl_FragCoord.x);
@@ -54,7 +62,11 @@ void gatherFragmentVolumeBackFace(vec4 color) {
 // Not called gatherFragmentVolumeSurface, as surface fragment is the standard fallback.
 void gatherFragment(vec4 color) {
     if (color.a < 0.001) {
+#ifndef GATHER_NO_DISCARD
         discard;
+#else
+        return;
+#endif
     }
 
     int x = int(gl_FragCoord.x);
@@ -77,7 +89,11 @@ void gatherFragment(vec4 color) {
 
 void gatherFragmentCustomDepth(vec4 color, float depth) {
     if (color.a < 0.001) {
+#ifndef GATHER_NO_DISCARD
         discard;
+#else
+        return;
+#endif
     }
 
     int x = int(gl_FragCoord.x);

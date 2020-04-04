@@ -18,7 +18,7 @@ float getClearViewContextFragmentOpacityFactor() {
     float t0, t1;
     vec3 intersectionPosition;
     bool intersectsSphere = raySphereIntersection(
-    rayOrigin, rayDirection, sphereCenter, sphereRadius, t0, t1, intersectionPosition);
+            rayOrigin, rayDirection, sphereCenter, sphereRadius, t0, t1, intersectionPosition);
     bool fragmentInSphere = SQR(fragmentPositionWorld.x - sphereCenter.x)
             + SQR(fragmentPositionWorld.y - sphereCenter.y)
             + SQR(fragmentPositionWorld.z - sphereCenter.z) <= SQR(sphereRadius);
@@ -47,7 +47,7 @@ float getClearViewFocusFragmentOpacityFactor() {
     float t0, t1;
     vec3 intersectionPosition;
     bool intersectsSphere = raySphereIntersection(
-    rayOrigin, rayDirection, sphereCenter, sphereRadius, t0, t1, intersectionPosition);
+            rayOrigin, rayDirection, sphereCenter, sphereRadius, t0, t1, intersectionPosition);
     bool fragmentInSphere = SQR(fragmentPositionWorld.x - sphereCenter.x)
             + SQR(fragmentPositionWorld.y - sphereCenter.y)
             + SQR(fragmentPositionWorld.z - sphereCenter.z) <= SQR(sphereRadius);

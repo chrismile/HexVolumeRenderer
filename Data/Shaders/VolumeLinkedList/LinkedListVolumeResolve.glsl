@@ -235,12 +235,22 @@ vec4 frontToBackPQ_Volume(
         }
 
         if (volumeFrontFaceFragmentLoaded && volumeBackFaceFragmentLoaded && volumeFrontFaceDepth <= surfaceDepth) {
+#if true
+            // Volume
+            vec4 volumeColor = (volumeFrontFaceColor + volumeFrontFaceColor) / 2.0;
+            currLengthTraveled = volumeBackFaceDepth - volumeFrontFaceDepth;
+            float volumeOpacityFactor = clamp(1.0 - exp(
+                    -volumeColor.a * VOLUME_FACTOR * currLengthTraveled), 0.0, 1.0);
+            currentColor = vec4(volumeColor.rgb, volumeOpacityFactor);
+            accumDepth += currLengthTraveled;
+#else
             // Volume
             currLengthTraveled = volumeBackFaceDepth - volumeFrontFaceDepth;
             float volumeOpacityFactor = clamp(1.0 - exp(
                     -volumeFrontFaceColor.a * VOLUME_FACTOR * currLengthTraveled), 0.0, 1.0);
             currentColor = vec4(volumeFrontFaceColor.rgb, volumeOpacityFactor);
             accumDepth += currLengthTraveled;
+#endif
 
             if (i_ff < numFragsVolumeFrontFaces) {
                 getNextVolumeFrontFaceFragment(i_ff, numFragsVolumeFrontFaces, volumeFrontFaceColor, volumeFrontFaceDepth);

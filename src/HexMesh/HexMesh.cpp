@@ -1839,3 +1839,171 @@ void HexMesh::getSurfaceDataWireframeFaces(
         indexOffset += 4;
     }
 }
+
+void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
+        bool useGlowColors) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+    const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
+    const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
+
+    std::unordered_set<uint32_t> singularEdgeIds;
+    for (Singular_E& se : si->SEs) {
+        for (uint32_t e_id : se.es_link) {
+            singularEdgeIds.insert(e_id);
+        }
+    }
+
+    size_t indexOffset = 0;
+    for (size_t i = 0; i < mesh->Hs.size(); i++) {
+        Hybrid& h = mesh->Hs.at(i);
+        for (size_t j = 0; j < h.fs.size(); j++) {
+            Hybrid_F& f = mesh->Fs.at(h.fs.at(j));
+            assert(f.neighbor_hs.size() >= 1 && f.neighbor_hs.size() <= 2);
+            bool invertWinding = f.neighbor_hs.at(0) != h.id;
+
+            hexahedralCellFaces.push_back(HexahedralCellFaceUnified());
+            HexahedralCellFaceUnified& hexahedralCellFace = hexahedralCellFaces.back();
+
+            assert(f.vs.size() == 4);
+            for (size_t j = 0; j < 4; j++) {
+                uint32_t v_id = f.vs.at(j);
+                glm::vec4 vertexPosition(
+                        mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
+                hexahedralCellFace.vertexPositions[j] = vertexPosition;
+                hexahedralCellFace.vertexAttributes[j] = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h.id);
+            }
+
+            if (!invertWinding) {
+                /**
+                 * vertex 1     edge 1    vertex 2
+                 *          | - - - - - |
+                 *          | \         |
+                 *          |   \       |
+                 *   edge 0 |     \     | edge 2
+                 *          |       \   |
+                 *          |         \ |
+                 *          | - - - - - |
+                 * vertex 0     edge 3    vertex 3
+                 */
+                triangleIndices.push_back(indexOffset + 0);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 2);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 3);
+            }
+            if (invertWinding || f.boundary) {
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 0);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 2);
+            }
+
+            assert(f.es.size() == 4);
+            for (size_t j = 0; j < 4; j++) {
+                uint32_t e_id = f.es.at(j);
+                if (singularEdgeIds.find(e_id) != singularEdgeIds.end()) {
+                    hexahedralCellFace.lineColors[j] = singularColor;
+                } else {
+                    hexahedralCellFace.lineColors[j] = regularColor;
+                }
+            }
+
+            indexOffset += 4;
+        }
+    }
+}
+
+void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
+        bool useGlowColors) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+    const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
+    const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
+
+    std::unordered_set<uint32_t> singularEdgeIds;
+    for (Singular_E& se : si->SEs) {
+        for (uint32_t e_id : se.es_link) {
+            singularEdgeIds.insert(e_id);
+        }
+    }
+
+    // Compute all cell volumes.
+    std::vector<float> cellVolumes(mesh->Hs.size());
+    std::vector<glm::vec3> cellPointsArray;
+    cellPointsArray.reserve(8);
+    for (uint32_t h_id = 0; h_id < mesh->Hs.size(); h_id++) {
+        cellVolumes.at(h_id) = getCellVolume(h_id, cellPointsArray);
+    }
+
+    // Compute all vertex attributes.
+    std::vector<float> vertexAttributes(mesh->Vs.size());
+    for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
+        Hybrid_V& v = mesh->Vs.at(v_id);
+        float volumeSum = 0.0f, volumeWeightedAttributeSum = 0.0f;
+        for (uint32_t h_id : v.neighbor_hs) {
+            volumeSum += cellVolumes.at(h_id);
+        }
+        for (uint32_t h_id : v.neighbor_hs) {
+            float cellVolume = cellVolumes.at(h_id);
+            float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
+            volumeWeightedAttributeSum += cellVolume * cellAttribute;
+        }
+
+        float vertexAttribute = volumeWeightedAttributeSum / volumeSum;
+        vertexAttributes.at(v_id) = vertexAttribute;
+    }
+
+    hexahedralCellFaces.resize(mesh->Fs.size());
+    size_t indexOffset = 0;
+    for (size_t i = 0; i < mesh->Fs.size(); i++) {
+        Hybrid_F& f = mesh->Fs.at(i);
+        HexahedralCellFaceUnified& hexahedralCellFace = hexahedralCellFaces.at(i);
+
+        assert(f.vs.size() == 4);
+        for (size_t j = 0; j < 4; j++) {
+            uint32_t v_id = f.vs.at(j);
+            glm::vec4 vertexPosition(
+                    mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
+            hexahedralCellFace.vertexPositions[j] = vertexPosition;
+            hexahedralCellFace.vertexAttributes[j] = vertexAttributes.at(v_id);
+        }
+
+        /**
+         * vertex 1     edge 1    vertex 2
+         *          | - - - - - |
+         *          | \         |
+         *          |   \       |
+         *   edge 0 |     \     | edge 2
+         *          |       \   |
+         *          |         \ |
+         *          | - - - - - |
+         * vertex 0     edge 3    vertex 3
+         */
+        triangleIndices.push_back(indexOffset + 0);
+        triangleIndices.push_back(indexOffset + 3);
+        triangleIndices.push_back(indexOffset + 1);
+        triangleIndices.push_back(indexOffset + 2);
+        triangleIndices.push_back(indexOffset + 1);
+        triangleIndices.push_back(indexOffset + 3);
+
+        assert(f.es.size() == 4);
+        for (size_t j = 0; j < 4; j++) {
+            uint32_t e_id = f.es.at(j);
+            if (singularEdgeIds.find(e_id) != singularEdgeIds.end()) {
+                hexahedralCellFace.lineColors[j] = singularColor;
+            } else {
+                hexahedralCellFace.lineColors[j] = regularColor;
+            }
+        }
+
+        indexOffset += 4;
+    }
+}
