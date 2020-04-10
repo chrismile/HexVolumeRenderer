@@ -82,6 +82,7 @@
 #include "Renderers/LodLineRendererPerFragment.hpp"
 #include "Renderers/LodLineRenderer.hpp"
 #include "Renderers/LodLinePreviewRenderer.hpp"
+#include "Renderers/LodLinePreviewRenderer_Sheets.hpp"
 #ifdef USE_EMBREE
 #include "Renderers/Intersection/RayMeshIntersection_Embree.hpp"
 #endif
@@ -130,13 +131,6 @@ MainApp::MainApp()
     fpsArray.resize(16, 60.0f);
     framerateSmoother = FramerateSmoother(1);
 
-    if (cullBackface) {
-        glCullFace(GL_BACK);
-        glEnable(GL_CULL_FACE);
-    } else {
-        glCullFace(GL_BACK);
-        glDisable(GL_CULL_FACE);
-    }
     sgl::Renderer->setErrorCallback(&openglErrorCallback);
     sgl::Renderer->setDebugVerbosity(sgl::DEBUG_OUTPUT_CRITICAL_ONLY);
     resolutionChanged(sgl::EventPtr());
@@ -216,6 +210,8 @@ void MainApp::setRenderers() {
         meshRenderers.push_back(new LodLineRendererPerFragment(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_LOD_LINES_PREVIEW) {
         meshRenderers.push_back(new LodLinePreviewRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_LOD_LINES_PREVIEW_SHEETS) {
+        meshRenderers.push_back(new LodLinePreviewRenderer_Sheets(sceneData, transferFunctionWindow));
     }
 }
 
@@ -515,12 +511,11 @@ void MainApp::renderSceneSettingsGUI() {
         reRender = true;
     }
 
-    if (ImGui::Checkbox("Cull Back Face", &cullBackface)) {
-        if (cullBackface) {
-            glEnable(GL_CULL_FACE);
-        } else {
-            glDisable(GL_CULL_FACE);
-        }
+    if (ImGui::Button("Reset Camera")) {
+        camera->setOrientation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
+        camera->setYaw(-sgl::PI/2.0f); //< around y axis
+        camera->setPitch(0.0f); //< around x axis
+        camera->setPosition(glm::vec3(0.0f, 0.0f, 0.8f));
         reRender = true;
     }
     ImGui::SameLine();

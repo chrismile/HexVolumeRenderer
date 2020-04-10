@@ -26,31 +26,39 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_LINERENDERINGDEFINES_HPP
-#define HEXVOLUMERENDERER_LINERENDERINGDEFINES_HPP
+#ifndef HEXVOLUMERENDERER_EDGEKEY_HPP
+#define HEXVOLUMERENDERER_EDGEKEY_HPP
 
-#include <glm/vec4.hpp>
+#include <algorithm>
+#include <unordered_set>
 
-// Minimum and maximum values in the UI.
-const float MIN_LINE_WIDTH = 0.0001f;
-const float MAX_LINE_WIDTH = 0.004f;
+struct EdgeKey {
+    EdgeKey(uint32_t id0, uint32_t id1) {
+        edgeIds[0] = id0;
+        edgeIds[1] = id1;
+        std::sort(std::begin(edgeIds), std::end(edgeIds));
+    }
 
-// The standard line size is computed depending on the cube root of the average cell volume times the factor below.
-const float LINE_WIDTH_VOLUME_CBRT_FACTOR = 0.07f;
-const float MIN_LINE_WIDTH_AUTO = 0.0005f;
-const float MAX_LINE_WIDTH_AUTO = 0.004f;
+    bool operator==(const EdgeKey& rhs) const {
+        for (int i = 0; i < 2; i++) {
+            if (edgeIds[i] != rhs.edgeIds[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
 
-// Ranges for ClearView.
-const float MIN_FOCUS_RADIUS = 0.001f;
-const float MAX_FOCUS_RADIUS = 0.4f;
-const float FOCUS_RADIUS_VOLUME_CBRT_FACTOR = 3.0f;
-const float MIN_FOCUS_RADIUS_AUTO = 0.001f;
-const float MAX_FOCUS_RADIUS_AUTO = 0.4f;
+    uint32_t edgeIds[2];
+};
 
-// Focus sphere indicator size and color for ClearView renderers and LOD renderers.
-const float MIN_FOCUS_SPHERE_RADIUS = 0.001f;
-const float MAX_FOCUS_SPHERE_RADIUS = 0.003f;
-const float FOCUS_SPHERE_SIZE_FACTOR = 0.05f;
-const glm::vec4 FOCUS_SPHERE_COLOR = glm::vec4(0.75f, 1.0f, 0.0f, 1.0f);//glm::vec4(0.2f, 0.0f, 0.0f, 1.0f);
+// Hash Function: H(i,j) = (i0*p_1 xor i1*jp_2) mod n
+struct EdgeKeyHasher {
+    std::size_t operator()(const EdgeKey& key) const {
+        const size_t PRIME_NUMBERS[] = { 12582917, 3145739 };
+        return (key.edgeIds[0] * PRIME_NUMBERS[0]) ^ (key.edgeIds[1] * PRIME_NUMBERS[1]);
+    }
+};
 
-#endif //HEXVOLUMERENDERER_LINERENDERINGDEFINES_HPP
+typedef std::unordered_map<EdgeKey, uint32_t, EdgeKeyHasher> EdgeMap;
+
+#endif //HEXVOLUMERENDERER_EDGEKEY_HPP

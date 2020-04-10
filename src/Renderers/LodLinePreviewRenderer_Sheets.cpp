@@ -32,16 +32,17 @@
 
 #include "Helpers/Sphere.hpp"
 #include "Helpers/LineRenderingDefines.hpp"
-#include "LodLinePreviewRenderer.hpp"
+#include "LOD/LodSheetGeneration.hpp"
+#include "LodLinePreviewRenderer_Sheets.hpp"
 
-LodLinePreviewRenderer::LodLinePreviewRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+LodLinePreviewRenderer_Sheets::LodLinePreviewRenderer_Sheets(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     shaderProgram = sgl::ShaderManager->getShaderProgram(
             {"WireframeLod.Vertex", "WireframeLod.Geometry", "WireframeLod.Fragment.Preview"});
 }
 
-void LodLinePreviewRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void LodLinePreviewRenderer_Sheets::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     lineWidth = glm::clamp(
             std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
             MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
@@ -49,7 +50,7 @@ void LodLinePreviewRenderer::generateVisualizationMapping(HexMeshPtr meshIn, boo
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec4> colors;
     std::vector<float> lodValues;
-    meshIn->getLodLineRepresentation(vertices, colors, lodValues, true);
+    generateSheetLevelOfDetailLineStructure(meshIn, vertices, colors, lodValues);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_LINES);
@@ -76,7 +77,7 @@ void LodLinePreviewRenderer::generateVisualizationMapping(HexMeshPtr meshIn, boo
     reRender = true;
 }
 
-void LodLinePreviewRenderer::render() {
+void LodLinePreviewRenderer_Sheets::render() {
     shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
     shaderProgram->setUniform("maxLod", maxLod);
 
@@ -85,7 +86,7 @@ void LodLinePreviewRenderer::render() {
     sgl::Renderer->render(shaderAttributes);
 }
 
-void LodLinePreviewRenderer::renderGui() {
+void LodLinePreviewRenderer_Sheets::renderGui() {
     if (ImGui::Begin("Line LOD Preview Renderer", &showRendererWindow)) {
         if (ImGui::SliderFloat("Maximum LOD", &maxLod, 0.0f, 1.0f)) {
             reRender = true;

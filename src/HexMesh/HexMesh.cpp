@@ -75,6 +75,7 @@
 #include "Renderers/Helpers/HexahedronVolume.hpp"
 #include "BaseComplex/base_complex.h"
 
+#include "EdgeKey.hpp"
 #include "HexMesh.hpp"
 
 const glm::vec4 HexMesh::glowColorRegular = glm::vec4(0.0f, 0.5f, 0.2f, 1.0f);
@@ -131,6 +132,52 @@ void HexMesh::setHexMeshData(
     dirty = true;
 }
 
+/**
+ * Vertex and edge IDs:
+ *
+ *      3 +----------------+ 2
+ *       /|       1       /|
+ *   11 / |           10 / |
+ *     /  |             /  |
+ *    /   | 4          /   | 7
+ * 7 +----------------+ 6  |
+ *   |    |   2       |    |
+ *   |    |           |    |
+ *   |    |      0    |    |
+ *   |  0 +-----------|----+ 1
+ * 5 |   /          6 |   /
+ *   |  / 8           |  / 9
+ *   | /              | /
+ *   |/      3        |/
+ * 4 +----------------+ 5
+ *
+ */
+void buildCellEdgeList(Mesh &mesh) {
+    EdgeMap edgeMap;
+    for (Hybrid_E& e : mesh.Es) {
+        edgeMap.insert(std::make_pair(EdgeKey(e.vs.at(0), e.vs.at(1)), e.id));
+    }
+
+    for (Hybrid& h : mesh.Hs) {
+        assert(h.es.empty());
+        h.es.resize(12);
+        h.es.at(0) = edgeMap.find(EdgeKey(h.vs.at(0), h.vs.at(1)))->second;
+        h.es.at(1) = edgeMap.find(EdgeKey(h.vs.at(2), h.vs.at(3)))->second;
+        h.es.at(2) = edgeMap.find(EdgeKey(h.vs.at(6), h.vs.at(7)))->second;
+        h.es.at(3) = edgeMap.find(EdgeKey(h.vs.at(4), h.vs.at(5)))->second;
+
+        h.es.at(4) = edgeMap.find(EdgeKey(h.vs.at(0), h.vs.at(3)))->second;
+        h.es.at(5) = edgeMap.find(EdgeKey(h.vs.at(4), h.vs.at(7)))->second;
+        h.es.at(6) = edgeMap.find(EdgeKey(h.vs.at(5), h.vs.at(6)))->second;
+        h.es.at(7) = edgeMap.find(EdgeKey(h.vs.at(1), h.vs.at(2)))->second;
+
+        h.es.at(8) = edgeMap.find(EdgeKey(h.vs.at(0), h.vs.at(4)))->second;
+        h.es.at(9) = edgeMap.find(EdgeKey(h.vs.at(1), h.vs.at(5)))->second;
+        h.es.at(10) = edgeMap.find(EdgeKey(h.vs.at(2), h.vs.at(6)))->second;
+        h.es.at(11) = edgeMap.find(EdgeKey(h.vs.at(3), h.vs.at(7)))->second;
+    }
+}
+
 void HexMesh::computeBaseComplexMesh(
         const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices) {
     Mesh &mesh = *baseComplexMesh;
@@ -168,6 +215,7 @@ void HexMesh::computeBaseComplexMesh(
     }
 
     build_connectivity(mesh);
+    buildCellEdgeList(mesh);
     base_complex bc;
     bc.singularity_structure(*si, mesh);
 }

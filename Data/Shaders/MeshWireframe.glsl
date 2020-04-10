@@ -76,19 +76,14 @@ uniform float lineWidth;
 
 void main()
 {
-    // Add the context fragment.
-    vec4 colorContext = fragmentColor;
-    colorContext.a *= getClearViewContextFragmentOpacityFactor();
-    gatherFragment(colorContext);
-
-    // Finally, add the focus fragment.
+    // Add the focus fragment.
     // Compute the distance to the edges and get the minimum distance.
     float minDistance = 1e9;
     int minDistanceIndex = 0;
     float currentDistance;
     for (int i = 0; i < 4; i++) {
         currentDistance = distanceToLineSegment(
-        fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
+               fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
         if (currentDistance < minDistance) {
             minDistance = currentDistance;
             minDistanceIndex = i;
@@ -98,6 +93,7 @@ void main()
     vec4 lineBaseColor = lineColors[minDistanceIndex];
     float lineCoordinates = max(minDistance / lineWidth * 2.0, 0.0);
     if (lineCoordinates <= 1.0) {
+        // Focus wireframe
         float fragmentDepth;
         #if defined(LINE_RENDERING_STYLE_HALO)
         vec4 color = flatShadingWireframeSurfaceHalo_DepthCue(lineBaseColor, fragmentDepth, lineCoordinates);
@@ -111,4 +107,27 @@ void main()
         fragmentDepth += 0.00001;
         gatherFragmentCustomDepth(color, fragmentDepth);
     }
+
+    // Add the context fragment.
+    vec4 colorContext = fragmentColor;
+    bool isSingularEdge = lineBaseColor.r > 0.8;
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    float expFactor = exp(-3.5 * fragmentDepth);
+    float boostFactor = clamp(2.0 * expFactor + 1.0, 1.0, 1.5);
+    const float EPSILON = 1e-5;
+    float lineCoordinatesContext = max(minDistance / lineWidth * 2.0 / (isSingularEdge ? 1.0 : max(expFactor, EPSILON)) * 1.5, 0.0);
+    if (lineCoordinatesContext <= 1.0) {
+        if (isSingularEdge) {
+            colorContext.rgb = vec3(1.0, 0.0, 0.0);
+            //colorContext.a *= 0.5;
+            colorContext.a = max(colorContext.a * 0.5, 0.2);
+        } else {
+            //float boostFactor = clamp(0.2 / fragmentDepth + 1.0, 1.0, 1.5);
+            ///colorContext.rgb = vec3(0.0, 0.7, 1.0);
+            //colorContext.a *= 0.1;
+            colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
+        }
+    }
+    colorContext.a *= getClearViewContextFragmentOpacityFactor();
+    gatherFragment(colorContext);
 }

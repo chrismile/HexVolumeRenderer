@@ -26,31 +26,30 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_LINERENDERINGDEFINES_HPP
-#define HEXVOLUMERENDERER_LINERENDERINGDEFINES_HPP
+#ifndef HEXVOLUMERENDERER_PERFECTMATCHING_HPP
+#define HEXVOLUMERENDERER_PERFECTMATCHING_HPP
 
-#include <glm/vec4.hpp>
+#include <lemon/matching.h>
+#include <lemon/smart_graph.h>
+#include "HexahedralSheet.hpp"
 
-// Minimum and maximum values in the UI.
-const float MIN_LINE_WIDTH = 0.0001f;
-const float MAX_LINE_WIDTH = 0.004f;
+class HexMesh;
+typedef std::shared_ptr<HexMesh> HexMeshPtr;
 
-// The standard line size is computed depending on the cube root of the average cell volume times the factor below.
-const float LINE_WIDTH_VOLUME_CBRT_FACTOR = 0.07f;
-const float MIN_LINE_WIDTH_AUTO = 0.0005f;
-const float MAX_LINE_WIDTH_AUTO = 0.004f;
+class PerfectMatching {
+public:
+    PerfectMatching(
+            HexMeshPtr hexMesh, std::vector<SheetComponent>& components,
+            std::vector<ComponentConnectionData>& connectionDataList);
+    inline bool getCouldMatchAny() { return couldMatchAny; }
+    inline std::vector<std::pair<size_t, size_t>>& getMatchedComponents() { return matchedComponents; }
+    inline std::vector<size_t>& getUnmatchedComponents() { return unmatchedComponents; }
 
-// Ranges for ClearView.
-const float MIN_FOCUS_RADIUS = 0.001f;
-const float MAX_FOCUS_RADIUS = 0.4f;
-const float FOCUS_RADIUS_VOLUME_CBRT_FACTOR = 3.0f;
-const float MIN_FOCUS_RADIUS_AUTO = 0.001f;
-const float MAX_FOCUS_RADIUS_AUTO = 0.4f;
+private:
+    bool couldMatchAny;
+    std::vector<std::pair<size_t, size_t>> matchedComponents;
+    std::vector<size_t> unmatchedComponents;
+};
 
-// Focus sphere indicator size and color for ClearView renderers and LOD renderers.
-const float MIN_FOCUS_SPHERE_RADIUS = 0.001f;
-const float MAX_FOCUS_SPHERE_RADIUS = 0.003f;
-const float FOCUS_SPHERE_SIZE_FACTOR = 0.05f;
-const glm::vec4 FOCUS_SPHERE_COLOR = glm::vec4(0.75f, 1.0f, 0.0f, 1.0f);//glm::vec4(0.2f, 0.0f, 0.0f, 1.0f);
 
-#endif //HEXVOLUMERENDERER_LINERENDERINGDEFINES_HPP
+#endif //HEXVOLUMERENDERER_PERFECTMATCHING_HPP

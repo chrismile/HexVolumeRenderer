@@ -2,7 +2,7 @@
 
 #include <Math/Geometry/AABB3.hpp>
 
-#include "Utils/SearchStructures/TriangleSet.hpp"
+#include "Renderers/Helpers/TriangleSet.hpp"
 
 #include "mesh.h"
 #include "mesh_navigator.h"
