@@ -26,8 +26,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_PERFECTMATCHING_HPP
-#define HEXVOLUMERENDERER_PERFECTMATCHING_HPP
+#ifndef HEXVOLUMERENDERER_SHEETCOMPONENTMATCHING_HPP
+#define HEXVOLUMERENDERER_SHEETCOMPONENTMATCHING_HPP
 
 #include <lemon/matching.h>
 #include <lemon/smart_graph.h>
@@ -36,20 +36,29 @@
 class HexMesh;
 typedef std::shared_ptr<HexMesh> HexMeshPtr;
 
-class PerfectMatching {
+/**
+ * Matches a set of components (vertices of the graph) using the component connection data passed in the constructor
+ * (representing the graph edges).
+ */
+class SheetComponentMatching {
 public:
-    PerfectMatching(
+    /// Computes the component matching using the passed data. The functions below can be used to query the result.
+    SheetComponentMatching(
             HexMeshPtr hexMesh, std::vector<SheetComponent>& components,
             std::vector<ComponentConnectionData>& connectionDataList);
+
+    /// Returns whether a matching of any vertices could be performed (i.e., whether the mesh had any edges).
     inline bool getCouldMatchAny() { return couldMatchAny; }
+    /// Returns a list of pairs of matched components by their index in the component array.
     inline std::vector<std::pair<size_t, size_t>>& getMatchedComponents() { return matchedComponents; }
+    /// Returns a list of unmatched components by their index in the component array.
     inline std::vector<size_t>& getUnmatchedComponents() { return unmatchedComponents; }
 
 private:
-    bool couldMatchAny;
+    bool couldMatchAny = false;
     std::vector<std::pair<size_t, size_t>> matchedComponents;
     std::vector<size_t> unmatchedComponents;
 };
 
 
-#endif //HEXVOLUMERENDERER_PERFECTMATCHING_HPP
+#endif //HEXVOLUMERENDERER_SHEETCOMPONENTMATCHING_HPP

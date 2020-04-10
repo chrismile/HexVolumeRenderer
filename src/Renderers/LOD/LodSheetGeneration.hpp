@@ -67,7 +67,7 @@ typedef std::shared_ptr<HexMesh> HexMeshPtr;
  * @param lineLodValues The list of line indices.
  */
 void generateSheetLevelOfDetailLineStructure(
-        const HexMeshPtr& hexMesh,
+        HexMeshPtr& hexMesh,
         std::vector<glm::vec3> &lineVertices,
         std::vector<glm::vec4> &lineColors,
         std::vector<float> &lineLodValues);

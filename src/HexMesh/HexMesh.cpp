@@ -150,7 +150,6 @@ void HexMesh::setHexMeshData(
  *   | /              | /
  *   |/      3        |/
  * 4 +----------------+ 5
- *
  */
 void buildCellEdgeList(Mesh &mesh) {
     EdgeMap edgeMap;

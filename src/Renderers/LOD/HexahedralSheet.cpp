@@ -53,6 +53,43 @@ void getParallelEdgesInCell(Hybrid& h, Hybrid_E& e, uint32_t parallelEdgeIds[3])
     }
 }
 
+void setHexahedralSheetBoundaryFaceIds(
+        HexMeshPtr& hexMesh,
+        HexahedralSheet& hexahedralSheet) {
+    Mesh& mesh = hexMesh->getBaseComplexMesh();
+    std::unordered_set<uint32_t> cellIdSet;
+    for (uint32_t cellId : hexahedralSheet.cellIds) {
+        cellIdSet.insert(cellId);
+    }
+    for (uint32_t cellId : hexahedralSheet.cellIds) {
+        Hybrid& h = mesh.Hs.at(cellId);
+        for (uint32_t f_id : h.fs) {
+            Hybrid_F& f = mesh.Fs.at(f_id);
+
+            // Boundary of the mesh?
+            if (f.neighbor_hs.size() == 1) {
+                hexahedralSheet.boundaryFaceIds.push_back(f_id);
+                continue;
+            }
+
+            // Boundary between two sheets?
+            assert(f.neighbor_hs.size() == 2);
+            uint32_t neighborCellId;
+            if (f.neighbor_hs.at(0) == cellId) {
+                neighborCellId = f.neighbor_hs.at(1);
+            } else {
+                assert(f.neighbor_hs.at(1) == cellId);
+                neighborCellId = f.neighbor_hs.at(0);
+            }
+            // Neighboring cell not part of this sheet?
+            if (cellIdSet.find(neighborCellId) == cellIdSet.end()) {
+                hexahedralSheet.boundaryFaceIds.push_back(f_id);
+            }
+        }
+        cellIdSet.insert(cellId);
+    }
+}
+
 void extractHexahedralSheet(
         HexMeshPtr& hexMesh,
         uint32_t e_id,
@@ -65,6 +102,7 @@ void extractHexahedralSheet(
     openEdgeIds.push(e_id);
     closedEdgeIds.insert(e_id);
 
+    // Add all cell IDs by using the set of edges mutually parallel to our start edge.
     while (!openEdgeIds.empty()) {
         Hybrid_E& e = mesh.Es.at(openEdgeIds.front());
         openEdgeIds.pop();
@@ -87,6 +125,7 @@ void extractHexahedralSheet(
         }
     }
 
+    // Add all edge IDs.
     std::unordered_set<uint32_t> addedEdgeIds;
     for (uint32_t cellId : hexahedralSheet.cellIds) {
         Hybrid& h = mesh.Hs.at(cellId);
@@ -98,36 +137,8 @@ void extractHexahedralSheet(
         }
     }
 
-    std::unordered_set<uint32_t> cellIdSet;
-    for (uint32_t cellId : hexahedralSheet.cellIds) {
-        cellIdSet.insert(cellId);
-    }
-    for (uint32_t cellId : hexahedralSheet.cellIds) {
-        Hybrid& h = mesh.Hs.at(cellId);
-        for (uint32_t f_id : h.fs) {
-            Hybrid_F& f = mesh.Fs.at(f_id);
-
-            // Boundary of the mesh?
-            if (f.neighbor_hs.size() == 1) {
-                hexahedralSheet.boundaryFaceIds.push_back(f_id);
-            }
-
-            // Boundary between two sheets?
-            assert(f.neighbor_hs.size() == 2);
-            uint32_t neighborCellId;
-            if (f.neighbor_hs.at(0) == cellId) {
-                neighborCellId = f.neighbor_hs.at(1);
-            } else {
-                assert(f.neighbor_hs.at(1) == cellId);
-                neighborCellId = f.neighbor_hs.at(0);
-            }
-            // Neighboring cell not part of this sheet?
-            if (cellIdSet.find(neighborCellId) == cellIdSet.end()) {
-                hexahedralSheet.boundaryFaceIds.push_back(f_id);
-            }
-        }
-        cellIdSet.insert(cellId);
-    }
+    // Add all boundary face IDs.
+    setHexahedralSheetBoundaryFaceIds(hexMesh, hexahedralSheet);
 }
 
 void extractAllHexahedralSheets(HexMeshPtr hexMesh, std::vector<HexahedralSheet>& hexahedralSheets) {
@@ -146,16 +157,28 @@ void extractAllHexahedralSheets(HexMeshPtr hexMesh, std::vector<HexahedralSheet>
 
 bool computeHexahedralSheetComponentNeighborship(
         HexMeshPtr hexMesh, SheetComponent& component0, SheetComponent& component1, float& matchingWeight) {
+    std::vector<uint32_t> sharedCellIds;
+    std::set_intersection(
+            component0.cellIds.begin(), component0.cellIds.end(),
+            component1.cellIds.begin(), component1.cellIds.end(),
+            std::back_inserter(sharedCellIds));
+
+    // Exclude intersecting and hybrid sheets for now.
+    // TODO: Alternative: Exclude faces that belong to set intersection of cells (-> hybrid sheets are valid neighbors).
+    if (!sharedCellIds.empty()) {
+        return false;
+    }
+
     std::vector<uint32_t> sharedBoundaryFaceIds;
     std::set_intersection(
             component0.boundaryFaceIds.begin(), component0.boundaryFaceIds.end(),
             component1.boundaryFaceIds.begin(), component1.boundaryFaceIds.end(),
             std::back_inserter(sharedBoundaryFaceIds));
 
-    float percentageOfAdjacency = sharedBoundaryFaceIds.size()
-            / (component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size());
+    float percentageOfAdjacency = float(sharedBoundaryFaceIds.size())
+            / float(component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size());
     matchingWeight = percentageOfAdjacency;
-    return true;
+    return percentageOfAdjacency > 1e-6;
 }
 
 void computeHexahedralSheetComponentConnectionData(

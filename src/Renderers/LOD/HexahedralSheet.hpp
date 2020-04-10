@@ -44,19 +44,16 @@ typedef std::shared_ptr<HexMesh> HexMeshPtr;
  */
 class HexahedralSheet {
 public:
-    std::vector<uint32_t> cellIds;
-    std::vector<uint32_t> edgeIds;
-    std::vector<uint32_t> boundaryFaceIds;
+    std::vector<uint32_t> cellIds; ///< All cells belonging to the sheet.
+    std::vector<uint32_t> edgeIds; ///< All edges belonging to the sheet.
+    std::vector<uint32_t> boundaryFaceIds; ///< All boundary faces belonging to the sheet.
 };
 
 /**
  * A component consisting of one or more merged sheets.
  */
-class SheetComponent {
+class SheetComponent : public HexahedralSheet {
 public:
-    std::vector<uint32_t> cellIds; ///< All cells belonging to the sheet component in sorted order.
-    std::vector<uint32_t> edgeIds; ///< All edges belonging to the sheet component in sorted order.
-    std::vector<uint32_t> boundaryFaceIds; ///< All boundary faces belonging to the sheet component in sorted order.
     std::unordered_set<size_t> neighborIndices; ///< Stores the indices of the neighbors in the sheet component array.
 };
 
@@ -105,12 +102,22 @@ void extractAllHexahedralSheets(HexMeshPtr hexMesh, std::vector<HexahedralSheet>
  * @param hexMesh The hexahedral mesh.
  * @param e_id The ID of the edge defining the twist plane.
  * @param closedEdgeIds The set of edges that were already visited during sheet creation.
- * @param hexahedralSheet The hexahedral sheet extracted (ouptput).
+ * @param hexahedralSheet The hexahedral sheet extracted (output).
  */
 void extractHexahedralSheet(
         HexMeshPtr& hexMesh,
         uint32_t e_id,
         std::unordered_set<uint32_t>& closedEdgeIds,
+        HexahedralSheet& hexahedralSheet);
+
+/**
+ * A helper function for @see extractHexahedralSheet and @see generateSheetLevelOfDetailLineStructure.
+ * It computs the boundary surface face IDs of a hexahedral sheet.
+ * @param hexMesh The hexahedral mesh.
+ * @param hexahedralSheet The hexahedral sheet to compute the boundary surface face IDs of.
+ */
+void setHexahedralSheetBoundaryFaceIds(
+        HexMeshPtr& hexMesh,
         HexahedralSheet& hexahedralSheet);
 
 /**

@@ -26,14 +26,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "PerfectMatching.hpp"
+#include "SheetComponentMatching.hpp"
 
-PerfectMatching::PerfectMatching(
+SheetComponentMatching::SheetComponentMatching(
         HexMeshPtr hexMesh, std::vector<SheetComponent>& components,
         std::vector<ComponentConnectionData>& connectionDataList) {
     lemon::SmartGraph graph;
     lemon::SmartGraph::EdgeMap<float> weights(graph);
 
+    // Add all graph vertices and edges.
     for (size_t i = 0; i < components.size(); i++) {
         graph.addNode();
     }
@@ -50,6 +51,7 @@ PerfectMatching::PerfectMatching(
     matching.fractionalInit(); // init
     matching.start();
 
+    // Find out which components (vertices) were matched and which were not matched.
     std::unordered_set<size_t> matchedComponentSet;
 
     for (lemon::SmartGraph::EdgeIt e(graph); e != lemon::INVALID; ++e) {

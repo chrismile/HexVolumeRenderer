@@ -26,10 +26,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <chrono>
+
+#include <Utils/File/Logfile.hpp>
+
 #include "BaseComplex/global_types.h"
 #include "HexMesh/HexMesh.hpp"
 #include "HexahedralSheet.hpp"
-#include "PerfectMatching.hpp"
+#include "SheetComponentMatching.hpp"
 #include "LodSheetGeneration.hpp"
 
 /**
@@ -51,12 +55,17 @@ void set_union(const std::unordered_set<T>& set0, const std::unordered_set<T>& s
 //};
 
 void generateSheetLevelOfDetailLineStructure(
-        const HexMeshPtr& hexMesh,
+        HexMeshPtr& hexMesh,
         std::vector<glm::vec3> &lineVertices,
         std::vector<glm::vec4> &lineColors,
         std::vector<float> &lineLodValues) {
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     Singularity& si = hexMesh->getBaseComplexMeshSingularity();
+
+    sgl::Logfile::get()->writeInfo("Starting to generate mesh sheet level of detail structure...");
+    auto start = std::chrono::system_clock::now();
+
+    // First, extract all hexahedral sheets from the mesh.
     std::vector<HexahedralSheet> hexahedralSheets;
     extractAllHexahedralSheets(hexMesh, hexahedralSheets);
 
@@ -67,7 +76,7 @@ void generateSheetLevelOfDetailLineStructure(
         SheetComponent& component = components.at(i);
         HexahedralSheet& sheet = hexahedralSheets.at(i);
         component.cellIds = sheet.cellIds;
-        component.edgeIds = sheet.cellIds;
+        component.edgeIds = sheet.edgeIds;
         component.boundaryFaceIds = sheet.boundaryFaceIds;
         std::sort(component.cellIds.begin(), component.cellIds.end());
         std::sort(component.edgeIds.begin(), component.edgeIds.end());
@@ -82,14 +91,23 @@ void generateSheetLevelOfDetailLineStructure(
     lodEdgeVisibilityMap.resize(mesh.Es.size(), 0);
 
 
-    for (int iterationNumber = 0; ; iterationNumber++) {
+    for (int iterationNumber = 1; ; iterationNumber++) {
+        sgl::Logfile::get()->writeInfo(
+                std::string() + "Starting iteration number " + std::to_string(iterationNumber) + "...");
+        auto startIteration = std::chrono::system_clock::now();
+
         // Compute the neighborhood relation of all components and the edge weight of edges between components.
         std::vector<ComponentConnectionData> connectionDataList;
         computeHexahedralSheetComponentConnectionData(hexMesh, components, connectionDataList);
 
         // Create a perfect matching of all neighboring components.
-        PerfectMatching matching(hexMesh, components, connectionDataList);
+        SheetComponentMatching matching(hexMesh, components, connectionDataList);
         if (!matching.getCouldMatchAny()) {
+            auto endIteration = std::chrono::system_clock::now();
+            auto elapsedIteration = std::chrono::duration_cast<std::chrono::milliseconds>(endIteration - startIteration);
+            sgl::Logfile::get()->writeInfo(
+                    std::string() + "Stopping at iteration number " + std::to_string(iterationNumber)
+                    + ". Time for this iteration: " + std::to_string(elapsedIteration.count()) + "ms");
             break;
         }
 
@@ -117,14 +135,12 @@ void generateSheetLevelOfDetailLineStructure(
                     component1.edgeIds.begin(), component1.edgeIds.end(),
                     std::back_inserter(mergedComponent.edgeIds));
 
-            // BoundaryFaces(c') = (BoundaryFaces(c_0) XOR BoundaryFaces(c_1))
-            std::set_symmetric_difference(
-                    component0.boundaryFaceIds.begin(), component0.boundaryFaceIds.end(),
-                    component1.boundaryFaceIds.begin(), component1.boundaryFaceIds.end(),
-                    std::back_inserter(mergedComponent.boundaryFaceIds));
+            // Recompute the boundary faces of the merged mesh.
+            setHexahedralSheetBoundaryFaceIds(hexMesh, mergedComponent);
+            std::sort(mergedComponent.boundaryFaceIds.begin(), mergedComponent.boundaryFaceIds.end());
 
             // Neighbors(c') = (Neighbors(c_0) UNION Neighbors(c_1)) \ {c_0, c_1} (these are removed later)
-            set_union(component0.neighborIndices, component1.neighborIndices, mergedComponent.neighborIndices);
+            //set_union(component0.neighborIndices, component1.neighborIndices, mergedComponent.neighborIndices);
 
             // Mark all edges E(c_0) INTERSECTION E(c_1) as not visible at the current LOD level.
             std::vector<uint32_t> sharedEdgeSet;
@@ -137,17 +153,17 @@ void generateSheetLevelOfDetailLineStructure(
             }
 
             mergedComponents.push_back(mergedComponent);
-            mergedComponentIndexMap.insert(std::make_pair(matchedEdge.first, mergedComponentIndex));
+            /*mergedComponentIndexMap.insert(std::make_pair(matchedEdge.first, mergedComponentIndex));
             mergedComponentIndexMap.insert(std::make_pair(matchedEdge.second, mergedComponentIndex));
-            mergedComponentIndex++;
+            mergedComponentIndex++;*/
         }
 
         // Add all unmatched (i.e., unchanged) components to the index map and the merged component set.
         std::vector<size_t> unmatchedComponents = matching.getUnmatchedComponents();
         for (size_t unmatchedComponent : unmatchedComponents) {
             mergedComponents.push_back(components.at(unmatchedComponent));
-            mergedComponentIndexMap.insert(std::make_pair(unmatchedComponent, mergedComponentIndex));
-            mergedComponentIndex++;
+            /*mergedComponentIndexMap.insert(std::make_pair(unmatchedComponent, mergedComponentIndex));
+            mergedComponentIndex++;*/
         }
 
         // Fix the indices of the neighbor relation using the index map.
@@ -160,6 +176,7 @@ void generateSheetLevelOfDetailLineStructure(
                     newNeighborIndices.insert(newNeighborIndex);
                 }
             }
+            component.neighborIndices = newNeighborIndices;
         }
         std::unordered_set<ComponentConnectionData, ComponentConnectionDataHasher> addedConnections;
         for (ComponentConnectionData connectionData : connectionDataList) {
@@ -194,6 +211,12 @@ void generateSheetLevelOfDetailLineStructure(
         // Set data to merged data for the next iteration.
         components = mergedComponents;
         //connectionDataList = mergedConnectionDataList;
+
+        auto endIteration = std::chrono::system_clock::now();
+        auto elapsedIteration = std::chrono::duration_cast<std::chrono::milliseconds>(endIteration - startIteration);
+        sgl::Logfile::get()->writeInfo(
+                std::string() + "Time for iteration number " + std::to_string(iterationNumber) + ": "
+                + std::to_string(elapsedIteration.count()) + "ms");
     }
 
     // We want to normalize the LOD values to the range [0, 1]. First, compute the maximum value.
@@ -204,17 +227,15 @@ void generateSheetLevelOfDetailLineStructure(
     }
 
     // Now, normalize the values by division.
-    lineLodValues.resize(lodEdgeVisibilityMap.size() * 2);
+    lineLodValues.reserve(lodEdgeVisibilityMap.size() * 2);
     //#pragma omp parallel for
     for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
-        float value = lodEdgeVisibilityMap.at(i) * maxValue;
+        float value = lodEdgeVisibilityMap.at(i) / maxValue;
         lineLodValues.push_back(value);
         lineLodValues.push_back(value);
     }
 
-    const glm::vec4 regularColor = hexMesh->outlineColorRegular;
-    const glm::vec4 singularColor = hexMesh->outlineColorSingular;
-
+    // Find the set of all singular edges.
     std::unordered_set<uint32_t> singularEdgeIds;
     for (Singular_E& se : si.SEs) {
         for (uint32_t e_id : se.es_link) {
@@ -222,6 +243,10 @@ void generateSheetLevelOfDetailLineStructure(
         }
     }
 
+    const glm::vec4 regularColor = hexMesh->outlineColorRegular;
+    const glm::vec4 singularColor = hexMesh->outlineColorSingular;
+
+    // Add all edge line colors (colors depend both on whether an edge is singular and what LOD value it has assigned).
     for (size_t i = 0; i < mesh.Es.size(); i++) {
         Hybrid_E& e = mesh.Es.at(i);
         bool isSingular = singularEdgeIds.find(e.id) != singularEdgeIds.end();
@@ -246,4 +271,10 @@ void generateSheetLevelOfDetailLineStructure(
             lineColors.push_back(vertexColor);
         }
     }
+
+    auto end = std::chrono::system_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    sgl::Logfile::get()->writeInfo(
+            std::string() + "Computational time to create sheet LOD structure: "
+            + std::to_string(elapsed.count()) + "ms");
 }
