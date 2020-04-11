@@ -86,7 +86,6 @@ void setHexahedralSheetBoundaryFaceIds(
                 hexahedralSheet.boundaryFaceIds.push_back(f_id);
             }
         }
-        cellIdSet.insert(cellId);
     }
 }
 
@@ -168,6 +167,9 @@ bool computeHexahedralSheetComponentNeighborship(
     if (!sharedCellIds.empty()) {
         return false;
     }
+    /*if (sharedCellIds.size() == component0.cellIds.size()) {
+        return false;
+    }*/
 
     std::vector<uint32_t> sharedBoundaryFaceIds;
     std::set_intersection(
@@ -177,6 +179,10 @@ bool computeHexahedralSheetComponentNeighborship(
 
     float percentageOfAdjacency = float(sharedBoundaryFaceIds.size())
             / float(component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size());
+    /*if (!sharedCellIds.empty()) {
+        percentageOfAdjacency *= 0.001f;
+    }*/
+
     matchingWeight = percentageOfAdjacency;
     return percentageOfAdjacency > 1e-6;
 }

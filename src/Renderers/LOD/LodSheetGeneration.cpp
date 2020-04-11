@@ -112,13 +112,13 @@ void generateSheetLevelOfDetailLineStructure(
         }
 
         // An index map mapping the indices of the components to their indices after merging.
-        std::unordered_map<size_t, size_t> mergedComponentIndexMap;
+        //std::unordered_map<size_t, size_t> mergedComponentIndexMap;
         std::vector<SheetComponent> mergedComponents;
         //std::vector<ComponentConnectionData> mergedConnectionDataList;
 
         // Mark all edges as invisible on this level shared by matched components.
         size_t mergedComponentIndex = 0;
-        std::vector<std::pair<size_t, size_t>> matchedComponents = matching.getMatchedComponents();
+        std::vector<std::pair<size_t, size_t>>& matchedComponents = matching.getMatchedComponents();
         for (std::pair<size_t, size_t>& matchedEdge : matchedComponents) {
             SheetComponent& component0 = components.at(matchedEdge.first);
             SheetComponent& component1 = components.at(matchedEdge.second);
@@ -149,7 +149,11 @@ void generateSheetLevelOfDetailLineStructure(
                     component1.edgeIds.begin(), component1.edgeIds.end(),
                     std::back_inserter(sharedEdgeSet));
             for (uint32_t e_id : sharedEdgeSet) {
-                lodEdgeVisibilityMap.at(e_id) = std::max(lodEdgeVisibilityMap.at(e_id), iterationNumber);
+                if (lodEdgeVisibilityMap.at(e_id) == 0) {
+                    lodEdgeVisibilityMap.at(e_id) = iterationNumber;
+                } else {
+                    lodEdgeVisibilityMap.at(e_id) = std::min(lodEdgeVisibilityMap.at(e_id), iterationNumber);
+                }
             }
 
             mergedComponents.push_back(mergedComponent);
@@ -225,6 +229,12 @@ void generateSheetLevelOfDetailLineStructure(
     for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
         maxValue = std::max(maxValue, float(lodEdgeVisibilityMap.at(i)));
     }
+    //#pragma omp parallel for
+    for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
+        if (lodEdgeVisibilityMap.at(i) > 0) {
+            lodEdgeVisibilityMap.at(i) = int(maxValue) - lodEdgeVisibilityMap.at(i) + 1;
+        }
+    }
 
     // Now, normalize the values by division.
     lineLodValues.reserve(lodEdgeVisibilityMap.size() * 2);
@@ -259,7 +269,11 @@ void generateSheetLevelOfDetailLineStructure(
 
         float lodValue = lineLodValues.at(i * 2) * maxValue;
         if (lodValue > 0.0001) {
-            float interpolationFactor = (lodValue - 1.0f) / (maxValue - 1.0f) * 0.5;
+            float interpolationFactor = 1.0f;
+            if (maxValue > 1.00001f) {
+                interpolationFactor = (lodValue - 1.0f) / (maxValue - 1.0f);
+            }
+            interpolationFactor *= 0.5f;
             vertexColor = glm::vec4(glm::mix(
                     glm::vec3(vertexColor.x, vertexColor.y, vertexColor.z),
                     glm::vec3(0.8f, 0.8f, 0.8f), interpolationFactor), vertexColor.a);
