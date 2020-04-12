@@ -65,6 +65,14 @@ void generateSheetLevelOfDetailLineStructure(
     sgl::Logfile::get()->writeInfo("Starting to generate mesh sheet level of detail structure...");
     auto start = std::chrono::system_clock::now();
 
+    // Find the set of all singular edges.
+    std::unordered_set<uint32_t> singularEdgeIds;
+    for (Singular_E& se : si.SEs) {
+        for (uint32_t e_id : se.es_link) {
+            singularEdgeIds.insert(e_id);
+        }
+    }
+
     // First, extract all hexahedral sheets from the mesh.
     std::vector<HexahedralSheet> hexahedralSheets;
     extractAllHexahedralSheets(hexMesh, hexahedralSheets);
@@ -91,6 +99,7 @@ void generateSheetLevelOfDetailLineStructure(
     lodEdgeVisibilityMap.resize(mesh.Es.size(), 0);
 
 
+    bool excludeIntersecting = true;
     for (int iterationNumber = 1; ; iterationNumber++) {
         sgl::Logfile::get()->writeInfo(
                 std::string() + "Starting iteration number " + std::to_string(iterationNumber) + "...");
@@ -98,7 +107,19 @@ void generateSheetLevelOfDetailLineStructure(
 
         // Compute the neighborhood relation of all components and the edge weight of edges between components.
         std::vector<ComponentConnectionData> connectionDataList;
-        computeHexahedralSheetComponentConnectionData(hexMesh, components, connectionDataList);
+
+        if (excludeIntersecting) {
+            computeHexahedralSheetComponentConnectionData(
+                    hexMesh, components, connectionDataList, true);
+            if (connectionDataList.empty()) {
+                excludeIntersecting = false;
+            }
+        }
+
+        if (!excludeIntersecting) {
+            computeHexahedralSheetComponentConnectionData(
+                    hexMesh, components, connectionDataList, false);
+        }
 
         // Create a perfect matching of all neighboring components.
         SheetComponentMatching matching(hexMesh, components, connectionDataList);
@@ -129,7 +150,7 @@ void generateSheetLevelOfDetailLineStructure(
                     component1.cellIds.begin(), component1.cellIds.end(),
                     std::back_inserter(mergedComponent.cellIds));
 
-            // Edges(c') = (Edges(c_0) UNION Edges(c_1))
+            // Edges(c') = (Edges(c_0) UNION Edges(c_1)) // TODO Remove
             std::set_union(
                     component0.edgeIds.begin(), component0.edgeIds.end(),
                     component1.edgeIds.begin(), component1.edgeIds.end(),
@@ -142,13 +163,92 @@ void generateSheetLevelOfDetailLineStructure(
             // Neighbors(c') = (Neighbors(c_0) UNION Neighbors(c_1)) \ {c_0, c_1} (these are removed later)
             //set_union(component0.neighborIndices, component1.neighborIndices, mergedComponent.neighborIndices);
 
+            // Mark all edges lying on the boundary faces that vanished after merging as not visible at the current LOD
+            // level.
             // Mark all edges E(c_0) INTERSECTION E(c_1) as not visible at the current LOD level.
-            std::vector<uint32_t> sharedEdgeSet;
+            /*std::vector<uint32_t> sharedEdgeSet;
             std::set_intersection(
                     component0.edgeIds.begin(), component0.edgeIds.end(),
                     component1.edgeIds.begin(), component1.edgeIds.end(),
-                    std::back_inserter(sharedEdgeSet));
-            for (uint32_t e_id : sharedEdgeSet) {
+                    std::back_inserter(sharedEdgeSet));*/
+
+            std::vector<uint32_t> boundaryFaceIdsIntersection;
+            std::set_union( // TODO: Previously set_intersection
+                    component0.boundaryFaceIds.begin(), component0.boundaryFaceIds.end(),
+                    component1.boundaryFaceIds.begin(), component1.boundaryFaceIds.end(),
+                    std::back_inserter(boundaryFaceIdsIntersection));
+
+            std::vector<uint32_t> boundaryFaceIdsNoLongerBoundaryAfterMerging;
+            std::set_difference(
+                    boundaryFaceIdsIntersection.begin(), boundaryFaceIdsIntersection.end(),
+                    mergedComponent.boundaryFaceIds.begin(), mergedComponent.boundaryFaceIds.end(),
+                    std::back_inserter(boundaryFaceIdsNoLongerBoundaryAfterMerging));
+
+            std::unordered_set<uint32_t> vanishedEdgeIdsSet;
+            std::vector<uint32_t> vanishedEdgeIds;
+            for (uint32_t f_id : boundaryFaceIdsNoLongerBoundaryAfterMerging) {
+                Hybrid_F& f = mesh.Fs.at(f_id);
+                for (uint32_t e_id : f.es) {
+                    if (vanishedEdgeIdsSet.find(e_id) == vanishedEdgeIdsSet.end()) {
+                        vanishedEdgeIdsSet.insert(e_id);
+                        vanishedEdgeIds.push_back(e_id);
+                    }
+                }
+            }
+
+
+
+
+
+            /*std::vector<uint32_t> boundaryFaceIdsUnion;
+            std::set_union(
+                    component0.boundaryFaceIds.begin(), component0.boundaryFaceIds.end(),
+                    component1.boundaryFaceIds.begin(), component1.boundaryFaceIds.end(),
+                    std::back_inserter(boundaryFaceIdsUnion));
+            std::unordered_set<uint32_t> boundaryUnionEdgeIdsSet;
+            std::vector<uint32_t> boundaryUnionEdgeIds;
+            for (uint32_t f_id : boundaryFaceIdsUnion) {
+                Hybrid_F& f = mesh.Fs.at(f_id);
+                for (uint32_t e_id : f.es) {
+                    if (boundaryUnionEdgeIdsSet.find(e_id) == boundaryUnionEdgeIdsSet.end()) {
+                        boundaryUnionEdgeIdsSet.insert(e_id);
+                        boundaryUnionEdgeIds.push_back(e_id);
+                    }
+                }
+            }
+
+            std::vector<uint32_t>& mergedBoundaryFaceIds = mergedComponent.boundaryFaceIds;
+            std::unordered_set<uint32_t> mergedBoundaryEdgeIdsSet;
+            std::vector<uint32_t> mergedBoundaryEdgeIds;
+            for (uint32_t f_id : mergedBoundaryFaceIds) {
+                Hybrid_F& f = mesh.Fs.at(f_id);
+                for (uint32_t e_id : f.es) {
+                    if (mergedBoundaryEdgeIdsSet.find(e_id) == mergedBoundaryEdgeIdsSet.end()) {
+                        mergedBoundaryEdgeIdsSet.insert(e_id);
+                        mergedBoundaryEdgeIds.push_back(e_id);
+                    }
+                }
+            }
+            std::sort(boundaryUnionEdgeIds.begin(), boundaryUnionEdgeIds.end());
+            std::sort(mergedBoundaryEdgeIds.begin(), mergedBoundaryEdgeIds.end());
+
+            std::vector<uint32_t> vanishedEdgeIds;
+            std::set_difference(
+                    boundaryUnionEdgeIds.begin(), boundaryUnionEdgeIds.end(),
+                    mergedBoundaryEdgeIds.begin(), mergedBoundaryEdgeIds.end(),
+                    std::back_inserter(vanishedEdgeIds));*/
+
+
+
+
+
+
+            for (uint32_t e_id : vanishedEdgeIds) {
+                bool isSingular = singularEdgeIds.find(e_id) != singularEdgeIds.end();
+                if (isSingular) {
+                    continue;
+                }
+
                 if (lodEdgeVisibilityMap.at(e_id) == 0) {
                     lodEdgeVisibilityMap.at(e_id) = iterationNumber;
                 } else {
@@ -245,27 +345,12 @@ void generateSheetLevelOfDetailLineStructure(
         lineLodValues.push_back(value);
     }
 
-    // Find the set of all singular edges.
-    std::unordered_set<uint32_t> singularEdgeIds;
-    for (Singular_E& se : si.SEs) {
-        for (uint32_t e_id : se.es_link) {
-            singularEdgeIds.insert(e_id);
-        }
-    }
-
-    const glm::vec4 regularColor = hexMesh->outlineColorRegular;
-    const glm::vec4 singularColor = hexMesh->outlineColorSingular;
-
     // Add all edge line colors (colors depend both on whether an edge is singular and what LOD value it has assigned).
     for (size_t i = 0; i < mesh.Es.size(); i++) {
         Hybrid_E& e = mesh.Es.at(i);
         bool isSingular = singularEdgeIds.find(e.id) != singularEdgeIds.end();
-        glm::vec4 vertexColor;
-        if (isSingular) {
-            vertexColor = singularColor;
-        } else {
-            vertexColor = regularColor;
-        }
+        int edgeValence = int(e.neighbor_hs.size());
+        glm::vec4 vertexColor = hexMesh->edgeColorMap(isSingular, e.boundary, edgeValence);
 
         float lodValue = lineLodValues.at(i * 2) * maxValue;
         if (lodValue > 0.0001) {

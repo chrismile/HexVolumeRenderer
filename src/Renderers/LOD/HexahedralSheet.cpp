@@ -33,11 +33,11 @@
 #include "HexMesh/HexMesh.hpp"
 #include "HexahedralSheet.hpp"
 
-void getParallelEdgesInCell(Hybrid& h, Hybrid_E& e, uint32_t parallelEdgeIds[3]) {
+void getParallelEdgesInCell(Hybrid& h, uint32_t e_id, uint32_t parallelEdgeIds[3]) {
     // Find the local index of the edge e in the cell h.
     size_t edgeCellIndex = std::numeric_limits<size_t>::max();
     for (size_t i = 0; i < h.es.size(); i++) {
-        if (h.es.at(i) == e.id) {
+        if (h.es.at(i) == e_id) {
             edgeCellIndex = i;
         }
     }
@@ -113,7 +113,7 @@ void extractHexahedralSheet(
             addedCellIds.insert(h_id);
 
             Hybrid& h = mesh.Hs.at(h_id);
-            getParallelEdgesInCell(h, e, parallelEdgeIds);
+            getParallelEdgesInCell(h, e.id, parallelEdgeIds);
             for (int i = 0; i < 3; i++) {
                 if (closedEdgeIds.find(parallelEdgeIds[i]) != closedEdgeIds.end()) {
                     continue;
@@ -154,50 +154,130 @@ void extractAllHexahedralSheets(HexMeshPtr hexMesh, std::vector<HexahedralSheet>
     }
 }
 
-bool computeHexahedralSheetComponentNeighborship(
+/*bool computeHexahedralSheetComponentNeighborship(
         HexMeshPtr hexMesh, SheetComponent& component0, SheetComponent& component1, float& matchingWeight) {
-    std::vector<uint32_t> sharedCellIds;
+    SheetComponent mergedComponent;
     std::set_intersection(
             component0.cellIds.begin(), component0.cellIds.end(),
             component1.cellIds.begin(), component1.cellIds.end(),
-            std::back_inserter(sharedCellIds));
+            std::back_inserter(mergedComponent.cellIds));
+
+    // Is intersecting (or hybrid), i.e. not parallel?
+    bool isIntersecting = !mergedComponent.cellIds.empty();
 
     // Exclude intersecting and hybrid sheets for now.
-    // TODO: Alternative: Exclude faces that belong to set intersection of cells (-> hybrid sheets are valid neighbors).
-    if (!sharedCellIds.empty()) {
+    if (isIntersecting) {
         return false;
     }
-    /*if (sharedCellIds.size() == component0.cellIds.size()) {
-        return false;
-    }*/
 
-    std::vector<uint32_t> sharedBoundaryFaceIds;
+    // Is the merged component exactly the original components?
+    if (mergedComponent.cellIds.size() == component0.cellIds.size()
+        && mergedComponent.cellIds.size() == component1.cellIds.size()) {
+        return false;
+    }
+
+    setHexahedralSheetBoundaryFaceIds(hexMesh, mergedComponent);
+    std::sort(mergedComponent.boundaryFaceIds.begin(), mergedComponent.boundaryFaceIds.end());
+
+    std::vector<uint32_t> boundaryFaceIdsIntersection;
     std::set_intersection(
             component0.boundaryFaceIds.begin(), component0.boundaryFaceIds.end(),
             component1.boundaryFaceIds.begin(), component1.boundaryFaceIds.end(),
-            std::back_inserter(sharedBoundaryFaceIds));
+            std::back_inserter(boundaryFaceIdsIntersection));
 
-    float percentageOfAdjacency = float(sharedBoundaryFaceIds.size())
-            / float(component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size());
-    /*if (!sharedCellIds.empty()) {
-        percentageOfAdjacency *= 0.001f;
-    }*/
+    std::vector<uint32_t> boundaryFaceIdsNoLongerBoundaryAfterMerging;
+    std::set_difference(
+            boundaryFaceIdsIntersection.begin(), boundaryFaceIdsIntersection.end(),
+            mergedComponent.boundaryFaceIds.begin(), mergedComponent.boundaryFaceIds.end(),
+            std::back_inserter(boundaryFaceIdsNoLongerBoundaryAfterMerging));
+
+
+    float percentageOfAdjacency = float(boundaryFaceIdsNoLongerBoundaryAfterMerging.size())
+                                  / float(component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size());
 
     matchingWeight = percentageOfAdjacency;
-    return percentageOfAdjacency > 1e-6;
+    if (isIntersecting) {
+        // Add a delta so that intersecting components without shared boundary faces that would no longer be boundary faces
+        // after merging may also be matched (even though with a much lower priority).
+        matchingWeight = std::max(matchingWeight, 1e-6f);
+    }
+    return isIntersecting || boundaryFaceIdsNoLongerBoundaryAfterMerging.size() != 0;
+}*/
+
+bool computeHexahedralSheetComponentNeighborship(
+        HexMeshPtr hexMesh, SheetComponent& component0, SheetComponent& component1, float& matchingWeight,
+        bool excludeIntersecting) {
+    SheetComponent mergedComponent;
+    std::set_intersection(
+            component0.cellIds.begin(), component0.cellIds.end(),
+            component1.cellIds.begin(), component1.cellIds.end(),
+            std::back_inserter(mergedComponent.cellIds));
+
+    // Is intersecting (or hybrid), i.e. not parallel?
+    bool isIntersecting = !mergedComponent.cellIds.empty();
+
+    // Exclude intersecting and hybrid sheets for now.
+    if (isIntersecting && excludeIntersecting) {
+        return false;
+    }
+
+    // Is the merged component exactly the original components?
+    if (mergedComponent.cellIds.size() == component0.cellIds.size()
+        && mergedComponent.cellIds.size() == component1.cellIds.size()) {
+        return false;
+    }
+
+    /*std::set_union(
+            component0.edgeIds.begin(), component0.edgeIds.end(),
+            component1.edgeIds.begin(), component1.edgeIds.end(),
+            std::back_inserter(mergedComponent.edgeIds));*/
+    setHexahedralSheetBoundaryFaceIds(hexMesh, mergedComponent);
+    std::sort(mergedComponent.boundaryFaceIds.begin(), mergedComponent.boundaryFaceIds.end());
+
+    std::vector<uint32_t> boundaryFaceIdsIntersection;
+    std::set_intersection(
+            component0.boundaryFaceIds.begin(), component0.boundaryFaceIds.end(),
+            component1.boundaryFaceIds.begin(), component1.boundaryFaceIds.end(),
+            std::back_inserter(boundaryFaceIdsIntersection));
+
+    std::vector<uint32_t> boundaryFaceIdsNoLongerBoundaryAfterMerging;
+    std::set_difference(
+            boundaryFaceIdsIntersection.begin(), boundaryFaceIdsIntersection.end(),
+            mergedComponent.boundaryFaceIds.begin(), mergedComponent.boundaryFaceIds.end(),
+            std::back_inserter(boundaryFaceIdsNoLongerBoundaryAfterMerging));
+
+    bool isHybrid = isIntersecting && !boundaryFaceIdsNoLongerBoundaryAfterMerging.empty();
+
+
+    //float percentageOfAdjacency = float(boundaryFaceIdsNoLongerBoundaryAfterMerging.size())
+    //                              / float(component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size());
+    float percentageOfAdjacency = float(boundaryFaceIdsNoLongerBoundaryAfterMerging.size())
+                                  / float(component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size());
+    if (isIntersecting) {
+        percentageOfAdjacency *= 0.001f;
+    }
+
+    matchingWeight = percentageOfAdjacency;
+    if (isIntersecting) {
+        // Add a delta so that intersecting components without shared boundary faces that would no longer be boundary faces
+        // after merging may also be matched (even though with a much lower priority).
+        matchingWeight = std::max(matchingWeight, 1e-6f);
+    }
+    return isHybrid || boundaryFaceIdsNoLongerBoundaryAfterMerging.size() != 0;
 }
 
 void computeHexahedralSheetComponentConnectionData(
         HexMeshPtr hexMesh,
         std::vector<SheetComponent>& components,
-        std::vector<ComponentConnectionData>& connectionDataList) {
+        std::vector<ComponentConnectionData>& connectionDataList,
+        bool excludeIntersecting) {
     for (size_t i = 0; i < components.size(); i++) {
         for (size_t j = i + 1; j < components.size(); j++) {
             SheetComponent& component0 = components.at(i);
             SheetComponent& component1 = components.at(j);
             float edgeWeight = 1.0f;
             bool componentsAreNeighbors = computeHexahedralSheetComponentNeighborship(
-                    hexMesh, component0, component1, edgeWeight);
+                    hexMesh, component0, component1, edgeWeight, excludeIntersecting);
             if (!componentsAreNeighbors) {
                 continue;
             }

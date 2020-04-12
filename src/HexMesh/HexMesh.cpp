@@ -434,6 +434,27 @@ float HexMesh::getAverageCellVolume() {
 }
 
 
+glm::vec4 HexMesh::edgeColorMap(bool isSingular, bool isBoundary, int valence) {
+    if (!isSingular) {
+        return outlineColorRegular;
+    }
+
+    if (isBoundary) {
+        if (valence == 1) {
+            return glm::vec4(1.0f, 0.0f, 0.0f, 1.0f); // red
+        } else if (valence == 3) {
+            return glm::vec4(1.0f, 0.20f, 0.0f, 1.0f); // orange-red
+        }
+    } else {
+        if (valence == 3) {
+            return glm::vec4(1.0f, 0.20f, 0.0f, 1.0f); // orange-red
+        } else if (valence == 5) {
+            return glm::vec4(1.0f, 0.65f, 0.0f, 1.0f); // orange-yellow
+        }
+    }
+
+    return glm::vec4(0.45f, 0.0f, 0.5f, 1.0f); // purple
+}
 
 void HexMesh::getSurfaceData(
         std::vector<uint32_t>& triangleIndices,
@@ -641,10 +662,13 @@ void HexMesh::getSingularityData(
         Singular_E& se = si->SEs.at(i);
         for (size_t edgeIndex = 0; edgeIndex < se.es_link.size(); edgeIndex++) {
             Hybrid_E& e = mesh->Es[se.es_link.at(edgeIndex)];
+            int edgeValence = int(e.neighbor_hs.size());
+            glm::vec4 vertexColor = edgeColorMap(true, e.boundary, edgeValence);
             for (uint32_t v_id : e.vs) {
                 glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
                 lineVertices.push_back(vertexPosition);
-                lineColors.push_back(glm::vec4(1,0,0,1));
+                lineColors.push_back(vertexColor);
+                //lineColors.push_back(glm::vec4(1,0,0,1));
             }
         }
     }
@@ -1542,14 +1566,12 @@ void HexMesh::getCompleteWireframeData(
 
     for (Hybrid_E& e : mesh->Es) {
         bool isSingular = singularEdgeIds.find(e.id) != singularEdgeIds.end();
+        int edgeValence = int(e.neighbor_hs.size());
+        glm::vec4 vertexColor = edgeColorMap(isSingular, e.boundary, edgeValence);
         for (uint32_t v_id : e.vs) {
             glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
             lineVertices.push_back(vertexPosition);
-            if (isSingular) {
-                lineColors.push_back(singularColor);
-            } else {
-                lineColors.push_back(regularColor);
-            }
+            lineColors.push_back(vertexColor);
         }
     }
 }
@@ -1772,6 +1794,12 @@ void HexMesh::getSurfaceDataBarycentric(
 
     size_t indexOffset = 0;
     for (Hybrid_F& f : mesh->Fs) {
+        if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+            return hexaLabApp->is_cell_marked(h_id);
+        })) {
+            continue;
+        }
+
         for (uint32_t v_id : f.vs) {
             glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
             vertexPositions.push_back(vertexPosition);
@@ -1818,8 +1846,6 @@ void HexMesh::getSurfaceDataWireframeFaces(
         bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
-    const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
-    const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
     std::unordered_set<uint32_t> singularEdgeIds;
     for (Singular_E& se : si->SEs) {
@@ -1835,9 +1861,17 @@ void HexMesh::getSurfaceDataWireframeFaces(
     size_t indexOffset = 0;
     for (size_t i = 0; i < mesh->Fs.size(); i++) {
         Hybrid_F& f = mesh->Fs.at(i);
+        if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+            return hexaLabApp->is_cell_marked(h_id);
+        })) {
+            continue;
+        }
+
         HexahedralCellFace* hexahedralCellFace;
         if (onlyBoundary) {
-            if (f.boundary) {
+            if (f.boundary || std::any_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+                return hexaLabApp->is_cell_marked(h_id);
+            })) {
                 hexahedralCellFaces.push_back(HexahedralCellFace());
                 hexahedralCellFace = &hexahedralCellFaces.back();
             } else {
@@ -1876,11 +1910,10 @@ void HexMesh::getSurfaceDataWireframeFaces(
         assert(f.es.size() == 4);
         for (size_t j = 0; j < 4; j++) {
             uint32_t e_id = f.es.at(j);
-            if (singularEdgeIds.find(e_id) != singularEdgeIds.end()) {
-                hexahedralCellFace->lineColors[j] = singularColor;
-            } else {
-                hexahedralCellFace->lineColors[j] = regularColor;
-            }
+            Hybrid_E& e = mesh->Es.at(e_id);
+            int edgeValence = int(e.neighbor_hs.size());
+            glm::vec4 vertexColor = edgeColorMap(singularEdgeIds.find(e_id) != singularEdgeIds.end(), e.boundary, edgeValence);
+            hexahedralCellFace->lineColors[j] = vertexColor;
         }
 
         indexOffset += 4;
@@ -1893,8 +1926,6 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
         bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
-    const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
-    const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
     std::unordered_set<uint32_t> singularEdgeIds;
     for (Singular_E& se : si->SEs) {
@@ -1908,6 +1939,12 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
         Hybrid& h = mesh->Hs.at(i);
         for (size_t j = 0; j < h.fs.size(); j++) {
             Hybrid_F& f = mesh->Fs.at(h.fs.at(j));
+            if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+                return hexaLabApp->is_cell_marked(h_id);
+            })) {
+                continue;
+            }
+
             assert(f.neighbor_hs.size() >= 1 && f.neighbor_hs.size() <= 2);
             bool invertWinding = f.neighbor_hs.at(0) != h.id;
 
@@ -1954,11 +1991,10 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
             assert(f.es.size() == 4);
             for (size_t j = 0; j < 4; j++) {
                 uint32_t e_id = f.es.at(j);
-                if (singularEdgeIds.find(e_id) != singularEdgeIds.end()) {
-                    hexahedralCellFace.lineColors[j] = singularColor;
-                } else {
-                    hexahedralCellFace.lineColors[j] = regularColor;
-                }
+                Hybrid_E& e = mesh->Es.at(e_id);
+                int edgeValence = int(e.neighbor_hs.size());
+                glm::vec4 vertexColor = edgeColorMap(singularEdgeIds.find(e_id) != singularEdgeIds.end(), e.boundary, edgeValence);
+                hexahedralCellFace.lineColors[j] = vertexColor;
             }
 
             indexOffset += 4;
@@ -1972,8 +2008,6 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
-    const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
-    const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
     std::unordered_set<uint32_t> singularEdgeIds;
     for (Singular_E& se : si->SEs) {
@@ -2012,6 +2046,12 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
     size_t indexOffset = 0;
     for (size_t i = 0; i < mesh->Fs.size(); i++) {
         Hybrid_F& f = mesh->Fs.at(i);
+        if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+            return hexaLabApp->is_cell_marked(h_id);
+        })) {
+            continue;
+        }
+
         HexahedralCellFaceUnified& hexahedralCellFace = hexahedralCellFaces.at(i);
 
         assert(f.vs.size() == 4);
@@ -2044,11 +2084,10 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         assert(f.es.size() == 4);
         for (size_t j = 0; j < 4; j++) {
             uint32_t e_id = f.es.at(j);
-            if (singularEdgeIds.find(e_id) != singularEdgeIds.end()) {
-                hexahedralCellFace.lineColors[j] = singularColor;
-            } else {
-                hexahedralCellFace.lineColors[j] = regularColor;
-            }
+            Hybrid_E& e = mesh->Es.at(e_id);
+            int edgeValence = int(e.neighbor_hs.size());
+            glm::vec4 vertexColor = edgeColorMap(singularEdgeIds.find(e_id) != singularEdgeIds.end(), e.boundary, edgeValence);
+            hexahedralCellFace.lineColors[j] = vertexColor;
         }
 
         indexOffset += 4;

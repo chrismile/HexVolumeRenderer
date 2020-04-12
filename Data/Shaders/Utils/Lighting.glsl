@@ -243,10 +243,8 @@ vec4 flatShadingWireframeSurfaceHalo_DepthCue(in vec4 baseColor, out float fragm
     vec4 color = vec4(mix(baseColor.rgb, outlineColor,
             smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), baseColor.a * coverage);
 
-    // To counteract depth fighting with overlay wireframe.
-    float depthOffset = -0.00001;
     if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
-        fragmentDepth += 0.005;
+        fragmentDepth += 0.005;// * (lineCoordinates - WHITE_THRESHOLD + EPSILON) / (lineCoordinates - WHITE_THRESHOLD + EPSILON);
     }
     fragmentDepthFrag = fragmentDepth;
 

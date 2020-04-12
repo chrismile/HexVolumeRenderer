@@ -137,6 +137,14 @@ public:
      */
     float getAverageCellVolume();
 
+    /**
+     * Maps mesh edge properties to a color for rendering.
+     * @param isSingular Whether the edge is singular (could also be computed from the two values below).
+     * @param isBoundary Whether the edge lies on the boundary surface of the mesh.
+     * @param valence The valence of the edge (i.e., the number of incident cells).
+     * @return The assigned line color of this edge type.
+     */
+    glm::vec4 edgeColorMap(bool isSingular, bool isBoundary, int valence);
 
     /**
      * Get the triangle data of the boundary surface of the hexahedral mesh.

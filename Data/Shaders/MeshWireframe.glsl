@@ -110,7 +110,7 @@ void main()
 
     // Add the context fragment.
     vec4 colorContext = fragmentColor;
-    bool isSingularEdge = lineBaseColor.r > 0.8;
+    bool isSingularEdge = lineBaseColor.r != lineBaseColor.g || lineBaseColor.g != lineBaseColor.b;
     float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
     float expFactor = exp(-3.5 * fragmentDepth);
     float boostFactor = clamp(2.0 * expFactor + 1.0, 1.0, 1.5);
@@ -118,7 +118,7 @@ void main()
     float lineCoordinatesContext = max(minDistance / lineWidth * 2.0 / (isSingularEdge ? 1.0 : max(expFactor, EPSILON)) * 1.5, 0.0);
     if (lineCoordinatesContext <= 1.0) {
         if (isSingularEdge) {
-            colorContext.rgb = vec3(1.0, 0.0, 0.0);
+            colorContext.rgb = lineBaseColor.rgb;//vec3(1.0, 0.0, 0.0); // TODO: Red in context?
             //colorContext.a *= 0.5;
             colorContext.a = max(colorContext.a * 0.5, 0.2);
         } else {

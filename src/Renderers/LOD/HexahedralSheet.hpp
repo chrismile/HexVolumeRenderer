@@ -133,20 +133,24 @@ void setHexahedralSheetBoundaryFaceIds(
  * @param component0 The first hexahedral sheet component.
  * @param component1 The second hexahedral sheet component.
  * @param matchingWeight The weight the neighborship relation should have when merging/matching components.
+ * @param excludeIntersecting Whether to allow matching of intersecting or hybrid sheets or not.
  * @return Whether the two passed hexahedral mesh sheets are neighbors.
  */
 bool computeHexahedralSheetComponentNeighborship(
-        HexMeshPtr hexMesh, SheetComponent& component0, SheetComponent& component1, float& matchingWeight);
+        HexMeshPtr hexMesh, SheetComponent& component0, SheetComponent& component1, float& matchingWeight,
+        bool excludeIntersecting);
 
 /**
  * Compute the neighborhood relation of all components and the edge weight of edges between components.
  * @param hexMesh The hexahedral mesh.
  * @param components The hexahedral mesh sheet components.
  * @param connectionDataList The connection data.
+ * @param excludeIntersecting Whether to allow matching of intersecting or hybrid sheets or not.
  */
 void computeHexahedralSheetComponentConnectionData(
         HexMeshPtr hexMesh,
         std::vector<SheetComponent>& components,
-        std::vector<ComponentConnectionData>& connectionDataList);
+        std::vector<ComponentConnectionData>& connectionDataList,
+        bool excludeIntersecting);
 
 #endif //HEXVOLUMERENDERER_HEXAHEDRALSHEET_HPP
