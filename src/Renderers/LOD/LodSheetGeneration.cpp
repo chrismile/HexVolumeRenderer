@@ -73,6 +73,9 @@ void generateSheetLevelOfDetailLineStructure(
         }
     }
 
+    // Don't highlight singular edges when we have far too many of them.
+    bool tooMuchSingularEdgeMode = singularEdgeIds.size() > 10000u;
+
     // First, extract all hexahedral sheets from the mesh.
     std::vector<HexahedralSheet> hexahedralSheets;
     extractAllHexahedralSheets(hexMesh, hexahedralSheets);
@@ -100,7 +103,8 @@ void generateSheetLevelOfDetailLineStructure(
 
 
     bool excludeIntersecting = true;
-    for (int iterationNumber = 1; ; iterationNumber++) {
+    int iterationNumber = 1;
+    while (true) {
         sgl::Logfile::get()->writeInfo(
                 std::string() + "Starting iteration number " + std::to_string(iterationNumber) + "...");
         auto startIteration = std::chrono::system_clock::now();
@@ -321,6 +325,18 @@ void generateSheetLevelOfDetailLineStructure(
         sgl::Logfile::get()->writeInfo(
                 std::string() + "Time for iteration number " + std::to_string(iterationNumber) + ": "
                 + std::to_string(elapsedIteration.count()) + "ms");
+        iterationNumber++;
+    }
+
+    if (tooMuchSingularEdgeMode) {
+        for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
+            if (lodEdgeVisibilityMap.at(i) != 0) {
+                lodEdgeVisibilityMap.at(i)++;
+            }
+        }
+        for (uint32_t e_id : singularEdgeIds) {
+            lodEdgeVisibilityMap.at(e_id) = 1;
+        }
     }
 
     // We want to normalize the LOD values to the range [0, 1]. First, compute the maximum value.

@@ -1854,10 +1854,6 @@ void HexMesh::getSurfaceDataWireframeFaces(
         }
     }
 
-    if (!onlyBoundary) {
-        hexahedralCellFaces.resize(mesh->Fs.size());
-    }
-
     size_t indexOffset = 0;
     for (size_t i = 0; i < mesh->Fs.size(); i++) {
         Hybrid_F& f = mesh->Fs.at(i);
@@ -1867,26 +1863,23 @@ void HexMesh::getSurfaceDataWireframeFaces(
             continue;
         }
 
-        HexahedralCellFace* hexahedralCellFace;
         if (onlyBoundary) {
-            if (f.boundary || std::any_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+            if (!f.boundary && !std::any_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
                 return hexaLabApp->is_cell_marked(h_id);
             })) {
-                hexahedralCellFaces.push_back(HexahedralCellFace());
-                hexahedralCellFace = &hexahedralCellFaces.back();
-            } else {
                 continue;
             }
-        } else {
-            hexahedralCellFace = &hexahedralCellFaces.at(i);
         }
+
+        hexahedralCellFaces.push_back(HexahedralCellFace());
+        HexahedralCellFace& hexahedralCellFace = hexahedralCellFaces.back();
 
         assert(f.vs.size() == 4);
         for (size_t j = 0; j < 4; j++) {
             uint32_t v_id = f.vs.at(j);
             glm::vec4 vertexPosition(
                     mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
-            hexahedralCellFace->vertexPositions[j] = vertexPosition;
+            hexahedralCellFace.vertexPositions[j] = vertexPosition;
         }
 
         /**
@@ -1913,7 +1906,7 @@ void HexMesh::getSurfaceDataWireframeFaces(
             Hybrid_E& e = mesh->Es.at(e_id);
             int edgeValence = int(e.neighbor_hs.size());
             glm::vec4 vertexColor = edgeColorMap(singularEdgeIds.find(e_id) != singularEdgeIds.end(), e.boundary, edgeValence);
-            hexahedralCellFace->lineColors[j] = vertexColor;
+            hexahedralCellFace.lineColors[j] = vertexColor;
         }
 
         indexOffset += 4;
@@ -2042,7 +2035,6 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         vertexAttributes.at(v_id) = vertexAttribute;
     }
 
-    hexahedralCellFaces.resize(mesh->Fs.size());
     size_t indexOffset = 0;
     for (size_t i = 0; i < mesh->Fs.size(); i++) {
         Hybrid_F& f = mesh->Fs.at(i);
@@ -2052,7 +2044,8 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
             continue;
         }
 
-        HexahedralCellFaceUnified& hexahedralCellFace = hexahedralCellFaces.at(i);
+        hexahedralCellFaces.push_back(HexahedralCellFaceUnified());
+        HexahedralCellFaceUnified& hexahedralCellFace = hexahedralCellFaces.back();
 
         assert(f.vs.size() == 4);
         for (size_t j = 0; j < 4; j++) {
