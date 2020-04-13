@@ -37,7 +37,7 @@ void initGlobalCircleVertexPositions(int numCircleSubdivisions, float tubeRadius
     globalTubeRadius = tubeRadius;
 
     const float theta = sgl::TWO_PI / numCircleSubdivisions;
-    const float tangetialFactor = std::tan(theta); // opposite / adjacent
+    const float tangentialFactor = std::tan(theta); // opposite / adjacent
     const float radialFactor = std::cos(theta); // adjacent / hypotenuse
     glm::vec3 position(tubeRadius, 0, 0);
 
@@ -46,7 +46,7 @@ void initGlobalCircleVertexPositions(int numCircleSubdivisions, float tubeRadius
 
         // Add the tangent vector and correct the position using the radial factor.
         glm::vec3 tangent(-position.y, position.x, 0);
-        position += tangetialFactor * tangent;
+        position += tangentialFactor * tangent;
         position *= radialFactor;
     }
 }
