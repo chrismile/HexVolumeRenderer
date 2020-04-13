@@ -2021,17 +2021,41 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
     std::vector<float> vertexAttributes(mesh->Vs.size());
     for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
         Hybrid_V& v = mesh->Vs.at(v_id);
-        float volumeSum = 0.0f, volumeWeightedAttributeSum = 0.0f;
+        float volumeSum = 0.0f;
         for (uint32_t h_id : v.neighbor_hs) {
             volumeSum += cellVolumes.at(h_id);
         }
-        for (uint32_t h_id : v.neighbor_hs) {
-            float cellVolume = cellVolumes.at(h_id);
-            float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
-            volumeWeightedAttributeSum += cellVolume * cellAttribute;
+
+        float vertexAttribute;
+        if (qualityMeasure == QUALITY_MEASURE_JACOBIAN || qualityMeasure == QUALITY_MEASURE_SCALED_JACOBIAN) {
+            // sum(V_i) / sum(V_i/J_i)
+            float volumeWeightedInverseAttributeSum = 0.0f;
+            for (uint32_t h_id : v.neighbor_hs) {
+                float cellVolume = cellVolumes.at(h_id);
+                float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
+                volumeWeightedInverseAttributeSum += cellVolume / cellAttribute;
+            }
+            vertexAttribute =volumeSum / volumeWeightedInverseAttributeSum;
+            // sum(V_i/J_i) / sum(V_i)
+            /*float volumeWeightedInverseAttributeSum = 0.0f;
+            for (uint32_t h_id : v.neighbor_hs) {
+                float cellVolume = cellVolumes.at(h_id);
+                float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
+                volumeWeightedInverseAttributeSum += cellVolume / cellAttribute;
+            }
+            vertexAttribute = volumeWeightedInverseAttributeSum / volumeSum;*/
+            /*vertexAttribute = (1.0f / float(v.neighbor_hs.size())) * volumeSum / volumeWeightedInverseAttributeSum;*/
+        } else {
+            // sum(V_i * J_i) / sum(V_i)
+            float volumeWeightedAttributeSum = 0.0f;
+            for (uint32_t h_id : v.neighbor_hs) {
+                float cellVolume = cellVolumes.at(h_id);
+                float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
+                volumeWeightedAttributeSum += cellVolume * cellAttribute;
+            }
+            vertexAttribute = volumeWeightedAttributeSum / volumeSum;
         }
 
-        float vertexAttribute = volumeWeightedAttributeSum / volumeSum;
         vertexAttributes.at(v_id) = vertexAttribute;
     }
 
