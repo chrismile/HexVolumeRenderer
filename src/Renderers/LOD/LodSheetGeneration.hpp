@@ -46,9 +46,9 @@ typedef std::shared_ptr<HexMesh> HexMeshPtr;
  *
  * How is an LOD structure created using components?
  * - Initially, every sheet belongs to its own component.
- * - Then, in each iteration until only one component is left, we create a perfect matching of pairs of neighboring
- *   components. We merge these pairs of components into larger components and mark all shared edges as not visible at
- *   the LOD level of the current iteration. (TODO: Exception maybe for singular edges?)
+ * - Then, in each iteration until only one component is left, one pair of neighboring components with the largest
+ *   weight is matched and merged into a larger component. All shared edges are marked as not visible at the current
+ *   LOD level. An exception is made for singular edges, which always remain visible.
  *
  * What does 'neighboring' mean for two components?
  * - Component c_0 shares at least one boundary face with another component c_1.
@@ -57,9 +57,9 @@ typedef std::shared_ptr<HexMesh> HexMeshPtr;
  * - Neighbors(c') = (Neighbors(c_0) UNION Neighbors(c_1)) \ {c_0, c_1}
  *
  * What edges do we mark as not visible when merging two components c_0, c_1?
- * - Mark all edges E(c_0) INTERSECTION E(c_1) as not visible at the current LOD level (and all higher LOD levels of
- *   course, too).
- * (TODO: Exception maybe for singular edges?)
+ * - Mark all edges incident to the the shared boundary faces of the two components as not visible at the current LOD.
+ *   The algorithm makes sure to only handle shared boundary faces that would no longer be on the boundary after
+ *   merging.
  *
  * @param hexMesh The hexahedral mesh.
  * @param lineVertices The list of line vertex positions.

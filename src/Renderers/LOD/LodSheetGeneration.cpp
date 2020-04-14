@@ -49,58 +49,6 @@ void set_union(const std::unordered_set<T>& set0, const std::unordered_set<T>& s
     setUnion.insert(set1.begin(), set1.end());
 }
 
-/*void collapseLods(std::vector<int> &lodEdgeVisibilityMap, int maxValueInt, int& newMaxValueInt) {
-    std::vector<uint32_t> lodEdgeValueHistogram;
-    lodEdgeValueHistogram.resize(maxValueInt + 1, 0);
-    for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
-        lodEdgeValueHistogram.at(lodEdgeVisibilityMap.at(i))++;
-    }
-
-    std::vector<uint32_t> lodEdgeValueInverseCumulativeDistribution;
-    lodEdgeValueInverseCumulativeDistribution.resize(maxValueInt + 1, 0);
-    for (size_t i = 0; i <= maxValueInt; i++) {
-        for (size_t j = 0; j <= maxValueInt-i; j++) {
-            lodEdgeValueInverseCumulativeDistribution.at(j) += lodEdgeValueHistogram.at(i);
-        }
-    }
-
-    std::cout << "Test: " << lodEdgeVisibilityMap.size() << std::endl;
-
-    // Collapse LODs
-    std::vector<uint32_t> lodEdgeValueCollapseMap;
-    lodEdgeValueCollapseMap.resize(maxValueInt + 1, 0);
-    size_t totalNumLines = lodEdgeVisibilityMap.size();
-    size_t lineLodNumberFactor = 1;
-    size_t collapsedLevel = 0;
-    for (size_t i = 0; i <= maxValueInt; i++) {
-        size_t numEntriesAtLod = lodEdgeValueInverseCumulativeDistribution.at(i);
-        if (numEntriesAtLod >= totalNumLines / lineLodNumberFactor) {
-            do {
-                lodEdgeValueCollapseMap.at(i) = collapsedLevel;
-                i++;
-                if (i <= maxValueInt) {
-                    numEntriesAtLod = lodEdgeValueInverseCumulativeDistribution.at(i);
-                }
-            } while (i <= maxValueInt && numEntriesAtLod >= totalNumLines / lineLodNumberFactor);
-            i--;
-        }
-
-        collapsedLevel++;
-        lineLodNumberFactor *= 4;
-    }
-
-    for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
-        lodEdgeVisibilityMap.at(i) = lodEdgeValueCollapseMap.at(lodEdgeVisibilityMap.at(i));
-    }
-
-    newMaxValueInt = collapsedLevel - 1;
-    /for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
-        if (lodEdgeVisibilityMap.at(i) > 0) {
-            lodEdgeVisibilityMap.at(i) = newMaxValueInt - lodEdgeVisibilityMap.at(i) + 1;
-        }
-    }/
-}*/
-
 void generateSheetLevelOfDetailLineStructure(
         HexMeshPtr& hexMesh,
         std::vector<glm::vec3> &lineVertices,
@@ -148,17 +96,19 @@ void generateSheetLevelOfDetailLineStructure(
         connectionDataSet.insert(componentConnectionData);
     }
 
+    // This array represents a map storing for each line the LOD level where it was marked as last visible.
     std::vector<int> lodEdgeVisibilityMap;
     lodEdgeVisibilityMap.resize(mesh.Es.size(), 0);
 
-    // TODO
+    // Data for merging similar merges into one LOD level. If 'mergeLodLevels' is set to false, each merge gets its own
+    // LOD level, i.e., LOD level @see iterationNumber.
     bool mergeLodLevels = true;
     int lodLevel = 0;
     int lodLevelFirstNumCellsAfterMerging = 0;
-
-
+    // For creating a discrete LOD when switching from merging adjacent to hybrid or intersecting sheet components.
     bool justSwitchedToIntersectingOrHybridComponentMerging = false;
     bool switchedToIntersectingOrHybridComponentMerging = false;
+
     int iterationNumber = 1;
     while (true) {
         if (connectionDataSet.size() == 0) {
@@ -170,13 +120,16 @@ void generateSheetLevelOfDetailLineStructure(
                 std::string() + "Starting iteration number " + std::to_string(iterationNumber) + "...");
         auto startIteration = std::chrono::system_clock::now();
 
-        // An index map mapping the indices of the components to their indices after merging.
+        // An index map mapping the indices of the components to their indices after merging (in @see mergedComponents).
         std::unordered_map<uint32_t, uint32_t> mergedComponentIndexMap;
         std::vector<SheetComponent*> mergedComponents;
         mergedComponents.reserve(components.size() - 1);
 
+        // Find the LOD with the best merging weight.
         ComponentConnectionData bestMatchingComponentConnectionData = *connectionDataSet.begin();
         connectionDataSet.erase(connectionDataSet.begin());
+
+        // For creating a discrete LOD when switching from merging adjacent to hybrid or intersecting sheet components.
         if (bestMatchingComponentConnectionData.componentConnectionType == ComponentConnectionType::INTERSECTING
                 || bestMatchingComponentConnectionData.componentConnectionType == ComponentConnectionType::HYBRID) {
             if (!switchedToIntersectingOrHybridComponentMerging) {
@@ -201,17 +154,9 @@ void generateSheetLevelOfDetailLineStructure(
         setHexahedralSheetBoundaryFaceIds(hexMesh, *mergedComponent);
         std::sort(mergedComponent->boundaryFaceIds.begin(), mergedComponent->boundaryFaceIds.end());
 
-        // Mark all edges lying on the boundary faces that vanished after merging as not visible at the current LOD
-        // level.
-        // Mark all edges E(c_0) INTERSECTION E(c_1) as not visible at the current LOD level.
-        /*std::vector<uint32_t> sharedEdgeSet;
-        std::set_intersection(
-                component0->edgeIds.begin(), component0->edgeIds.end(),
-                component1->edgeIds.begin(), component1->edgeIds.end(),
-                std::back_inserter(sharedEdgeSet));*/
-
+        // Compute the edges that vanish after the merge.
         std::vector<uint32_t> boundaryFaceIdsUnion;
-        std::set_union( // TODO: Previously set_intersection
+        std::set_union(
                 component0->boundaryFaceIds.begin(), component0->boundaryFaceIds.end(),
                 component1->boundaryFaceIds.begin(), component1->boundaryFaceIds.end(),
                 std::back_inserter(boundaryFaceIdsUnion));
@@ -234,8 +179,8 @@ void generateSheetLevelOfDetailLineStructure(
             }
         }
 
-
-
+        // If merging LOD levels is active, compute whether we need to start a new LOD. Otherwise use the current
+        // iteration number as the LOD level.
         if (mergeLodLevels) {
             size_t numCellsAfterMerging = mergedComponent->cellIds.size();
             if (numCellsAfterMerging >= 2 * lodLevelFirstNumCellsAfterMerging
@@ -251,49 +196,7 @@ void generateSheetLevelOfDetailLineStructure(
             lodLevel = iterationNumber;
         }
 
-
-        /*std::vector<uint32_t> boundaryFaceIdsUnion;
-        std::set_union(
-                component0->boundaryFaceIds.begin(), component0->boundaryFaceIds.end(),
-                component1->boundaryFaceIds.begin(), component1->boundaryFaceIds.end(),
-                std::back_inserter(boundaryFaceIdsUnion));
-        std::unordered_set<uint32_t> boundaryUnionEdgeIdsSet;
-        std::vector<uint32_t> boundaryUnionEdgeIds;
-        for (uint32_t f_id : boundaryFaceIdsUnion) {
-            Hybrid_F& f = mesh.Fs.at(f_id);
-            for (uint32_t e_id : f.es) {
-                if (boundaryUnionEdgeIdsSet.find(e_id) == boundaryUnionEdgeIdsSet.end()) {
-                    boundaryUnionEdgeIdsSet.insert(e_id);
-                    boundaryUnionEdgeIds.push_back(e_id);
-                }
-            }
-        }
-
-        std::vector<uint32_t>& mergedBoundaryFaceIds = mergedComponent->boundaryFaceIds;
-        std::unordered_set<uint32_t> mergedBoundaryEdgeIdsSet;
-        std::vector<uint32_t> mergedBoundaryEdgeIds;
-        for (uint32_t f_id : mergedBoundaryFaceIds) {
-            Hybrid_F& f = mesh.Fs.at(f_id);
-            for (uint32_t e_id : f.es) {
-                if (mergedBoundaryEdgeIdsSet.find(e_id) == mergedBoundaryEdgeIdsSet.end()) {
-                    mergedBoundaryEdgeIdsSet.insert(e_id);
-                    mergedBoundaryEdgeIds.push_back(e_id);
-                }
-            }
-        }
-        std::sort(boundaryUnionEdgeIds.begin(), boundaryUnionEdgeIds.end());
-        std::sort(mergedBoundaryEdgeIds.begin(), mergedBoundaryEdgeIds.end());
-
-        std::vector<uint32_t> vanishedEdgeIds;
-        std::set_difference(
-                boundaryUnionEdgeIds.begin(), boundaryUnionEdgeIds.end(),
-                mergedBoundaryEdgeIds.begin(), mergedBoundaryEdgeIds.end(),
-                std::back_inserter(vanishedEdgeIds));*/
-
-
-
-
-
+        // Mark all edges that vanished from this LOD.
         for (uint32_t e_id : vanishedEdgeIds) {
             bool isSingular = singularEdgeIds.find(e_id) != singularEdgeIds.end();
             if (isSingular && !tooMuchSingularEdgeMode) {
@@ -307,6 +210,7 @@ void generateSheetLevelOfDetailLineStructure(
             }
         }
 
+        // Add the merged component to the index map and the merged component set.
         mergedComponents.push_back(mergedComponent);
         size_t mergedComponentIndex = 0;
         mergedComponentIndexMap.insert(std::make_pair(
@@ -326,10 +230,12 @@ void generateSheetLevelOfDetailLineStructure(
             oldComponentIndex++;
         }
 
+        // Free the memory of the old components. They are no longer used afterwards.
         delete component0;
         delete component1;
 
-        // Fix the indices of the neighbor relation using the index map.
+        // Fix the indices of the neighborship relation using the index map and recompute the merging weight between
+        // the neighbors of the merged component and the merged component itself.
         for (int i = 1; i < mergedComponents.size(); i++) {
             SheetComponent* component = mergedComponents.at(i);
             std::unordered_set<uint32_t> newNeighborIndices;
@@ -341,7 +247,6 @@ void generateSheetLevelOfDetailLineStructure(
             }
             component->neighborIndices = newNeighborIndices;
         }
-        // TODO: operator== alright?
         std::set<ComponentConnectionData> mergedConnectionDataSet;
         std::unordered_set<ComponentConnectionData, ComponentConnectionDataHasher> mergedConnectionDataUnorderedSet;
         for (const ComponentConnectionData& connectionData : connectionDataSet) {
@@ -417,17 +322,14 @@ void generateSheetLevelOfDetailLineStructure(
     for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
         maxValueInt = std::max(maxValueInt, lodEdgeVisibilityMap.at(i));
     }
+    float maxValue = float(maxValueInt);
+
     //#pragma omp parallel for
     for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
         if (lodEdgeVisibilityMap.at(i) > 0) {
             lodEdgeVisibilityMap.at(i) = maxValueInt - lodEdgeVisibilityMap.at(i) + 1;
         }
     }
-
-
-    //collapseLods(lodEdgeVisibilityMap, maxValueInt, maxValueInt);
-    float maxValue = float(maxValueInt);
-
 
     // Now, normalize the values by division.
     lineLodValues.reserve(lodEdgeVisibilityMap.size() * 2);
