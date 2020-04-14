@@ -49,10 +49,57 @@ void set_union(const std::unordered_set<T>& set0, const std::unordered_set<T>& s
     setUnion.insert(set1.begin(), set1.end());
 }
 
-//union FloatPtrConstRemoval {
-//    float* ptr;
-//    const float* constPtr;
-//};
+/*void collapseLods(std::vector<int> &lodEdgeVisibilityMap, int maxValueInt, int& newMaxValueInt) {
+    std::vector<uint32_t> lodEdgeValueHistogram;
+    lodEdgeValueHistogram.resize(maxValueInt + 1, 0);
+    for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
+        lodEdgeValueHistogram.at(lodEdgeVisibilityMap.at(i))++;
+    }
+
+    std::vector<uint32_t> lodEdgeValueInverseCumulativeDistribution;
+    lodEdgeValueInverseCumulativeDistribution.resize(maxValueInt + 1, 0);
+    for (size_t i = 0; i <= maxValueInt; i++) {
+        for (size_t j = 0; j <= maxValueInt-i; j++) {
+            lodEdgeValueInverseCumulativeDistribution.at(j) += lodEdgeValueHistogram.at(i);
+        }
+    }
+
+    std::cout << "Test: " << lodEdgeVisibilityMap.size() << std::endl;
+
+    // Collapse LODs
+    std::vector<uint32_t> lodEdgeValueCollapseMap;
+    lodEdgeValueCollapseMap.resize(maxValueInt + 1, 0);
+    size_t totalNumLines = lodEdgeVisibilityMap.size();
+    size_t lineLodNumberFactor = 1;
+    size_t collapsedLevel = 0;
+    for (size_t i = 0; i <= maxValueInt; i++) {
+        size_t numEntriesAtLod = lodEdgeValueInverseCumulativeDistribution.at(i);
+        if (numEntriesAtLod >= totalNumLines / lineLodNumberFactor) {
+            do {
+                lodEdgeValueCollapseMap.at(i) = collapsedLevel;
+                i++;
+                if (i <= maxValueInt) {
+                    numEntriesAtLod = lodEdgeValueInverseCumulativeDistribution.at(i);
+                }
+            } while (i <= maxValueInt && numEntriesAtLod >= totalNumLines / lineLodNumberFactor);
+            i--;
+        }
+
+        collapsedLevel++;
+        lineLodNumberFactor *= 4;
+    }
+
+    for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
+        lodEdgeVisibilityMap.at(i) = lodEdgeValueCollapseMap.at(lodEdgeVisibilityMap.at(i));
+    }
+
+    newMaxValueInt = collapsedLevel - 1;
+    /for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
+        if (lodEdgeVisibilityMap.at(i) > 0) {
+            lodEdgeVisibilityMap.at(i) = newMaxValueInt - lodEdgeVisibilityMap.at(i) + 1;
+        }
+    }/
+}*/
 
 void generateSheetLevelOfDetailLineStructure(
         HexMeshPtr& hexMesh,
@@ -81,213 +128,223 @@ void generateSheetLevelOfDetailLineStructure(
     extractAllHexahedralSheets(hexMesh, hexahedralSheets);
 
     // Initially, every sheet belongs to its own component.
-    std::vector<SheetComponent> components;
-    components.resize(hexahedralSheets.size());
-    for (size_t i = 0; i < components.size(); i++) {
-        SheetComponent& component = components.at(i);
+    std::vector<SheetComponent*> components;
+    components.reserve(hexahedralSheets.size());
+    for (size_t i = 0; i < hexahedralSheets.size(); i++) {
+        SheetComponent* component = new SheetComponent;
+        components.push_back(component);
         HexahedralSheet& sheet = hexahedralSheets.at(i);
-        component.cellIds = sheet.cellIds;
-        component.edgeIds = sheet.edgeIds;
-        component.boundaryFaceIds = sheet.boundaryFaceIds;
-        std::sort(component.cellIds.begin(), component.cellIds.end());
-        std::sort(component.edgeIds.begin(), component.edgeIds.end());
-        std::sort(component.boundaryFaceIds.begin(), component.boundaryFaceIds.end());
+        component->cellIds = sheet.cellIds;
+        component->boundaryFaceIds = sheet.boundaryFaceIds;
+        std::sort(component->cellIds.begin(), component->cellIds.end());
+        std::sort(component->boundaryFaceIds.begin(), component->boundaryFaceIds.end());
     }
 
     // Compute the neighborhood relation of all components and the edge weight of edges between components.
-    //std::vector<ComponentConnectionData> connectionDataList;
-    //computeHexahedralSheetComponentConnectionData(hexMesh, components, connectionDataList);
+    std::vector<ComponentConnectionData> connectionDataList;
+    computeHexahedralSheetComponentConnectionData(hexMesh, components, connectionDataList);
+    std::set<ComponentConnectionData> connectionDataSet; // Use similarly to a priority queue
+    for (ComponentConnectionData& componentConnectionData : connectionDataList) {
+        connectionDataSet.insert(componentConnectionData);
+    }
 
     std::vector<int> lodEdgeVisibilityMap;
     lodEdgeVisibilityMap.resize(mesh.Es.size(), 0);
 
+    // TODO
+    bool mergeLodLevels = true;
+    int lodLevel = 0;
+    int lodLevelFirstNumCellsAfterMerging = 0;
 
-    bool excludeIntersecting = true;
+
+    bool justSwitchedToIntersectingOrHybridComponentMerging = false;
+    bool switchedToIntersectingOrHybridComponentMerging = false;
     int iterationNumber = 1;
     while (true) {
+        if (connectionDataSet.size() == 0) {
+            sgl::Logfile::get()->writeInfo("Finished merging all mesh sheet components.");
+            break;
+        }
+
         sgl::Logfile::get()->writeInfo(
                 std::string() + "Starting iteration number " + std::to_string(iterationNumber) + "...");
         auto startIteration = std::chrono::system_clock::now();
 
-        // Compute the neighborhood relation of all components and the edge weight of edges between components.
-        std::vector<ComponentConnectionData> connectionDataList;
-
-        if (excludeIntersecting) {
-            computeHexahedralSheetComponentConnectionData(
-                    hexMesh, components, connectionDataList, true);
-            if (connectionDataList.empty()) {
-                excludeIntersecting = false;
-            }
-        }
-
-        if (!excludeIntersecting) {
-            computeHexahedralSheetComponentConnectionData(
-                    hexMesh, components, connectionDataList, false);
-        }
-
-        // Create a perfect matching of all neighboring components.
-        SheetComponentMatching matching(hexMesh, components, connectionDataList);
-        if (!matching.getCouldMatchAny()) {
-            auto endIteration = std::chrono::system_clock::now();
-            auto elapsedIteration = std::chrono::duration_cast<std::chrono::milliseconds>(endIteration - startIteration);
-            sgl::Logfile::get()->writeInfo(
-                    std::string() + "Stopping at iteration number " + std::to_string(iterationNumber)
-                    + ". Time for this iteration: " + std::to_string(elapsedIteration.count()) + "ms");
-            break;
-        }
-
         // An index map mapping the indices of the components to their indices after merging.
-        //std::unordered_map<size_t, size_t> mergedComponentIndexMap;
-        std::vector<SheetComponent> mergedComponents;
-        //std::vector<ComponentConnectionData> mergedConnectionDataList;
+        std::unordered_map<uint32_t, uint32_t> mergedComponentIndexMap;
+        std::vector<SheetComponent*> mergedComponents;
+        mergedComponents.reserve(components.size() - 1);
+
+        ComponentConnectionData bestMatchingComponentConnectionData = *connectionDataSet.begin();
+        connectionDataSet.erase(connectionDataSet.begin());
+        if (bestMatchingComponentConnectionData.componentConnectionType == ComponentConnectionType::INTERSECTING
+                || bestMatchingComponentConnectionData.componentConnectionType == ComponentConnectionType::HYBRID) {
+            if (!switchedToIntersectingOrHybridComponentMerging) {
+                justSwitchedToIntersectingOrHybridComponentMerging = true;
+            } else {
+                justSwitchedToIntersectingOrHybridComponentMerging = false;
+            }
+            switchedToIntersectingOrHybridComponentMerging = true;
+        }
 
         // Mark all edges as invisible on this level shared by matched components.
-        size_t mergedComponentIndex = 0;
-        std::vector<std::pair<size_t, size_t>>& matchedComponents = matching.getMatchedComponents();
-        for (std::pair<size_t, size_t>& matchedEdge : matchedComponents) {
-            SheetComponent& component0 = components.at(matchedEdge.first);
-            SheetComponent& component1 = components.at(matchedEdge.second);
-            SheetComponent mergedComponent;
-            // Cells(c') = (Cells(c_0) UNION Cells(c_1))
-            std::set_union(
-                    component0.cellIds.begin(), component0.cellIds.end(),
-                    component1.cellIds.begin(), component1.cellIds.end(),
-                    std::back_inserter(mergedComponent.cellIds));
+        SheetComponent* component0 = components.at(bestMatchingComponentConnectionData.firstIdx);
+        SheetComponent* component1 = components.at(bestMatchingComponentConnectionData.secondIdx);
+        SheetComponent* mergedComponent = new SheetComponent;
+        // Cells(c') = (Cells(c_0) UNION Cells(c_1))
+        std::set_union(
+                component0->cellIds.begin(), component0->cellIds.end(),
+                component1->cellIds.begin(), component1->cellIds.end(),
+                std::back_inserter(mergedComponent->cellIds));
 
-            // Edges(c') = (Edges(c_0) UNION Edges(c_1)) // TODO Remove
-            std::set_union(
-                    component0.edgeIds.begin(), component0.edgeIds.end(),
-                    component1.edgeIds.begin(), component1.edgeIds.end(),
-                    std::back_inserter(mergedComponent.edgeIds));
+        // Recompute the boundary faces of the merged mesh.
+        setHexahedralSheetBoundaryFaceIds(hexMesh, *mergedComponent);
+        std::sort(mergedComponent->boundaryFaceIds.begin(), mergedComponent->boundaryFaceIds.end());
 
-            // Recompute the boundary faces of the merged mesh.
-            setHexahedralSheetBoundaryFaceIds(hexMesh, mergedComponent);
-            std::sort(mergedComponent.boundaryFaceIds.begin(), mergedComponent.boundaryFaceIds.end());
+        // Mark all edges lying on the boundary faces that vanished after merging as not visible at the current LOD
+        // level.
+        // Mark all edges E(c_0) INTERSECTION E(c_1) as not visible at the current LOD level.
+        /*std::vector<uint32_t> sharedEdgeSet;
+        std::set_intersection(
+                component0->edgeIds.begin(), component0->edgeIds.end(),
+                component1->edgeIds.begin(), component1->edgeIds.end(),
+                std::back_inserter(sharedEdgeSet));*/
 
-            // Neighbors(c') = (Neighbors(c_0) UNION Neighbors(c_1)) \ {c_0, c_1} (these are removed later)
-            //set_union(component0.neighborIndices, component1.neighborIndices, mergedComponent.neighborIndices);
+        std::vector<uint32_t> boundaryFaceIdsUnion;
+        std::set_union( // TODO: Previously set_intersection
+                component0->boundaryFaceIds.begin(), component0->boundaryFaceIds.end(),
+                component1->boundaryFaceIds.begin(), component1->boundaryFaceIds.end(),
+                std::back_inserter(boundaryFaceIdsUnion));
 
-            // Mark all edges lying on the boundary faces that vanished after merging as not visible at the current LOD
-            // level.
-            // Mark all edges E(c_0) INTERSECTION E(c_1) as not visible at the current LOD level.
-            /*std::vector<uint32_t> sharedEdgeSet;
-            std::set_intersection(
-                    component0.edgeIds.begin(), component0.edgeIds.end(),
-                    component1.edgeIds.begin(), component1.edgeIds.end(),
-                    std::back_inserter(sharedEdgeSet));*/
+        std::vector<uint32_t> boundaryFaceIdsNoLongerBoundaryAfterMerging;
+        std::set_difference(
+                boundaryFaceIdsUnion.begin(), boundaryFaceIdsUnion.end(),
+                mergedComponent->boundaryFaceIds.begin(), mergedComponent->boundaryFaceIds.end(),
+                std::back_inserter(boundaryFaceIdsNoLongerBoundaryAfterMerging));
 
-            std::vector<uint32_t> boundaryFaceIdsIntersection;
-            std::set_union( // TODO: Previously set_intersection
-                    component0.boundaryFaceIds.begin(), component0.boundaryFaceIds.end(),
-                    component1.boundaryFaceIds.begin(), component1.boundaryFaceIds.end(),
-                    std::back_inserter(boundaryFaceIdsIntersection));
-
-            std::vector<uint32_t> boundaryFaceIdsNoLongerBoundaryAfterMerging;
-            std::set_difference(
-                    boundaryFaceIdsIntersection.begin(), boundaryFaceIdsIntersection.end(),
-                    mergedComponent.boundaryFaceIds.begin(), mergedComponent.boundaryFaceIds.end(),
-                    std::back_inserter(boundaryFaceIdsNoLongerBoundaryAfterMerging));
-
-            std::unordered_set<uint32_t> vanishedEdgeIdsSet;
-            std::vector<uint32_t> vanishedEdgeIds;
-            for (uint32_t f_id : boundaryFaceIdsNoLongerBoundaryAfterMerging) {
-                Hybrid_F& f = mesh.Fs.at(f_id);
-                for (uint32_t e_id : f.es) {
-                    if (vanishedEdgeIdsSet.find(e_id) == vanishedEdgeIdsSet.end()) {
-                        vanishedEdgeIdsSet.insert(e_id);
-                        vanishedEdgeIds.push_back(e_id);
-                    }
+        std::unordered_set<uint32_t> vanishedEdgeIdsSet;
+        std::vector<uint32_t> vanishedEdgeIds;
+        for (uint32_t f_id : boundaryFaceIdsNoLongerBoundaryAfterMerging) {
+            Hybrid_F& f = mesh.Fs.at(f_id);
+            for (uint32_t e_id : f.es) {
+                if (vanishedEdgeIdsSet.find(e_id) == vanishedEdgeIdsSet.end()) {
+                    vanishedEdgeIdsSet.insert(e_id);
+                    vanishedEdgeIds.push_back(e_id);
                 }
             }
-
-
-
-
-
-            /*std::vector<uint32_t> boundaryFaceIdsUnion;
-            std::set_union(
-                    component0.boundaryFaceIds.begin(), component0.boundaryFaceIds.end(),
-                    component1.boundaryFaceIds.begin(), component1.boundaryFaceIds.end(),
-                    std::back_inserter(boundaryFaceIdsUnion));
-            std::unordered_set<uint32_t> boundaryUnionEdgeIdsSet;
-            std::vector<uint32_t> boundaryUnionEdgeIds;
-            for (uint32_t f_id : boundaryFaceIdsUnion) {
-                Hybrid_F& f = mesh.Fs.at(f_id);
-                for (uint32_t e_id : f.es) {
-                    if (boundaryUnionEdgeIdsSet.find(e_id) == boundaryUnionEdgeIdsSet.end()) {
-                        boundaryUnionEdgeIdsSet.insert(e_id);
-                        boundaryUnionEdgeIds.push_back(e_id);
-                    }
-                }
-            }
-
-            std::vector<uint32_t>& mergedBoundaryFaceIds = mergedComponent.boundaryFaceIds;
-            std::unordered_set<uint32_t> mergedBoundaryEdgeIdsSet;
-            std::vector<uint32_t> mergedBoundaryEdgeIds;
-            for (uint32_t f_id : mergedBoundaryFaceIds) {
-                Hybrid_F& f = mesh.Fs.at(f_id);
-                for (uint32_t e_id : f.es) {
-                    if (mergedBoundaryEdgeIdsSet.find(e_id) == mergedBoundaryEdgeIdsSet.end()) {
-                        mergedBoundaryEdgeIdsSet.insert(e_id);
-                        mergedBoundaryEdgeIds.push_back(e_id);
-                    }
-                }
-            }
-            std::sort(boundaryUnionEdgeIds.begin(), boundaryUnionEdgeIds.end());
-            std::sort(mergedBoundaryEdgeIds.begin(), mergedBoundaryEdgeIds.end());
-
-            std::vector<uint32_t> vanishedEdgeIds;
-            std::set_difference(
-                    boundaryUnionEdgeIds.begin(), boundaryUnionEdgeIds.end(),
-                    mergedBoundaryEdgeIds.begin(), mergedBoundaryEdgeIds.end(),
-                    std::back_inserter(vanishedEdgeIds));*/
-
-
-
-
-
-
-            for (uint32_t e_id : vanishedEdgeIds) {
-                bool isSingular = singularEdgeIds.find(e_id) != singularEdgeIds.end();
-                if (isSingular && !tooMuchSingularEdgeMode) {
-                    continue;
-                }
-
-                if (lodEdgeVisibilityMap.at(e_id) == 0) {
-                    lodEdgeVisibilityMap.at(e_id) = iterationNumber;
-                } else {
-                    lodEdgeVisibilityMap.at(e_id) = std::min(lodEdgeVisibilityMap.at(e_id), iterationNumber);
-                }
-            }
-
-            mergedComponents.push_back(mergedComponent);
-            /*mergedComponentIndexMap.insert(std::make_pair(matchedEdge.first, mergedComponentIndex));
-            mergedComponentIndexMap.insert(std::make_pair(matchedEdge.second, mergedComponentIndex));
-            mergedComponentIndex++;*/
         }
+
+
+
+        if (mergeLodLevels) {
+            size_t numCellsAfterMerging = mergedComponent->cellIds.size();
+            if (numCellsAfterMerging >= 2 * lodLevelFirstNumCellsAfterMerging
+                    || justSwitchedToIntersectingOrHybridComponentMerging) {
+                lodLevel++;
+                lodLevelFirstNumCellsAfterMerging = numCellsAfterMerging;
+            } else if (justSwitchedToIntersectingOrHybridComponentMerging) {
+                lodLevel++;
+                lodLevelFirstNumCellsAfterMerging = std::max(
+                        lodLevelFirstNumCellsAfterMerging, int(numCellsAfterMerging));
+            }
+        } else {
+            lodLevel = iterationNumber;
+        }
+
+
+        /*std::vector<uint32_t> boundaryFaceIdsUnion;
+        std::set_union(
+                component0->boundaryFaceIds.begin(), component0->boundaryFaceIds.end(),
+                component1->boundaryFaceIds.begin(), component1->boundaryFaceIds.end(),
+                std::back_inserter(boundaryFaceIdsUnion));
+        std::unordered_set<uint32_t> boundaryUnionEdgeIdsSet;
+        std::vector<uint32_t> boundaryUnionEdgeIds;
+        for (uint32_t f_id : boundaryFaceIdsUnion) {
+            Hybrid_F& f = mesh.Fs.at(f_id);
+            for (uint32_t e_id : f.es) {
+                if (boundaryUnionEdgeIdsSet.find(e_id) == boundaryUnionEdgeIdsSet.end()) {
+                    boundaryUnionEdgeIdsSet.insert(e_id);
+                    boundaryUnionEdgeIds.push_back(e_id);
+                }
+            }
+        }
+
+        std::vector<uint32_t>& mergedBoundaryFaceIds = mergedComponent->boundaryFaceIds;
+        std::unordered_set<uint32_t> mergedBoundaryEdgeIdsSet;
+        std::vector<uint32_t> mergedBoundaryEdgeIds;
+        for (uint32_t f_id : mergedBoundaryFaceIds) {
+            Hybrid_F& f = mesh.Fs.at(f_id);
+            for (uint32_t e_id : f.es) {
+                if (mergedBoundaryEdgeIdsSet.find(e_id) == mergedBoundaryEdgeIdsSet.end()) {
+                    mergedBoundaryEdgeIdsSet.insert(e_id);
+                    mergedBoundaryEdgeIds.push_back(e_id);
+                }
+            }
+        }
+        std::sort(boundaryUnionEdgeIds.begin(), boundaryUnionEdgeIds.end());
+        std::sort(mergedBoundaryEdgeIds.begin(), mergedBoundaryEdgeIds.end());
+
+        std::vector<uint32_t> vanishedEdgeIds;
+        std::set_difference(
+                boundaryUnionEdgeIds.begin(), boundaryUnionEdgeIds.end(),
+                mergedBoundaryEdgeIds.begin(), mergedBoundaryEdgeIds.end(),
+                std::back_inserter(vanishedEdgeIds));*/
+
+
+
+
+
+        for (uint32_t e_id : vanishedEdgeIds) {
+            bool isSingular = singularEdgeIds.find(e_id) != singularEdgeIds.end();
+            if (isSingular && !tooMuchSingularEdgeMode) {
+                continue;
+            }
+
+            if (lodEdgeVisibilityMap.at(e_id) == 0) {
+                lodEdgeVisibilityMap.at(e_id) = lodLevel;
+            } else {
+                lodEdgeVisibilityMap.at(e_id) = std::min(lodEdgeVisibilityMap.at(e_id), lodLevel);
+            }
+        }
+
+        mergedComponents.push_back(mergedComponent);
+        size_t mergedComponentIndex = 0;
+        mergedComponentIndexMap.insert(std::make_pair(
+                bestMatchingComponentConnectionData.firstIdx, mergedComponentIndex));
+        mergedComponentIndexMap.insert(std::make_pair(
+                bestMatchingComponentConnectionData.secondIdx, mergedComponentIndex));
+        mergedComponentIndex++;
 
         // Add all unmatched (i.e., unchanged) components to the index map and the merged component set.
-        std::vector<size_t> unmatchedComponents = matching.getUnmatchedComponents();
-        for (size_t unmatchedComponent : unmatchedComponents) {
-            mergedComponents.push_back(components.at(unmatchedComponent));
-            /*mergedComponentIndexMap.insert(std::make_pair(unmatchedComponent, mergedComponentIndex));
-            mergedComponentIndex++;*/
+        size_t oldComponentIndex = 0;
+        for (SheetComponent* component : components) {
+            mergedComponentIndexMap.insert(std::make_pair(oldComponentIndex, mergedComponentIndex));
+            if (component != component0 && component != component1) {
+                mergedComponents.push_back(component);
+                mergedComponentIndex++;
+            }
+            oldComponentIndex++;
         }
 
+        delete component0;
+        delete component1;
+
         // Fix the indices of the neighbor relation using the index map.
-        /*for (int i = 0; i < mergedComponents.size(); i++) {
-            SheetComponent& component = mergedComponents.at(i);
-            std::unordered_set<size_t> newNeighborIndices;
-            for (size_t oldNeighborIndex : component.neighborIndices) {
-                size_t newNeighborIndex = mergedComponentIndexMap.find(oldNeighborIndex)->second;
+        for (int i = 1; i < mergedComponents.size(); i++) {
+            SheetComponent* component = mergedComponents.at(i);
+            std::unordered_set<uint32_t> newNeighborIndices;
+            for (uint32_t oldNeighborIndex : component->neighborIndices) {
+                uint32_t newNeighborIndex = mergedComponentIndexMap.find(oldNeighborIndex)->second;
                 if (newNeighborIndex != i) {
                     newNeighborIndices.insert(newNeighborIndex);
                 }
             }
-            component.neighborIndices = newNeighborIndices;
+            component->neighborIndices = newNeighborIndices;
         }
-        std::unordered_set<ComponentConnectionData, ComponentConnectionDataHasher> addedConnections;
-        for (ComponentConnectionData connectionData : connectionDataList) {
+        // TODO: operator== alright?
+        std::set<ComponentConnectionData> mergedConnectionDataSet;
+        std::unordered_set<ComponentConnectionData, ComponentConnectionDataHasher> mergedConnectionDataUnorderedSet;
+        for (const ComponentConnectionData& connectionData : connectionDataSet) {
             ComponentConnectionData mergedConnectionData;
             mergedConnectionData.firstIdx = mergedComponentIndexMap.find(connectionData.firstIdx)->second;
             mergedConnectionData.secondIdx = mergedComponentIndexMap.find(connectionData.secondIdx)->second;
@@ -296,29 +353,38 @@ void generateSheetLevelOfDetailLineStructure(
                 mergedConnectionData.firstIdx = mergedConnectionData.secondIdx;
                 mergedConnectionData.secondIdx = tmp;
             }
-            mergedConnectionData.weight = connectionData.weight;
 
-            auto it = addedConnections.find(mergedConnectionData);
-            if (it == addedConnections.end()) {
-                mergedConnectionDataList.push_back(mergedConnectionData);
-            } else {
-                // TODO: Max, min, average?
-                // Dirty fix, as C++ standard doesn't allow changing values in std::unordered_set... :(
-                const float* weightPtrConst = &it->weight;
-                FloatPtrConstRemoval constRemoval;
-                constRemoval.constPtr = weightPtrConst;
-                float& weight = *constRemoval.ptr;
-                weight = std::max(weight, mergedConnectionData.weight);
+            auto it = mergedConnectionDataUnorderedSet.find(mergedConnectionData);
+            if (it == mergedConnectionDataUnorderedSet.end()) {
+                if (mergedConnectionData.firstIdx == 0 || mergedConnectionData.secondIdx == 0) {
+                    float weight;
+                    ComponentConnectionType componentConnectionType;
+                    bool isNeighbor = computeHexahedralSheetComponentNeighborship(
+                            hexMesh,
+                            *mergedComponents.at(mergedConnectionData.firstIdx),
+                            *mergedComponents.at(mergedConnectionData.secondIdx),
+                            weight, componentConnectionType);
+                    mergedConnectionData.weight = weight;
+                    mergedConnectionData.componentConnectionType = componentConnectionType;
+                    mergedComponents.at(mergedConnectionData.firstIdx)->neighborIndices.insert(
+                            mergedConnectionData.secondIdx);
+                    mergedComponents.at(mergedConnectionData.secondIdx)->neighborIndices.insert(
+                            mergedConnectionData.firstIdx);
+                    if (!isNeighbor) {
+                        continue;
+                    }
+                } else {
+                    mergedConnectionData.weight = connectionData.weight;
+                    mergedConnectionData.componentConnectionType = connectionData.componentConnectionType;
+                }
+                mergedConnectionDataUnorderedSet.insert(mergedConnectionData);
+                mergedConnectionDataSet.insert(mergedConnectionData);
             }
-        }*/
-
-        // Compute the neighborhood relation of all components and the edge weight of edges between components.
-        //std::vector<ComponentConnectionData> connectionDataList;
-        //computeHexahedralSheetComponentConnectionData(hexMesh, mergedComponents, mergedConnectionDataList);
+        }
 
         // Set data to merged data for the next iteration.
         components = mergedComponents;
-        //connectionDataList = mergedConnectionDataList;
+        connectionDataSet = mergedConnectionDataSet;
 
         auto endIteration = std::chrono::system_clock::now();
         auto elapsedIteration = std::chrono::duration_cast<std::chrono::milliseconds>(endIteration - startIteration);
@@ -327,6 +393,12 @@ void generateSheetLevelOfDetailLineStructure(
                 + std::to_string(elapsedIteration.count()) + "ms");
         iterationNumber++;
     }
+
+    for (SheetComponent* component : components) {
+        delete component;
+    }
+    components.clear();
+
 
     /*if (tooMuchSingularEdgeMode) {
         for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
@@ -340,17 +412,22 @@ void generateSheetLevelOfDetailLineStructure(
     }*/
 
     // We want to normalize the LOD values to the range [0, 1]. First, compute the maximum value.
-    float maxValue = 1.0f;
+    int maxValueInt = 1;
     //#pragma omp parallel for reduction(max: maxValue)
     for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
-        maxValue = std::max(maxValue, float(lodEdgeVisibilityMap.at(i)));
+        maxValueInt = std::max(maxValueInt, lodEdgeVisibilityMap.at(i));
     }
     //#pragma omp parallel for
     for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
         if (lodEdgeVisibilityMap.at(i) > 0) {
-            lodEdgeVisibilityMap.at(i) = int(maxValue) - lodEdgeVisibilityMap.at(i) + 1;
+            lodEdgeVisibilityMap.at(i) = maxValueInt - lodEdgeVisibilityMap.at(i) + 1;
         }
     }
+
+
+    //collapseLods(lodEdgeVisibilityMap, maxValueInt, maxValueInt);
+    float maxValue = float(maxValueInt);
+
 
     // Now, normalize the values by division.
     lineLodValues.reserve(lodEdgeVisibilityMap.size() * 2);

@@ -45,7 +45,6 @@ typedef std::shared_ptr<HexMesh> HexMeshPtr;
 class HexahedralSheet {
 public:
     std::vector<uint32_t> cellIds; ///< All cells belonging to the sheet.
-    std::vector<uint32_t> edgeIds; ///< All edges belonging to the sheet.
     std::vector<uint32_t> boundaryFaceIds; ///< All boundary faces belonging to the sheet.
 };
 
@@ -54,16 +53,34 @@ public:
  */
 class SheetComponent : public HexahedralSheet {
 public:
-    std::unordered_set<size_t> neighborIndices; ///< Stores the indices of the neighbors in the sheet component array.
+    std::unordered_set<uint32_t> neighborIndices; ///< Stores the indices of the neighbors in the sheet component array.
+};
+
+enum class ComponentConnectionType {
+    ADJACENT = 0, HYBRID = 1, INTERSECTING = 2
 };
 
 class ComponentConnectionData {
 public:
-    size_t firstIdx, secondIdx;
+    uint32_t firstIdx, secondIdx;
+    ComponentConnectionType componentConnectionType;
     float weight;
 
+    bool operator<(const ComponentConnectionData& rhs) const {
+        if (componentConnectionType != rhs.componentConnectionType) {
+            return int(componentConnectionType) < int(rhs.componentConnectionType);
+        } else if (weight != rhs.weight) {
+            return weight > rhs.weight; // For priority queue: Store elements with higher weight at the front.
+        } else if (firstIdx != rhs.firstIdx) {
+            return firstIdx < rhs.firstIdx;
+        } else {
+            return secondIdx < rhs.secondIdx;
+        }
+    }
+
     bool operator==(const ComponentConnectionData& rhs) const {
-        return firstIdx == rhs.firstIdx && secondIdx == rhs.secondIdx && weight == rhs.weight;
+        return firstIdx == rhs.firstIdx && secondIdx == rhs.secondIdx
+                && componentConnectionType == rhs.componentConnectionType && weight == rhs.weight;
     }
 };
 
@@ -133,12 +150,12 @@ void setHexahedralSheetBoundaryFaceIds(
  * @param component0 The first hexahedral sheet component.
  * @param component1 The second hexahedral sheet component.
  * @param matchingWeight The weight the neighborship relation should have when merging/matching components.
- * @param excludeIntersecting Whether to allow matching of intersecting or hybrid sheets or not.
+ * @param componentConnectionType Whether the components are adjacent, intersecting or hybrid.
  * @return Whether the two passed hexahedral mesh sheets are neighbors.
  */
 bool computeHexahedralSheetComponentNeighborship(
         HexMeshPtr hexMesh, SheetComponent& component0, SheetComponent& component1, float& matchingWeight,
-        bool excludeIntersecting);
+        ComponentConnectionType& componentConnectionType);
 
 /**
  * Compute the neighborhood relation of all components and the edge weight of edges between components.
@@ -149,8 +166,7 @@ bool computeHexahedralSheetComponentNeighborship(
  */
 void computeHexahedralSheetComponentConnectionData(
         HexMeshPtr hexMesh,
-        std::vector<SheetComponent>& components,
-        std::vector<ComponentConnectionData>& connectionDataList,
-        bool excludeIntersecting);
+        std::vector<SheetComponent*>& components,
+        std::vector<ComponentConnectionData>& connectionDataList);
 
 #endif //HEXVOLUMERENDERER_HEXAHEDRALSHEET_HPP
