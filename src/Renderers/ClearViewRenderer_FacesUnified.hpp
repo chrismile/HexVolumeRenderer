@@ -66,6 +66,10 @@ protected:
     void gather();
     void resolve();
 
+    // Don't highlight singular edges when we have far too many of them.
+    void reloadGatherShader();
+    bool tooMuchSingularEdgeMode = false;
+
     // The rendering data for the volume object.
     sgl::ShaderAttributesPtr shaderAttributes;
 

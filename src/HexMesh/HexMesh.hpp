@@ -127,6 +127,10 @@ public:
     Singularity& getBaseComplexMeshSingularity();
     Frame& getBaseComplexMeshFrame();
 
+    /**
+     * @return The number of irregular edges in the hexahedral mesh.
+     */
+    size_t getNumberOfIrregularEdges();
 
     /**
      * Returns the total volume (i.e., summed up) of all cells.

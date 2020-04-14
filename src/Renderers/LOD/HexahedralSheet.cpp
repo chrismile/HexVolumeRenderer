@@ -252,7 +252,8 @@ bool computeHexahedralSheetComponentNeighborship(
     //float percentageOfAdjacency = float(boundaryFaceIdsNoLongerBoundaryAfterMerging.size())
     //                              / float(component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size());
     float percentageOfAdjacency = float(boundaryFaceIdsNoLongerBoundaryAfterMerging.size())
-                                  / float(component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size());
+                                  / float(component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size())
+                                  / float(component0.cellIds.size() + component1.cellIds.size());
     if (isIntersecting) {
         percentageOfAdjacency *= 0.001f;
     }

@@ -112,18 +112,24 @@ void main()
     vec4 colorContext = fragmentColor;
     bool isSingularEdge = lineBaseColor.r != lineBaseColor.g || lineBaseColor.g != lineBaseColor.b;
     float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
-    float expFactor = exp(-3.5 * fragmentDepth);
-    float boostFactor = clamp(2.0 * expFactor + 1.0, 1.0, 1.5);
+    float expFactor = exp(-8.0 * fragmentDepth);
+    //float boostFactor = clamp(2.0 * expFactor + 1.0, 1.0, 1.5);
+    float boostFactor = clamp(2.0 * expFactor, 0.0, 1.5);
     const float EPSILON = 1e-5;
     float lineCoordinatesContext = max(minDistance / lineWidth * 2.0 / (isSingularEdge ? 1.0 : max(expFactor, EPSILON)) * 1.5, 0.0);
     if (lineCoordinatesContext <= 1.0) {
         if (isSingularEdge) {
             colorContext.rgb = lineBaseColor.rgb;//vec3(1.0, 0.0, 0.0); // TODO: Red in context?
             //colorContext.a *= 0.5;
+#ifndef TOO_MUCH_SINGULAR_EDGE_MODE
+            colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
+#else
             colorContext.a = max(colorContext.a * 0.5, 0.2);
+#endif
         } else {
             //float boostFactor = clamp(0.2 / fragmentDepth + 1.0, 1.0, 1.5);
             ///colorContext.rgb = vec3(0.0, 0.7, 1.0);
+            colorContext.rgb = vec3(1.0, 1.0, 1.0);
             //colorContext.a *= 0.1;
             colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
         }

@@ -395,6 +395,16 @@ void HexMesh::updateMeshTriangleIntersectionDataStructure() {
     rayMeshIntersection.setMeshTriangleData(vertices, indices);
 }
 
+size_t HexMesh::getNumberOfIrregularEdges() {
+    // Find the set of all singular edges.
+    std::unordered_set<uint32_t> singularEdgeIds;
+    for (Singular_E& se : si->SEs) {
+        for (uint32_t e_id : se.es_link) {
+            singularEdgeIds.insert(e_id);
+        }
+    }
+    return singularEdgeIds.size();
+}
 
 float HexMesh::getCellVolume(uint32_t h_id, std::vector<glm::vec3>& cellPointsArray) {
     Mesh* mesh = baseComplexMesh;
@@ -2035,7 +2045,7 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
                 float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
                 volumeWeightedInverseAttributeSum += cellVolume / cellAttribute;
             }
-            vertexAttribute =volumeSum / volumeWeightedInverseAttributeSum;
+            vertexAttribute = volumeSum / volumeWeightedInverseAttributeSum;
             // sum(V_i/J_i) / sum(V_i)
             /*float volumeWeightedInverseAttributeSum = 0.0f;
             for (uint32_t h_id : v.neighbor_hs) {

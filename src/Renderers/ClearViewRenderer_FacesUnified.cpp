@@ -74,11 +74,7 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
             {"MeshShader.Vertex.Plain", "MeshShader.Fragment.Plain"});
     reloadSphereRenderData();
 
-    std::string lineRenderingStyleDefineName = "LINE_RENDERING_STYLE_HALO";
-    sgl::ShaderManager->addPreprocessorDefine(lineRenderingStyleDefineName, "");
-    gatherShader = sgl::ShaderManager->getShaderProgram(
-            {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView"});
-    sgl::ShaderManager->removePreprocessorDefine(lineRenderingStyleDefineName);
+    reloadGatherShader();
     resolveShader = sgl::ShaderManager->getShaderProgram(
             {"LinkedListResolve.Vertex", "LinkedListResolve.Fragment"});
     clearShader = sgl::ShaderManager->getShaderProgram(
@@ -104,6 +100,20 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
     onResolutionChanged();
 }
 
+void ClearViewRenderer_FacesUnified::reloadGatherShader() {
+    std::string lineRenderingStyleDefineName = "LINE_RENDERING_STYLE_HALO";
+    sgl::ShaderManager->addPreprocessorDefine(lineRenderingStyleDefineName, "");
+    if (tooMuchSingularEdgeMode) {
+        sgl::ShaderManager->addPreprocessorDefine("TOO_MUCH_SINGULAR_EDGE_MODE", "");
+    }
+    gatherShader = sgl::ShaderManager->getShaderProgram(
+            {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView"});
+    sgl::ShaderManager->removePreprocessorDefine(lineRenderingStyleDefineName);
+    if (tooMuchSingularEdgeMode) {
+        sgl::ShaderManager->removePreprocessorDefine("TOO_MUCH_SINGULAR_EDGE_MODE");
+    }
+}
+
 void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     if (isNewMesh) {
         Pickable::focusPoint = glm::vec3(0.0f);
@@ -116,6 +126,13 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
     focusRadius = glm::clamp(
             avgCellVolumeCbrt * FOCUS_RADIUS_VOLUME_CBRT_FACTOR, MIN_FOCUS_RADIUS_AUTO, MAX_FOCUS_RADIUS_AUTO);
     reloadSphereRenderData();
+
+    // Don't highlight singular edges when we have far too many of them.
+    bool tooMuchSingularEdgeModeNewMesh = meshIn->getNumberOfIrregularEdges() > 10000u;
+    if (tooMuchSingularEdgeModeNewMesh != tooMuchSingularEdgeMode) {
+        tooMuchSingularEdgeMode = tooMuchSingularEdgeModeNewMesh;
+        reloadGatherShader();
+    }
 
     // Unload old data.
     shaderAttributes = sgl::ShaderAttributesPtr();
