@@ -33,8 +33,10 @@
 #include "BaseComplex/global_types.h"
 #include "HexMesh/HexMesh.hpp"
 #include "HexahedralSheet.hpp"
-#include "SheetComponentMatching.hpp"
 #include "LodSheetGeneration.hpp"
+#ifdef USE_LEMON
+#include "SheetComponentMatching.hpp"
+#endif
 
 /**
  * std::set_union unfortunately does not work for std::unordered_set, as the inserter cannot be used and the ordering
@@ -305,7 +307,7 @@ void generateSheetLevelOfDetailLineStructure(
     components.clear();
 
 
-    /*if (tooMuchSingularEdgeMode) {
+    if (tooMuchSingularEdgeMode) {
         for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
             if (lodEdgeVisibilityMap.at(i) != 0) {
                 lodEdgeVisibilityMap.at(i)++;
@@ -314,7 +316,7 @@ void generateSheetLevelOfDetailLineStructure(
         for (uint32_t e_id : singularEdgeIds) {
             lodEdgeVisibilityMap.at(e_id) = 1;
         }
-    }*/
+    }
 
     // We want to normalize the LOD values to the range [0, 1]. First, compute the maximum value.
     int maxValueInt = 1;

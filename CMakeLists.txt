@@ -3,12 +3,6 @@ project (HexVolumeRenderer)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 #MESSAGE(STATUS "CMAKE_MODULE_PATH: " ${CMAKE_MODULE_PATH})
 
-if (UNIX AND NOT APPLE)
-	# Dirty fix for bug in Ubuntu 18.04: https://bugs.launchpad.net/ubuntu/+source/liblemon/+bug/1827886
-	list(APPEND CMAKE_PREFIX_PATH /usr/lib/cmake)
-endif()
-
-
 set (CMAKE_CXX_STANDARD 11)
 
 file(GLOB_RECURSE SOURCES src/*.cpp src/*.c)
@@ -16,6 +10,7 @@ include_directories(src)
 
 option(USE_EMBREE "Build with Embree as Ray-Mesh Intersection Library" OFF)
 option(USE_CORK "Build with Cork as CSG Library" OFF)
+option(USE_LEMON "Build with matching code and LEMON graph library" OFF)
 
 if(USE_EMBREE)
 	find_package(embree 3.0 REQUIRED)
@@ -23,6 +18,19 @@ if(USE_EMBREE)
 	add_definitions(-DUSE_EMBREE)
 else()
 	list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Renderers/Intersection/RayMeshIntersection_Embree.cpp)
+endif()
+
+if(USE_LEMON)
+	if (UNIX AND NOT APPLE)
+		# Dirty fix for bug in Ubuntu 18.04: https://bugs.launchpad.net/ubuntu/+source/liblemon/+bug/1827886
+		list(APPEND CMAKE_PREFIX_PATH /usr/lib/cmake)
+	endif()
+	find_package(LEMON REQUIRED)
+	#target_link_libraries(HexVolumeRenderer ${LEMON_LIBRARIES})
+	include_directories(${LEMON_INCLUDES})
+	add_definitions(-DUSE_LEMON)
+else()
+	list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Renderers/LOD/SheetComponentMatching.cpp)
 endif()
 
 #make VERBOSE=1
@@ -59,7 +67,6 @@ cmake_policy(SET CMP0012 NEW)
 find_package(OpenMP REQUIRED)
 find_package(SGL REQUIRED)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
-find_package(LEMON REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(CURL REQUIRED)
 find_package(PkgConfig REQUIRED)
@@ -74,7 +81,7 @@ target_link_libraries(HexVolumeRenderer tinyxml2)
 target_link_libraries(HexVolumeRenderer Eigen3::Eigen)
 target_link_libraries(HexVolumeRenderer ${SGL_LIBRARIES} ${Boost_LIBRARIES} ${GLEW_LIBRARIES} ${NETCDF_LIBRARIES} ${CURL_LIBRARIES} ${JSONCPP_LIBRARIES}) # ${LEMON_LIBRARIES}
 
-include_directories(${Boost_INCLUDES} ${LEMON_INCLUDES} ${GLEW_INCLUDES} ${NETCDF_INCLUDES} ${CURL_INCLUDES} ${JSONCPP_INCLUDES})
+include_directories(${Boost_INCLUDES} ${GLEW_INCLUDES} ${NETCDF_INCLUDES} ${CURL_INCLUDES} ${JSONCPP_INCLUDES})
 
 if(OPENMP_FOUND)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
