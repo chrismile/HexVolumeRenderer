@@ -99,7 +99,7 @@ struct ComponentConnectionDataHasher {
  * @param hexMesh The hexahedral mesh.
  * @param hexahedralSheets The list of extracted hexahedral mesh sheets.
  */
-void extractAllHexahedralSheets(HexMeshPtr hexMesh, std::vector<HexahedralSheet>& hexahedralSheets);
+void extractAllHexahedralSheets(HexMesh* hexMesh, std::vector<HexahedralSheet>& hexahedralSheets);
 
 /**
  * For more details see:
@@ -122,7 +122,7 @@ void extractAllHexahedralSheets(HexMeshPtr hexMesh, std::vector<HexahedralSheet>
  * @param hexahedralSheet The hexahedral sheet extracted (output).
  */
 void extractHexahedralSheet(
-        HexMeshPtr& hexMesh,
+        HexMesh* hexMesh,
         uint32_t e_id,
         std::unordered_set<uint32_t>& closedEdgeIds,
         HexahedralSheet& hexahedralSheet);
@@ -134,7 +134,7 @@ void extractHexahedralSheet(
  * @param hexahedralSheet The hexahedral sheet to compute the boundary surface face IDs of.
  */
 void setHexahedralSheetBoundaryFaceIds(
-        HexMeshPtr& hexMesh,
+        HexMesh* hexMesh,
         HexahedralSheet& hexahedralSheet);
 
 /**
@@ -154,7 +154,7 @@ void setHexahedralSheetBoundaryFaceIds(
  * @return Whether the two passed hexahedral mesh sheets are neighbors.
  */
 bool computeHexahedralSheetComponentNeighborship(
-        HexMeshPtr hexMesh, SheetComponent& component0, SheetComponent& component1, float& matchingWeight,
+        HexMesh* hexMesh, SheetComponent& component0, SheetComponent& component1, float& matchingWeight,
         ComponentConnectionType& componentConnectionType);
 
 /**
@@ -165,7 +165,7 @@ bool computeHexahedralSheetComponentNeighborship(
  * @param excludeIntersecting Whether to allow matching of intersecting or hybrid sheets or not.
  */
 void computeHexahedralSheetComponentConnectionData(
-        HexMeshPtr hexMesh,
+        HexMesh* hexMesh,
         std::vector<SheetComponent*>& components,
         std::vector<ComponentConnectionData>& connectionDataList);
 

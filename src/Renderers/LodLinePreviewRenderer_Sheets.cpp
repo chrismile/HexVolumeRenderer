@@ -50,7 +50,7 @@ void LodLinePreviewRenderer_Sheets::generateVisualizationMapping(HexMeshPtr mesh
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec4> colors;
     std::vector<float> lodValues;
-    generateSheetLevelOfDetailLineStructure(meshIn, vertices, colors, lodValues);
+    generateSheetLevelOfDetailLineStructureAndVertexData(meshIn.get(), vertices, colors, lodValues);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_LINES);

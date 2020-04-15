@@ -94,11 +94,19 @@ struct HexahedralCellFace {
     glm::vec4 lineColors[4];
 };
 
-// For @see HexMesh::getSurfaceDataWireframeFacesUnified.
+// For @see HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell and
+// @see HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex.
 struct HexahedralCellFaceUnified {
     glm::vec4 vertexPositions[4];
     float vertexAttributes[4];
-    glm::vec4 lineColors[4];
+    float edgeAttributes[4];
+    float edgeLodValues[4];
+    /**
+     * Bit 0: 1 if the edge is singular.
+     * Bit 1: 1 if the edge belongs to the boundary.
+     * Bit 2-31: The valence of the edge (i.e., the number of incident cells).
+     */
+    uint32_t edgeSingularityInformationList[4];
 };
 
 class HexMesh {
@@ -128,9 +136,14 @@ public:
     Frame& getBaseComplexMeshFrame();
 
     /**
-     * @return The number of irregular edges in the hexahedral mesh.
+     * @return The number of singular edges in the hexahedral mesh.
      */
-    size_t getNumberOfIrregularEdges();
+    size_t getNumberOfSingularEdges();
+
+    /**
+     * @return The singular edges in the hexahedral mesh.
+     */
+    std::unordered_set<uint32_t>& getSingularEdgeIds();
 
     /**
      * Returns the total volume (i.e., summed up) of all cells.
@@ -142,13 +155,29 @@ public:
     float getAverageCellVolume();
 
     /**
+     * Weights the attributes of the cells adjacent to a vertex to get an interpolated per-vertex attribute.
+     * @param v_id The ID of the vertex in the mesh.
+     * @param cellVolumes A reference to a vector containing the volumes of all cells in the mesh.
+     * @return The interpolated per-vertex attribute.
+     */
+    float interpolateCellAttributePerVertex(uint32_t v_id, const std::vector<float>& cellVolumes);
+
+    /**
+     * Weights the attributes of the cells adjacent to a vertex to get an interpolated per-vertex attribute.
+     * @param v_id The ID of the vertex in the mesh.
+     * @param cellVolumes A reference to a vector containing the volumes of all cells in the mesh.
+     * @return The interpolated per-cell attribute.
+     */
+    float interpolateCellAttributePerEdge(uint32_t v_id, const std::vector<float>& cellVolumes);
+
+    /**
      * Maps mesh edge properties to a color for rendering.
      * @param isSingular Whether the edge is singular (could also be computed from the two values below).
      * @param isBoundary Whether the edge lies on the boundary surface of the mesh.
      * @param valence The valence of the edge (i.e., the number of incident cells).
      * @return The assigned line color of this edge type.
      */
-    glm::vec4 edgeColorMap(bool isSingular, bool isBoundary, int valence);
+    static glm::vec4 edgeColorMap(bool isSingular, bool isBoundary, int valence);
 
     /**
      * Get the triangle data of the boundary surface of the hexahedral mesh.
@@ -422,7 +451,7 @@ private:
      */
     std::vector<ParametrizedGrid> computeBaseComplexParametrizedGrid();
 
-    // Helpers for getLodLineRepresentationClosest
+    /// Helpers for @see getLodLineRepresentationClosest
     void addEdgeToLodRenderData(
             const glm::ivec3 ptIdx0, const glm::ivec3 ptIdx1, ParametrizedGrid& grid,
             std::vector<glm::vec3>& lineVertices, std::vector<glm::vec4>& lineColors,
@@ -432,8 +461,19 @@ private:
             std::vector<glm::vec3>& lineVertices, std::vector<glm::vec4>& lineColors,
             std::unordered_set<uint64_t>& addedEdgeSet, float focusRadius, int level, int numLevels);
 
-    // Helpers for getCompleteWireframeTubeData.
+    /// Helper function for @see getCompleteWireframeTubeData.
     Hybrid_E* pickNextUnvisitedNeighbor(std::unordered_set<uint32_t>& visitedEdgeIds, Hybrid_E& e, uint32_t v_id);
+
+    /**
+     * Helper function for @see getSurfaceDataWireframeFacesUnified_AttributePerCell and @see
+     * getSurfaceDataWireframeFacesUnified_AttributePerVertex.
+     * @param e_id The ID of the edge.
+     * @return Packed information about the singularity of the edge.
+     * Bit 0: 1 if the edge is singular.
+     * Bit 1: 1 if the edge belongs to the boundary.
+     * Bit 2-31: The valence of the edge (i.e., the number of incident cells).
+     */
+    uint32_t packEdgeSingularityInformation(uint32_t e_id);
 
 
     void recomputeHistogram();
@@ -450,6 +490,7 @@ private:
     Mesh* baseComplexMesh = nullptr;
     Singularity* si = nullptr;
     Frame* frame = nullptr;
+    std::unordered_set<uint32_t> singularEdgeIds;
 };
 
 #endif //GENERALMAP_GENERALMAP_HPP

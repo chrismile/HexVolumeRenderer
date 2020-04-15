@@ -61,6 +61,7 @@ public:
     virtual void onResolutionChanged();
 
 protected:
+    void createSingularEdgeColorLookupTexture();
     void setUniformData();
     void clear();
     void gather();
@@ -86,6 +87,9 @@ protected:
     // Blit data (ignores model-view-projection matrix and uses normalized device coordinates)
     sgl::ShaderAttributesPtr blitRenderData;
     sgl::ShaderAttributesPtr clearRenderData;
+
+    // Color lookup table for singular edges.
+    sgl::TexturePtr singularEdgeColorLookupTexture;
 };
 
 #endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_FACESUNIFIED_HPP

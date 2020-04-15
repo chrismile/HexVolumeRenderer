@@ -54,7 +54,7 @@ void getParallelEdgesInCell(Hybrid& h, uint32_t e_id, uint32_t parallelEdgeIds[3
 }
 
 void setHexahedralSheetBoundaryFaceIds(
-        HexMeshPtr& hexMesh,
+        HexMesh* hexMesh,
         HexahedralSheet& hexahedralSheet) {
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     std::unordered_set<uint32_t> cellIdSet;
@@ -90,7 +90,7 @@ void setHexahedralSheetBoundaryFaceIds(
 }
 
 void extractHexahedralSheet(
-        HexMeshPtr& hexMesh,
+        HexMesh* hexMesh,
         uint32_t e_id,
         std::unordered_set<uint32_t>& closedEdgeIds,
         HexahedralSheet& hexahedralSheet) {
@@ -128,7 +128,7 @@ void extractHexahedralSheet(
     setHexahedralSheetBoundaryFaceIds(hexMesh, hexahedralSheet);
 }
 
-void extractAllHexahedralSheets(HexMeshPtr hexMesh, std::vector<HexahedralSheet>& hexahedralSheets) {
+void extractAllHexahedralSheets(HexMesh* hexMesh, std::vector<HexahedralSheet>& hexahedralSheets) {
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     std::unordered_set<uint32_t> closedEdgeIds;
     for (Hybrid_E& e : mesh.Es) {
@@ -193,7 +193,7 @@ void extractAllHexahedralSheets(HexMeshPtr hexMesh, std::vector<HexahedralSheet>
 }*/
 
 bool computeHexahedralSheetComponentNeighborship(
-        HexMeshPtr hexMesh, SheetComponent& component0, SheetComponent& component1, float& matchingWeight,
+        HexMesh* hexMesh, SheetComponent& component0, SheetComponent& component1, float& matchingWeight,
         ComponentConnectionType& componentConnectionType) {
     SheetComponent mergedComponent;
     std::set_intersection(
@@ -260,7 +260,7 @@ bool computeHexahedralSheetComponentNeighborship(
 }
 
 void computeHexahedralSheetComponentConnectionData(
-        HexMeshPtr hexMesh,
+        HexMesh* hexMesh,
         std::vector<SheetComponent*>& components,
         std::vector<ComponentConnectionData>& connectionDataList) {
     for (size_t i = 0; i < components.size(); i++) {

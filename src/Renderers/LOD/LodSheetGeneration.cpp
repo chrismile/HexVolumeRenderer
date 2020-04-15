@@ -50,12 +50,10 @@ void set_union(const std::unordered_set<T>& set0, const std::unordered_set<T>& s
     setUnion = set0;
     setUnion.insert(set1.begin(), set1.end());
 }
-
-void generateSheetLevelOfDetailLineStructure(
-        HexMeshPtr& hexMesh,
-        std::vector<glm::vec3> &lineVertices,
-        std::vector<glm::vec4> &lineColors,
-        std::vector<float> &lineLodValues) {
+void generateSheetLevelOfDetailEdgeStructure(
+        HexMesh* hexMesh,
+        std::vector<float> &edgeLodValues,
+        int* maxValueIntPtr) {
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     Singularity& si = hexMesh->getBaseComplexMeshSingularity();
 
@@ -63,12 +61,7 @@ void generateSheetLevelOfDetailLineStructure(
     auto start = std::chrono::system_clock::now();
 
     // Find the set of all singular edges.
-    std::unordered_set<uint32_t> singularEdgeIds;
-    for (Singular_E& se : si.SEs) {
-        for (uint32_t e_id : se.es_link) {
-            singularEdgeIds.insert(e_id);
-        }
-    }
+    std::unordered_set<uint32_t>& singularEdgeIds = hexMesh->getSingularEdgeIds();
 
     // Don't highlight singular edges when we have far too many of them.
     bool tooMuchSingularEdgeMode = singularEdgeIds.size() > 10000u;
@@ -333,6 +326,9 @@ void generateSheetLevelOfDetailLineStructure(
         maxValueInt = std::max(maxValueInt, lodEdgeVisibilityMap.at(i));
     }
     float maxValue = float(maxValueInt);
+    if (maxValueIntPtr) {
+        *maxValueIntPtr = maxValueInt;
+    }
 
     //#pragma omp parallel for
     for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
@@ -341,14 +337,40 @@ void generateSheetLevelOfDetailLineStructure(
         }
     }
 
-    // Now, normalize the values by division.
-    lineLodValues.reserve(lodEdgeVisibilityMap.size() * 2);
     //#pragma omp parallel for
     for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
-        float value = lodEdgeVisibilityMap.at(i) / maxValue;
+        edgeLodValues.push_back(lodEdgeVisibilityMap.at(i) / maxValue);
+    }
+
+    auto end = std::chrono::system_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    sgl::Logfile::get()->writeInfo(
+            std::string() + "Computational time to create sheet LOD structure: "
+            + std::to_string(elapsed.count()) + "ms");
+}
+
+void generateSheetLevelOfDetailLineStructureAndVertexData(
+        HexMesh* hexMesh,
+        std::vector<glm::vec3> &lineVertices,
+        std::vector<glm::vec4> &lineColors,
+        std::vector<float> &lineLodValues) {
+    Mesh& mesh = hexMesh->getBaseComplexMesh();
+    std::vector<float> edgeLodValues;
+    int maxValueInt = 0;
+    generateSheetLevelOfDetailEdgeStructure(hexMesh, edgeLodValues, &maxValueInt);
+    float maxValue = float(maxValueInt);
+
+    // Now, normalize the values by division.
+    lineLodValues.reserve(edgeLodValues.size() * 2);
+    //#pragma omp parallel for
+    for (size_t i = 0; i < edgeLodValues.size(); i++) {
+        float value = edgeLodValues.at(i);
         lineLodValues.push_back(value);
         lineLodValues.push_back(value);
     }
+
+    // Find the set of all singular edges.
+    std::unordered_set<uint32_t>& singularEdgeIds = hexMesh->getSingularEdgeIds();
 
     // Add all edge line colors (colors depend both on whether an edge is singular and what LOD value it has assigned).
     for (size_t i = 0; i < mesh.Es.size(); i++) {
@@ -375,10 +397,4 @@ void generateSheetLevelOfDetailLineStructure(
             lineColors.push_back(vertexColor);
         }
     }
-
-    auto end = std::chrono::system_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    sgl::Logfile::get()->writeInfo(
-            std::string() + "Computational time to create sheet LOD structure: "
-            + std::to_string(elapsed.count()) + "ms");
 }

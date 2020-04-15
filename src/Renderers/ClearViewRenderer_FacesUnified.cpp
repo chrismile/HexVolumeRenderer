@@ -30,6 +30,7 @@
 #include <Graphics/Window.hpp>
 #include <Graphics/Renderer.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
+#include <Graphics/Texture/TextureManager.hpp>
 #include <Graphics/OpenGL/GeometryBuffer.hpp>
 #include <Graphics/OpenGL/Shader.hpp>
 #include <Utils/AppSettings.hpp>
@@ -97,7 +98,30 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
     clearRenderData->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
+    createSingularEdgeColorLookupTexture();
+
     onResolutionChanged();
+}
+
+void ClearViewRenderer_FacesUnified::createSingularEdgeColorLookupTexture() {
+    const int NUM_VALENCE_LEVELS = 8; // Handle valence 1 to 8.
+    glm::vec4 textureData[NUM_VALENCE_LEVELS*2];
+    for (int isBoundary = 0; isBoundary <= 1; isBoundary++) {
+        for (int valence = 1; valence <= NUM_VALENCE_LEVELS; valence++) {
+            bool isSingular = isBoundary ? valence != 2 : valence != 4;
+            textureData[isBoundary * NUM_VALENCE_LEVELS + valence - 1] =
+                    HexMesh::edgeColorMap(isSingular, isBoundary, valence);
+        }
+    }
+
+    sgl::TextureSettings textureSettings;
+    textureSettings.textureMinFilter = GL_NEAREST;
+    textureSettings.textureMagFilter = GL_NEAREST;
+    textureSettings.pixelType = GL_FLOAT;
+    textureSettings.pixelFormat = GL_RGBA;
+    textureSettings.internalFormat = GL_RGBA32F;
+    singularEdgeColorLookupTexture = sgl::TextureManager->createTexture(
+            textureData, NUM_VALENCE_LEVELS, 2, textureSettings);
 }
 
 void ClearViewRenderer_FacesUnified::reloadGatherShader() {
@@ -128,7 +152,7 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
     reloadSphereRenderData();
 
     // Don't highlight singular edges when we have far too many of them.
-    bool tooMuchSingularEdgeModeNewMesh = meshIn->getNumberOfIrregularEdges() > 10000u;
+    bool tooMuchSingularEdgeModeNewMesh = meshIn->getNumberOfSingularEdges() > 10000u;
     if (tooMuchSingularEdgeModeNewMesh != tooMuchSingularEdgeMode) {
         tooMuchSingularEdgeMode = tooMuchSingularEdgeModeNewMesh;
         reloadGatherShader();
@@ -213,6 +237,9 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     gatherShader->setUniform("sphereRadius", focusRadius);
     gatherShader->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
+    gatherShader->setUniform(
+            "singularEdgeColorLookupTexture", singularEdgeColorLookupTexture, 1);
+
     gatherShader->setUniform("lineWidth", lineWidth);
 
     shaderProgramSurface->setUniform("viewportW", width);

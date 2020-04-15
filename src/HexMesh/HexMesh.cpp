@@ -73,6 +73,7 @@
 #include "HexaLab/mesh_navigator.h"
 
 #include "Renderers/Helpers/HexahedronVolume.hpp"
+#include "Renderers/LOD/LodSheetGeneration.hpp"
 #include "BaseComplex/base_complex.h"
 
 #include "EdgeKey.hpp"
@@ -128,6 +129,13 @@ void HexMesh::setHexMeshData(
     baseComplexMesh = new Mesh;
     si = new Singularity;
     computeBaseComplexMesh(vertices, cellIndices);
+
+    singularEdgeIds.clear();
+    for (Singular_E& se : si->SEs) {
+        for (uint32_t e_id : se.es_link) {
+            singularEdgeIds.insert(e_id);
+        }
+    }
 
     dirty = true;
 }
@@ -395,15 +403,12 @@ void HexMesh::updateMeshTriangleIntersectionDataStructure() {
     rayMeshIntersection.setMeshTriangleData(vertices, indices);
 }
 
-size_t HexMesh::getNumberOfIrregularEdges() {
-    // Find the set of all singular edges.
-    std::unordered_set<uint32_t> singularEdgeIds;
-    for (Singular_E& se : si->SEs) {
-        for (uint32_t e_id : se.es_link) {
-            singularEdgeIds.insert(e_id);
-        }
-    }
+size_t HexMesh::getNumberOfSingularEdges() {
     return singularEdgeIds.size();
+}
+
+std::unordered_set<uint32_t>& HexMesh::getSingularEdgeIds() {
+    return singularEdgeIds;
 }
 
 float HexMesh::getCellVolume(uint32_t h_id, std::vector<glm::vec3>& cellPointsArray) {
@@ -418,9 +423,6 @@ float HexMesh::getCellVolume(uint32_t h_id, std::vector<glm::vec3>& cellPointsAr
     return cellVolume;
 }
 
-/**
- * Returns the total volume (i.e., summed up) of all cells.
- */
 float HexMesh::getTotalCellVolume() {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
@@ -434,13 +436,90 @@ float HexMesh::getTotalCellVolume() {
     return totalVolume;
 }
 
-/**
- * Returns the average volume of all cells.
- */
 float HexMesh::getAverageCellVolume() {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
     return getTotalCellVolume() / float(mesh->Hs.size());
+}
+
+float HexMesh::interpolateCellAttributePerVertex(uint32_t v_id, const std::vector<float>& cellVolumes) {
+    Hybrid_V& v = baseComplexMesh->Vs.at(v_id);
+
+    float volumeSum = 0.0f;
+    for (uint32_t h_id : v.neighbor_hs) {
+        volumeSum += cellVolumes.at(h_id);
+    }
+
+    float vertexAttribute;
+    if (qualityMeasure == QUALITY_MEASURE_JACOBIAN || qualityMeasure == QUALITY_MEASURE_SCALED_JACOBIAN) {
+        // sum(V_i) / sum(V_i/J_i)
+        float volumeWeightedInverseAttributeSum = 0.0f;
+        for (uint32_t h_id : v.neighbor_hs) {
+            float cellVolume = cellVolumes.at(h_id);
+            float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
+            volumeWeightedInverseAttributeSum += cellVolume / cellAttribute;
+        }
+        vertexAttribute = volumeSum / volumeWeightedInverseAttributeSum;
+        // sum(V_i/J_i) / sum(V_i)
+        /*float volumeWeightedInverseAttributeSum = 0.0f;
+        for (uint32_t h_id : v.neighbor_hs) {
+            float cellVolume = cellVolumes.at(h_id);
+            float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
+            volumeWeightedInverseAttributeSum += cellVolume / cellAttribute;
+        }
+        vertexAttribute = volumeWeightedInverseAttributeSum / volumeSum;*/
+        /*vertexAttribute = (1.0f / float(v.neighbor_hs.size())) * volumeSum / volumeWeightedInverseAttributeSum;*/
+    } else {
+        // sum(V_i * J_i) / sum(V_i)
+        float volumeWeightedAttributeSum = 0.0f;
+        for (uint32_t h_id : v.neighbor_hs) {
+            float cellVolume = cellVolumes.at(h_id);
+            float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
+            volumeWeightedAttributeSum += cellVolume * cellAttribute;
+        }
+        vertexAttribute = volumeWeightedAttributeSum / volumeSum;
+    }
+    return vertexAttribute;
+}
+
+float HexMesh::interpolateCellAttributePerEdge(uint32_t e_id, const std::vector<float>& cellVolumes) {
+    Hybrid_E& e = baseComplexMesh->Es.at(e_id);
+
+    float volumeSum = 0.0f;
+    for (uint32_t h_id : e.neighbor_hs) {
+        volumeSum += cellVolumes.at(h_id);
+    }
+
+    float edgeAttribute;
+    if (qualityMeasure == QUALITY_MEASURE_JACOBIAN || qualityMeasure == QUALITY_MEASURE_SCALED_JACOBIAN) {
+        // sum(V_i) / sum(V_i/J_i)
+        float volumeWeightedInverseAttributeSum = 0.0f;
+        for (uint32_t h_id : e.neighbor_hs) {
+            float cellVolume = cellVolumes.at(h_id);
+            float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
+            volumeWeightedInverseAttributeSum += cellVolume / cellAttribute;
+        }
+        edgeAttribute = volumeSum / volumeWeightedInverseAttributeSum;
+        // sum(V_i/J_i) / sum(V_i)
+        /*float volumeWeightedInverseAttributeSum = 0.0f;
+        for (uint32_t h_id : e.neighbor_hs) {
+            float cellVolume = cellVolumes.at(h_id);
+            float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
+            volumeWeightedInverseAttributeSum += cellVolume / cellAttribute;
+        }
+        edgeAttribute = volumeWeightedInverseAttributeSum / volumeSum;*/
+        /*edgeAttribute = (1.0f / float(v.neighbor_hs.size())) * volumeSum / volumeWeightedInverseAttributeSum;*/
+    } else {
+        // sum(V_i * J_i) / sum(V_i)
+        float volumeWeightedAttributeSum = 0.0f;
+        for (uint32_t h_id : e.neighbor_hs) {
+            float cellVolume = cellVolumes.at(h_id);
+            float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
+            volumeWeightedAttributeSum += cellVolume * cellAttribute;
+        }
+        edgeAttribute = volumeWeightedAttributeSum / volumeSum;
+    }
+    return edgeAttribute;
 }
 
 
@@ -539,18 +618,7 @@ void HexMesh::getVolumeData_FacesShared(
 
     // Add all hexahedral mesh vertices to the triangle mesh vertex data.
     for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
-        Hybrid_V& v = mesh->Vs.at(v_id);
-        float volumeSum = 0.0f, volumeWeightedAttributeSum = 0.0f;
-        for (uint32_t h_id : v.neighbor_hs) {
-            volumeSum += cellVolumes.at(h_id);
-        }
-        for (uint32_t h_id : v.neighbor_hs) {
-            float cellVolume = cellVolumes.at(h_id);
-            float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
-            volumeWeightedAttributeSum += cellVolume * cellAttribute;
-        }
-
-        float vertexAttribute = volumeWeightedAttributeSum / volumeSum;
+        float vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
         vertexAttributes.push_back(vertexAttribute);
         glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
         vertexPositions.push_back(vertexPosition);
@@ -608,18 +676,7 @@ void HexMesh::getVolumeData_VolumeShared(
 
     // Add all hexahedral mesh vertices to the triangle mesh vertex data.
     for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
-        Hybrid_V& v = mesh->Vs.at(v_id);
-        float volumeSum = 0.0f, volumeWeightedAttributeSum = 0.0f;
-        for (uint32_t h_id : v.neighbor_hs) {
-            volumeSum += cellVolumes.at(h_id);
-        }
-        for (uint32_t h_id : v.neighbor_hs) {
-            float cellVolume = cellVolumes.at(h_id);
-            float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
-            volumeWeightedAttributeSum += cellVolume * cellAttribute;
-        }
-
-        float vertexAttribute = volumeWeightedAttributeSum / volumeSum;
+        float vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
         vertexAttributes.push_back(vertexAttribute);
         glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
         vertexPositions.push_back(vertexPosition);
@@ -1567,13 +1624,6 @@ void HexMesh::getCompleteWireframeData(
     const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
     const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
-    std::unordered_set<uint32_t> singularEdgeIds;
-    for (Singular_E& se : si->SEs) {
-        for (uint32_t e_id : se.es_link) {
-            singularEdgeIds.insert(e_id);
-        }
-    }
-
     for (Hybrid_E& e : mesh->Es) {
         bool isSingular = singularEdgeIds.find(e.id) != singularEdgeIds.end();
         int edgeValence = int(e.neighbor_hs.size());
@@ -1795,13 +1845,6 @@ void HexMesh::getSurfaceDataBarycentric(
     const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
     const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
-    std::unordered_set<uint32_t> singularEdgeIds;
-    for (Singular_E& se : si->SEs) {
-        for (uint32_t e_id : se.es_link) {
-            singularEdgeIds.insert(e_id);
-        }
-    }
-
     size_t indexOffset = 0;
     for (Hybrid_F& f : mesh->Fs) {
         if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
@@ -1856,13 +1899,6 @@ void HexMesh::getSurfaceDataWireframeFaces(
         bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
-
-    std::unordered_set<uint32_t> singularEdgeIds;
-    for (Singular_E& se : si->SEs) {
-        for (uint32_t e_id : se.es_link) {
-            singularEdgeIds.insert(e_id);
-        }
-    }
 
     size_t indexOffset = 0;
     for (size_t i = 0; i < mesh->Fs.size(); i++) {
@@ -1923,6 +1959,14 @@ void HexMesh::getSurfaceDataWireframeFaces(
     }
 }
 
+uint32_t HexMesh::packEdgeSingularityInformation(uint32_t e_id) {
+    Hybrid_E& e = baseComplexMesh->Es.at(e_id);
+    uint32_t isSingular = singularEdgeIds.find(e_id) != singularEdgeIds.end() ? 1 : 0;
+    uint32_t isBoundary = e.boundary ? 1 : 0;
+    uint32_t edgeValence = e.neighbor_hs.size();
+    return isSingular | (isBoundary << 1) | (edgeValence << 2);
+}
+
 void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
         std::vector<uint32_t>& triangleIndices,
         std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
@@ -1930,11 +1974,24 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
 
-    std::unordered_set<uint32_t> singularEdgeIds;
-    for (Singular_E& se : si->SEs) {
-        for (uint32_t e_id : se.es_link) {
-            singularEdgeIds.insert(e_id);
-        }
+    // Compute the per-edge LOD values between 0 and 1.
+    std::vector<float> edgeLodValues;
+    int maxValueInt;
+    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxValueInt);
+
+    // Compute all cell volumes.
+    std::vector<float> cellVolumes(mesh->Hs.size());
+    std::vector<glm::vec3> cellPointsArray;
+    cellPointsArray.reserve(8);
+    for (uint32_t h_id = 0; h_id < mesh->Hs.size(); h_id++) {
+        cellVolumes.at(h_id) = getCellVolume(h_id, cellPointsArray);
+    }
+
+    // Compute all edge attributes.
+    std::vector<float> edgeAttributes(mesh->Es.size());
+    for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
+        float edgeAttribute = interpolateCellAttributePerEdge(e_id, cellVolumes);
+        edgeAttributes.at(e_id) = edgeAttribute;
     }
 
     size_t indexOffset = 0;
@@ -1996,8 +2053,11 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
                 uint32_t e_id = f.es.at(j);
                 Hybrid_E& e = mesh->Es.at(e_id);
                 int edgeValence = int(e.neighbor_hs.size());
-                glm::vec4 vertexColor = edgeColorMap(singularEdgeIds.find(e_id) != singularEdgeIds.end(), e.boundary, edgeValence);
-                hexahedralCellFace.lineColors[j] = vertexColor;
+                //glm::vec4 vertexColor = edgeColorMap(singularEdgeIds.find(e_id) != singularEdgeIds.end(), e.boundary, edgeValence);
+                //hexahedralCellFace.lineColors[j] = vertexColor;
+                hexahedralCellFace.edgeAttributes[j] = edgeAttributes.at(e_id);
+                hexahedralCellFace.edgeLodValues[j] = edgeLodValues.at(e_id);
+                hexahedralCellFace.edgeSingularityInformationList[j] = packEdgeSingularityInformation(e_id);
             }
 
             indexOffset += 4;
@@ -2012,12 +2072,10 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
 
-    std::unordered_set<uint32_t> singularEdgeIds;
-    for (Singular_E& se : si->SEs) {
-        for (uint32_t e_id : se.es_link) {
-            singularEdgeIds.insert(e_id);
-        }
-    }
+    // Compute the per-edge LOD values between 0 and 1.
+    std::vector<float> edgeLodValues;
+    int maxValueInt;
+    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxValueInt);
 
     // Compute all cell volumes.
     std::vector<float> cellVolumes(mesh->Hs.size());
@@ -2030,43 +2088,15 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
     // Compute all vertex attributes.
     std::vector<float> vertexAttributes(mesh->Vs.size());
     for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
-        Hybrid_V& v = mesh->Vs.at(v_id);
-        float volumeSum = 0.0f;
-        for (uint32_t h_id : v.neighbor_hs) {
-            volumeSum += cellVolumes.at(h_id);
-        }
-
-        float vertexAttribute;
-        if (qualityMeasure == QUALITY_MEASURE_JACOBIAN || qualityMeasure == QUALITY_MEASURE_SCALED_JACOBIAN) {
-            // sum(V_i) / sum(V_i/J_i)
-            float volumeWeightedInverseAttributeSum = 0.0f;
-            for (uint32_t h_id : v.neighbor_hs) {
-                float cellVolume = cellVolumes.at(h_id);
-                float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
-                volumeWeightedInverseAttributeSum += cellVolume / cellAttribute;
-            }
-            vertexAttribute = volumeSum / volumeWeightedInverseAttributeSum;
-            // sum(V_i/J_i) / sum(V_i)
-            /*float volumeWeightedInverseAttributeSum = 0.0f;
-            for (uint32_t h_id : v.neighbor_hs) {
-                float cellVolume = cellVolumes.at(h_id);
-                float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
-                volumeWeightedInverseAttributeSum += cellVolume / cellAttribute;
-            }
-            vertexAttribute = volumeWeightedInverseAttributeSum / volumeSum;*/
-            /*vertexAttribute = (1.0f / float(v.neighbor_hs.size())) * volumeSum / volumeWeightedInverseAttributeSum;*/
-        } else {
-            // sum(V_i * J_i) / sum(V_i)
-            float volumeWeightedAttributeSum = 0.0f;
-            for (uint32_t h_id : v.neighbor_hs) {
-                float cellVolume = cellVolumes.at(h_id);
-                float cellAttribute = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
-                volumeWeightedAttributeSum += cellVolume * cellAttribute;
-            }
-            vertexAttribute = volumeWeightedAttributeSum / volumeSum;
-        }
-
+        float vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
         vertexAttributes.at(v_id) = vertexAttribute;
+    }
+
+    // Compute all edge attributes.
+    std::vector<float> edgeAttributes(mesh->Es.size());
+    for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
+        float edgeAttribute = interpolateCellAttributePerEdge(e_id, cellVolumes);
+        edgeAttributes.at(e_id) = edgeAttribute;
     }
 
     size_t indexOffset = 0;
@@ -2113,8 +2143,11 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
             uint32_t e_id = f.es.at(j);
             Hybrid_E& e = mesh->Es.at(e_id);
             int edgeValence = int(e.neighbor_hs.size());
-            glm::vec4 vertexColor = edgeColorMap(singularEdgeIds.find(e_id) != singularEdgeIds.end(), e.boundary, edgeValence);
-            hexahedralCellFace.lineColors[j] = vertexColor;
+            //glm::vec4 vertexColor = edgeColorMap(singularEdgeIds.find(e_id) != singularEdgeIds.end(), e.boundary, edgeValence);
+            //hexahedralCellFace.lineColors[j] = vertexColor;
+            hexahedralCellFace.edgeAttributes[j] = edgeAttributes.at(e_id);
+            hexahedralCellFace.edgeLodValues[j] = edgeLodValues.at(e_id);
+            hexahedralCellFace.edgeSingularityInformationList[j] = packEdgeSingularityInformation(e_id);
         }
 
         indexOffset += 4;

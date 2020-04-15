@@ -14,9 +14,11 @@
  * vertex 0     edge 3    vertex 3
 */
 struct HexahedralCellFaceUnified {
-    vec4 vertexPositions[4]; ///< Vertex positions
-    float vertexAttributes[4]; ///< Vertex attributes
-    vec4 lineColors[4]; ///< Colors of the edges
+    vec4 vertexPositions[4];
+    float vertexAttributes[4];
+    float edgeAttributes[4];
+    float edgeLodValues[4];
+    uint edgeSingularityInformationList[4];
 };
 
 layout (std430, binding = 6) readonly buffer HexahedralCellFaces {
@@ -27,8 +29,19 @@ out vec3 fragmentPositionWorld;
 out vec4 fragmentColor;
 flat out vec3 vertexPositions[4];
 flat out vec4 lineColors[4];
+flat out float edgeLodValues[4];
+flat out uint edgeSingularityInformationList[4];
 
 #include "TransferFunction.glsl"
+
+// Color lookup table for singular edges.
+uniform sampler2D singularEdgeColorLookupTexture;
+
+vec4 lookupSingularEdgeColor(uint edgeSingularityInformation) {
+    // x position: The valence minus one. y position: 0 if it is an interior edge, 1 if it is a boundary edge.
+    ivec2 samplingPosition = ivec2(int(edgeSingularityInformation >> 2u) - 1, int(edgeSingularityInformation >> 1u) & 1);
+    return texelFetch(singularEdgeColorLookupTexture, samplingPosition, 0);
+}
 
 void main()
 {
@@ -37,9 +50,26 @@ void main()
     int vertexId = globalId % 4;
 
     HexahedralCellFaceUnified hexahedralCellFace = hexahedralCellFaces[faceId];
+
+    // Copy the edge data.
+    for (int i = 0; i < 4; i++) {
+        uint edgeSingularityInformation = hexahedralCellFace.edgeSingularityInformationList[i];
+        vec4 lineColor;
+        if ((edgeSingularityInformation & 1u) == 1u) {
+            // Singular edge.
+            lineColor = lookupSingularEdgeColor(edgeSingularityInformation);
+        } else {
+            // Regular edge.
+            lineColor = vec4(transferFunction(hexahedralCellFace.edgeAttributes[i]).rgb, 1.0);
+        }
+        lineColors[i] = lineColor;
+        edgeLodValues[i] = hexahedralCellFace.edgeLodValues[i];
+        edgeSingularityInformationList[i] = edgeSingularityInformation;
+    }
+
+    // Copy the face data.
     for (int i = 0; i < 4; i++) {
         vertexPositions[i] = hexahedralCellFace.vertexPositions[i].xyz;
-        lineColors[i] = hexahedralCellFace.lineColors[i];
     }
 
     vec4 vertexPosition = hexahedralCellFace.vertexPositions[vertexId];
@@ -56,6 +86,8 @@ in vec3 fragmentPositionWorld;
 in vec4 fragmentColor;
 flat in vec3 vertexPositions[4];
 flat in vec4 lineColors[4];
+flat in float edgeLodValues[4];
+flat in uint edgeSingularityInformationList[4];
 
 #if defined(DIRECT_BLIT_GATHER)
 out vec4 fragColor;
@@ -90,7 +122,7 @@ void main()
         }
     }
 
-    vec4 lineBaseColor = lineColors[minDistanceIndex];
+    vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
     float lineCoordinates = max(minDistance / lineWidth * 2.0, 0.0);
     if (lineCoordinates <= 1.0) {
         // Focus wireframe
@@ -110,28 +142,36 @@ void main()
 
     // Add the context fragment.
     vec4 colorContext = fragmentColor;
-    bool isSingularEdge = lineBaseColor.r != lineBaseColor.g || lineBaseColor.g != lineBaseColor.b;
-    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
+    float lodLineValue = edgeLodValues[minDistanceIndex];
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition) * 4.0 * lodLineValue;
     float expFactor = exp(-6.0 * fragmentDepth);
+    if (lodLineValue < 0.2) {
+        expFactor = max(expFactor, 0.7);
+    }
     //float boostFactor = clamp(2.0 * expFactor + 1.0, 1.0, 1.5);
     float boostFactor = clamp(2.0 * expFactor, 0.0, 1.5);
     const float EPSILON = 1e-5;
     float lineCoordinatesContext = max(minDistance / lineWidth * 2.0 / (isSingularEdge ? 1.0 : max(expFactor, EPSILON)) * 1.5, 0.0);
     if (lineCoordinatesContext <= 1.0) {
         if (isSingularEdge) {
-            colorContext.rgb = lineBaseColor.rgb;//vec3(1.0, 0.0, 0.0); // TODO: Red in context?
+            colorContext.rgb = lineBaseColor.rgb;
             //colorContext.a *= 0.5;
 #ifndef TOO_MUCH_SINGULAR_EDGE_MODE
-            colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
+            colorContext.a = max(colorContext.a * boostFactor, 0.2);
 #else
-            colorContext.a = max(colorContext.a * 0.5, 0.2);
+            colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
 #endif
         } else {
             //float boostFactor = clamp(0.2 / fragmentDepth + 1.0, 1.0, 1.5);
             ///colorContext.rgb = vec3(0.0, 0.7, 1.0);
-            colorContext.rgb = mix(colorContext.rgb, vec3(1.0, 1.0, 1.0), 0.2);
+            colorContext.rgb = mix(colorContext.rgb, vec3(1.0, 1.0, 1.0), 0.3);
             //colorContext.a *= 0.1;
             colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
+        }
+
+        if (lodLineValue < 0.2) {
+            colorContext.a = max(colorContext.a, 0.4);
         }
     }
     colorContext.a *= getClearViewContextFragmentOpacityFactor();

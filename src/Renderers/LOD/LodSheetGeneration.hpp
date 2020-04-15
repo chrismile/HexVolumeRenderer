@@ -39,6 +39,43 @@ typedef std::shared_ptr<HexMesh> HexMeshPtr;
 
 /**
  * Uses hexahedral mesh sheets to compute a level of detail structure of the grid lines.
+ * This function returns the LOD levels for all mesh edges.
+ * The sheets are merged to so-called components.
+ *
+ * What is a component?
+ * - A component is a union of one or multiple base complex sheets.
+ *
+ * How is an LOD structure created using components?
+ * - Initially, every sheet belongs to its own component.
+ * - Then, in each iteration until only one component is left, one pair of neighboring components with the largest
+ *   weight is matched and merged into a larger component. All shared edges are marked as not visible at the current
+ *   LOD level. An exception is made for singular edges, which always remain visible.
+ *
+ * What does 'neighboring' mean for two components?
+ * - Component c_0 shares at least one boundary face with another component c_1.
+ *
+ * How can we derive the neighborhood relation from two components c_0, c_1 when merging them to a component c'?
+ * - Neighbors(c') = (Neighbors(c_0) UNION Neighbors(c_1)) \ {c_0, c_1}
+ *
+ * What edges do we mark as not visible when merging two components c_0, c_1?
+ * - Mark all edges incident to the the shared boundary faces of the two components as not visible at the current LOD.
+ *   The algorithm makes sure to only handle shared boundary faces that would no longer be on the boundary after
+ *   merging.
+ *
+ * @param hexMesh The hexahedral mesh.
+ * @param edgeLodValues The LOD values of all edges (between 0 and 1). Zero means always visible, one means visible
+ * only at the most detailed LOD.
+ * @param maxValueInt Can optionally store the highest discrete LOD value (between 0 and MAX_LOD).
+ * Can be used to scale the values in edgeLodValues.
+ */
+void generateSheetLevelOfDetailEdgeStructure(
+        HexMesh* hexMesh,
+        std::vector<float> &edgeLodValues,
+        int* maxValueIntPtr = nullptr);
+
+/**
+ * Uses hexahedral mesh sheets to compute a level of detail structure of the grid lines.
+ * This function returns all edges in the mesh as lines and the corresponding vertex data.
  * The sheets are merged to so-called components.
  *
  * What is a component?
@@ -66,8 +103,8 @@ typedef std::shared_ptr<HexMesh> HexMeshPtr;
  * @param lineColors The list of line vertex colors.
  * @param lineLodValues The list of line indices.
  */
-void generateSheetLevelOfDetailLineStructure(
-        HexMeshPtr& hexMesh,
+void generateSheetLevelOfDetailLineStructureAndVertexData(
+        HexMesh* hexMesh,
         std::vector<glm::vec3> &lineVertices,
         std::vector<glm::vec4> &lineColors,
         std::vector<float> &lineLodValues);
