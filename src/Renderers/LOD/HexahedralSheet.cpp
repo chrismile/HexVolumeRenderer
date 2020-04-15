@@ -223,7 +223,7 @@ bool computeHexahedralSheetComponentNeighborship(
     std::sort(mergedComponent.boundaryFaceIds.begin(), mergedComponent.boundaryFaceIds.end());
 
     std::vector<uint32_t> boundaryFaceIdsIntersection;
-    std::set_union(
+    std::set_intersection( // can't use set_union here
             component0.boundaryFaceIds.begin(), component0.boundaryFaceIds.end(),
             component1.boundaryFaceIds.begin(), component1.boundaryFaceIds.end(),
             std::back_inserter(boundaryFaceIdsIntersection));

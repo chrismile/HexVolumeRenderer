@@ -112,7 +112,7 @@ void main()
     vec4 colorContext = fragmentColor;
     bool isSingularEdge = lineBaseColor.r != lineBaseColor.g || lineBaseColor.g != lineBaseColor.b;
     float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
-    float expFactor = exp(-8.0 * fragmentDepth);
+    float expFactor = exp(-6.0 * fragmentDepth);
     //float boostFactor = clamp(2.0 * expFactor + 1.0, 1.0, 1.5);
     float boostFactor = clamp(2.0 * expFactor, 0.0, 1.5);
     const float EPSILON = 1e-5;
@@ -129,7 +129,7 @@ void main()
         } else {
             //float boostFactor = clamp(0.2 / fragmentDepth + 1.0, 1.0, 1.5);
             ///colorContext.rgb = vec3(0.0, 0.7, 1.0);
-            colorContext.rgb = vec3(1.0, 1.0, 1.0);
+            colorContext.rgb = mix(colorContext.rgb, vec3(1.0, 1.0, 1.0), 0.2);
             //colorContext.a *= 0.1;
             colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
         }

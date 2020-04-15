@@ -107,6 +107,7 @@ void generateSheetLevelOfDetailLineStructure(
     bool mergeLodLevels = true;
     int lodLevel = 0;
     int lodLevelFirstNumCellsAfterMerging = 0;
+    //float lodLevelFirstMergingWeight = FLT_MAX;
     // For creating a discrete LOD when switching from merging adjacent to hybrid or intersecting sheet components.
     bool justSwitchedToIntersectingOrHybridComponentMerging = false;
     bool switchedToIntersectingOrHybridComponentMerging = false;
@@ -185,8 +186,7 @@ void generateSheetLevelOfDetailLineStructure(
         // iteration number as the LOD level.
         if (mergeLodLevels) {
             size_t numCellsAfterMerging = mergedComponent->cellIds.size();
-            if (numCellsAfterMerging >= 2 * lodLevelFirstNumCellsAfterMerging
-                    || justSwitchedToIntersectingOrHybridComponentMerging) {
+            if (numCellsAfterMerging >= 2 * lodLevelFirstNumCellsAfterMerging) {
                 lodLevel++;
                 lodLevelFirstNumCellsAfterMerging = numCellsAfterMerging;
             } else if (justSwitchedToIntersectingOrHybridComponentMerging) {
@@ -194,6 +194,14 @@ void generateSheetLevelOfDetailLineStructure(
                 lodLevelFirstNumCellsAfterMerging = std::max(
                         lodLevelFirstNumCellsAfterMerging, int(numCellsAfterMerging));
             }
+            /*if (bestMatchingComponentConnectionData.weight <= 0.5f * lodLevelFirstMergingWeight) {
+                lodLevel++;
+                lodLevelFirstMergingWeight = bestMatchingComponentConnectionData.weight;
+            } else if (justSwitchedToIntersectingOrHybridComponentMerging) {
+                lodLevel++;
+                lodLevelFirstMergingWeight = std::min(
+                        lodLevelFirstMergingWeight, bestMatchingComponentConnectionData.weight);
+            }*/
         } else {
             lodLevel = iterationNumber;
         }
