@@ -109,4 +109,21 @@ void generateSheetLevelOfDetailLineStructureAndVertexData(
         std::vector<glm::vec4> &lineColors,
         std::vector<float> &lineLodValues);
 
+
+struct LodHexahedralCellFace {
+    glm::vec4 vertexPositions[4];
+    glm::vec4 edgeColors[4];
+    glm::vec4 cornerColors[4];
+    float edgeLodValues[4];
+    float cornerLodValues[4];
+};
+
+/**
+ * Similar to @see generateSheetLevelOfDetailLineStructureAndVertexData, but instead of lines uses face-based rendering.
+ */
+void generateSheetLevelOfDetailLineStructureAndVertexData(
+        HexMesh* hexMesh,
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<LodHexahedralCellFace>& hexahedralCellFaces);
+
 #endif //HEXVOLUMERENDERER_LODSHEETGENERATION_HPP

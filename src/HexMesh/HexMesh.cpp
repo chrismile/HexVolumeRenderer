@@ -363,6 +363,10 @@ HexaLab::Mesh& HexMesh::getHexaLabMesh() {
     return *hexaLabApp->get_mesh();
 }
 
+bool HexMesh::isCellMarked(uint32_t h_id) {
+    return hexaLabApp->is_cell_marked(h_id);
+}
+
 Mesh& HexMesh::getBaseComplexMesh(){
     rebuildInternalRepresentationIfNecessary();
     return *baseComplexMesh;

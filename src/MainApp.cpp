@@ -83,6 +83,7 @@
 #include "Renderers/LodLineRenderer.hpp"
 #include "Renderers/LodLinePreviewRenderer.hpp"
 #include "Renderers/LodLinePreviewRenderer_Sheets.hpp"
+#include "Renderers/LodLinePreviewRenderer_SheetsFaces.hpp"
 #include "Renderers/SingularityTypeCounterRenderer.hpp"
 #ifdef USE_EMBREE
 #include "Renderers/Intersection/RayMeshIntersection_Embree.hpp"

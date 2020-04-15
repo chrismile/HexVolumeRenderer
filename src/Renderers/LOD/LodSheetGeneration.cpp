@@ -398,3 +398,125 @@ void generateSheetLevelOfDetailLineStructureAndVertexData(
         }
     }
 }
+
+void generateSheetLevelOfDetailLineStructureAndVertexData(
+        HexMesh* hexMesh,
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<LodHexahedralCellFace>& hexahedralCellFaces) {
+    Mesh& mesh = hexMesh->getBaseComplexMesh();
+    std::vector<float> edgeLodValues;
+    int maxValueInt = 0;
+    generateSheetLevelOfDetailEdgeStructure(hexMesh, edgeLodValues, &maxValueInt);
+    float maxValue = float(maxValueInt);
+
+    // Find the set of all singular edges.
+    std::unordered_set<uint32_t>& singularEdgeIds = hexMesh->getSingularEdgeIds();
+
+    // Add all edge line colors (colors depend both on whether an edge is singular and what LOD value it has assigned).
+    std::vector<glm::vec4> edgeColors;
+    edgeColors.reserve(mesh.Es.size());
+    for (size_t i = 0; i < mesh.Es.size(); i++) {
+        Hybrid_E& e = mesh.Es.at(i);
+        bool isSingular = singularEdgeIds.find(e.id) != singularEdgeIds.end();
+        int edgeValence = int(e.neighbor_hs.size());
+        glm::vec4 vertexColor = hexMesh->edgeColorMap(isSingular, e.boundary, edgeValence);
+
+        float lodValue = edgeLodValues.at(i) * maxValue;
+        if (lodValue > 0.0001) {
+            float interpolationFactor = 1.0f;
+            if (maxValue > 1.00001f) {
+                interpolationFactor = (lodValue - 1.0f) / (maxValue - 1.0f);
+            }
+            interpolationFactor *= 0.5f;
+            vertexColor = glm::vec4(glm::mix(
+                    glm::vec3(vertexColor.x, vertexColor.y, vertexColor.z),
+                    glm::vec3(0.8f, 0.8f, 0.8f), interpolationFactor), vertexColor.a);
+        }
+
+        edgeColors.push_back(vertexColor);
+    }
+
+    std::vector<glm::vec4> pointColors;
+    std::vector<float> pointLods;
+    pointColors.reserve(mesh.Vs.size());
+    pointLods.reserve(mesh.Vs.size());
+    for (size_t i = 0; i < mesh.Vs.size(); i++) {
+        Hybrid_V& v = mesh.Vs.at(i);
+        float minEdgeLod = FLT_MAX;
+        int minEdgeLodIndex = 0;
+        for (uint32_t e_id : v.neighbor_es) {
+            if (edgeLodValues.at(e_id) < minEdgeLod) {
+                minEdgeLodIndex = e_id;
+                minEdgeLod = edgeLodValues.at(e_id);
+            }
+        }
+        pointColors.push_back(edgeColors.at(minEdgeLodIndex));
+        pointLods.push_back(minEdgeLod);
+    }
+
+    size_t indexOffset = 0;
+    for (size_t i = 0; i < mesh.Hs.size(); i++) {
+        Hybrid& h = mesh.Hs.at(i);
+        for (size_t j = 0; j < h.fs.size(); j++) {
+            Hybrid_F& f = mesh.Fs.at(h.fs.at(j));
+            if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [hexMesh](uint32_t h_id) {
+                return hexMesh->isCellMarked(h_id);
+            })) {
+                continue;
+            }
+
+            assert(f.neighbor_hs.size() >= 1 && f.neighbor_hs.size() <= 2);
+            bool invertWinding = f.neighbor_hs.at(0) != h.id;
+
+            hexahedralCellFaces.push_back(LodHexahedralCellFace());
+            LodHexahedralCellFace& hexahedralCellFace = hexahedralCellFaces.back();
+
+            assert(f.vs.size() == 4);
+            for (size_t j = 0; j < 4; j++) {
+                uint32_t v_id = f.vs.at(j);
+                glm::vec4 vertexPosition(
+                        mesh.V(0, v_id), mesh.V(1, v_id), mesh.V(2, v_id), 1.0f);
+                hexahedralCellFace.vertexPositions[j] = vertexPosition;
+                hexahedralCellFace.cornerColors[j] = pointColors.at(v_id);
+                hexahedralCellFace.cornerLodValues[j] = pointLods.at(v_id);
+            }
+
+            if (!invertWinding) {
+                /**
+                 * vertex 1     edge 1    vertex 2
+                 *          | - - - - - |
+                 *          | \         |
+                 *          |   \       |
+                 *   edge 0 |     \     | edge 2
+                 *          |       \   |
+                 *          |         \ |
+                 *          | - - - - - |
+                 * vertex 0     edge 3    vertex 3
+                 */
+                triangleIndices.push_back(indexOffset + 0);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 2);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 3);
+            }
+            if (invertWinding || f.boundary) {
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 0);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 2);
+            }
+
+            assert(f.es.size() == 4);
+            for (size_t j = 0; j < 4; j++) {
+                uint32_t e_id = f.es.at(j);
+                hexahedralCellFace.edgeColors[j] = edgeColors.at(e_id);
+                hexahedralCellFace.edgeLodValues[j] = edgeLodValues.at(e_id);
+            }
+
+            indexOffset += 4;
+        }
+    }
+}

@@ -14,9 +14,9 @@
  * vertex 0     edge 3    vertex 3
 */
 struct HexahedralCellFace {
-    vec4 vertexPositions[4]; ///< Vertex positions
-    vec4 edgeColors[4]; ///< Colors of the edges
-    vec4 cornerColors[4]; ///< Colors of the corners
+    vec4 vertexPositions[4];
+    vec4 edgeColors[4];
+    vec4 cornerColors[4];
     float edgeLodValues[4];
     float cornerLodValues[4];
 };
@@ -70,8 +70,7 @@ out vec4 fragColor;
 
 uniform vec3 cameraPosition;
 uniform float lineWidth;
-uniform vec3 focusPoint;
-uniform float maxDistance;
+uniform float maxLod;
 
 const float LOD_EPSILON = 0.001;
 
@@ -85,26 +84,27 @@ const float LOD_EPSILON = 0.001;
 
 void main()
 {
+    const float INF = 1e9;
+
     // Compute the distance to the edges and get the minimum distance.
-    float minDistanceLines = 1e9;
+    float minDistanceLines = INF;
     int minDistanceLinesIndex = 0;
     float currentDistance;
     for (int i = 0; i < 4; i++) {
         currentDistance = distanceToLineSegment(
-        fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
-        if (currentDistance < minDistanceLines) {
+                fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
+        if (currentDistance < minDistanceLines && edgeLodValues[i] <= maxLod + LOD_EPSILON) {
             minDistanceLines = currentDistance;
             minDistanceLinesIndex = i;
         }
     }
-    vec4 baseColor = edgeColors[minDistanceIndex];
 
     // Compute the distance to the corners.
-    float minDistancePoints = 1e9;
+    float minDistancePoints = INF;
     int minDistancePointsIndex = 0;
     for (int i = 0; i < 4; i++) {
         currentDistance = length(fragmentPositionWorld - vertexPositions[i]);
-        if (currentDistance < minDistancePoints) {
+        if (currentDistance < minDistancePoints && cornerLodValues[i] <= maxLod + LOD_EPSILON) {
             minDistancePoints = currentDistance;
             minDistancePointsIndex = i;
         }
@@ -112,17 +112,18 @@ void main()
 
     vec4 baseColor;
     float fragmentLodValue;
+    float minDistance;
     if (minDistanceLines < minDistancePoints) {
         baseColor = edgeColors[minDistanceLinesIndex];
         fragmentLodValue = edgeLodValues[minDistanceLinesIndex];
+        minDistance = minDistanceLines;
     } else {
         baseColor = cornerColors[minDistancePointsIndex];
         fragmentLodValue = cornerLodValues[minDistancePointsIndex];
+        minDistance = minDistancePoints;
     }
 
-    float distanceToFocus = length(focusPoint - fragmentPositionWorld);
-    float maxLodRenderValue = clamp(1.0 - distanceToFocus / maxDistance, 0.0, 1.0);
-    if (fragmentLodValue > maxLodRenderValue + LOD_EPSILON) {
+    if (fragmentLodValue > maxLod + LOD_EPSILON) {
         discard;
     }
     float lineWidthPrime = lineWidth * (1.3 * (1.0 - fragmentLodValue) + 0.2);

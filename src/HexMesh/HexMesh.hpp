@@ -129,6 +129,7 @@ public:
 
     // For filters
     HexaLab::Mesh& getHexaLabMesh();
+    bool isCellMarked(uint32_t h_id);
 
     // For tube generation
     Mesh& getBaseComplexMesh();
@@ -374,7 +375,7 @@ public:
      * vertex 0     edge 3    vertex 3
      */
     void getSurfaceDataWireframeFacesUnified_AttributePerCell(
-            std::vector<uint32_t>& indices,
+            std::vector<uint32_t>& triangleIndices,
             std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
             bool useGlowColors = false);
 
@@ -394,7 +395,7 @@ public:
      * vertex 0     edge 3    vertex 3
      */
     void getSurfaceDataWireframeFacesUnified_AttributePerVertex(
-            std::vector<uint32_t>& indices,
+            std::vector<uint32_t>& triangleIndices,
             std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
             bool useGlowColors = false);
 
