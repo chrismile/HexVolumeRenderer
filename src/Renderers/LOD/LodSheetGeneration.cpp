@@ -61,6 +61,7 @@ void generateSheetLevelOfDetailEdgeStructure(
         HexMesh* hexMesh,
         std::vector<float> &edgeLodValues,
         int* maxValueIntPtr,
+        float lodMergeFactor,
         bool useVolumeAndAreaMeasures,
         bool useWeightsForMerging) {
     Mesh& mesh = hexMesh->getBaseComplexMesh();
@@ -189,7 +190,7 @@ void generateSheetLevelOfDetailEdgeStructure(
         // iteration number as the LOD level.
         if (mergeLodLevels) {
             if (useWeightsForMerging) {
-                if (bestMatchingComponentConnectionData.weight <= 0.5f * lodLevelFirstMergingWeight) {
+                if (bestMatchingComponentConnectionData.weight <= lodLevelFirstMergingWeight / lodMergeFactor) {
                     lodLevel++;
                     lodLevelFirstMergingWeight = bestMatchingComponentConnectionData.weight;
                 } else if (justSwitchedToIntersectingOrHybridComponentMerging) {
@@ -200,7 +201,7 @@ void generateSheetLevelOfDetailEdgeStructure(
             } else {
                 if (useVolumeAndAreaMeasures) {
                     float cellVolumeSumAfterMerging = mergedComponent->cellIds.size();
-                    if (cellVolumeSumAfterMerging >= 2 * lodLevelFirstCellVolumeSumAfterMerging) {
+                    if (cellVolumeSumAfterMerging >= lodMergeFactor * lodLevelFirstCellVolumeSumAfterMerging) {
                         lodLevel++;
                         lodLevelFirstCellVolumeSumAfterMerging = cellVolumeSumAfterMerging;
                     } else if (justSwitchedToIntersectingOrHybridComponentMerging) {
@@ -210,7 +211,7 @@ void generateSheetLevelOfDetailEdgeStructure(
                     }
                 } else {
                     size_t numCellsAfterMerging = mergedComponent->cellIds.size();
-                    if (numCellsAfterMerging >= 2 * lodLevelFirstNumCellsAfterMerging) {
+                    if (numCellsAfterMerging >= lodMergeFactor * lodLevelFirstNumCellsAfterMerging) {
                         lodLevel++;
                         lodLevelFirstNumCellsAfterMerging = numCellsAfterMerging;
                     } else if (justSwitchedToIntersectingOrHybridComponentMerging) {
@@ -375,16 +376,13 @@ void generateSheetLevelOfDetailEdgeStructure(
 
 void generateSheetLevelOfDetailLineStructureAndVertexData(
         HexMesh* hexMesh,
-        std::vector<glm::vec3> &lineVertices,
-        std::vector<glm::vec4> &lineColors,
-        std::vector<float> &lineLodValues,
-        bool useVolumeAndAreaMeasures,
-        bool useWeightsForMerging) {
+        std::vector<glm::vec3> &lineVertices, std::vector<glm::vec4> &lineColors, std::vector<float> &lineLodValues,
+        float lodMergeFactor, bool useVolumeAndAreaMeasures, bool useWeightsForMerging) {
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     std::vector<float> edgeLodValues;
     int maxValueInt = 0;
     generateSheetLevelOfDetailEdgeStructure(
-            hexMesh, edgeLodValues, &maxValueInt, useVolumeAndAreaMeasures, useWeightsForMerging);
+            hexMesh, edgeLodValues, &maxValueInt, lodMergeFactor, useVolumeAndAreaMeasures, useWeightsForMerging);
     float maxValue = float(maxValueInt);
 
     // Now, normalize the values by division.
@@ -427,15 +425,13 @@ void generateSheetLevelOfDetailLineStructureAndVertexData(
 
 void generateSheetLevelOfDetailLineStructureAndVertexData(
         HexMesh* hexMesh,
-        std::vector<uint32_t>& triangleIndices,
-        std::vector<LodHexahedralCellFace>& hexahedralCellFaces,
-        bool useVolumeAndAreaMeasures,
-        bool useWeightsForMerging) {
+        std::vector<uint32_t>& triangleIndices, std::vector<LodHexahedralCellFace>& hexahedralCellFaces,
+        float lodMergeFactor, bool useVolumeAndAreaMeasures, bool useWeightsForMerging) {
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     std::vector<float> edgeLodValues;
     int maxValueInt = 0;
     generateSheetLevelOfDetailEdgeStructure(
-            hexMesh, edgeLodValues, &maxValueInt, useVolumeAndAreaMeasures, useWeightsForMerging);
+            hexMesh, edgeLodValues, &maxValueInt, lodMergeFactor, useVolumeAndAreaMeasures, useWeightsForMerging);
     float maxValue = float(maxValueInt);
 
     // Find the set of all singular edges.
