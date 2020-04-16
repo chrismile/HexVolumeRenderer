@@ -65,13 +65,17 @@ typedef std::shared_ptr<HexMesh> HexMeshPtr;
  * @param hexMesh The hexahedral mesh.
  * @param edgeLodValues The LOD values of all edges (between 0 and 1). Zero means always visible, one means visible
  * only at the most detailed LOD.
+ * @param useVolumeAndAreaMeasures Whether to use volumes and areas or cell counts and face counts as measures.
+ * @param useWeightsForMerging Whether to use weights for merging instead of the measures defined above.
  * @param maxValueInt Can optionally store the highest discrete LOD value (between 0 and MAX_LOD).
  * Can be used to scale the values in edgeLodValues.
  */
 void generateSheetLevelOfDetailEdgeStructure(
         HexMesh* hexMesh,
         std::vector<float> &edgeLodValues,
-        int* maxValueIntPtr = nullptr);
+        int* maxValueIntPtr = nullptr,
+        bool useVolumeAndAreaMeasures = false,
+        bool useWeightsForMerging = false);
 
 /**
  * Uses hexahedral mesh sheets to compute a level of detail structure of the grid lines.
@@ -102,12 +106,16 @@ void generateSheetLevelOfDetailEdgeStructure(
  * @param lineVertices The list of line vertex positions.
  * @param lineColors The list of line vertex colors.
  * @param lineLodValues The list of line indices.
+ * @param useVolumeAndAreaMeasures Whether to use volumes and areas or cell counts and face counts as measures.
+ * @param useWeightsForMerging Whether to use weights for merging instead of the measures defined above.
  */
 void generateSheetLevelOfDetailLineStructureAndVertexData(
         HexMesh* hexMesh,
         std::vector<glm::vec3> &lineVertices,
         std::vector<glm::vec4> &lineColors,
-        std::vector<float> &lineLodValues);
+        std::vector<float> &lineLodValues,
+        bool useVolumeAndAreaMeasures = false,
+        bool useWeightsForMerging = false);
 
 
 struct LodHexahedralCellFace {
@@ -124,6 +132,8 @@ struct LodHexahedralCellFace {
 void generateSheetLevelOfDetailLineStructureAndVertexData(
         HexMesh* hexMesh,
         std::vector<uint32_t>& triangleIndices,
-        std::vector<LodHexahedralCellFace>& hexahedralCellFaces);
+        std::vector<LodHexahedralCellFace>& hexahedralCellFaces,
+        bool useVolumeAndAreaMeasures = false,
+        bool useWeightsForMerging = false);
 
 #endif //HEXVOLUMERENDERER_LODSHEETGENERATION_HPP

@@ -142,59 +142,9 @@ void extractAllHexahedralSheets(HexMesh* hexMesh, std::vector<HexahedralSheet>& 
     }
 }
 
-/*bool computeHexahedralSheetComponentNeighborship(
-        HexMeshPtr hexMesh, SheetComponent& component0, SheetComponent& component1, float& matchingWeight) {
-    SheetComponent mergedComponent;
-    std::set_intersection(
-            component0.cellIds.begin(), component0.cellIds.end(),
-            component1.cellIds.begin(), component1.cellIds.end(),
-            std::back_inserter(mergedComponent.cellIds));
-
-    // Is intersecting (or hybrid), i.e. not parallel?
-    bool isIntersecting = !mergedComponent.cellIds.empty();
-
-    // Exclude intersecting and hybrid sheets for now.
-    if (isIntersecting) {
-        return false;
-    }
-
-    // Is the merged component exactly the original components?
-    if (mergedComponent.cellIds.size() == component0.cellIds.size()
-        && mergedComponent.cellIds.size() == component1.cellIds.size()) {
-        return false;
-    }
-
-    setHexahedralSheetBoundaryFaceIds(hexMesh, mergedComponent);
-    std::sort(mergedComponent.boundaryFaceIds.begin(), mergedComponent.boundaryFaceIds.end());
-
-    std::vector<uint32_t> boundaryFaceIdsIntersection;
-    std::set_intersection(
-            component0.boundaryFaceIds.begin(), component0.boundaryFaceIds.end(),
-            component1.boundaryFaceIds.begin(), component1.boundaryFaceIds.end(),
-            std::back_inserter(boundaryFaceIdsIntersection));
-
-    std::vector<uint32_t> boundaryFaceIdsNoLongerBoundaryAfterMerging;
-    std::set_difference(
-            boundaryFaceIdsIntersection.begin(), boundaryFaceIdsIntersection.end(),
-            mergedComponent.boundaryFaceIds.begin(), mergedComponent.boundaryFaceIds.end(),
-            std::back_inserter(boundaryFaceIdsNoLongerBoundaryAfterMerging));
-
-
-    float percentageOfAdjacency = float(boundaryFaceIdsNoLongerBoundaryAfterMerging.size())
-                                  / float(component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size());
-
-    matchingWeight = percentageOfAdjacency;
-    if (isIntersecting) {
-        // Add a delta so that intersecting components without shared boundary faces that would no longer be boundary faces
-        // after merging may also be matched (even though with a much lower priority).
-        matchingWeight = std::max(matchingWeight, 1e-6f);
-    }
-    return isIntersecting || boundaryFaceIdsNoLongerBoundaryAfterMerging.size() != 0;
-}*/
-
 bool computeHexahedralSheetComponentNeighborship(
-        HexMesh* hexMesh, SheetComponent& component0, SheetComponent& component1, float& matchingWeight,
-        ComponentConnectionType& componentConnectionType) {
+        HexMesh* hexMesh, SheetComponent& component0, SheetComponent& component1, bool useVolumeAndAreaMeasures,
+        float& matchingWeight, ComponentConnectionType& componentConnectionType) {
     SheetComponent mergedComponent;
     std::set_intersection(
             component0.cellIds.begin(), component0.cellIds.end(),
@@ -204,21 +154,12 @@ bool computeHexahedralSheetComponentNeighborship(
     // Is intersecting (or hybrid), i.e. not parallel?
     bool isIntersecting = !mergedComponent.cellIds.empty();
 
-    // Exclude intersecting and hybrid sheets for now.
-    /*if (isIntersecting && excludeIntersecting) {
-        return false;
-    }*/
-
     // Is the merged component exactly the original components?
     if (mergedComponent.cellIds.size() == component0.cellIds.size()
         && mergedComponent.cellIds.size() == component1.cellIds.size()) {
         return false;
     }
 
-    /*std::set_union(
-            component0.edgeIds.begin(), component0.edgeIds.end(),
-            component1.edgeIds.begin(), component1.edgeIds.end(),
-            std::back_inserter(mergedComponent.edgeIds));*/
     setHexahedralSheetBoundaryFaceIds(hexMesh, mergedComponent);
     std::sort(mergedComponent.boundaryFaceIds.begin(), mergedComponent.boundaryFaceIds.end());
 
@@ -236,12 +177,22 @@ bool computeHexahedralSheetComponentNeighborship(
 
     bool isHybrid = isIntersecting && !boundaryFaceIdsNoLongerBoundaryAfterMerging.empty();
 
+    if (useVolumeAndAreaMeasures) {
+        float boundaryFaceNoLongerBoundaryAfterMergingAreaSum = hexMesh->getFaceIdsAreaSum(
+                boundaryFaceIdsNoLongerBoundaryAfterMerging);
+        float component0BoundaryFaceAreaSum = hexMesh->getFaceIdsAreaSum(component0.boundaryFaceIds);
+        float component1BoundaryFaceAreaSum = hexMesh->getFaceIdsAreaSum(component1.boundaryFaceIds);
+        float component0CellVolume = hexMesh->getCellIdsVolumeSum(component0.cellIds);
+        float component1CellVolume = hexMesh->getCellIdsVolumeSum(component1.cellIds);
+        float percentageOfAdjacency = boundaryFaceNoLongerBoundaryAfterMergingAreaSum
+                                      / (component0BoundaryFaceAreaSum + component1BoundaryFaceAreaSum);
+        matchingWeight = percentageOfAdjacency / (component0CellVolume + component1CellVolume);
+    } else {
+        float percentageOfAdjacency = float(boundaryFaceIdsNoLongerBoundaryAfterMerging.size())
+                                      / float(component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size());
+        matchingWeight = percentageOfAdjacency / float(component0.cellIds.size() + component1.cellIds.size());
+    }
 
-    //float percentageOfAdjacency = float(boundaryFaceIdsNoLongerBoundaryAfterMerging.size())
-    //                              / float(component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size());
-    float percentageOfAdjacency = float(boundaryFaceIdsNoLongerBoundaryAfterMerging.size())
-                                  / float(component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size());
-    matchingWeight = percentageOfAdjacency / float(component0.cellIds.size() + component1.cellIds.size());
     if (isIntersecting) {
         // Add a delta so that intersecting components without shared boundary faces that would no longer be boundary faces
         // after merging may also be matched (even though with a much lower priority).
@@ -256,12 +207,11 @@ bool computeHexahedralSheetComponentNeighborship(
         componentConnectionType = ComponentConnectionType::INTERSECTING;
     }
 
-    return isHybrid || boundaryFaceIdsNoLongerBoundaryAfterMerging.size() != 0;
+    return !boundaryFaceIdsNoLongerBoundaryAfterMerging.empty(); // i.e., adjacent or hybrid
 }
 
 void computeHexahedralSheetComponentConnectionData(
-        HexMesh* hexMesh,
-        std::vector<SheetComponent*>& components,
+        HexMesh* hexMesh, std::vector<SheetComponent*>& components, bool useVolumeAndAreaMeasures,
         std::vector<ComponentConnectionData>& connectionDataList) {
     for (size_t i = 0; i < components.size(); i++) {
         for (size_t j = i + 1; j < components.size(); j++) {
@@ -270,7 +220,7 @@ void computeHexahedralSheetComponentConnectionData(
             ComponentConnectionType componentConnectionType;
             float edgeWeight = 1.0f;
             bool componentsAreNeighbors = computeHexahedralSheetComponentNeighborship(
-                    hexMesh, component0, component1, edgeWeight, componentConnectionType);
+                    hexMesh, component0, component1, useVolumeAndAreaMeasures, edgeWeight, componentConnectionType);
             if (!componentsAreNeighbors) {
                 continue;
             }

@@ -26,6 +26,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <glm/glm.hpp>
 #include "HexahedronVolume.hpp"
 
 float det3(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3) {
@@ -33,18 +34,31 @@ float det3(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3) {
            - v3.x*v2.y*v1.z - v1.x*v3.y*v2.z - v2.x*v1.y*v3.z;
 }
 
-float computeHexahedralCellVolume_TetrakisHexahedron(const std::vector<glm::vec3>& v) {
-    assert(v.size() == 8);
+float computeHexahedralCellVolume_TetrakisHexahedron(const glm::vec3* v) {
     return 1.0f / 12.0f *
            det3((v[6] - v[1]) + (v[7] - v[0]), (v[6] - v[2]), (v[2] - v[0]))
            + det3((v[7] - v[0]), (v[6] - v[3]) + (v[5] - v[0]), (v[6] - v[4]))
            + det3((v[6] - v[1]), (v[5] - v[0]), (v[6] - v[4]) + (v[2] - v[0]));
 }
 
-float computeHexahedralCellVolume_LongDiagonal(const std::vector<glm::vec3>& v) {
-    assert(v.size() == 8);
+float computeHexahedralCellVolume_LongDiagonal(const glm::vec3* v) {
     return 1.0f / 6.0f *
            det3((v[6] - v[0]), (v[1] - v[0]), (v[2] - v[5]))
            + det3((v[6] - v[0]), (v[4] - v[0]), (v[5] - v[6]))
            + det3((v[6] - v[0]), (v[3] - v[0]), (v[6] - v[2]));
+}
+
+float computeQuadrilateralFaceArea_Diagonal(const glm::vec3* v) {
+    return 0.5f * (
+            glm::length(glm::cross(v[1] - v[0], v[3] - v[0])) +
+            glm::length(glm::cross(v[3] - v[2], v[1] - v[2])));
+}
+
+float computeQuadrilateralFaceArea_Barycenter(const glm::vec3* v) {
+    glm::vec3 barycenter = 0.25f * (v[0] + v[1] + v[2] + v[3]);
+    return 0.5f * (
+            glm::length(glm::cross(v[0] - barycenter, v[1] - barycenter)) +
+            glm::length(glm::cross(v[1] - barycenter, v[2] - barycenter)) +
+            glm::length(glm::cross(v[2] - barycenter, v[3] - barycenter)) +
+            glm::length(glm::cross(v[3] - barycenter, v[0] - barycenter)));
 }

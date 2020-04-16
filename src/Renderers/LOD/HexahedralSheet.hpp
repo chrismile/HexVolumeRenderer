@@ -34,6 +34,9 @@
 #include <vector>
 #include <memory>
 
+// Use the following define to use volumes and surfaces instead of cell and face counts.
+#define LOD_USE_VOLUME_AND_SURFACE_MEASURES
+
 class HexMesh;
 typedef std::shared_ptr<HexMesh> HexMeshPtr;
 
@@ -149,24 +152,25 @@ void setHexahedralSheetBoundaryFaceIds(
  * @param hexMesh The hexahedral mesh.
  * @param component0 The first hexahedral sheet component.
  * @param component1 The second hexahedral sheet component.
+ * @param useVolumeAndAreaMeasures Whether to use volumes and areas or cell counts and face counts as measures.
  * @param matchingWeight The weight the neighborship relation should have when merging/matching components.
  * @param componentConnectionType Whether the components are adjacent, intersecting or hybrid.
  * @return Whether the two passed hexahedral mesh sheets are neighbors.
  */
 bool computeHexahedralSheetComponentNeighborship(
-        HexMesh* hexMesh, SheetComponent& component0, SheetComponent& component1, float& matchingWeight,
-        ComponentConnectionType& componentConnectionType);
+        HexMesh* hexMesh, SheetComponent& component0, SheetComponent& component1, bool useVolumeAndAreaMeasures,
+        float& matchingWeight, ComponentConnectionType& componentConnectionType);
 
 /**
  * Compute the neighborhood relation of all components and the edge weight of edges between components.
  * @param hexMesh The hexahedral mesh.
  * @param components The hexahedral mesh sheet components.
- * @param connectionDataList The connection data.
+ * @param useVolumeAndAreaMeasures Whether to use volumes and areas or cell counts and face counts as measures.
+ * @param connectionDataList The connection data of the components.
  * @param excludeIntersecting Whether to allow matching of intersecting or hybrid sheets or not.
  */
 void computeHexahedralSheetComponentConnectionData(
-        HexMesh* hexMesh,
-        std::vector<SheetComponent*>& components,
+        HexMesh* hexMesh, std::vector<SheetComponent*>& components, bool useVolumeAndAreaMeasures,
         std::vector<ComponentConnectionData>& connectionDataList);
 
 #endif //HEXVOLUMERENDERER_HEXAHEDRALSHEET_HPP

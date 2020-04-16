@@ -43,6 +43,7 @@ LodLinePreviewRenderer_Sheets::LodLinePreviewRenderer_Sheets(SceneData &sceneDat
 }
 
 void LodLinePreviewRenderer_Sheets::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+    mesh = meshIn;
     lineWidth = glm::clamp(
             std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
             MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
@@ -50,7 +51,9 @@ void LodLinePreviewRenderer_Sheets::generateVisualizationMapping(HexMeshPtr mesh
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec4> colors;
     std::vector<float> lodValues;
-    generateSheetLevelOfDetailLineStructureAndVertexData(meshIn.get(), vertices, colors, lodValues);
+    generateSheetLevelOfDetailLineStructureAndVertexData(
+            meshIn.get(), vertices, colors, lodValues,
+            useVolumeAndAreaMeasures, useWeightsForMerging);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_LINES);
@@ -93,6 +96,18 @@ void LodLinePreviewRenderer_Sheets::renderGui() {
         }
         if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             reRender = true;
+        }
+        if (ImGui::Checkbox("Use Volume and Area Measures", &useVolumeAndAreaMeasures)) {
+            if (mesh) {
+                generateVisualizationMapping(mesh, false);
+                reRender = true;
+            }
+        }
+        if (ImGui::Checkbox("Use Weights for Merging", &useWeightsForMerging)) {
+            if (mesh) {
+                generateVisualizationMapping(mesh, false);
+                reRender = true;
+            }
         }
     }
     ImGui::End();

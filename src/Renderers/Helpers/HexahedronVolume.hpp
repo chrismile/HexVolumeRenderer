@@ -60,7 +60,7 @@ float det3(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3);
  * @param v The eight corner cells of the tetrahedron.
  * @return The volume of the tetrakis hexahedron (TH).
  */
-float computeHexahedralCellVolume_TetrakisHexahedron(const std::vector<glm::vec3>& v);
+float computeHexahedralCellVolume_TetrakisHexahedron(const glm::vec3* v);
 
 /**
  * "Efficient Computation of Volume of Hexahedral Cells", J. Grandy (1997)
@@ -85,6 +85,42 @@ float computeHexahedralCellVolume_TetrakisHexahedron(const std::vector<glm::vec3
  * @param v The eight corner cells of the tetrahedron.
  * @return The volume of the hexahedron using the long diagonal (LD) method.
  */
-float computeHexahedralCellVolume_LongDiagonal(const std::vector<glm::vec3>& v);
+float computeHexahedralCellVolume_LongDiagonal(const glm::vec3* v);
+
+/**
+ * This function computes the area of a quadrilateral using the diagonal.
+ * It is assumed that we have the following face point layout:
+ *
+ * 3 ---------------- 2
+ *   |              |
+ *   |              |
+ *   |              |
+ *   |              |
+ *   |              |
+ *   |              |
+ * 0 ---------------- 1
+ *
+ * @param v The four corner cells of the quadrilateral.
+ * @return The area of the quadrilateral using the diagonal.
+ */
+float computeQuadrilateralFaceArea_Diagonal(const glm::vec3* v);
+
+/**
+ * This function computes the area of a quadrilateral using the barycenter.
+ * It is assumed that we have the following face point layout:
+ *
+ * 3 ---------------- 2
+ *   |              |
+ *   |              |
+ *   |              |
+ *   |              |
+ *   |              |
+ *   |              |
+ * 0 ---------------- 1
+ *
+ * @param v The four corner cells of the quadrilateral.
+ * @return The area of the quadrilateral using the barycenter.
+ */
+float computeQuadrilateralFaceArea_Barycenter(const glm::vec3* v);
 
 #endif //HEXVOLUMERENDERER_HEXAHEDRONVOLUME_HPP

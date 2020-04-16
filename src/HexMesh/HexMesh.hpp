@@ -152,6 +152,23 @@ public:
     std::unordered_set<uint32_t>& getSingularEdgeIds();
 
     /**
+     * Returns the area of the face with the passed index/ID.
+     */
+    float getFaceArea(uint32_t f_id);
+    /**
+     * Returns the summed up area of the faces with the passed indices/IDs.
+     */
+    float getFaceIdsAreaSum(const std::vector<uint32_t>& f_ids);
+
+    /**
+     * Returns the volume of the cell with the passed index/ID.
+     */
+    float getCellVolume(uint32_t h_id);
+    /**
+     * Returns the summed up volume of the cells with the passed indices/IDs.
+     */
+    float getCellIdsVolumeSum(const std::vector<uint32_t>& h_ids);
+    /**
      * Returns the total volume (i.e., summed up) of all cells.
      */
     float getTotalCellVolume();
@@ -411,11 +428,8 @@ public:
 
 private:
     void rebuildInternalRepresentationIfNecessary();
-
-    /**
-     * Returns the volume of the cell with the passed index/ID.
-     */
-    float getCellVolume(uint32_t h_id, std::vector<glm::vec3>& cellPointsArray);
+    void computeAllCellVolumes();
+    void computeAllFaceAreas();
 
     /**
      * Updates the ray-mesh intersection data structure for a newly loaded mesh.
@@ -496,7 +510,11 @@ private:
     Mesh* baseComplexMesh = nullptr;
     Singularity* si = nullptr;
     Frame* frame = nullptr;
+
+    // Additonal mesh data.
     std::unordered_set<uint32_t> singularEdgeIds;
+    std::vector<float> cellVolumes;
+    std::vector<float> faceAreas;
 };
 
 #endif //GENERALMAP_GENERALMAP_HPP

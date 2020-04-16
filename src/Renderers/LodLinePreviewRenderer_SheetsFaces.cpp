@@ -50,7 +50,9 @@ void LodLinePreviewRenderer_SheetsFaces::generateVisualizationMapping(HexMeshPtr
 
     std::vector<uint32_t> indices;
     std::vector<LodHexahedralCellFace> hexahedralCellFaces;
-    generateSheetLevelOfDetailLineStructureAndVertexData(meshIn.get(), indices, hexahedralCellFaces);
+    generateSheetLevelOfDetailLineStructureAndVertexData(
+            meshIn.get(), indices, hexahedralCellFaces,
+            useVolumeAndAreaMeasures, useWeightsForMerging);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(gatherShader);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -116,6 +118,18 @@ void LodLinePreviewRenderer_SheetsFaces::renderGui() {
         }
         if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             reRender = true;
+        }
+        if (ImGui::Checkbox("Use Volume and Area Measures", &useVolumeAndAreaMeasures)) {
+            if (mesh) {
+                generateVisualizationMapping(mesh, false);
+                reRender = true;
+            }
+        }
+        if (ImGui::Checkbox("Use Weights for Merging", &useWeightsForMerging)) {
+            if (mesh) {
+                generateVisualizationMapping(mesh, false);
+                reRender = true;
+            }
         }
     }
     ImGui::End();

@@ -56,6 +56,7 @@ public:
     virtual void renderGui();
 
 protected:
+    HexMeshPtr mesh;
     sgl::ShaderProgramPtr shaderProgram;
     sgl::ShaderAttributesPtr shaderAttributes;
 
@@ -63,6 +64,8 @@ protected:
     bool showRendererWindow = true;
     float maxLod = 0.1f;
     float lineWidth = 0.0015f;
+    bool useVolumeAndAreaMeasures = false;
+    bool useWeightsForMerging = false;
 };
 
 #endif //HEXVOLUMERENDERER_LODLINEPREVIEWRENDERER_SHEETS_HPP

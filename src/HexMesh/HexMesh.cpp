@@ -137,6 +137,9 @@ void HexMesh::setHexMeshData(
         }
     }
 
+    cellVolumes.clear();
+    faceAreas.clear();
+
     dirty = true;
 }
 
@@ -426,27 +429,89 @@ std::unordered_set<uint32_t>& HexMesh::getSingularEdgeIds() {
     return singularEdgeIds;
 }
 
-float HexMesh::getCellVolume(uint32_t h_id, std::vector<glm::vec3>& cellPointsArray) {
+
+float HexMesh::getFaceArea(uint32_t f_id) {
+    glm::vec3 facePointsArray[4];
+    Mesh* mesh = baseComplexMesh;
+    Hybrid_F& f = mesh->Fs.at(f_id);
+    assert(f.vs.size() == 4u);
+    for (size_t i = 0; i < f.vs.size(); i++) {
+        uint32_t v_id = f.vs.at(i);
+        facePointsArray[i] = glm::vec3(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+    }
+    float faceArea = computeQuadrilateralFaceArea_Barycenter(facePointsArray);
+    return faceArea;
+}
+
+float HexMesh::getFaceIdsAreaSum(const std::vector<uint32_t>& f_ids) {
+    if (faceAreas.empty()) {
+        computeAllFaceAreas();
+    }
+
+    float areaSum = 0.0f;
+    #pragma omp parallel for default(none) reduction(+: areaSum) shared(f_ids, faceAreas)
+    for (size_t i = 0; i < f_ids.size(); i++) {
+        areaSum += faceAreas.at(f_ids.at(i));
+    }
+    //for (uint32_t f_id : f_ids) {
+    //    areaSum += faceAreas.at(f_id);
+    //}
+}
+
+void HexMesh::computeAllFaceAreas() {
+    faceAreas.resize(baseComplexMesh->Fs.size());
+    #pragma omp parallel for default(none) shared(faceAreas, baseComplexMesh)
+    for (uint32_t f_id = 0; f_id < baseComplexMesh->Fs.size(); f_id++) {
+        faceAreas.at(f_id) = getFaceArea(f_id);
+    }
+}
+
+float HexMesh::getCellVolume(uint32_t h_id) {
+    glm::vec3 cellPointsArray[8];
     Mesh* mesh = baseComplexMesh;
     Hybrid& h = mesh->Hs.at(h_id);
-    for (uint32_t v_id : h.vs) {
-        glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
-        cellPointsArray.push_back(vertexPosition);
+    assert(h.vs.size() == 8u);
+    for (size_t i = 0; i < h.vs.size(); i++) {
+        uint32_t v_id = h.vs.at(i);
+        cellPointsArray[i] = glm::vec3(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
     }
     float cellVolume = computeHexahedralCellVolume_TetrakisHexahedron(cellPointsArray);
-    cellPointsArray.clear();
     return cellVolume;
+}
+
+float HexMesh::getCellIdsVolumeSum(const std::vector<uint32_t>& h_ids) {
+    if (cellVolumes.empty()) {
+        computeAllCellVolumes();
+    }
+
+    float volumeSum = 0.0f;
+    #pragma omp parallel for default(none) reduction(+: volumeSum) shared(h_ids, cellVolumes)
+    for (size_t i = 0; i < h_ids.size(); i++) {
+        volumeSum += cellVolumes.at(h_ids.at(i));
+    }
+    //for (uint32_t h_id : h_ids) {
+    //    volumeSum += cellVolumes.at(h_id);
+    //}
+}
+
+void HexMesh::computeAllCellVolumes() {
+    cellVolumes.resize(baseComplexMesh->Hs.size());
+    #pragma omp parallel for default(none) shared(cellVolumes, baseComplexMesh)
+    for (uint32_t h_id = 0; h_id < baseComplexMesh->Hs.size(); h_id++) {
+        cellVolumes.at(h_id) = getCellVolume(h_id);
+    }
 }
 
 float HexMesh::getTotalCellVolume() {
     rebuildInternalRepresentationIfNecessary();
+    if (cellVolumes.empty()) {
+        computeAllCellVolumes();
+    }
     Mesh* mesh = baseComplexMesh;
 
     float totalVolume = 0.0f;
-    std::vector<glm::vec3> cellPointsArray;
-    cellPointsArray.reserve(8);
     for (uint32_t i = 0; i < mesh->Hs.size(); i++) {
-        totalVolume += getCellVolume(i, cellPointsArray);
+        totalVolume += cellVolumes.at(i);
     }
     return totalVolume;
 }
@@ -624,11 +689,8 @@ void HexMesh::getVolumeData_FacesShared(
     Mesh* mesh = baseComplexMesh;
 
     // Compute all cell volumes.
-    std::vector<float> cellVolumes(mesh->Hs.size());
-    std::vector<glm::vec3> cellPointsArray;
-    cellPointsArray.reserve(8);
-    for (uint32_t h_id = 0; h_id < mesh->Hs.size(); h_id++) {
-        cellVolumes.at(h_id) = getCellVolume(h_id, cellPointsArray);
+    if (cellVolumes.empty()) {
+        computeAllCellVolumes();
     }
 
     // Add all hexahedral mesh vertices to the triangle mesh vertex data.
@@ -682,11 +744,8 @@ void HexMesh::getVolumeData_VolumeShared(
     Mesh* mesh = baseComplexMesh;
 
     // Compute all cell volumes.
-    std::vector<float> cellVolumes(mesh->Hs.size());
-    std::vector<glm::vec3> cellPointsArray;
-    cellPointsArray.reserve(8);
-    for (uint32_t h_id = 0; h_id < mesh->Hs.size(); h_id++) {
-        cellVolumes.at(h_id) = getCellVolume(h_id, cellPointsArray);
+    if (cellVolumes.empty()) {
+        computeAllCellVolumes();
     }
 
     // Add all hexahedral mesh vertices to the triangle mesh vertex data.
@@ -1994,11 +2053,8 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
     generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue);
 
     // Compute all cell volumes.
-    std::vector<float> cellVolumes(mesh->Hs.size());
-    std::vector<glm::vec3> cellPointsArray;
-    cellPointsArray.reserve(8);
-    for (uint32_t h_id = 0; h_id < mesh->Hs.size(); h_id++) {
-        cellVolumes.at(h_id) = getCellVolume(h_id, cellPointsArray);
+    if (cellVolumes.empty()) {
+        computeAllCellVolumes();
     }
 
     // Compute all edge attributes.
@@ -2091,11 +2147,8 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
     generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue);
 
     // Compute all cell volumes.
-    std::vector<float> cellVolumes(mesh->Hs.size());
-    std::vector<glm::vec3> cellPointsArray;
-    cellPointsArray.reserve(8);
-    for (uint32_t h_id = 0; h_id < mesh->Hs.size(); h_id++) {
-        cellVolumes.at(h_id) = getCellVolume(h_id, cellPointsArray);
+    if (cellVolumes.empty()) {
+        computeAllCellVolumes();
     }
 
     // Compute all vertex attributes.

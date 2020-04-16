@@ -1,6 +1,11 @@
 # HexVolumeRenderer
 A program for rendering hexahedral meshes in the form of transparent volumes.
 
+This repository was created for the paper "Interactive Focus+Context Rendering for Volumetric Mesh Inspection", Christoph A. Neuhauser, Junpeng Wang, Rüdiger Westermann, which will be submitted to IEEE VIS 2020.
+
+The rendering mode discussed in the paper can be used when selecting the renderer "ClearView (Unified)" in the program.
+The LOD structure discussed can be viewed with the renderer "LOD Lines (Preview, Sheets)".
+
 ## Building and running the programm
 
 The program requires the library sgl (https://github.com/chrismile/sgl).

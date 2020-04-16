@@ -55,12 +55,15 @@ protected:
     void setUniformData();
     void gather();
 
+    HexMeshPtr mesh;
     sgl::GeometryBufferPtr hexahedralCellFacesBuffer;
 
     // GUI data
     bool showRendererWindow = true;
     float maxLod = 0.1f;
     float lineWidth = 0.0015f;
+    bool useVolumeAndAreaMeasures = false;
+    bool useWeightsForMerging = false;
 };
 
 #endif //HEXVOLUMERENDERER_LODLINEPREVIEWRENDERER_SHEETSFACES_HPP
