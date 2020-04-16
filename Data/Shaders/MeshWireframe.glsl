@@ -150,18 +150,23 @@ void main()
     float expFactor = exp(-6.0 * fragmentDepth * 0.5 * discreteLodValue);
     //float expFactor = exp(-6.0 * fragmentDepth * 4.0 * lodLineValue);
     //float boostFactor = clamp(2.0 * expFactor + 1.0, 1.0, 1.5);
-    float boostFactor = clamp(2.0 * expFactor, 0.0, 1.5);
+    float boostFactor = clamp(2.5 * expFactor, 0.0, 2.0);
     const float EPSILON = 1e-5;
-    float lineCoordinatesContext = max(minDistance / lineWidth * 2.0 / (isSingularEdge  ? 1.0 : max(expFactor, EPSILON) / log2(discreteLodValue+0.5)) * 1.5, 0.0);
+    float lineWidthFactor;
+    float lineCoordinatesContext = max(minDistance / lineWidth * 2.0 / (
+    #if defined(HIGHLIGHT_SINGULAR_EDGES)
+            isSingularEdge ? 1.0 :
+    #endif
+            max(expFactor, EPSILON) / log2(discreteLodValue/4.0+1.75)) * 1.5, 0.0);
     #ifdef HIGHLIGHT_EDGES
     if (lineCoordinatesContext <= 1.0) {
         if (isSingularEdge) {
             colorContext.rgb = lineBaseColor.rgb;
             //colorContext.a *= 0.5;
-            #ifndef TOO_MUCH_SINGULAR_EDGE_MODE
-            colorContext.a = max(colorContext.a * boostFactor, 0.5);
-            #else
+            #if defined(TOO_MUCH_SINGULAR_EDGE_MODE) || !defined(HIGHLIGHT_SINGULAR_EDGES)
             colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
+            #else
+            colorContext.a = max(colorContext.a * boostFactor, 0.5);
             #endif
         } else {
             //float boostFactor = clamp(0.2 / fragmentDepth + 1.0, 1.0, 1.5);

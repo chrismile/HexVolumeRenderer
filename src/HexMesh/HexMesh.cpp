@@ -411,6 +411,17 @@ size_t HexMesh::getNumberOfSingularEdges() {
     return singularEdgeIds.size();
 }
 
+size_t HexMesh::getNumberOfSingularEdges(bool boundary, uint32_t valence) {
+    size_t counter = 0;
+    for (uint32_t e_id : singularEdgeIds) {
+        Hybrid_E& e = baseComplexMesh->Es.at(e_id);
+        if (e.boundary == boundary && e.neighbor_hs.size() == valence) {
+            counter++;
+        }
+    }
+    return counter;
+}
+
 std::unordered_set<uint32_t>& HexMesh::getSingularEdgeIds() {
     return singularEdgeIds;
 }

@@ -96,6 +96,7 @@ protected:
     // GUI data.
     bool highlightEdges = true;
     bool highlightLowLodEdges = true;
+    bool highlightSingularEdges = true;
 };
 
 #endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_FACESUNIFIED_HPP

@@ -58,7 +58,7 @@ void Pickable::updatePickable(float dt, bool& reRender, SceneData& sceneData) {
                 glm::mat4 inverseViewMatrix = glm::inverse(sceneData.camera->getViewMatrix());
                 glm::vec3 lookingDirection = glm::vec3(-inverseViewMatrix[2].x, -inverseViewMatrix[2].y, -inverseViewMatrix[2].z);
 
-                float moveAmount = sgl::Mouse->getScrollWheel() * dt * 1.0;
+                float moveAmount = sgl::Mouse->getScrollWheel() * dt * 0.5;
                 glm::vec3 moveDirection = focusPoint - sceneData.camera->getPosition();
                 moveDirection *= float(sgl::sign(glm::dot(lookingDirection, moveDirection)));
                 if (glm::length(moveDirection) < 1e-4) {

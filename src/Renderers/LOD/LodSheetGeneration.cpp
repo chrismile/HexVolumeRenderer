@@ -64,7 +64,7 @@ void generateSheetLevelOfDetailEdgeStructure(
     std::unordered_set<uint32_t>& singularEdgeIds = hexMesh->getSingularEdgeIds();
 
     // Don't highlight singular edges when we have far too many of them.
-    bool tooMuchSingularEdgeMode = singularEdgeIds.size() > 10000u;
+    bool tooMuchSingularEdgeMode = hexMesh->getNumberOfSingularEdges(true, 1) > 10000u;
 
     // First, extract all hexahedral sheets from the mesh.
     std::vector<HexahedralSheet> hexahedralSheets;

@@ -134,6 +134,9 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     if (highlightEdges) {
         sgl::ShaderManager->addPreprocessorDefine("HIGHLIGHT_EDGES", "");
     }
+    if (highlightSingularEdges) {
+        sgl::ShaderManager->addPreprocessorDefine("HIGHLIGHT_SINGULAR_EDGES", "");
+    }
     if (highlightLowLodEdges) {
         sgl::ShaderManager->addPreprocessorDefine("HIGHLIGHT_LOW_LOD_EDGES", "");
     }
@@ -145,6 +148,9 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     }
     if (highlightEdges) {
         sgl::ShaderManager->removePreprocessorDefine("HIGHLIGHT_EDGES");
+    }
+    if (highlightSingularEdges) {
+        sgl::ShaderManager->removePreprocessorDefine("HIGHLIGHT_SINGULAR_EDGES");
     }
     if (highlightLowLodEdges) {
         sgl::ShaderManager->removePreprocessorDefine("HIGHLIGHT_LOW_LOD_EDGES");
@@ -165,7 +171,7 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
     reloadSphereRenderData();
 
     // Don't highlight singular edges when we have far too many of them.
-    bool tooMuchSingularEdgeModeNewMesh = meshIn->getNumberOfSingularEdges() > 10000u;
+    bool tooMuchSingularEdgeModeNewMesh = meshIn->getNumberOfSingularEdges(true, 1) > 10000u;
     if (tooMuchSingularEdgeModeNewMesh != tooMuchSingularEdgeMode) {
         tooMuchSingularEdgeMode = tooMuchSingularEdgeModeNewMesh;
         reloadGatherShader();
@@ -351,6 +357,11 @@ void ClearViewRenderer_FacesUnified::childClassRenderGui() {
         reRender = true;
     }
     if (highlightEdges && ImGui::Checkbox("Highlight Low LOD Edges", &highlightLowLodEdges)) {
+        reloadGatherShader();
+        shaderAttributes = shaderAttributes->copy(gatherShader);
+        reRender = true;
+    }
+    if (highlightEdges && ImGui::Checkbox("Highlight Singular Edges", &highlightSingularEdges)) {
         reloadGatherShader();
         shaderAttributes = shaderAttributes->copy(gatherShader);
         reRender = true;

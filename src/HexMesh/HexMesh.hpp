@@ -142,6 +142,11 @@ public:
     size_t getNumberOfSingularEdges();
 
     /**
+     * @return The number of singular edges in the hexahedral mesh.
+     */
+    size_t getNumberOfSingularEdges(bool boundary, uint32_t valence);
+
+    /**
      * @return The singular edges in the hexahedral mesh.
      */
     std::unordered_set<uint32_t>& getSingularEdgeIds();
