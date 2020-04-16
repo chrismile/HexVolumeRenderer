@@ -66,10 +66,12 @@ protected:
     void clear();
     void gather();
     void resolve();
+    void childClassRenderGui();
 
     // Don't highlight singular edges when we have far too many of them.
     void reloadGatherShader();
     bool tooMuchSingularEdgeMode = false;
+    int maxLodValue;
 
     // The rendering data for the volume object.
     sgl::ShaderAttributesPtr shaderAttributes;
@@ -90,6 +92,10 @@ protected:
 
     // Color lookup table for singular edges.
     sgl::TexturePtr singularEdgeColorLookupTexture;
+
+    // GUI data.
+    bool highlightEdges = true;
+    bool highlightLowLodEdges = true;
 };
 
 #endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_FACESUNIFIED_HPP

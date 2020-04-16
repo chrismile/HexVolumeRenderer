@@ -63,6 +63,7 @@ protected:
     virtual void clear()=0;
     virtual void gather()=0;
     virtual void resolve()=0;
+    virtual void childClassRenderGui() {}
 
 #ifdef USE_CSG
 #else

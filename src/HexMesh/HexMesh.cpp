@@ -1974,14 +1974,13 @@ uint32_t HexMesh::packEdgeSingularityInformation(uint32_t e_id) {
 void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
         std::vector<uint32_t>& triangleIndices,
         std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
-        bool useGlowColors) {
+        int& maxLodValue) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
 
     // Compute the per-edge LOD values between 0 and 1.
     std::vector<float> edgeLodValues;
-    int maxValueInt;
-    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxValueInt);
+    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue);
 
     // Compute all cell volumes.
     std::vector<float> cellVolumes(mesh->Hs.size());
@@ -2072,14 +2071,13 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
 void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         std::vector<uint32_t>& triangleIndices,
         std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
-        bool useGlowColors) {
+        int& maxLodValue) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
 
     // Compute the per-edge LOD values between 0 and 1.
     std::vector<float> edgeLodValues;
-    int maxValueInt;
-    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxValueInt);
+    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue);
 
     // Compute all cell volumes.
     std::vector<float> cellVolumes(mesh->Hs.size());

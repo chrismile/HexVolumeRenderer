@@ -377,7 +377,7 @@ public:
     void getSurfaceDataWireframeFacesUnified_AttributePerCell(
             std::vector<uint32_t>& triangleIndices,
             std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
-            bool useGlowColors = false);
+            int& maxLodValue);
 
     /**
      * Get all surface faces including the colors of their edges.
@@ -397,7 +397,7 @@ public:
     void getSurfaceDataWireframeFacesUnified_AttributePerVertex(
             std::vector<uint32_t>& triangleIndices,
             std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
-            bool useGlowColors = false);
+            int& maxLodValue);
 
     static const glm::vec4 glowColorRegular;
     static const glm::vec4 glowColorSingular;

@@ -308,7 +308,7 @@ void ClearViewRenderer::render() {
 }
 
 void ClearViewRenderer::renderGui() {
-    if (ImGui::Begin("ClearView Renderer (Faces)", &showRendererWindow)) {
+    if (ImGui::Begin(windowName.c_str(), &showRendererWindow)) {
         if (ImGui::SliderFloat("Focus Radius", &focusRadius, MIN_FOCUS_RADIUS, MAX_FOCUS_RADIUS)) {
             reloadSphereRenderData();
             reRender = true;
@@ -349,6 +349,7 @@ void ClearViewRenderer::renderGui() {
             loadFocusRepresentation();
             reRender = true;
         }
+        childClassRenderGui();
     }
     ImGui::End();
 }

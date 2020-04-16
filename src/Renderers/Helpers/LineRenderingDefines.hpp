@@ -43,12 +43,12 @@ const float MAX_LINE_WIDTH_AUTO = 0.004f;
 // Ranges for ClearView.
 const float MIN_FOCUS_RADIUS = 0.001f;
 const float MAX_FOCUS_RADIUS = 0.4f;
-const float FOCUS_RADIUS_VOLUME_CBRT_FACTOR = 3.0f;
+const float FOCUS_RADIUS_VOLUME_CBRT_FACTOR = 2.0f;
 const float MIN_FOCUS_RADIUS_AUTO = 0.001f;
 const float MAX_FOCUS_RADIUS_AUTO = 0.4f;
 
 // Focus sphere indicator size and color for ClearView renderers and LOD renderers.
-const float MIN_FOCUS_SPHERE_RADIUS = 0.001f;
+const float MIN_FOCUS_SPHERE_RADIUS = 0.0005f;
 const float MAX_FOCUS_SPHERE_RADIUS = 0.003f;
 const float FOCUS_SPHERE_SIZE_FACTOR = 0.05f;
 const glm::vec4 FOCUS_SPHERE_COLOR = glm::vec4(0.75f, 1.0f, 0.0f, 1.0f);//glm::vec4(0.2f, 0.0f, 0.0f, 1.0f);

@@ -125,16 +125,29 @@ void ClearViewRenderer_FacesUnified::createSingularEdgeColorLookupTexture() {
 }
 
 void ClearViewRenderer_FacesUnified::reloadGatherShader() {
+    sgl::ShaderManager->invalidateShaderCache();
     std::string lineRenderingStyleDefineName = "LINE_RENDERING_STYLE_HALO";
     sgl::ShaderManager->addPreprocessorDefine(lineRenderingStyleDefineName, "");
     if (tooMuchSingularEdgeMode) {
         sgl::ShaderManager->addPreprocessorDefine("TOO_MUCH_SINGULAR_EDGE_MODE", "");
+    }
+    if (highlightEdges) {
+        sgl::ShaderManager->addPreprocessorDefine("HIGHLIGHT_EDGES", "");
+    }
+    if (highlightLowLodEdges) {
+        sgl::ShaderManager->addPreprocessorDefine("HIGHLIGHT_LOW_LOD_EDGES", "");
     }
     gatherShader = sgl::ShaderManager->getShaderProgram(
             {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView"});
     sgl::ShaderManager->removePreprocessorDefine(lineRenderingStyleDefineName);
     if (tooMuchSingularEdgeMode) {
         sgl::ShaderManager->removePreprocessorDefine("TOO_MUCH_SINGULAR_EDGE_MODE");
+    }
+    if (highlightEdges) {
+        sgl::ShaderManager->removePreprocessorDefine("HIGHLIGHT_EDGES");
+    }
+    if (highlightLowLodEdges) {
+        sgl::ShaderManager->removePreprocessorDefine("HIGHLIGHT_LOW_LOD_EDGES");
     }
 }
 
@@ -167,10 +180,10 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
     std::vector<HexahedralCellFaceUnified> hexahedralCellFaces;
     if (useWeightedVertexAttributes) {
         mesh->getSurfaceDataWireframeFacesUnified_AttributePerVertex(
-                indices, hexahedralCellFaces, false);
+                indices, hexahedralCellFaces, maxLodValue);
     } else {
         mesh->getSurfaceDataWireframeFacesUnified_AttributePerCell(
-                indices, hexahedralCellFaces, false);
+                indices, hexahedralCellFaces, maxLodValue);
     }
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(gatherShader);
@@ -241,6 +254,9 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
             "singularEdgeColorLookupTexture", singularEdgeColorLookupTexture, 1);
 
     gatherShader->setUniform("lineWidth", lineWidth);
+    if (gatherShader->hasUniform("maxLodValue")) {
+        gatherShader->setUniform("maxLodValue", float(maxLodValue));
+    }
 
     shaderProgramSurface->setUniform("viewportW", width);
     shaderProgramSurface->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
@@ -326,4 +342,22 @@ void ClearViewRenderer_FacesUnified::resolve() {
 
     glDisable(GL_STENCIL_TEST);
     glDepthMask(GL_TRUE);
+}
+
+void ClearViewRenderer_FacesUnified::childClassRenderGui() {
+    if (ImGui::Checkbox("Highlight Edges", &highlightEdges)) {
+        reloadGatherShader();
+        shaderAttributes = shaderAttributes->copy(gatherShader);
+        reRender = true;
+    }
+    if (highlightEdges && ImGui::Checkbox("Highlight Low LOD Edges", &highlightLowLodEdges)) {
+        reloadGatherShader();
+        shaderAttributes = shaderAttributes->copy(gatherShader);
+        reRender = true;
+    }
+    if (ImGui::Button("Reload Shader")) {
+        reloadGatherShader();
+        shaderAttributes = shaderAttributes->copy(gatherShader);
+        reRender = true;
+    }
 }

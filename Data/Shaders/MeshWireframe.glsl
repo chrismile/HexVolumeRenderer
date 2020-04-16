@@ -94,6 +94,7 @@ out vec4 fragColor;
 #endif
 
 uniform float lineWidth;
+uniform float maxLodValue;
 
 #include "ClearView.glsl"
 
@@ -144,24 +145,24 @@ void main()
     vec4 colorContext = fragmentColor;
     bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
     float lodLineValue = edgeLodValues[minDistanceIndex];
-    float fragmentDepth = length(fragmentPositionWorld - cameraPosition) * 4.0 * lodLineValue;
-    float expFactor = exp(-6.0 * fragmentDepth);
-    if (lodLineValue < 0.2) {
-        expFactor = max(expFactor, 0.7);
-    }
+    float discreteLodValue = lodLineValue * maxLodValue;
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    float expFactor = exp(-6.0 * fragmentDepth * 0.5 * discreteLodValue);
+    //float expFactor = exp(-6.0 * fragmentDepth * 4.0 * lodLineValue);
     //float boostFactor = clamp(2.0 * expFactor + 1.0, 1.0, 1.5);
     float boostFactor = clamp(2.0 * expFactor, 0.0, 1.5);
     const float EPSILON = 1e-5;
-    float lineCoordinatesContext = max(minDistance / lineWidth * 2.0 / (isSingularEdge ? 1.0 : max(expFactor, EPSILON)) * 1.5, 0.0);
+    float lineCoordinatesContext = max(minDistance / lineWidth * 2.0 / (isSingularEdge  ? 1.0 : max(expFactor, EPSILON) / log2(discreteLodValue+0.5)) * 1.5, 0.0);
+    #ifdef HIGHLIGHT_EDGES
     if (lineCoordinatesContext <= 1.0) {
         if (isSingularEdge) {
             colorContext.rgb = lineBaseColor.rgb;
             //colorContext.a *= 0.5;
-#ifndef TOO_MUCH_SINGULAR_EDGE_MODE
-            colorContext.a = max(colorContext.a * boostFactor, 0.2);
-#else
+            #ifndef TOO_MUCH_SINGULAR_EDGE_MODE
+            colorContext.a = max(colorContext.a * boostFactor, 0.5);
+            #else
             colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
-#endif
+            #endif
         } else {
             //float boostFactor = clamp(0.2 / fragmentDepth + 1.0, 1.0, 1.5);
             ///colorContext.rgb = vec3(0.0, 0.7, 1.0);
@@ -170,10 +171,13 @@ void main()
             colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
         }
 
-        if (lodLineValue < 0.2) {
-            colorContext.a = max(colorContext.a, 0.4);
+        #ifdef HIGHLIGHT_LOW_LOD_EDGES
+        if (discreteLodValue <= 1.001) {//if (lodLineValue < 0.2) {
+            colorContext.a = max(colorContext.a, 0.2 * boostFactor);
         }
+        #endif
     }
+    #endif
     colorContext.a *= getClearViewContextFragmentOpacityFactor();
     gatherFragment(colorContext);
 }
