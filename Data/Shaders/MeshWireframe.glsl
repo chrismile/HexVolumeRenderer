@@ -123,8 +123,25 @@ void main()
         }
     }
 
+    float lodLineValue = edgeLodValues[minDistanceIndex];
+    float discreteLodValue = lodLineValue * maxLodValue;
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    float distanceToFocusRing = length(fragmentPositionWorld - sphereCenter) - sphereRadius;
+    float expFactor = exp(-3.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValue);
+    //float expFactor = exp(-6.0 * fragmentDepth * 4.0 * lodLineValue);
+    //float boostFactor = clamp(2.0 * expFactor + 1.0, 1.0, 1.5);
+    float expFactorOpacity = exp(-6.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValue);
+    float boostFactor = clamp(2.5 * expFactorOpacity, 0.0, 2.0);
+
+    const float CUTOFF_EPSILON = 0.05;
+
     vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
-    float lineCoordinates = max(minDistance / lineWidth * 2.0, 0.0);
+    /*float lineWidthPrime = lineWidth * expFactor;
+    if (expFactor < 0.2) {
+        lineWidthPrime = mix(lineWidthPrime, 1e-8, smoothstep(0.2, 0.2 + CUTOFF_EPSILON, expFactor));
+    }*/
+    float lineWidthPrime = lineWidth;
+    float lineCoordinates = max(minDistance / lineWidthPrime * 2.0, 0.0);
     if (lineCoordinates <= 1.0) {
         // Focus wireframe
         float fragmentDepth;
@@ -144,42 +161,49 @@ void main()
     // Add the context fragment.
     vec4 colorContext = fragmentColor;
     bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
-    float lodLineValue = edgeLodValues[minDistanceIndex];
-    float discreteLodValue = lodLineValue * maxLodValue;
-    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
-    float expFactor = exp(-6.0 * fragmentDepth * 0.5 * discreteLodValue);
-    //float expFactor = exp(-6.0 * fragmentDepth * 4.0 * lodLineValue);
-    //float boostFactor = clamp(2.0 * expFactor + 1.0, 1.0, 1.5);
-    float boostFactor = clamp(2.5 * expFactor, 0.0, 2.0);
     const float EPSILON = 1e-5;
     float lineWidthFactor;
-    float lineCoordinatesContext = max(minDistance / lineWidth * 2.0 / (
+    lineWidthPrime = lineWidth * (
     #if defined(HIGHLIGHT_SINGULAR_EDGES)
-            isSingularEdge ? 1.0 :
+        isSingularEdge ? 1.0 :
     #endif
-            max(expFactor, EPSILON) / log2(discreteLodValue/4.0+1.75)) * 1.5, 0.0);
+        max(expFactor, EPSILON) / log2(discreteLodValue/4.0+1.75)) / 1.5;
+    if (expFactor < 0.2) {
+        lineWidthPrime = mix(lineWidthPrime, 1e-8, smoothstep(0.2, 0.2 + CUTOFF_EPSILON, expFactor));
+    }
+    float lineCoordinatesContext = max(minDistance / lineWidthPrime * 2.0, 0.0);
     #ifdef HIGHLIGHT_EDGES
     if (lineCoordinatesContext <= 1.0) {
+        #ifdef HIGHLIGHT_LOW_LOD_EDGES
+        if (discreteLodValue <= 1.001) {
+            colorContext.a = max(colorContext.a, 0.2);
+        } else if (true) {
+            colorContext.a = max(colorContext.a, 0.05 / discreteLodValue);
+        }
+        #endif
+
         if (isSingularEdge) {
             colorContext.rgb = lineBaseColor.rgb;
             //colorContext.a *= 0.5;
             #if defined(TOO_MUCH_SINGULAR_EDGE_MODE) || !defined(HIGHLIGHT_SINGULAR_EDGES)
-            colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
+            colorContext.a = clamp(colorContext.a * max(boostFactor, 1.0), 0.0, 1.0);
             #else
-            colorContext.a = max(colorContext.a * boostFactor, 0.5);
+            colorContext.a = max(colorContext.a * max(boostFactor, 1.0), 0.5);
             #endif
         } else {
             //float boostFactor = clamp(0.2 / fragmentDepth + 1.0, 1.0, 1.5);
             ///colorContext.rgb = vec3(0.0, 0.7, 1.0);
             colorContext.rgb = mix(colorContext.rgb, vec3(1.0, 1.0, 1.0), 0.3);
             //colorContext.a *= 0.1;
-            colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
+            colorContext.a = clamp(colorContext.a * max(boostFactor, 1.0), 0.0, 1.0);
         }
 
         #ifdef HIGHLIGHT_LOW_LOD_EDGES
-        if (discreteLodValue <= 1.001) {//if (lodLineValue < 0.2) {
+        /*if (discreteLodValue <= 1.001) {
             colorContext.a = max(colorContext.a, 0.2 * boostFactor);
-        }
+        } else if (true) {
+            colorContext.a = max(colorContext.a, 0.05 * boostFactor / discreteLodValue);
+        }*/
         #endif
     }
     #endif

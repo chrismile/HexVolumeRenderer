@@ -221,22 +221,24 @@ vec4 flatShadingWireframeSurfaceHalo_DepthCue(in vec4 baseColor, out float fragm
     float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
 
     float distanceToFocusPointNormalized = length(fragmentPositionWorld - sphereCenter) / sphereRadius;
-    float depthCueFactor = clamp(pow(distanceToFocusPointNormalized, 1.7), 0.0, 1.0);
-    //smoothstep(0.0, 1.0, distanceToFocusPointNormalized);//clamp(distanceToFocusPointNormalized, 0.0, 1.0);
+    float depthCueFactorFocus = clamp(pow(distanceToFocusPointNormalized, 1.9), 0.0, 1.0);
+    float depthCueFactorDistance = clamp(fragmentDepth, 0.0, 1.0) * 5.0;
 
     #ifdef DEPTH_CUE_MAIN_COLOR
-    baseColor.rgb = mix(baseColor.rgb, vec3(0.5, 0.5, 0.5), depthCueFactor * 0.6);
+    baseColor.rgb = mix(baseColor.rgb, vec3(0.5, 0.5, 0.5), depthCueFactorFocus * 0.6);
     #endif
 
+    // Fade out the outline with increasing distance to the viewer and increasing distance to the focus center.
     vec3 outlineColor = vec3(1.0, 1.0, 1.0);
     #ifdef DEPTH_CUE_OUTLINE_COLOR
-    outlineColor = mix(outlineColor, baseColor.rgb, depthCueFactor);
+    outlineColor = mix(outlineColor, baseColor.rgb, max(depthCueFactorFocus, depthCueFactorDistance));
     #endif
 
     #ifdef DEPTH_CUE_LINE_WIDTH
     lineCoordinates /= -distanceToFocusPointNormalized * 0.6 + 1.0;
     #endif
 
+    // Fade out the outline with increasing distance
     const float WHITE_THRESHOLD = 0.7;
     float EPSILON = clamp(fragmentDepth / 2.0, 0.0, 0.49);
     float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
