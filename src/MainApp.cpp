@@ -101,7 +101,9 @@ MainApp::MainApp()
 #else
           rayMeshIntersection(new RayMeshIntersection_NanoRT(camera)),
 #endif
-          sceneData(sceneFramebuffer, camera, lightDirection, *rayMeshIntersection),
+          sceneData(
+                  sceneFramebuffer, sceneTexture, sceneDepthRBO, camera, lightDirection,
+                  *rayMeshIntersection),
           videoWriter(NULL) {
     sgl::FileUtils::get()->ensureDirectoryExists(saveDirectoryScreenshots);
     setPrintFPS(false);

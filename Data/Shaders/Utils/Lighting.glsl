@@ -222,7 +222,7 @@ vec4 flatShadingWireframeSurfaceHalo_DepthCue(in vec4 baseColor, out float fragm
 
     float distanceToFocusPointNormalized = length(fragmentPositionWorld - sphereCenter) / sphereRadius;
     float depthCueFactorFocus = clamp(pow(distanceToFocusPointNormalized, 1.9), 0.0, 1.0);
-    float depthCueFactorDistance = clamp(fragmentDepth, 0.0, 1.0) * 5.0;
+    float depthCueFactorDistance = clamp(fragmentDepth, 0.0, 1.0) * 0.002 / lineWidth; //  * 5.0
 
     #ifdef DEPTH_CUE_MAIN_COLOR
     baseColor.rgb = mix(baseColor.rgb, vec3(0.5, 0.5, 0.5), depthCueFactorFocus * 0.6);

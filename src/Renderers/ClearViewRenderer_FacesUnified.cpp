@@ -80,6 +80,10 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
             {"LinkedListResolve.Vertex", "LinkedListResolve.Fragment"});
     clearShader = sgl::ShaderManager->getShaderProgram(
             {"LinkedListClear.Vertex", "LinkedListClear.Fragment"});
+    shaderFullScreenBlitLoG = sgl::ShaderManager->getShaderProgram(
+            {"Mesh.Vertex.Plain", "Mesh.Fragment.Plain"});
+    laplacianOfGaussianShader = sgl::ShaderManager->getShaderProgram(
+            {"LaplacianOfGaussian.Vertex", "LaplacianOfGaussian.Fragment"});
 
     // Create blitting data (fullscreen rectangle in normalized device coordinates).
     blitRenderData = sgl::ShaderManager->createShaderAttributes(resolveShader);
@@ -93,12 +97,19 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     clearRenderData = sgl::ShaderManager->createShaderAttributes(clearShader);
-    geomBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(glm::vec3)*fullscreenQuad.size(), (void*)&fullscreenQuad.front());
     clearRenderData->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
+    shaderAttributesFullScreenBlitLoG = sgl::ShaderManager->createShaderAttributes(shaderFullScreenBlitLoG);
+    shaderAttributesFullScreenBlitLoG->addGeometryBuffer(
+            geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+
+    shaderAttributesLoG = sgl::ShaderManager->createShaderAttributes(laplacianOfGaussianShader);
+    shaderAttributesLoG->addGeometryBuffer(
+            geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+
     createSingularEdgeColorLookupTexture();
+    createWeightTextureLoG();
 
     onResolutionChanged();
 }
@@ -122,6 +133,40 @@ void ClearViewRenderer_FacesUnified::createSingularEdgeColorLookupTexture() {
     textureSettings.internalFormat = GL_RGBA32F;
     singularEdgeColorLookupTexture = sgl::TextureManager->createTexture(
             textureData, NUM_VALENCE_LEVELS, 2, textureSettings);
+}
+
+void ClearViewRenderer_FacesUnified::createWeightTextureLoG() {
+    float* textureData = new float[weightTextureSize.x * weightTextureSize.y];
+    const float FACTOR_1 = -1.0f / (sgl::PI * std::pow(rhoLoG, 4.0f));
+    const float FACTOR_2 = -1.0f / (2.0f * rhoLoG * rhoLoG);
+    // Compute the LoG kernel weights.
+    for (int iy = 0; iy < weightTextureSize.y; iy++) {
+        for (int ix = 0; ix < weightTextureSize.x; ix++) {
+            int x = ix - weightTextureSize.x / 2;
+            int y = iy - weightTextureSize.y / 2;
+            // https://homepages.inf.ed.ac.uk/rbf/HIPR2/log.htm
+            float term3 = (x*x + y*y) * FACTOR_2;
+            textureData[ix + iy*weightTextureSize.x] = 100.0f * FACTOR_1 * (1.0f + term3) * std::exp(term3);
+        }
+    }
+    for (int iy = 0; iy < weightTextureSize.y; iy++) {
+        for (int ix = 0; ix < weightTextureSize.x; ix++) {
+            std::cout << textureData[ix + iy*weightTextureSize.x] << "\t";
+        }
+        std::cout << std::endl;
+    }
+    // Normalize the kernel weights.
+    const int numEntries = weightTextureSize.x + weightTextureSize.y;
+    for (int i = 0; i < numEntries; i++) {
+        //TODO
+    }
+    sgl::TextureSettings textureSettings;
+    textureSettings.pixelType = GL_FLOAT;
+    textureSettings.pixelFormat = GL_RED;
+    textureSettings.internalFormat = GL_R32F;
+    weightTextureLoG = sgl::TextureManager->createTexture(
+            textureData, weightTextureSize.x, weightTextureSize.y, textureSettings);
+    delete[] textureData;
 }
 
 void ClearViewRenderer_FacesUnified::reloadGatherShader() {
@@ -232,6 +277,20 @@ void ClearViewRenderer_FacesUnified::onResolutionChanged() {
     atomicCounterBuffer = sgl::GeometryBufferPtr(); // Delete old data first (-> refcount 0)
     atomicCounterBuffer = sgl::Renderer->createGeometryBuffer(
             sizeof(uint32_t), NULL, sgl::ATOMIC_COUNTER_BUFFER);
+
+    // Create the data for the LoG.
+    framebufferLoG = sgl::Renderer->createFBO();
+    sgl::TextureSettings textureSettings;
+    /*if (useLinearRGB) {
+        textureSettings.internalFormat = GL_RGBA16;
+    } else {*/
+    textureSettings.internalFormat = GL_RGBA8;
+    //}
+    textureSettings.pixelType = GL_UNSIGNED_BYTE;
+    textureSettings.pixelFormat = GL_RGB;
+    imageTextureLoG = sgl::TextureManager->createEmptyTexture(width, height, textureSettings);
+    framebufferLoG->bindTexture(imageTextureLoG);
+    framebufferLoG->bindRenderbuffer(sceneData.sceneDepthRBO, sgl::DEPTH_STENCIL_ATTACHMENT);
 }
 
 void ClearViewRenderer_FacesUnified::setUniformData() {
@@ -271,6 +330,24 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
 
     resolveShader->setUniform("viewportW", width);
     clearShader->setUniform("viewportW", width);
+
+    shaderFullScreenBlitLoG->setUniform("color", sgl::Color(255, 255, 255));
+    laplacianOfGaussianShader->setUniform("imageTexture", imageTextureLoG, 2);
+    laplacianOfGaussianShader->setUniform("weightTexture", weightTextureLoG, 3);
+    laplacianOfGaussianShader->setUniform("imageTextureSize", glm::ivec2(width, height));
+    laplacianOfGaussianShader->setUniform(
+            "weightTextureSize", glm::ivec2(weightTextureSize.x, weightTextureSize.y));
+}
+
+void ClearViewRenderer_FacesUnified::renderLaplacianOfGaussianContours() {
+    sgl::Renderer->bindFBO(framebufferLoG);
+    sgl::Renderer->clearFramebuffer(GL_COLOR_BUFFER_BIT, sgl::Color(0, 0, 0));
+    sgl::Renderer->render(shaderAttributesFullScreenBlitLoG);
+
+    glDisable(GL_STENCIL_TEST);
+    sgl::Renderer->bindFBO(sceneData.framebuffer);
+    sgl::Renderer->render(shaderAttributesLoG);
+    glEnable(GL_STENCIL_TEST);
 }
 
 void ClearViewRenderer_FacesUnified::clear() {
@@ -342,6 +419,8 @@ void ClearViewRenderer_FacesUnified::resolve() {
         glStencilFunc(GL_EQUAL, 1, 0xFF);
         glStencilMask(0x00);
     }
+
+    renderLaplacianOfGaussianContours();
 
     sgl::Renderer->render(blitRenderData);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);

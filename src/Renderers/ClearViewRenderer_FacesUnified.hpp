@@ -62,10 +62,12 @@ public:
 
 protected:
     void createSingularEdgeColorLookupTexture();
+    void createWeightTextureLoG();
     void setUniformData();
     void clear();
     void gather();
     void resolve();
+    void renderLaplacianOfGaussianContours();
     void childClassRenderGui();
 
     // Don't highlight singular edges when we have far too many of them.
@@ -86,12 +88,23 @@ protected:
     sgl::ShaderProgramPtr gatherShader;
     sgl::ShaderProgramPtr resolveShader;
 
-    // Blit data (ignores model-view-projection matrix and uses normalized device coordinates)
+    // Blit data (ignores model-view-projection matrix and uses normalized device coordinates).
     sgl::ShaderAttributesPtr blitRenderData;
     sgl::ShaderAttributesPtr clearRenderData;
 
     // Color lookup table for singular edges.
     sgl::TexturePtr singularEdgeColorLookupTexture;
+
+    // Rendering data for the LoG (Laplacian of Gaussian).
+    sgl::ShaderProgramPtr shaderFullScreenBlitLoG;
+    sgl::ShaderProgramPtr laplacianOfGaussianShader;
+    sgl::ShaderAttributesPtr shaderAttributesFullScreenBlitLoG;
+    sgl::ShaderAttributesPtr shaderAttributesLoG;
+    sgl::FramebufferObjectPtr framebufferLoG;
+    sgl::TexturePtr imageTextureLoG;
+    sgl::TexturePtr weightTextureLoG;
+    const glm::ivec2 weightTextureSize = glm::ivec2(9, 9);
+    const float rhoLoG = 1.4f;
 
     // GUI data.
     bool highlightEdges = true;
