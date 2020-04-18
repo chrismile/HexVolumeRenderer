@@ -106,7 +106,6 @@ private:
     bool useLinearRGB = true;
     std::vector<float> fpsArray;
     size_t fpsArrayOffset = 0;
-    glm::vec3 lightDirection = glm::vec3(1.0, 0.0, 0.0);
     bool uiOnScreenshot = false;
     bool printNow = false;
     std::string saveDirectoryScreenshots = "Data/Screenshots/";

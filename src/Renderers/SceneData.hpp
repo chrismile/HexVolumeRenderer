@@ -31,21 +31,22 @@
 
 #include <Graphics/Scene/Camera.hpp>
 #include <Graphics/Buffers/FBO.hpp>
+#include <Graphics/Color.hpp>
 #include "Intersection/RayMeshIntersection.hpp"
 
 struct SceneData {
     SceneData(
             sgl::FramebufferObjectPtr& framebuffer, sgl::TexturePtr& sceneTexture,
-            sgl::RenderbufferObjectPtr& sceneDepthRBO, sgl::CameraPtr& camera, glm::vec3& lightDirection,
+            sgl::RenderbufferObjectPtr& sceneDepthRBO, sgl::CameraPtr& camera, sgl::Color& clearColor,
             RayMeshIntersection& rayMeshIntersection)
         : framebuffer(framebuffer), sceneTexture(sceneTexture), sceneDepthRBO(sceneDepthRBO), camera(camera),
-          lightDirection(lightDirection), rayMeshIntersection(rayMeshIntersection) {}
+          clearColor(clearColor), rayMeshIntersection(rayMeshIntersection) {}
     sgl::FramebufferObjectPtr& framebuffer;
     sgl::TexturePtr& sceneTexture;
     sgl::RenderbufferObjectPtr& sceneDepthRBO;
 
     sgl::CameraPtr& camera;
-    glm::vec3& lightDirection;
+    sgl::Color& clearColor;
     RayMeshIntersection& rayMeshIntersection;
 };
 

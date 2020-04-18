@@ -36,7 +36,7 @@ const float MIN_LINE_WIDTH = 0.0001f;
 const float MAX_LINE_WIDTH = 0.004f;
 
 // The standard line size is computed depending on the cube root of the average cell volume times the factor below.
-const float LINE_WIDTH_VOLUME_CBRT_FACTOR = 0.06f;
+const float LINE_WIDTH_VOLUME_CBRT_FACTOR = 0.05f;
 const float MIN_LINE_WIDTH_AUTO = 0.0003f;
 const float MAX_LINE_WIDTH_AUTO = 0.004f;
 

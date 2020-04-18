@@ -103,7 +103,7 @@ protected:
     sgl::FramebufferObjectPtr framebufferLoG;
     sgl::TexturePtr imageTextureLoG;
     sgl::TexturePtr weightTextureLoG;
-    const glm::ivec2 weightTextureSize = glm::ivec2(9, 9);
+    const glm::ivec2 weightTextureSize = glm::ivec2(5, 5);
     const float rhoLoG = 1.4f;
 
     // GUI data.

@@ -79,9 +79,6 @@ void SurfaceRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNew
 
 void SurfaceRenderer::render() {
     shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
-    if (shaderProgram->hasUniform("lightDirection")) {
-        shaderProgram->setUniform("lightDirection", sceneData.lightDirection);
-    }
     shaderProgram->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
     sgl::Renderer->render(shaderAttributes);

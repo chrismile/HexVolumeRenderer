@@ -257,9 +257,6 @@ void ClearViewRenderer_Volume::setUniformData() {
     for (sgl::ShaderProgram* gatherShader : gatherShaders) {
         gatherShader->setUniform("viewportW", width);
         gatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
-        if (gatherShader->hasUniform("lightDirection")) {
-            gatherShader->setUniform("lightDirection", sceneData.lightDirection);
-        }
         if (gatherShader->hasUniform("lookingDirection")) {
             gatherShader->setUniform("lookingDirection", lookingDirection);
         }

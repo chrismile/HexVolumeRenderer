@@ -228,9 +228,6 @@ void VolumeRenderer_Volume::setUniformData() {
     for (sgl::ShaderProgramPtr& gatherShader : gatherShaders) {
         gatherShader->setUniform("viewportW", width);
         gatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
-        if (gatherShader->hasUniform("lightDirection")) {
-            gatherShader->setUniform("lightDirection", sceneData.lightDirection);
-        }
     }
     gatherShaderVolumeFrontFaces->setUniform(
             "linkedListVolumeFrontFacesCapacity", (unsigned int)fragmentBufferSizeVolume);

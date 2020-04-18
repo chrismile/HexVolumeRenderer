@@ -102,7 +102,7 @@ MainApp::MainApp()
           rayMeshIntersection(new RayMeshIntersection_NanoRT(camera)),
 #endif
           sceneData(
-                  sceneFramebuffer, sceneTexture, sceneDepthRBO, camera, lightDirection,
+                  sceneFramebuffer, sceneTexture, sceneDepthRBO, camera, clearColor,
                   *rayMeshIntersection),
           videoWriter(NULL) {
     sgl::FileUtils::get()->ensureDirectoryExists(saveDirectoryScreenshots);
@@ -507,7 +507,7 @@ void MainApp::renderSceneSettingsGUI() {
 
     // Select light direction
     // Spherical coordinates: (r, θ, φ), i.e. with radial distance r, azimuthal angle θ (theta), and polar angle φ (phi)
-    static float theta = sgl::PI/2;
+    /*static float theta = sgl::PI/2;
     static float phi = 0.0f;
     bool angleChanged = false;
     angleChanged = ImGui::SliderAngle("Light Azimuth", &theta, 0.0f) || angleChanged;
@@ -516,7 +516,7 @@ void MainApp::renderSceneSettingsGUI() {
         // https://en.wikipedia.org/wiki/List_of_common_coordinate_transformations#To_cartesian_coordinates
         lightDirection = glm::vec3(sinf(theta) * cosf(phi), sinf(theta) * sinf(phi), cosf(theta));
         reRender = true;
-    }
+    }*/
 
     if (ImGui::Button("Reset Camera")) {
         camera->setOrientation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));

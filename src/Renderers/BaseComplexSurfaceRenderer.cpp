@@ -79,9 +79,6 @@ void BaseComplexSurfaceRenderer::generateVisualizationMapping(HexMeshPtr meshIn,
 
 void BaseComplexSurfaceRenderer::render() {
     shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
-    if (shaderProgram->hasUniform("lightDirection")) {
-        shaderProgram->setUniform("lightDirection", sceneData.lightDirection);
-    }
     sgl::Renderer->render(shaderAttributes);
 }
 

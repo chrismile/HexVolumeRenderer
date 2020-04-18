@@ -189,9 +189,6 @@ void VolumeRenderer_Faces::setUniformData() {
     gatherShader->setAtomicCounterBuffer(0, atomicCounterBuffer);
     gatherShader->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
     gatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
-    if (gatherShader->hasUniform("lightDirection")) {
-        gatherShader->setUniform("lightDirection", sceneData.lightDirection);
-    }
     gatherShader->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
 

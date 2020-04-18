@@ -332,6 +332,7 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     clearShader->setUniform("viewportW", width);
 
     shaderFullScreenBlitLoG->setUniform("color", sgl::Color(255, 255, 255));
+    laplacianOfGaussianShader->setUniform("clearColor", sceneData.clearColor);
     laplacianOfGaussianShader->setUniform("imageTexture", imageTextureLoG, 2);
     laplacianOfGaussianShader->setUniform("weightTexture", weightTextureLoG, 3);
     laplacianOfGaussianShader->setUniform("imageTextureSize", glm::ivec2(width, height));

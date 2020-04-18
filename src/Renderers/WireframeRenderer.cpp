@@ -72,9 +72,6 @@ void WireframeRenderer::render() {
     if (shaderProgram->hasUniform("cameraPosition")) {
         shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
     }
-    if (shaderProgram->hasUniform("lightDirection")) {
-        shaderProgram->setUniform("lightDirection", sceneData.lightDirection);
-    }
 
     //glEnable(GL_POLYGON_OFFSET_FILL);
     //glPolygonOffset(1, 1);

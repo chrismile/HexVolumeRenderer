@@ -72,9 +72,6 @@ void PartitionLineRenderer::render() {
     if (shaderProgram->hasUniform("cameraPosition")) {
         shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
     }
-    if (shaderProgram->hasUniform("lightDirection")) {
-        shaderProgram->setUniform("lightDirection", sceneData.lightDirection);
-    }
 
     shaderProgram->setUniform("lineWidth", lineWidth);
     sgl::Renderer->render(shaderAttributes);

@@ -231,7 +231,7 @@ vec4 flatShadingWireframeSurfaceHalo_DepthCue(in vec4 baseColor, out float fragm
     // Fade out the outline with increasing distance to the viewer and increasing distance to the focus center.
     vec3 outlineColor = vec3(1.0, 1.0, 1.0);
     #ifdef DEPTH_CUE_OUTLINE_COLOR
-    outlineColor = mix(outlineColor, baseColor.rgb, max(depthCueFactorFocus, depthCueFactorDistance));
+    outlineColor = mix(outlineColor, baseColor.rgb, clamp(max(depthCueFactorFocus, depthCueFactorDistance), 0.0, 1.0));
     #endif
 
     #ifdef DEPTH_CUE_LINE_WIDTH
