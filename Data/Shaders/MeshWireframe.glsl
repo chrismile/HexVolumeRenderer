@@ -141,7 +141,7 @@ void main()
         #else //#elif defined(LINE_RENDERING_STYLE_SINGLE_COLOR)
         vec4 color = flatShadingWireframeSingleColor(lineBaseColor, fragmentDepth, lineCoordinates);
         #endif
-        float expOpacityFactorFocus = exp(-4.0 * (fragmentDepth - 0.2) * discreteLodValue / lineWidth * 0.001) + 0.1;
+        float expOpacityFactorFocus = exp(-4.0 * (fragmentDepth - 0.2) * discreteLodValue / lineWidth * 0.001) + 0.4;
         color.a *= clamp(expOpacityFactorFocus, 0.0, 1.0);
         color.a *= getClearViewFocusFragmentOpacityFactor();
 
@@ -151,10 +151,7 @@ void main()
 
     float distanceToFocusRing = length(fragmentPositionWorld - sphereCenter) - sphereRadius;
     float expFactor = exp(-3.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.1)) * discreteLodValue);
-    //float expFactor = exp(-6.0 * fragmentDepth * 4.0 * lodLineValue);
-    //float boostFactor = clamp(2.0 * expFactor + 1.0, 1.0, 1.5);
     float expFactorOpacity = exp(-6.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.1)) * discreteLodValue);
-    //float expFactorOpacity = exp(-6.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValue);
     float boostFactor = clamp(2.5 * expFactorOpacity, 0.0, 2.0);
 
     // Add the context fragment.
@@ -181,8 +178,8 @@ void main()
         }
         #endif
 
+        colorContext.rgb = lineBaseColor.rgb;
         if (isSingularEdge) {
-            colorContext.rgb = lineBaseColor.rgb;
             //colorContext.a *= 0.5;
             #if defined(TOO_MUCH_SINGULAR_EDGE_MODE) || !defined(HIGHLIGHT_SINGULAR_EDGES)
             colorContext.a = clamp(colorContext.a * max(boostFactor, 1.0), 0.0, 1.0);
@@ -190,21 +187,13 @@ void main()
             colorContext.a = max(colorContext.a * max(boostFactor, 1.0), 0.5);
             #endif
         } else {
-            //float boostFactor = clamp(0.2 / fragmentDepth + 1.0, 1.0, 1.5);
-            ///colorContext.rgb = vec3(0.0, 0.7, 1.0);
             colorContext.rgb = mix(colorContext.rgb, vec3(1.0, 1.0, 1.0), 0.3);
-            //colorContext.a *= 0.1;
-            //colorContext.a = clamp(colorContext.a * max(boostFactor, 0.0), 0.0, 1.0);
-            colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
+            if (boostFactor >= 1.0) {
+                colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
+            } else {
+                colorContext.rgb = mix(fragmentColor.rgb, colorContext.rgb, boostFactor);
+            }
         }
-
-        #ifdef HIGHLIGHT_LOW_LOD_EDGES
-        /*if (discreteLodValue <= 1.001) {
-            colorContext.a = max(colorContext.a, 0.2 * boostFactor);
-        } else if (true) {
-            colorContext.a = max(colorContext.a, 0.05 * boostFactor / discreteLodValue);
-        }*/
-        #endif
     }
     #endif
     colorContext.a *= getClearViewContextFragmentOpacityFactor();
