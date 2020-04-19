@@ -109,7 +109,7 @@ protected:
     sgl::TexturePtr imageTextureLoG;
     sgl::TexturePtr depthStencilTextureLoG;
     sgl::TexturePtr weightTextureLoG;
-    glm::ivec2 weightTextureSize = glm::ivec2(3, 3);
+    glm::ivec2 weightTextureSize = glm::ivec2(5, 5);
     const float rhoLoG = 1.0f;
 
     // GUI data.

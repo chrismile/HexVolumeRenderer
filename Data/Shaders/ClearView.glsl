@@ -55,15 +55,8 @@ float getClearViewFocusFragmentOpacityFactor() {
     // Add opacity multiplication factor for fragments in front of or in focus region.
     float opacityFactor = 0.0f;
     if (intersectsSphere && fragmentInSphere) {
-        // Intersect view ray with plane parallel to camera looking direction containing the sphere center.
-        /*vec3 negativeLookingDirection = -lookingDirection; // Assuming right-handed coordinate system.
-        vec3 projectedPoint;
-        rayPlaneIntersection(rayOrigin, rayDirection, sphereCenter, negativeLookingDirection, projectedPoint);
-        float sphereDistance = length(projectedPoint - sphereCenter) / sphereRadius;
-        opacityFactor = 1.0 - sphereDistance*sphereDistance; // linear decrease
-        */
         float sphereDistance = length(fragmentPositionWorld - sphereCenter) / sphereRadius;
-        opacityFactor = 1.0 - pow(sphereDistance, 10.0); // linear decrease
+        opacityFactor = 1.0;// - pow(sphereDistance, 10.0); // linear decrease
     }
 
     return opacityFactor;

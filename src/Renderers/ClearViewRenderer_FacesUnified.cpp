@@ -216,7 +216,26 @@ void ClearViewRenderer_FacesUnified::createWeightTextureLoG() {
             int y = iy - weightTextureSize.y / 2;
             // https://homepages.inf.ed.ac.uk/rbf/HIPR2/log.htm
             float term3 = (x*x + y*y) * FACTOR_2;
-            textureData[ix + iy*weightTextureSize.x] = 100.0f * FACTOR_1 * (1.0f + term3) * std::exp(term3);
+            textureData[ix + iy*weightTextureSize.x] = FACTOR_1 * (1.0f + term3) * std::exp(term3);
+        }
+    }
+    // Normalize the kernel weights.
+    const int numEntries = weightTextureSize.x * weightTextureSize.y;
+    float positiveEntriesAbsoluteSum = 0.0f, negativeEntriesAbsoluteSum = 0.0f;
+    for (int i = 0; i < numEntries; i++) {
+        float entry = textureData[i];
+        if (entry >= 0.0f) {
+            positiveEntriesAbsoluteSum += entry;
+        } else {
+            negativeEntriesAbsoluteSum += -entry;
+        }
+    }
+    for (int i = 0; i < numEntries; i++) {
+        float entry = textureData[i];
+        if (entry >= 0.0f) {
+            textureData[i] /= positiveEntriesAbsoluteSum;
+        } else {
+            textureData[i] /= negativeEntriesAbsoluteSum;
         }
     }
     for (int iy = 0; iy < weightTextureSize.y; iy++) {
@@ -224,11 +243,6 @@ void ClearViewRenderer_FacesUnified::createWeightTextureLoG() {
             std::cout << textureData[ix + iy*weightTextureSize.x] << "\t";
         }
         std::cout << std::endl;
-    }
-    // Normalize the kernel weights.
-    const int numEntries = weightTextureSize.x + weightTextureSize.y;
-    for (int i = 0; i < numEntries; i++) {
-        //TODO
     }
     sgl::TextureSettings textureSettings;
     textureSettings.pixelType = GL_FLOAT;
@@ -542,12 +556,9 @@ void ClearViewRenderer_FacesUnified::childClassRenderGui() {
         if (outlineMode != OUTLINE_MODE_NONE) {
             if (outlineMode == OUTLINE_MODE_DEPTH) {
                 shaderAttributesLoG = shaderAttributesLoG->copy(depthTextureShaderLoG);
-                weightTextureSize = glm::ivec2(3, 3);
             } else if (outlineMode == OUTLINE_MODE_STENCIL) {
                 shaderAttributesLoG = shaderAttributesLoG->copy(colorTextureShaderLoG);
-                weightTextureSize = glm::ivec2(5, 5);
             }
-            createWeightTextureLoG();
             reloadTexturesLoG();
             reloadModelLoG();
         }
