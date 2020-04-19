@@ -63,6 +63,8 @@ public:
 protected:
     void createSingularEdgeColorLookupTexture();
     void createWeightTextureLoG();
+    void reloadTexturesLoG();
+    void reloadModelLoG();
     void setUniformData();
     void clear();
     void gather();
@@ -97,19 +99,31 @@ protected:
 
     // Rendering data for the LoG (Laplacian of Gaussian).
     sgl::ShaderProgramPtr shaderFullScreenBlitLoG;
-    sgl::ShaderProgramPtr laplacianOfGaussianShader;
+    sgl::ShaderProgramPtr colorTextureShaderLoG;
+    sgl::ShaderProgramPtr depthTextureShaderLoG;
+    sgl::ShaderProgramPtr meshShaderLoG;
+    sgl::ShaderAttributesPtr meshShaderAttributesLoG;
     sgl::ShaderAttributesPtr shaderAttributesFullScreenBlitLoG;
     sgl::ShaderAttributesPtr shaderAttributesLoG;
     sgl::FramebufferObjectPtr framebufferLoG;
     sgl::TexturePtr imageTextureLoG;
+    sgl::TexturePtr depthStencilTextureLoG;
     sgl::TexturePtr weightTextureLoG;
-    const glm::ivec2 weightTextureSize = glm::ivec2(5, 5);
-    const float rhoLoG = 1.4f;
+    glm::ivec2 weightTextureSize = glm::ivec2(3, 3);
+    const float rhoLoG = 1.0f;
 
     // GUI data.
+    enum OutlineMode {
+        OUTLINE_MODE_NONE, OUTLINE_MODE_DEPTH, OUTLINE_MODE_STENCIL
+    };
+    const char *const OUTLINE_MODE_NAMES[3] = {
+            "None", "Depth", "Stencil"
+    };
+    const int NUM_OUTLINE_MODES = ((int)(sizeof(OUTLINE_MODE_NAMES) / sizeof(*OUTLINE_MODE_NAMES)));
     bool highlightEdges = true;
     bool highlightLowLodEdges = true;
     bool highlightSingularEdges = true;
+    OutlineMode outlineMode = OUTLINE_MODE_DEPTH;
 };
 
 #endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_FACESUNIFIED_HPP

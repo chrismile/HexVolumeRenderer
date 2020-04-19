@@ -211,6 +211,12 @@ public:
             std::vector<glm::vec3>& vertexNormals,
             std::vector<float>& vertexAttributes);
     /**
+     * Get the triangle data of the boundary surface of the hexahedral mesh.
+     */
+    void getSurfaceData(
+            std::vector<uint32_t>& triangleIndices,
+            std::vector<glm::vec3>& vertexPositions);
+    /**
      * Get the wireframe data of the boundary surface of the hexahedral mesh.
      */
     void getWireframeData(

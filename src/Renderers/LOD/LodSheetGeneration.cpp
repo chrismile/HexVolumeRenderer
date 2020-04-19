@@ -52,7 +52,7 @@ void set_union(const std::unordered_set<T>& set0, const std::unordered_set<T>& s
 }
 
 /*
- * If this define is uncommented, the matching weights will be used for merging LODs instead of the cell count after
+ * If this define is uncommented, the matching weights will be used for merging LoDs instead of the cell count after
  * merging.
  */
 //#define LOD_USE_WEIGHTS_FOR_MERGING
@@ -74,7 +74,8 @@ void generateSheetLevelOfDetailEdgeStructure(
     std::unordered_set<uint32_t>& singularEdgeIds = hexMesh->getSingularEdgeIds();
 
     // Don't highlight singular edges when we have far too many of them.
-    bool tooMuchSingularEdgeMode = hexMesh->getNumberOfSingularEdges(true, 1) > 10000u;
+    size_t numValenceOneBoundaryEdges = hexMesh->getNumberOfSingularEdges(true, 1);
+    bool tooMuchSingularEdgeMode = numValenceOneBoundaryEdges > 10000u;
 
     // First, extract all hexahedral sheets from the mesh.
     std::vector<HexahedralSheet> hexahedralSheets;
@@ -101,18 +102,18 @@ void generateSheetLevelOfDetailEdgeStructure(
         connectionDataSet.insert(componentConnectionData);
     }
 
-    // This array represents a map storing for each line the LOD level where it was marked as last visible.
+    // This array represents a map storing for each line the LoD level where it was marked as last visible.
     std::vector<int> lodEdgeVisibilityMap;
     lodEdgeVisibilityMap.resize(mesh.Es.size(), 0);
 
-    // Data for merging similar merges into one LOD level. If 'mergeLodLevels' is set to false, each merge gets its own
-    // LOD level, i.e., LOD level @see iterationNumber.
+    // Data for merging similar merges into one LoD level. If 'mergeLodLevels' is set to false, each merge gets its own
+    // LoD level, i.e., LoD level @see iterationNumber.
     bool mergeLodLevels = true;
     int lodLevel = 0;
     float lodLevelFirstMergingWeight = FLT_MAX;
     float lodLevelFirstCellVolumeSumAfterMerging = 0.0f;
     int lodLevelFirstNumCellsAfterMerging = 0;
-    // For creating a discrete LOD when switching from merging adjacent to hybrid or intersecting sheet components.
+    // For creating a discrete LoD when switching from merging adjacent to hybrid or intersecting sheet components.
     bool justSwitchedToIntersectingOrHybridComponentMerging = false;
     bool switchedToIntersectingOrHybridComponentMerging = false;
 
@@ -132,11 +133,11 @@ void generateSheetLevelOfDetailEdgeStructure(
         std::vector<SheetComponent*> mergedComponents;
         mergedComponents.reserve(components.size() - 1);
 
-        // Find the LOD with the best merging weight.
+        // Find the LoD with the best merging weight.
         ComponentConnectionData bestMatchingComponentConnectionData = *connectionDataSet.begin();
         connectionDataSet.erase(connectionDataSet.begin());
 
-        // For creating a discrete LOD when switching from merging adjacent to hybrid or intersecting sheet components.
+        // For creating a discrete LoD when switching from merging adjacent to hybrid or intersecting sheet components.
         if (bestMatchingComponentConnectionData.componentConnectionType == ComponentConnectionType::INTERSECTING
                 || bestMatchingComponentConnectionData.componentConnectionType == ComponentConnectionType::HYBRID) {
             if (!switchedToIntersectingOrHybridComponentMerging) {
@@ -186,8 +187,8 @@ void generateSheetLevelOfDetailEdgeStructure(
             }
         }
 
-        // If merging LOD levels is active, compute whether we need to start a new LOD. Otherwise use the current
-        // iteration number as the LOD level.
+        // If merging LoD levels is active, compute whether we need to start a new LoD. Otherwise use the current
+        // iteration number as the LoD level.
         if (mergeLodLevels) {
             if (useWeightsForMerging) {
                 if (bestMatchingComponentConnectionData.weight <= lodLevelFirstMergingWeight / lodMergeFactor) {
@@ -225,7 +226,7 @@ void generateSheetLevelOfDetailEdgeStructure(
             lodLevel = iterationNumber;
         }
 
-        // Mark all edges that vanished from this LOD.
+        // Mark all edges that vanished from this LoD.
         for (uint32_t e_id : vanishedEdgeIds) {
             bool isSingular = singularEdgeIds.find(e_id) != singularEdgeIds.end();
             if (isSingular && !tooMuchSingularEdgeMode) {
@@ -345,13 +346,12 @@ void generateSheetLevelOfDetailEdgeStructure(
         }
     }
 
-    // We want to normalize the LOD values to the range [0, 1]. First, compute the maximum value.
+    // We want to normalize the LoD values to the range [0, 1]. First, compute the maximum value.
     int maxValueInt = 1;
     #pragma omp parallel for reduction(max: maxValueInt) default(none) shared(lodEdgeVisibilityMap)
     for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
         maxValueInt = std::max(maxValueInt, lodEdgeVisibilityMap.at(i));
     }
-    float maxValue = float(maxValueInt);
     if (maxValueIntPtr) {
         *maxValueIntPtr = maxValueInt;
     }
@@ -363,6 +363,23 @@ void generateSheetLevelOfDetailEdgeStructure(
         }
     }
 
+    if (!tooMuchSingularEdgeMode && numValenceOneBoundaryEdges > 0
+            && singularEdgeIds.size() > numValenceOneBoundaryEdges) {
+        // Add a final LoD where only valence 1 edges are shown.
+        for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
+            if (lodEdgeVisibilityMap.at(i) == 0 || singularEdgeIds.find(i) != singularEdgeIds.end()) {
+                size_t valence = mesh.Es.at(i).neighbor_hs.size();
+                if (valence != 1u) {
+                    lodEdgeVisibilityMap.at(i)++;
+                }
+            } else {
+                lodEdgeVisibilityMap.at(i)++;
+            }
+        }
+        maxValueInt++;
+    }
+
+    float maxValue = float(maxValueInt);
     for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
         edgeLodValues.push_back(lodEdgeVisibilityMap.at(i) / maxValue);
     }

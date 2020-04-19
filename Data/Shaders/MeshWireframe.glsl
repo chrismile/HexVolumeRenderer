@@ -126,22 +126,11 @@ void main()
     float lodLineValue = edgeLodValues[minDistanceIndex];
     float discreteLodValue = lodLineValue * maxLodValue;
     float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
-    float distanceToFocusRing = length(fragmentPositionWorld - sphereCenter) - sphereRadius;
-    float expFactor = exp(-3.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValue);
-    //float expFactor = exp(-6.0 * fragmentDepth * 4.0 * lodLineValue);
-    //float boostFactor = clamp(2.0 * expFactor + 1.0, 1.0, 1.5);
-    float expFactorOpacity = exp(-6.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValue);
-    float boostFactor = clamp(2.5 * expFactorOpacity, 0.0, 2.0);
 
     const float CUTOFF_EPSILON = 0.05;
 
     vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
-    /*float lineWidthPrime = lineWidth * expFactor;
-    if (expFactor < 0.2) {
-        lineWidthPrime = mix(lineWidthPrime, 1e-8, smoothstep(0.2, 0.2 + CUTOFF_EPSILON, expFactor));
-    }*/
-    float lineWidthPrime = lineWidth;
-    float lineCoordinates = max(minDistance / lineWidthPrime * 2.0, 0.0);
+    float lineCoordinates = max(minDistance / lineWidth * 2.0, 0.0);
     if (lineCoordinates <= 1.0) {
         // Focus wireframe
         float fragmentDepth;
@@ -153,17 +142,26 @@ void main()
         vec4 color = flatShadingWireframeSingleColor(lineBaseColor, fragmentDepth, lineCoordinates);
         #endif
         color.a *= getClearViewFocusFragmentOpacityFactor();
+        float expOpacityFactorFocus = exp(-4.0 * (fragmentDepth - 0.2) * discreteLodValue / lineWidth * 0.001) + 0.1;
+        color.a *= clamp(expOpacityFactorFocus, 0.0, 1.0);
 
         fragmentDepth += 0.00001;
         gatherFragmentCustomDepth(color, fragmentDepth);
     }
+
+    float distanceToFocusRing = length(fragmentPositionWorld - sphereCenter) - sphereRadius;
+    float expFactor = exp(-3.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValue);
+    //float expFactor = exp(-6.0 * fragmentDepth * 4.0 * lodLineValue);
+    //float boostFactor = clamp(2.0 * expFactor + 1.0, 1.0, 1.5);
+    float expFactorOpacity = exp(-6.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValue);
+    float boostFactor = clamp(2.5 * expFactorOpacity, 0.0, 2.0);
 
     // Add the context fragment.
     vec4 colorContext = fragmentColor;
     bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
     const float EPSILON = 1e-5;
     float lineWidthFactor;
-    lineWidthPrime = lineWidth * (
+    float lineWidthPrime = lineWidth * (
     #if defined(HIGHLIGHT_SINGULAR_EDGES)
         isSingularEdge ? 1.0 :
     #endif
@@ -176,7 +174,7 @@ void main()
     if (lineCoordinatesContext <= 1.0) {
         #ifdef HIGHLIGHT_LOW_LOD_EDGES
         if (discreteLodValue <= 1.001) {
-            colorContext.a = max(colorContext.a, 0.2);
+            colorContext.a = max(colorContext.a, 0.5);
         } else if (true) {
             colorContext.a = max(colorContext.a, 0.05 / discreteLodValue);
         }

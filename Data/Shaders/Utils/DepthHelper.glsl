@@ -15,6 +15,7 @@
  * Can be validated with: https://stackoverflow.com/questions/11277501/how-to-recover-view-space-position-given-view-space-depth-value-and-ndc-xy/46118945#46118945
  * (the answer also contains infos to convert NDC to eye position).
  */
+#ifdef DEPTH_HELPER_USE_PROJECTION_MATRIX
 float convertDepthBufferValueToLinearDepth(float depth) {
     // The depth buffer stores values in [0,1], but OpenGL uses [-1,1] for NDC.
     float z_ndc = 2.0 * depth - 1.0;
@@ -29,17 +30,20 @@ float convertLinearDepthToDepthBufferValue(float z_eye) {
     return depth;
 }
 
+#else
 
-/*float convertDepthBufferToLinearDepth(float depth) {
+float convertDepthBufferValueToLinearDepth(float depth) {
     // The depth buffer stores values in [0,1], but OpenGL uses [-1,1] for NDC.
     float z_ndc = 2.0 * depth - 1.0;
     float z_eye = 2.0 * zNear * zFar / (zFar + zNear - z_ndc * (zFar - zNear));
     return z_eye;
 }
 
-float convertLinearToDepthBufferDepth(float z_eye) {
+float convertLinearDepthToDepthBufferValue(float z_eye) {
     float z_ndc = (-2.0 * zNear * zFar + z_eye * (zNear + zFar)) / z_eye;
     // The depth buffer stores values in [0,1], but OpenGL uses [-1,1] for NDC.
     float depth = (z_ndc + 1.0) / 2.0;
     return depth;
-}*/
+}
+
+#endif

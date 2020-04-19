@@ -641,6 +641,77 @@ void HexMesh::getSurfaceData(
     vertexAttributes = hexaLabApp->get_visible_model()->surface_vert_attribute;
 }
 
+void HexMesh::getSurfaceData(
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<glm::vec3>& vertexPositions) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    // Compute all edge attributes.
+    std::vector<float> edgeAttributes(mesh->Es.size());
+    for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
+        float edgeAttribute = interpolateCellAttributePerEdge(e_id, cellVolumes);
+        edgeAttributes.at(e_id) = edgeAttribute;
+    }
+
+    size_t indexOffset = 0;
+    for (size_t i = 0; i < mesh->Hs.size(); i++) {
+        Hybrid& h = mesh->Hs.at(i);
+        for (size_t j = 0; j < h.fs.size(); j++) {
+            Hybrid_F& f = mesh->Fs.at(h.fs.at(j));
+            if (!f.boundary) {
+                continue;
+            }
+            if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+                return hexaLabApp->is_cell_marked(h_id);
+            })) {
+                continue;
+            }
+
+            assert(f.neighbor_hs.size() >= 1 && f.neighbor_hs.size() <= 2);
+            bool invertWinding = f.neighbor_hs.at(0) != h.id;
+
+            assert(f.vs.size() == 4);
+            for (size_t j = 0; j < 4; j++) {
+                uint32_t v_id = f.vs.at(j);
+                glm::vec4 vertexPosition(
+                        mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
+                vertexPositions.push_back(vertexPosition);
+            }
+
+            if (!invertWinding) {
+                /**
+                 * vertex 1     edge 1    vertex 2
+                 *          | - - - - - |
+                 *          | \         |
+                 *          |   \       |
+                 *   edge 0 |     \     | edge 2
+                 *          |       \   |
+                 *          |         \ |
+                 *          | - - - - - |
+                 * vertex 0     edge 3    vertex 3
+                 */
+                triangleIndices.push_back(indexOffset + 0);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 2);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 3);
+            }
+            if (invertWinding) {
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 0);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 2);
+            }
+
+            indexOffset += 4;
+        }
+    }
+}
+
 void HexMesh::getWireframeData(
         std::vector<glm::vec3>& lineVertices,
         std::vector<glm::vec4>& lineColors) {
@@ -2122,9 +2193,6 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
             for (size_t j = 0; j < 4; j++) {
                 uint32_t e_id = f.es.at(j);
                 Hybrid_E& e = mesh->Es.at(e_id);
-                int edgeValence = int(e.neighbor_hs.size());
-                //glm::vec4 vertexColor = edgeColorMap(singularEdgeIds.find(e_id) != singularEdgeIds.end(), e.boundary, edgeValence);
-                //hexahedralCellFace.lineColors[j] = vertexColor;
                 hexahedralCellFace.edgeAttributes[j] = edgeAttributes.at(e_id);
                 hexahedralCellFace.edgeLodValues[j] = edgeLodValues.at(e_id);
                 hexahedralCellFace.edgeSingularityInformationList[j] = packEdgeSingularityInformation(e_id);
@@ -2208,9 +2276,6 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         for (size_t j = 0; j < 4; j++) {
             uint32_t e_id = f.es.at(j);
             Hybrid_E& e = mesh->Es.at(e_id);
-            int edgeValence = int(e.neighbor_hs.size());
-            //glm::vec4 vertexColor = edgeColorMap(singularEdgeIds.find(e_id) != singularEdgeIds.end(), e.boundary, edgeValence);
-            //hexahedralCellFace.lineColors[j] = vertexColor;
             hexahedralCellFace.edgeAttributes[j] = edgeAttributes.at(e_id);
             hexahedralCellFace.edgeLodValues[j] = edgeLodValues.at(e_id);
             hexahedralCellFace.edgeSingularityInformationList[j] = packEdgeSingularityInformation(e_id);

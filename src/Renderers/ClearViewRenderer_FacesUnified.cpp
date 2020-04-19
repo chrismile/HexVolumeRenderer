@@ -82,8 +82,12 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
             {"LinkedListClear.Vertex", "LinkedListClear.Fragment"});
     shaderFullScreenBlitLoG = sgl::ShaderManager->getShaderProgram(
             {"Mesh.Vertex.Plain", "Mesh.Fragment.Plain"});
-    laplacianOfGaussianShader = sgl::ShaderManager->getShaderProgram(
-            {"LaplacianOfGaussian.Vertex", "LaplacianOfGaussian.Fragment"});
+    colorTextureShaderLoG = sgl::ShaderManager->getShaderProgram(
+            {"LaplacianOfGaussian.Vertex", "LaplacianOfGaussian.Fragment.ColorTexture"});
+    depthTextureShaderLoG = sgl::ShaderManager->getShaderProgram(
+            {"LaplacianOfGaussian.Vertex", "LaplacianOfGaussian.Fragment.DepthTexture"});
+    meshShaderLoG = sgl::ShaderManager->getShaderProgram(
+            {"Mesh.Vertex.Plain", "Mesh.Fragment.Plain"});
 
     // Create blitting data (fullscreen rectangle in normalized device coordinates).
     blitRenderData = sgl::ShaderManager->createShaderAttributes(resolveShader);
@@ -104,7 +108,11 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
     shaderAttributesFullScreenBlitLoG->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
-    shaderAttributesLoG = sgl::ShaderManager->createShaderAttributes(laplacianOfGaussianShader);
+    if (outlineMode == OUTLINE_MODE_DEPTH) {
+        shaderAttributesLoG = sgl::ShaderManager->createShaderAttributes(depthTextureShaderLoG);
+    } else if (outlineMode == OUTLINE_MODE_STENCIL) {
+        shaderAttributesLoG = sgl::ShaderManager->createShaderAttributes(colorTextureShaderLoG);
+    }
     shaderAttributesLoG->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
@@ -112,6 +120,68 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
     createWeightTextureLoG();
 
     onResolutionChanged();
+}
+
+void ClearViewRenderer_FacesUnified::reloadTexturesLoG() {
+    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    int width = window->getWidth();
+    int height = window->getHeight();
+
+    // Create the data for the LoG convolution.
+    if (outlineMode == OUTLINE_MODE_DEPTH) {
+        framebufferLoG = sgl::Renderer->createFBO();
+        sgl::TextureSettings textureSettings;
+        /*if (useLinearRGB) {
+            textureSettings.internalFormat = GL_RGBA16;
+        } else {*/
+        textureSettings.internalFormat = GL_RGBA8;
+        //}
+        textureSettings.pixelType = GL_UNSIGNED_BYTE;
+        textureSettings.pixelFormat = GL_RGB;
+        imageTextureLoG = sgl::TextureManager->createEmptyTexture(width, height, textureSettings);
+        framebufferLoG->bindTexture(sceneData.sceneTexture);
+
+        depthStencilTextureLoG = sgl::TextureManager->createDepthStencilTexture(width, height, sgl::DEPTH24_STENCIL8);
+        depthStencilTextureLoG->setDepthStencilComponentMode(sgl::DEPTH_STENCIL_TEXTURE_MODE_DEPTH_COMPONENT);
+        framebufferLoG->bindTexture(depthStencilTextureLoG, sgl::DEPTH_STENCIL_ATTACHMENT);
+    } else if (outlineMode == OUTLINE_MODE_STENCIL) {
+        framebufferLoG = sgl::Renderer->createFBO();
+        sgl::TextureSettings textureSettings;
+        /*if (useLinearRGB) {
+            textureSettings.internalFormat = GL_RGBA16;
+        } else {*/
+        textureSettings.internalFormat = GL_RGBA8;
+        //}
+        textureSettings.pixelType = GL_UNSIGNED_BYTE;
+        textureSettings.pixelFormat = GL_RGB;
+        imageTextureLoG = sgl::TextureManager->createEmptyTexture(width, height, textureSettings);
+        framebufferLoG->bindTexture(imageTextureLoG);
+        framebufferLoG->bindRenderbuffer(sceneData.sceneDepthRBO, sgl::DEPTH_STENCIL_ATTACHMENT);
+    }
+}
+
+void ClearViewRenderer_FacesUnified::reloadModelLoG() {
+    if (!mesh) {
+        return;
+    }
+
+    std::vector<uint32_t> triangleIndices;
+    std::vector<glm::vec3> vertexPositions;
+    mesh->getSurfaceData(triangleIndices, vertexPositions);
+
+    meshShaderAttributesLoG = sgl::ShaderManager->createShaderAttributes(meshShaderLoG);
+    meshShaderAttributesLoG->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
+
+    // Add the index buffer.
+    sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
+            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
+    meshShaderAttributesLoG->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
+
+    // Add the position buffer.
+    sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
+            vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
+    meshShaderAttributesLoG->addGeometryBuffer(
+            positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 }
 
 void ClearViewRenderer_FacesUnified::createSingularEdgeColorLookupTexture() {
@@ -250,6 +320,7 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
             hexahedralCellFaces.size()*sizeof(HexahedralCellFaceUnified), (void*)&hexahedralCellFaces.front(),
             sgl::SHADER_STORAGE_BUFFER);
 
+    reloadModelLoG();
 
     dirty = false;
     reRender = true;
@@ -278,19 +349,7 @@ void ClearViewRenderer_FacesUnified::onResolutionChanged() {
     atomicCounterBuffer = sgl::Renderer->createGeometryBuffer(
             sizeof(uint32_t), NULL, sgl::ATOMIC_COUNTER_BUFFER);
 
-    // Create the data for the LoG.
-    framebufferLoG = sgl::Renderer->createFBO();
-    sgl::TextureSettings textureSettings;
-    /*if (useLinearRGB) {
-        textureSettings.internalFormat = GL_RGBA16;
-    } else {*/
-    textureSettings.internalFormat = GL_RGBA8;
-    //}
-    textureSettings.pixelType = GL_UNSIGNED_BYTE;
-    textureSettings.pixelFormat = GL_RGB;
-    imageTextureLoG = sgl::TextureManager->createEmptyTexture(width, height, textureSettings);
-    framebufferLoG->bindTexture(imageTextureLoG);
-    framebufferLoG->bindRenderbuffer(sceneData.sceneDepthRBO, sgl::DEPTH_STENCIL_ATTACHMENT);
+    reloadTexturesLoG();
 }
 
 void ClearViewRenderer_FacesUnified::setUniformData() {
@@ -332,30 +391,29 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     clearShader->setUniform("viewportW", width);
 
     shaderFullScreenBlitLoG->setUniform("color", sgl::Color(255, 255, 255));
-    laplacianOfGaussianShader->setUniform("clearColor", sceneData.clearColor);
-    laplacianOfGaussianShader->setUniform("imageTexture", imageTextureLoG, 2);
-    laplacianOfGaussianShader->setUniform("weightTexture", weightTextureLoG, 3);
-    laplacianOfGaussianShader->setUniform("imageTextureSize", glm::ivec2(width, height));
-    laplacianOfGaussianShader->setUniform(
+    shaderAttributesLoG->getShaderProgram()->setUniform("clearColor", sceneData.clearColor);
+    if (shaderAttributesLoG->getShaderProgram()->hasUniform("weightTexture")) {
+        shaderAttributesLoG->getShaderProgram()->setUniform("weightTexture", weightTextureLoG, 3);
+    }
+    shaderAttributesLoG->getShaderProgram()->setUniform(
             "weightTextureSize", glm::ivec2(weightTextureSize.x, weightTextureSize.y));
-}
-
-void ClearViewRenderer_FacesUnified::renderLaplacianOfGaussianContours() {
-    sgl::Renderer->bindFBO(framebufferLoG);
-    sgl::Renderer->clearFramebuffer(GL_COLOR_BUFFER_BIT, sgl::Color(0, 0, 0));
-    sgl::Renderer->render(shaderAttributesFullScreenBlitLoG);
-
-    glDisable(GL_STENCIL_TEST);
-    sgl::Renderer->bindFBO(sceneData.framebuffer);
-    sgl::Renderer->render(shaderAttributesLoG);
-    glEnable(GL_STENCIL_TEST);
+    if (outlineMode == OUTLINE_MODE_DEPTH) {
+        depthTextureShaderLoG->setUniform("depthTexture", depthStencilTextureLoG, 2);
+        depthTextureShaderLoG->setUniform("depthTextureSize", glm::ivec2(width, height));
+        depthTextureShaderLoG->setUniform("zNear", sceneData.camera->getNearClipDistance());
+        depthTextureShaderLoG->setUniform("zFar", sceneData.camera->getFarClipDistance());
+    } else if (outlineMode == OUTLINE_MODE_STENCIL) {
+        colorTextureShaderLoG->setUniform("imageTexture", imageTextureLoG, 2);
+        colorTextureShaderLoG->setUniform("imageTextureSize", glm::ivec2(width, height));
+    }
 }
 
 void ClearViewRenderer_FacesUnified::clear() {
+    glDepthMask(GL_FALSE);
+
     //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // In the clear and gather pass, we just want to write data to an SSBO.
-    glDepthMask(GL_FALSE);
     glDisable(GL_DEPTH_TEST);
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
@@ -375,7 +433,6 @@ void ClearViewRenderer_FacesUnified::gather() {
     // Enable the depth test, but disable depth write for gathering.
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-    glDepthMask(GL_FALSE);
 
     // We can use the stencil buffer to mask used pixels for the resolve pass.
     if (useStencilBuffer) {
@@ -408,6 +465,40 @@ void ClearViewRenderer_FacesUnified::gather() {
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
+void ClearViewRenderer_FacesUnified::renderLaplacianOfGaussianContours() {
+    if (outlineMode == OUTLINE_MODE_DEPTH) {
+        sgl::Renderer->setProjectionMatrix(sceneData.camera->getProjectionMatrix());
+        sgl::Renderer->setViewMatrix(sceneData.camera->getViewMatrix());
+        sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
+        sgl::Renderer->bindFBO(framebufferLoG);
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glDisable(GL_STENCIL_TEST);
+        glDepthMask(GL_TRUE);
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        sgl::Renderer->clearFramebuffer(GL_DEPTH_BUFFER_BIT);
+        sgl::Renderer->render(meshShaderAttributesLoG);
+
+        sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
+        sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
+        sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        glEnable(GL_CULL_FACE);
+        sgl::Renderer->bindFBO(sceneData.framebuffer);
+        sgl::Renderer->render(shaderAttributesLoG);
+        glDisable(GL_DEPTH_TEST);
+    } else if (outlineMode == OUTLINE_MODE_STENCIL) {
+        sgl::Renderer->bindFBO(framebufferLoG);
+        sgl::Renderer->clearFramebuffer(GL_COLOR_BUFFER_BIT, sgl::Color(0, 0, 0));
+        sgl::Renderer->render(shaderAttributesFullScreenBlitLoG);
+
+        glDisable(GL_STENCIL_TEST);
+        sgl::Renderer->bindFBO(sceneData.framebuffer);
+        sgl::Renderer->render(shaderAttributesLoG);
+        glEnable(GL_STENCIL_TEST);
+    }
+}
+
 void ClearViewRenderer_FacesUnified::resolve() {
     sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
     sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
@@ -421,10 +512,10 @@ void ClearViewRenderer_FacesUnified::resolve() {
         glStencilMask(0x00);
     }
 
-    renderLaplacianOfGaussianContours();
-
     sgl::Renderer->render(blitRenderData);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    renderLaplacianOfGaussianContours();
 
     glDisable(GL_STENCIL_TEST);
     glDepthMask(GL_TRUE);
@@ -444,6 +535,22 @@ void ClearViewRenderer_FacesUnified::childClassRenderGui() {
     if (highlightEdges && ImGui::Checkbox("Highlight Singular Edges", &highlightSingularEdges)) {
         reloadGatherShader();
         shaderAttributes = shaderAttributes->copy(gatherShader);
+        reRender = true;
+    }
+    if (ImGui::Combo(
+            "Outline Mode", (int*)&outlineMode, OUTLINE_MODE_NAMES, NUM_OUTLINE_MODES)) {
+        if (outlineMode != OUTLINE_MODE_NONE) {
+            if (outlineMode == OUTLINE_MODE_DEPTH) {
+                shaderAttributesLoG = shaderAttributesLoG->copy(depthTextureShaderLoG);
+                weightTextureSize = glm::ivec2(3, 3);
+            } else if (outlineMode == OUTLINE_MODE_STENCIL) {
+                shaderAttributesLoG = shaderAttributesLoG->copy(colorTextureShaderLoG);
+                weightTextureSize = glm::ivec2(5, 5);
+            }
+            createWeightTextureLoG();
+            reloadTexturesLoG();
+            reloadModelLoG();
+        }
         reRender = true;
     }
     if (ImGui::Button("Reload Shader")) {
