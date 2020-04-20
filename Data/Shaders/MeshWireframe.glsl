@@ -150,8 +150,8 @@ void main()
     }
 
     float distanceToFocusRing = length(fragmentPositionWorld - sphereCenter) - sphereRadius;
-    float expFactor = exp(-3.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.1)) * discreteLodValue);
-    float expFactorOpacity = exp(-6.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.1)) * discreteLodValue);
+    float expFactor = exp(-3.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValue);
+    float expFactorOpacity = exp(-6.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValue);
     float boostFactor = clamp(2.5 * expFactorOpacity, 0.0, 2.0);
 
     // Add the context fragment.
@@ -174,7 +174,7 @@ void main()
         if (discreteLodValue <= 1.001) {
             colorContext.a = max(colorContext.a, 0.5);
         } else if (true) {
-            colorContext.a = max(colorContext.a, 0.1 / discreteLodValue);
+            colorContext.a = max(colorContext.a, 0.5 / discreteLodValue);
         }
         #endif
 

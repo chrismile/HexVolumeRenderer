@@ -26,36 +26,27 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <Utils/File/FileUtils.hpp>
-#include <Utils/AppSettings.hpp>
-#include <Utils/AppLogic.hpp>
-#include <Graphics/Window.hpp>
+#ifndef HEXVOLUMERENDERER_SINGULARITYINFORMATION_HPP
+#define HEXVOLUMERENDERER_SINGULARITYINFORMATION_HPP
 
-#include "MainApp.hpp"
+struct SingularityInformation {
+    bool isBoundary; ///< Do we count edges on the boundary or the interior of the mesh?
+    unsigned int valence; ///< How many cells are incident to this type of edge?
 
-int main(int argc, char *argv[]) {
-    // Initialize the filesystem utilities
-    sgl::FileUtils::get()->initialize("HexVolumeRenderer", argc, argv);
+    SingularityInformation(bool isBoundary, unsigned int valence) : isBoundary(isBoundary), valence(valence) {}
 
-    // Load the file containing the app settings
-    std::string settingsFile = sgl::FileUtils::get()->getConfigDirectory() + "settings.txt";
-    sgl::AppSettings::get()->loadSettings(settingsFile.c_str());
-    sgl::AppSettings::get()->getSettings().addKeyValue("window-multisamples", 0);
-    sgl::AppSettings::get()->getSettings().addKeyValue("window-debugContext", true);
-    sgl::AppSettings::get()->getSettings().addKeyValue("window-vSync", true);
-    sgl::AppSettings::get()->getSettings().addKeyValue("window-resizable", true);
+    bool operator<(const SingularityInformation& rhs) const {
+        if (isBoundary != rhs.isBoundary) {
+            return int(isBoundary) < int(rhs.isBoundary);
+        } else {
+            return valence < rhs.valence;
+        }
+    }
 
-    sgl::AppSettings::get()->setLoadGUI();
+    bool operator==(const SingularityInformation& rhs) const {
+        return isBoundary == rhs.isBoundary && valence == rhs.valence;
+    }
+};
 
-    sgl::Window *window = sgl::AppSettings::get()->createWindow();
-    sgl::AppSettings::get()->initializeSubsystems();
 
-    sgl::AppLogic *app = new MainApp();
-    app->run();
-
-    delete app;
-    sgl::AppSettings::get()->release();
-    delete window;
-
-    return 0;
-}
+#endif //HEXVOLUMERENDERER_SINGULARITYINFORMATION_HPP

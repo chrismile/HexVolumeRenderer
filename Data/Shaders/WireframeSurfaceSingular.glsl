@@ -122,11 +122,17 @@ void main()
         fragmentLodValue = cornerLodValues[minDistancePointsIndex];
         minDistance = minDistancePoints;
     }
+    baseColor = edgeColors[minDistanceLinesIndex];
+    fragmentLodValue = edgeLodValues[minDistanceLinesIndex];
+    minDistance = minDistanceLines;
 
     if (fragmentLodValue > maxLod + LOD_EPSILON) {
         discard;
     }
     float lineWidthPrime = lineWidth * (1.3 * (1.0 - fragmentLodValue) + 0.2);
+    //if (minDistanceLines > minDistancePoints) {
+    //    lineWidthPrime *= 0.0;
+    //}
 
     float lineCoordinates = clamp(minDistance / lineWidthPrime * 2.0, 0.0, 1.0);
     float fragmentDepth;

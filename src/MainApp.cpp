@@ -215,9 +215,9 @@ void MainApp::setRenderers() {
     } else if (renderingMode == RENDERING_MODE_LOD_LINES_PREVIEW) {
         meshRenderers.push_back(new LodLinePreviewRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_LOD_LINES_PREVIEW_SHEETS) {
-        meshRenderers.push_back(new LodLinePreviewRenderer_Sheets(sceneData, transferFunctionWindow));
+        meshRenderers.push_back(new LodLinePreviewRenderer_SheetsFaces(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_SINGULARITY_TYPE_COUNTER) {
-        meshRenderers.push_back(new LodLinePreviewRenderer_Sheets(sceneData, transferFunctionWindow));
+        meshRenderers.push_back(new LodLinePreviewRenderer_SheetsFaces(sceneData, transferFunctionWindow));
         meshRenderers.push_back(new SingularityTypeCounterRenderer(sceneData, transferFunctionWindow));
     }
 }

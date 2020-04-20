@@ -31,6 +31,7 @@
 
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
+#include "Helpers/SingularityInformation.hpp"
 #include "ClearViewRenderer.hpp"
 
 /**
@@ -111,6 +112,9 @@ protected:
     sgl::TexturePtr weightTextureLoG;
     glm::ivec2 weightTextureSize = glm::ivec2(5, 5);
     const float rhoLoG = 1.0f;
+
+    ///< Maps boundary mode and valence to number of occurences.
+    std::map<SingularityInformation, unsigned int> singularEdgeMap;
 
     // GUI data.
     enum OutlineMode {

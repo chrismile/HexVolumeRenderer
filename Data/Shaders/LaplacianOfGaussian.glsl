@@ -36,7 +36,7 @@ void main() {
         }
     }
     fragColor = vec4(vec3(1.0) - clearColor.rgb, smoothstep(0.01, 0.2, color.r) * 0.5);
-    if (fragColor.r < 0.01) {
+    if (fragColor.a < 0.01) {
         discard;
     }
 }
@@ -77,7 +77,7 @@ void main() {
         }
     }
     fragColor = vec4(vec3(1.0) - clearColor.rgb, smoothstep(0.005, 0.006, accumulatedDepth) * 0.5);
-    if (fragColor.r < 0.01) {
+    if (fragColor.a < 0.01) {
         discard;
     }
 }

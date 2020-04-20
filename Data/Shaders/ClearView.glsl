@@ -56,7 +56,7 @@ float getClearViewFocusFragmentOpacityFactor() {
     float opacityFactor = 0.0f;
     if (intersectsSphere && fragmentInSphere) {
         float sphereDistance = length(fragmentPositionWorld - sphereCenter) / sphereRadius;
-        opacityFactor = 1.0;// - pow(sphereDistance, 10.0); // linear decrease
+        opacityFactor = 1.0 - pow(sphereDistance, 10.0); // linear decrease
     }
 
     return opacityFactor;

@@ -41,6 +41,7 @@
 #include "Tubes/Tubes.hpp"
 #include "Helpers/Sphere.hpp"
 #include "Helpers/LineRenderingDefines.hpp"
+#include "BaseComplex/global_types.h"
 #include "ClearViewRenderer_FacesUnified.hpp"
 
 // Use stencil buffer to mask unused pixels
@@ -311,6 +312,22 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
         reloadGatherShader();
     }
 
+    // Get the information about the singularity structure.
+    Mesh& baseComplexMesh = meshIn->getBaseComplexMesh();
+    Singularity& si = meshIn->getBaseComplexMeshSingularity();
+    mesh->getSingularEdgeIds();
+    std::unordered_set<uint32_t> singularEdgeIds = mesh->getSingularEdgeIds();
+    for (uint32_t e_id : singularEdgeIds) {
+        Hybrid_E& e = baseComplexMesh.Es.at(e_id);
+        SingularityInformation singularityInformation(e.boundary, e.neighbor_hs.size());
+        auto it = singularEdgeMap.find(singularityInformation);
+        if (it != singularEdgeMap.end()) {
+            it->second++;
+        } else {
+            singularEdgeMap.insert(std::make_pair(singularityInformation, 1u));
+        }
+    }
+
     // Unload old data.
     shaderAttributes = sgl::ShaderAttributesPtr();
     hexahedralCellFacesBuffer = sgl::GeometryBufferPtr();
@@ -543,17 +560,23 @@ void ClearViewRenderer_FacesUnified::resolve() {
 void ClearViewRenderer_FacesUnified::childClassRenderGui() {
     if (ImGui::Checkbox("Highlight Edges", &highlightEdges)) {
         reloadGatherShader();
-        shaderAttributes = shaderAttributes->copy(gatherShader);
+        if (shaderAttributes) {
+            shaderAttributes = shaderAttributes->copy(gatherShader);
+        }
         reRender = true;
     }
     if (highlightEdges && ImGui::Checkbox("Highlight Low LOD Edges", &highlightLowLodEdges)) {
         reloadGatherShader();
-        shaderAttributes = shaderAttributes->copy(gatherShader);
+        if (shaderAttributes) {
+            shaderAttributes = shaderAttributes->copy(gatherShader);
+        }
         reRender = true;
     }
     if (highlightEdges && ImGui::Checkbox("Highlight Singular Edges", &highlightSingularEdges)) {
         reloadGatherShader();
-        shaderAttributes = shaderAttributes->copy(gatherShader);
+        if (shaderAttributes) {
+            shaderAttributes = shaderAttributes->copy(gatherShader);
+        }
         reRender = true;
     }
     if (ImGui::Combo(
@@ -573,9 +596,38 @@ void ClearViewRenderer_FacesUnified::childClassRenderGui() {
         createSingularEdgeColorLookupTexture();
         reRender = true;
     }
+    if (singularEdgesColorByValence && !singularEdgeMap.empty()) {
+        ImGui::Text("Singularity Information:");
+        ImGui::Columns(4, "ColorMapColumns");
+        ImGui::Separator();
+        ImGui::Text("Location"); ImGui::NextColumn();
+        ImGui::Text("Valence"); ImGui::NextColumn();
+        ImGui::Text("Edge Color"); ImGui::NextColumn();
+        ImGui::Text("Occurrences"); ImGui::NextColumn();
+        ImGui::Separator();
+        const char* names[3] = { "One", "Two", "Three" };
+        const char* paths[3] = { "/path/one", "/path/two", "/path/three" };
+        int i = 0;
+        for (auto& it : singularEdgeMap) {
+            const SingularityInformation& singularityInformation = it.first;
+            ImGui::Text(singularityInformation.isBoundary ? "Boundary" : "Interior"); ImGui::NextColumn();
+            ImGui::Text("%u", singularityInformation.valence); ImGui::NextColumn();
+            glm::vec4 color = mesh->edgeColorMap(
+                    true, singularityInformation.isBoundary, singularityInformation.valence);
+            std::string colorEditId = std::string() + "##color_" + std::to_string(i);
+            ImGui::ColorEdit3(colorEditId.c_str(), &color.x,
+                    ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker); ImGui::NextColumn();
+            ImGui::Text("%u", it.second); ImGui::NextColumn();
+            i++;
+        }
+        ImGui::Columns(1);
+        ImGui::Separator();
+    }
     if (ImGui::Button("Reload Shader")) {
         reloadGatherShader();
-        shaderAttributes = shaderAttributes->copy(gatherShader);
+        if (shaderAttributes) {
+            shaderAttributes = shaderAttributes->copy(gatherShader);
+        }
         reRender = true;
     }
 }
