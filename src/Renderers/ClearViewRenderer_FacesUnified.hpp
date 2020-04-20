@@ -124,6 +124,7 @@ protected:
     bool highlightLowLodEdges = true;
     bool highlightSingularEdges = true;
     OutlineMode outlineMode = OUTLINE_MODE_DEPTH;
+    bool singularEdgesColorByValence = true;
 };
 
 #endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_FACESUNIFIED_HPP

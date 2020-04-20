@@ -190,8 +190,13 @@ void ClearViewRenderer_FacesUnified::createSingularEdgeColorLookupTexture() {
     for (int isBoundary = 0; isBoundary <= 1; isBoundary++) {
         for (int valence = 1; valence <= NUM_VALENCE_LEVELS; valence++) {
             bool isSingular = isBoundary ? valence != 2 : valence != 4;
-            textureData[isBoundary * NUM_VALENCE_LEVELS + valence - 1] =
-                    HexMesh::edgeColorMap(isSingular, isBoundary, valence);
+            if (singularEdgesColorByValence) {
+                textureData[isBoundary * NUM_VALENCE_LEVELS + valence - 1] =
+                        HexMesh::edgeColorMap(isSingular, isBoundary, valence);
+            } else {
+                textureData[isBoundary * NUM_VALENCE_LEVELS + valence - 1] = isSingular
+                        ? glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) : glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            }
         }
     }
 
@@ -562,6 +567,10 @@ void ClearViewRenderer_FacesUnified::childClassRenderGui() {
             reloadTexturesLoG();
             reloadModelLoG();
         }
+        reRender = true;
+    }
+    if (highlightEdges && ImGui::Checkbox("Color Singular Edges by Valence", &singularEdgesColorByValence)) {
+        createSingularEdgeColorLookupTexture();
         reRender = true;
     }
     if (ImGui::Button("Reload Shader")) {
