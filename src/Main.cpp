@@ -45,7 +45,11 @@ int main(int argc, char *argv[]) {
     sgl::AppSettings::get()->getSettings().addKeyValue("window-vSync", true);
     sgl::AppSettings::get()->getSettings().addKeyValue("window-resizable", true);
 
-    sgl::AppSettings::get()->setLoadGUI();
+    ImVector<ImWchar> fontRanges;
+    ImFontGlyphRangesBuilder builder;
+    builder.AddChar(L'\u03BB'); // lambda
+    builder.BuildRanges(&fontRanges);
+    sgl::AppSettings::get()->setLoadGUI(fontRanges.Data);
 
     sgl::Window *window = sgl::AppSettings::get()->createWindow();
     sgl::AppSettings::get()->initializeSubsystems();

@@ -85,6 +85,7 @@
 #include "Renderers/LodLinePreviewRenderer_Sheets.hpp"
 #include "Renderers/LodLinePreviewRenderer_SheetsFaces.hpp"
 #include "Renderers/SingularityTypeCounterRenderer.hpp"
+#include "Renderers/LineDensityControlRenderer.hpp"
 #ifdef USE_EMBREE
 #include "Renderers/Intersection/RayMeshIntersection_Embree.hpp"
 #endif
@@ -219,6 +220,8 @@ void MainApp::setRenderers() {
     } else if (renderingMode == RENDERING_MODE_SINGULARITY_TYPE_COUNTER) {
         meshRenderers.push_back(new LodLinePreviewRenderer_SheetsFaces(sceneData, transferFunctionWindow));
         meshRenderers.push_back(new SingularityTypeCounterRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_LINE_DENSITY_CONTROL) {
+        meshRenderers.push_back(new LineDensityControlRenderer(sceneData, transferFunctionWindow));
     }
 }
 

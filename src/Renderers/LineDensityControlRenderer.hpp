@@ -26,29 +26,23 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_SINGULARITYTYPECOUNTERRENDERER_HPP
-#define HEXVOLUMERENDERER_SINGULARITYTYPECOUNTERRENDERER_HPP
+#ifndef HEXVOLUMERENDERER_LINEDENSITYCONTROLRENDERER_HPP
+#define HEXVOLUMERENDERER_LINEDENSITYCONTROLRENDERER_HPP
 
-#include <map>
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
 #include "HexahedralMeshRenderer.hpp"
 
 /**
- * Renders the hexahedral mesh as a wireframe representation of its edges using its faces.
- *
- * For more details on the base idea see:
- * https://catlikecoding.com/unity/tutorials/advanced-rendering/flat-and-wireframe-shading/
+ * For more details on line density control see: "Line density control in screen-space via balanced line hierarchies",
+ * Mathias Kanzler, Florian Ferstl and Rüdiger Westermann (2016)
+ * Computer Graphics and Visualization Group, Technical University Munich, Germany
+ * https://www.in.tum.de/cg/research/publications/2016/line-density-control-in-screen-space-via-balanced-line-hierarchies/
  */
-class SingularityTypeCounterRenderer : public HexahedralMeshRenderer {
+class LineDensityControlRenderer : public HexahedralMeshRenderer {
 public:
-    /**
-     * @param sceneData A reference to the scene data object.
-     * @param transferFunctionWindow The transfer function editor window.
-     */
-    SingularityTypeCounterRenderer(
-            SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
-    virtual ~SingularityTypeCounterRenderer() {}
+    LineDensityControlRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    virtual ~LineDensityControlRenderer() {}
 
     /**
      * Re-generates the visualization mapping.
@@ -63,12 +57,23 @@ public:
     virtual void renderGui();
 
 protected:
+    HexMeshPtr mesh;
+
+    sgl::ShaderProgramPtr lineShaderProgram;
+    sgl::ShaderAttributesPtr lineShaderAttributes;
+    sgl::GeometryBufferPtr hexahedralCellFacesBuffer;
+
     // GUI data.
     bool showRendererWindow = true;
-    unsigned int numCircleSEs = 0;
-    unsigned int numOpenSEs = 0;
-    std::map<unsigned int, unsigned int> irregularBoundaryEdgeMap; ///< Maps valence to number of occurences.
-    std::map<unsigned int, unsigned int> irregularInnerEdgeMap; ///< Maps valence to number of occurences.
+    float lineWidth = 0.0015f;
+
+    // Scalar weights for computing visibility values rho and visibility parameter lambda.
+    float lambda = 1.0f;
+    float factor_m = 0.25f;
+    float factor_c = 0.25f;
+    float factor_v = 0.25f;
+    float factor_d = 0.25f;
 };
 
-#endif //HEXVOLUMERENDERER_SINGULARITYTYPECOUNTERRENDERER_HPP
+
+#endif //HEXVOLUMERENDERER_LINEDENSITYCONTROLRENDERER_HPP
