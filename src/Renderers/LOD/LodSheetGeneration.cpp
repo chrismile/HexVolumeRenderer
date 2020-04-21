@@ -519,8 +519,6 @@ void generateSheetLevelOfDetailLineStructureAndVertexData(
                 glm::vec4 vertexPosition(
                         mesh.V(0, v_id), mesh.V(1, v_id), mesh.V(2, v_id), 1.0f);
                 hexahedralCellFace.vertexPositions[j] = vertexPosition;
-                hexahedralCellFace.cornerColors[j] = pointColors.at(v_id);
-                hexahedralCellFace.cornerLodValues[j] = pointLods.at(v_id);
             }
 
             if (!invertWinding) {

@@ -31,6 +31,7 @@
 
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
+#include "Widgets/SingularEdgeColorMapWidget.hpp"
 #include "HexahedralMeshRenderer.hpp"
 
 /**
@@ -60,14 +61,17 @@ public:
     virtual void renderGui();
 
 protected:
-    virtual void setUniformData();
-    virtual void clear();
-    virtual void gather();
-    virtual void resolve();
+    void setUniformData();
+    void attributeTextureClear();
+    void attributeTextureGather();
+    void attributeTextureResolve();
+    void attributeTextureBlur();
+    void lineDensityControlRendering();
     HexMeshPtr mesh;
 
     // Rendering data for both the attribute texture creation pass and the line rendering pass.
     sgl::GeometryBufferPtr hexahedralCellFacesBuffer;
+    int maxLodValue = 0;
 
     // Rendering data for rendering the lines to the screen.
     sgl::ShaderProgramPtr lineDensityControlShader;
@@ -87,13 +91,21 @@ protected:
     sgl::ShaderAttributesPtr createAttributeTextureClearRenderData;
 
     // The attribute texture.
+    sgl::FramebufferObjectPtr attributeTextureFramebuffer;
     sgl::TexturePtr attributeTexture;
     float attributeTextureSubsamplingFactor = 0.5f;
     glm::ivec2 attributeTextureResolution;
 
+    // For blurring the attribute texture.
+    sgl::ShaderProgramPtr blurShader;
+    sgl::ShaderAttributesPtr blurRenderData;
+    sgl::FramebufferObjectPtr blurFramebuffer;
+    sgl::TexturePtr tempBlurTexture;
+
     // GUI data.
     bool showRendererWindow = true;
     float lineWidth = 0.0015f;
+    SingularEdgeColorMapWidget singularEdgeColorMapWidget;
 
     // Scalar weights for computing visibility values rho and visibility parameter lambda.
     float lambda = 1.0f;

@@ -43,7 +43,7 @@ void main() {
     // Collect all fragments for this pixel,
     int numFrags = 0;
     LinkedListFragmentNodeAttributeTextures fragmentNode;
-    for (int i = 0; i < MAX_NUM_FRAGS; i++) {
+    for (int i = 0; i < MAX_NUM_FRAGMENTS_COVERAGE; i++) {
         if (fragOffset == -1) {
             // End of list reached.
             break;

@@ -41,7 +41,6 @@
 #include "Tubes/Tubes.hpp"
 #include "Helpers/Sphere.hpp"
 #include "Helpers/LineRenderingDefines.hpp"
-#include "BaseComplex/global_types.h"
 #include "ClearViewRenderer_FacesUnified.hpp"
 
 // Use stencil buffer to mask unused pixels
@@ -117,7 +116,6 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
     shaderAttributesLoG->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
-    createSingularEdgeColorLookupTexture();
     createWeightTextureLoG();
 
     onResolutionChanged();
@@ -183,32 +181,6 @@ void ClearViewRenderer_FacesUnified::reloadModelLoG() {
             vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
     meshShaderAttributesLoG->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
-}
-
-void ClearViewRenderer_FacesUnified::createSingularEdgeColorLookupTexture() {
-    const int NUM_VALENCE_LEVELS = 8; // Handle valence 1 to 8.
-    glm::vec4 textureData[NUM_VALENCE_LEVELS*2];
-    for (int isBoundary = 0; isBoundary <= 1; isBoundary++) {
-        for (int valence = 1; valence <= NUM_VALENCE_LEVELS; valence++) {
-            bool isSingular = isBoundary ? valence != 2 : valence != 4;
-            if (singularEdgesColorByValence) {
-                textureData[isBoundary * NUM_VALENCE_LEVELS + valence - 1] =
-                        HexMesh::edgeColorMap(isSingular, isBoundary, valence);
-            } else {
-                textureData[isBoundary * NUM_VALENCE_LEVELS + valence - 1] = isSingular
-                        ? glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) : glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-            }
-        }
-    }
-
-    sgl::TextureSettings textureSettings;
-    textureSettings.textureMinFilter = GL_NEAREST;
-    textureSettings.textureMagFilter = GL_NEAREST;
-    textureSettings.pixelType = GL_FLOAT;
-    textureSettings.pixelFormat = GL_RGBA;
-    textureSettings.internalFormat = GL_RGBA32F;
-    singularEdgeColorLookupTexture = sgl::TextureManager->createTexture(
-            textureData, NUM_VALENCE_LEVELS, 2, textureSettings);
 }
 
 void ClearViewRenderer_FacesUnified::createWeightTextureLoG() {
@@ -313,20 +285,7 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
     }
 
     // Get the information about the singularity structure.
-    Mesh& baseComplexMesh = meshIn->getBaseComplexMesh();
-    Singularity& si = meshIn->getBaseComplexMeshSingularity();
-    mesh->getSingularEdgeIds();
-    std::unordered_set<uint32_t> singularEdgeIds = mesh->getSingularEdgeIds();
-    for (uint32_t e_id : singularEdgeIds) {
-        Hybrid_E& e = baseComplexMesh.Es.at(e_id);
-        SingularityInformation singularityInformation(e.boundary, e.neighbor_hs.size());
-        auto it = singularEdgeMap.find(singularityInformation);
-        if (it != singularEdgeMap.end()) {
-            it->second++;
-        } else {
-            singularEdgeMap.insert(std::make_pair(singularityInformation, 1u));
-        }
-    }
+    singularEdgeColorMapWidget.generateSingularityStructureInformation(mesh);
 
     // Unload old data.
     shaderAttributes = sgl::ShaderAttributesPtr();
@@ -411,7 +370,8 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     gatherShader->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
     gatherShader->setUniform(
-            "singularEdgeColorLookupTexture", singularEdgeColorLookupTexture, 1);
+            "singularEdgeColorLookupTexture",
+            singularEdgeColorMapWidget.getSingularEdgeColorLookupTexture(), 1);
 
     gatherShader->setUniform("lineWidth", lineWidth);
     if (gatherShader->hasUniform("maxLodValue")) {
@@ -557,6 +517,14 @@ void ClearViewRenderer_FacesUnified::resolve() {
     glDepthMask(GL_TRUE);
 }
 
+void ClearViewRenderer_FacesUnified::renderGui() {
+    ClearViewRenderer::renderGui();
+
+    if (highlightEdges && singularEdgeColorMapWidget.renderGui()) {
+        reRender = true;
+    }
+}
+
 void ClearViewRenderer_FacesUnified::childClassRenderGui() {
     if (ImGui::Checkbox("Highlight Edges", &highlightEdges)) {
         reloadGatherShader();
@@ -591,37 +559,6 @@ void ClearViewRenderer_FacesUnified::childClassRenderGui() {
             reloadModelLoG();
         }
         reRender = true;
-    }
-    if (highlightEdges && ImGui::Checkbox("Color Singular Edges by Valence", &singularEdgesColorByValence)) {
-        createSingularEdgeColorLookupTexture();
-        reRender = true;
-    }
-    if (singularEdgesColorByValence && !singularEdgeMap.empty()) {
-        ImGui::Text("Singularity Information:");
-        ImGui::Columns(4, "ColorMapColumns");
-        ImGui::Separator();
-        ImGui::Text("Location"); ImGui::NextColumn();
-        ImGui::Text("Valence"); ImGui::NextColumn();
-        ImGui::Text("Edge Color"); ImGui::NextColumn();
-        ImGui::Text("Occurrences"); ImGui::NextColumn();
-        ImGui::Separator();
-        const char* names[3] = { "One", "Two", "Three" };
-        const char* paths[3] = { "/path/one", "/path/two", "/path/three" };
-        int i = 0;
-        for (auto& it : singularEdgeMap) {
-            const SingularityInformation& singularityInformation = it.first;
-            ImGui::Text(singularityInformation.isBoundary ? "Boundary" : "Interior"); ImGui::NextColumn();
-            ImGui::Text("%u", singularityInformation.valence); ImGui::NextColumn();
-            glm::vec4 color = mesh->edgeColorMap(
-                    true, singularityInformation.isBoundary, singularityInformation.valence);
-            std::string colorEditId = std::string() + "##color_" + std::to_string(i);
-            ImGui::ColorEdit3(colorEditId.c_str(), &color.x,
-                    ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker); ImGui::NextColumn();
-            ImGui::Text("%u", it.second); ImGui::NextColumn();
-            i++;
-        }
-        ImGui::Columns(1);
-        ImGui::Separator();
     }
     if (ImGui::Button("Reload Shader")) {
         reloadGatherShader();

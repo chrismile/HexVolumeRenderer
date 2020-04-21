@@ -31,7 +31,7 @@
 
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
-#include "Helpers/SingularityInformation.hpp"
+#include "Widgets/SingularEdgeColorMapWidget.hpp"
 #include "ClearViewRenderer.hpp"
 
 /**
@@ -61,8 +61,10 @@ public:
     // Called when the resolution of the application window has changed.
     virtual void onResolutionChanged();
 
+    // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
+    virtual void renderGui();
+
 protected:
-    void createSingularEdgeColorLookupTexture();
     void createWeightTextureLoG();
     void reloadTexturesLoG();
     void reloadModelLoG();
@@ -95,9 +97,6 @@ protected:
     sgl::ShaderAttributesPtr blitRenderData;
     sgl::ShaderAttributesPtr clearRenderData;
 
-    // Color lookup table for singular edges.
-    sgl::TexturePtr singularEdgeColorLookupTexture;
-
     // Rendering data for the LoG (Laplacian of Gaussian).
     sgl::ShaderProgramPtr shaderFullScreenBlitLoG;
     sgl::ShaderProgramPtr colorTextureShaderLoG;
@@ -113,10 +112,8 @@ protected:
     glm::ivec2 weightTextureSize = glm::ivec2(5, 5);
     const float rhoLoG = 1.0f;
 
-    ///< Maps boundary mode and valence to number of occurences.
-    std::map<SingularityInformation, unsigned int> singularEdgeMap;
-
     // GUI data.
+    SingularEdgeColorMapWidget singularEdgeColorMapWidget;
     enum OutlineMode {
         OUTLINE_MODE_NONE, OUTLINE_MODE_DEPTH, OUTLINE_MODE_STENCIL
     };
@@ -128,7 +125,6 @@ protected:
     bool highlightLowLodEdges = true;
     bool highlightSingularEdges = true;
     OutlineMode outlineMode = OUTLINE_MODE_DEPTH;
-    bool singularEdgesColorByValence = true;
 };
 
 #endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_FACESUNIFIED_HPP

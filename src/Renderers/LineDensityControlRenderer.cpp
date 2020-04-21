@@ -31,6 +31,7 @@
 #include <Utils/AppSettings.hpp>
 #include <Graphics/Renderer.hpp>
 #include <Graphics/Window.hpp>
+#include <Graphics/Texture/TextureManager.hpp>
 #include <Graphics/OpenGL/GeometryBuffer.hpp>
 #include <Graphics/OpenGL/Shader.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
@@ -53,13 +54,19 @@ struct LinkedListFragmentNodeAttributeTextures {
 
 LineDensityControlRenderer::LineDensityControlRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
+    sgl::ShaderManager->invalidateShaderCache();
+    sgl::ShaderManager->addPreprocessorDefine("DIRECT_BLIT_GATHER", "");
+    sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "GatherDummy.glsl");
+    sgl::ShaderManager->addPreprocessorDefine("LINE_RENDERING_STYLE_HALO", "");
     lineDensityControlShader = sgl::ShaderManager->getShaderProgram(
             {"WireframeLineDensityControl.Vertex", "WireframeLineDensityControl.Fragment"});
+    sgl::ShaderManager->removePreprocessorDefine("DIRECT_BLIT_GATHER");
+    sgl::ShaderManager->removePreprocessorDefine("LINE_RENDERING_STYLE_HALO");
 
     createAttributeTextureClearShader = sgl::ShaderManager->getShaderProgram(
             {"CreateAttributeTextureClear.Vertex", "CreateAttributeTextureClear.Fragment"});
     createAttributeTextureGatherShader = sgl::ShaderManager->getShaderProgram(
-            {"CreateAttributeTextureResolve.Vertex", "CreateAttributeTextureResolve.Fragment"});
+            {"CreateAttributeTextureGather.Vertex", "CreateAttributeTextureGather.Fragment"});
     createAttributeTextureResolveShader = sgl::ShaderManager->getShaderProgram(
             {"CreateAttributeTextureResolve.Vertex", "CreateAttributeTextureResolve.Fragment"});
 
@@ -82,15 +89,35 @@ LineDensityControlRenderer::LineDensityControlRenderer(SceneData &sceneData, Tra
     createAttributeTextureClearRenderData->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
+    // Create render data for blurring.
+    blurShader = sgl::ShaderManager->getShaderProgram({"GaussianBlur.Vertex", "GaussianBlur.Fragment"});
+    blurRenderData = sgl::ShaderManager->createShaderAttributes(blurShader);
+
+    // Set-up the vertex data of the rectangle
+    std::vector<sgl::VertexTextured> fullscreenTexturedQuad(sgl::Renderer->createTexturedQuad(
+            sgl::AABB2(glm::vec2(-1.0f, -1.0f), glm::vec2(1.0f, 1.0f))));
+
+    // Create the blur render data.
+    int stride = sizeof(sgl::VertexTextured);
+    sgl::GeometryBufferPtr geomBufferTextured = sgl::Renderer->createGeometryBuffer(
+            sizeof(sgl::VertexTextured) * fullscreenTexturedQuad.size(), &fullscreenTexturedQuad.front());
+    blurRenderData = sgl::ShaderManager->createShaderAttributes(blurShader);
+    blurRenderData->addGeometryBuffer(
+            geomBufferTextured, "position",
+            sgl::ATTRIB_FLOAT, 3, 0, stride);
+    blurRenderData->addGeometryBuffer(
+            geomBufferTextured, "texcoord",
+            sgl::ATTRIB_FLOAT, 2, sizeof(glm::vec3), stride);
+
     onResolutionChanged();
 }
 
 void LineDensityControlRenderer::onResolutionChanged() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    attributeTextureResolution.x = std::round(window->getWidth() * attributeTextureSubsamplingFactor);
+    attributeTextureResolution.y = std::round(window->getHeight() * attributeTextureSubsamplingFactor);
 
-    fragmentBufferSize = EXPECTED_DEPTH_COMPLEXITY * width * height;
+    fragmentBufferSize = EXPECTED_DEPTH_COMPLEXITY * attributeTextureResolution.x * attributeTextureResolution.y;
     size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNodeAttributeTextures) * fragmentBufferSize;
     if (fragmentBufferSize >= (1ull << 32ull)) {
         sgl::Logfile::get()->writeError(
@@ -107,7 +134,7 @@ void LineDensityControlRenderer::onResolutionChanged() {
     createAttributeTextureFragmentBuffer = sgl::Renderer->createGeometryBuffer(
             fragmentBufferSizeBytes, NULL, sgl::SHADER_STORAGE_BUFFER);
 
-    size_t startOffsetBufferSizeBytes = sizeof(uint32_t) * width * height;
+    size_t startOffsetBufferSizeBytes = sizeof(uint32_t) * attributeTextureResolution.x * attributeTextureResolution.y;
     createAttributeTextureStartOffsetBuffer = sgl::GeometryBufferPtr(); // Delete old data first (-> refcount 0)
     createAttributeTextureStartOffsetBuffer = sgl::Renderer->createGeometryBuffer(
             startOffsetBufferSizeBytes, NULL, sgl::SHADER_STORAGE_BUFFER);
@@ -115,6 +142,25 @@ void LineDensityControlRenderer::onResolutionChanged() {
     createAttributeTextureAtomicCounterBuffer = sgl::GeometryBufferPtr(); // Delete old data first (-> refcount 0)
     createAttributeTextureAtomicCounterBuffer = sgl::Renderer->createGeometryBuffer(
             sizeof(uint32_t), NULL, sgl::ATOMIC_COUNTER_BUFFER);
+
+
+    // Create the attribute texture and the framebuffer for using it as a render target.
+    attributeTextureFramebuffer = sgl::Renderer->createFBO();
+    sgl::TextureSettings textureSettings;
+    textureSettings.internalFormat = GL_RGBA32F;
+    textureSettings.pixelType = GL_FLOAT;
+    textureSettings.pixelFormat = GL_RGBA;
+    textureSettings.textureMinFilter = GL_LINEAR;
+    textureSettings.textureMagFilter = GL_LINEAR;
+    attributeTexture = sgl::TextureManager->createEmptyTexture(
+            attributeTextureResolution.x, attributeTextureResolution.y, textureSettings);
+    attributeTextureFramebuffer->bindTexture(attributeTexture);
+
+
+    // Create a framebuffer and temporary texture for blurring. The texture is bound during rendering.
+    blurFramebuffer = sgl::Renderer->createFBO();
+    tempBlurTexture = sgl::TextureManager->createEmptyTexture(
+            attributeTextureResolution.x, attributeTextureResolution.y, textureSettings);
 }
 
 void LineDensityControlRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
@@ -122,49 +168,69 @@ void LineDensityControlRenderer::generateVisualizationMapping(HexMeshPtr meshIn,
             std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
             MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
 
-    /*std::vector<uint32_t> indices;
-    std::vector<LodHexahedralCellFace> hexahedralCellFaces;
-    generateSheetLevelOfDetailLineStructureAndVertexData(
-            meshIn.get(), indices, hexahedralCellFaces);
+    std::vector<uint32_t> triangleIndices;
+    std::vector<HexahedralCellFaceLineDensityControl> hexahedralCellFaces;
+    meshIn->getSurfaceDataWireframeFacesLineDensityControl(
+            triangleIndices, hexahedralCellFaces, maxLodValue);
 
-    lineShaderAttributes = sgl::ShaderManager->createShaderAttributes(lineShaderProgram);
-    lineShaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
+    lineDensityControlRenderData = sgl::ShaderManager->createShaderAttributes(lineDensityControlShader);
+    lineDensityControlRenderData->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
+    createAttributeTextureGatherRenderData = sgl::ShaderManager->createShaderAttributes(
+            createAttributeTextureGatherShader);
+    createAttributeTextureGatherRenderData->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
-    lineShaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
+            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
+    lineDensityControlRenderData->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
+    createAttributeTextureGatherRenderData->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Create an SSBO for the hexahedral cell faces.
     hexahedralCellFacesBuffer = sgl::Renderer->createGeometryBuffer(
-            hexahedralCellFaces.size()*sizeof(LodHexahedralCellFace), (void*)&hexahedralCellFaces.front(),
-            sgl::SHADER_STORAGE_BUFFER);
+            hexahedralCellFaces.size()*sizeof(HexahedralCellFaceLineDensityControl),
+            (void*)&hexahedralCellFaces.front(), sgl::SHADER_STORAGE_BUFFER);
+
+    singularEdgeColorMapWidget.generateSingularityStructureInformation(meshIn);
 
     dirty = false;
-    reRender = true;*/
+    reRender = true;
 }
 
 void LineDensityControlRenderer::setUniformData() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
-
-    sgl::ShaderManager->bindShaderStorageBuffer(0, createAttributeTextureAtomicCounterBuffer);
+    sgl::ShaderManager->bindShaderStorageBuffer(0, createAttributeTextureFragmentBuffer);
     sgl::ShaderManager->bindShaderStorageBuffer(1, createAttributeTextureStartOffsetBuffer);
     sgl::ShaderManager->bindAtomicCounterBuffer(0, createAttributeTextureAtomicCounterBuffer);
+    sgl::ShaderManager->bindShaderStorageBuffer(6, hexahedralCellFacesBuffer);
 
-    createAttributeTextureGatherShader->setUniform("viewportW", width);
+    createAttributeTextureGatherShader->setUniform("viewportW", attributeTextureResolution.x);
     createAttributeTextureGatherShader->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
     createAttributeTextureGatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
-    createAttributeTextureResolveShader->setUniform("viewportW", width);
-    createAttributeTextureClearShader->setUniform("viewportW", width);
+    createAttributeTextureGatherShader->setUniform("lineWidth", lineWidth);
+
+    createAttributeTextureResolveShader->setUniform("viewportW", attributeTextureResolution.x);
+
+    createAttributeTextureClearShader->setUniform("viewportW", attributeTextureResolution.x);
+
+    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    lineDensityControlShader->setUniform("cameraPosition", sceneData.camera->getPosition());
+    lineDensityControlShader->setUniform("lineWidth", lineWidth);
+    lineDensityControlShader->setUniform(
+            "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
+    lineDensityControlShader->setUniform(
+            "singularEdgeColorLookupTexture",
+            singularEdgeColorMapWidget.getSingularEdgeColorLookupTexture(), 1);
+    lineDensityControlShader->setUniform(
+            "attributeTexture", attributeTexture, 2);
 }
 
-void LineDensityControlRenderer::clear() {
+
+void LineDensityControlRenderer::attributeTextureClear() {
     // In the clear and gather pass, we just want to write data to an SSBO.
+    sgl::Renderer->bindFBO(attributeTextureFramebuffer);
     glDepthMask(GL_FALSE);
     glDisable(GL_DEPTH_TEST);
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    glDisable(GL_BLEND);
 
     sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
     sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
@@ -178,41 +244,69 @@ void LineDensityControlRenderer::clear() {
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 }
 
-void LineDensityControlRenderer::gather() {
-    // Enable the depth test, but disable depth write for gathering.
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-    glDepthMask(GL_FALSE);
+void LineDensityControlRenderer::attributeTextureGather() {
 
     sgl::Renderer->setProjectionMatrix(sceneData.camera->getProjectionMatrix());
     sgl::Renderer->setViewMatrix(sceneData.camera->getViewMatrix());
     sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
 
     // Now, the final gather step.
+    glDisable(GL_CULL_FACE);
     sgl::Renderer->render(createAttributeTextureGatherRenderData);
+    glEnable(GL_CULL_FACE);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
-void LineDensityControlRenderer::resolve() {
+void LineDensityControlRenderer::attributeTextureResolve() {
     sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
     sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
     sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
 
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glDisable(GL_DEPTH_TEST);
-
     sgl::Renderer->render(createAttributeTextureResolveRenderData);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    glEnable(GL_BLEND);
+}
 
-    glDisable(GL_STENCIL_TEST);
+void LineDensityControlRenderer::attributeTextureBlur() {
+    // Perform a horizontal and a vertical blur.
+    blurFramebuffer->bindTexture(tempBlurTexture);
+    sgl::Renderer->bindFBO(blurFramebuffer);
+    blurShader->setUniform("horzBlur", true);
+    sgl::Renderer->render(blurRenderData);
+
+    blurFramebuffer->bindTexture(attributeTexture);
+    sgl::Renderer->bindFBO(blurFramebuffer, true);
+    blurShader->setUniform("texture", tempBlurTexture);
+    blurShader->setUniform("horzBlur", false);
+    sgl::Renderer->render(blurRenderData);
+}
+
+void LineDensityControlRenderer::lineDensityControlRendering() {
+    sgl::Renderer->setProjectionMatrix(sceneData.camera->getProjectionMatrix());
+    sgl::Renderer->setViewMatrix(sceneData.camera->getViewMatrix());
+    sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
+
+    // Enable depth test and depth write.
+    sgl::Renderer->bindFBO(sceneData.framebuffer);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
     glDepthMask(GL_TRUE);
+
+    glDisable(GL_CULL_FACE);
+    sgl::Renderer->render(lineDensityControlRenderData);
+    glEnable(GL_CULL_FACE);
+
+    glDisable(GL_DEPTH_TEST);
 }
 
 void LineDensityControlRenderer::render() {
     setUniformData();
-    clear();
-    gather();
-    resolve();
+    attributeTextureClear();
+    attributeTextureGather();
+    attributeTextureResolve();
+    attributeTextureBlur();
+    lineDensityControlRendering();
 }
 
 void LineDensityControlRenderer::renderGui() {
@@ -237,4 +331,8 @@ void LineDensityControlRenderer::renderGui() {
         }
     }
     ImGui::End();
+
+    if (singularEdgeColorMapWidget.renderGui()) {
+        reRender = true;
+    }
 }

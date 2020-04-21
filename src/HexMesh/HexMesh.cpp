@@ -2284,3 +2284,77 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         indexOffset += 4;
     }
 }
+
+void HexMesh::getSurfaceDataWireframeFacesLineDensityControl(
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<HexahedralCellFaceLineDensityControl>& hexahedralCellFaces,
+        int& maxLodValue) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    // Compute the per-edge LOD values between 0 and 1.
+    std::vector<float> edgeLodValues;
+    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue);
+
+    // Compute all cell volumes.
+    if (cellVolumes.empty()) {
+        computeAllCellVolumes();
+    }
+
+    // Compute all edge attributes.
+    std::vector<float> edgeAttributes(mesh->Es.size());
+    for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
+        float edgeAttribute = interpolateCellAttributePerEdge(e_id, cellVolumes);
+        edgeAttributes.at(e_id) = edgeAttribute;
+    }
+
+    size_t indexOffset = 0;
+    for (size_t i = 0; i < mesh->Fs.size(); i++) {
+        Hybrid_F& f = mesh->Fs.at(i);
+        if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+            return hexaLabApp->is_cell_marked(h_id);
+        })) {
+            continue;
+        }
+
+        hexahedralCellFaces.push_back(HexahedralCellFaceLineDensityControl());
+        HexahedralCellFaceLineDensityControl& hexahedralCellFace = hexahedralCellFaces.back();
+
+        assert(f.vs.size() == 4);
+        for (size_t j = 0; j < 4; j++) {
+            uint32_t v_id = f.vs.at(j);
+            glm::vec4 vertexPosition(
+                    mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
+            hexahedralCellFace.vertexPositions[j] = vertexPosition;
+        }
+
+        /**
+         * vertex 1     edge 1    vertex 2
+         *          | - - - - - |
+         *          | \         |
+         *          |   \       |
+         *   edge 0 |     \     | edge 2
+         *          |       \   |
+         *          |         \ |
+         *          | - - - - - |
+         * vertex 0     edge 3    vertex 3
+         */
+        triangleIndices.push_back(indexOffset + 0);
+        triangleIndices.push_back(indexOffset + 3);
+        triangleIndices.push_back(indexOffset + 1);
+        triangleIndices.push_back(indexOffset + 2);
+        triangleIndices.push_back(indexOffset + 1);
+        triangleIndices.push_back(indexOffset + 3);
+
+        assert(f.es.size() == 4);
+        for (size_t j = 0; j < 4; j++) {
+            uint32_t e_id = f.es.at(j);
+            Hybrid_E& e = mesh->Es.at(e_id);
+            hexahedralCellFace.edgeAttributes[j] = edgeAttributes.at(e_id);
+            hexahedralCellFace.edgeLodValues[j] = edgeLodValues.at(e_id);
+            hexahedralCellFace.edgeSingularityInformationList[j] = packEdgeSingularityInformation(e_id);
+        }
+
+        indexOffset += 4;
+    }
+}

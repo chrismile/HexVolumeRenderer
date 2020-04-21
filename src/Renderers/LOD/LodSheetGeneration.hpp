@@ -127,9 +127,7 @@ void generateSheetLevelOfDetailLineStructureAndVertexData(
 struct LodHexahedralCellFace {
     glm::vec4 vertexPositions[4];
     glm::vec4 edgeColors[4];
-    glm::vec4 cornerColors[4];
     float edgeLodValues[4];
-    float cornerLodValues[4];
 };
 
 /**

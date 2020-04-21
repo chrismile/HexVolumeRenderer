@@ -109,6 +109,21 @@ struct HexahedralCellFaceUnified {
     uint32_t edgeSingularityInformationList[4];
 };
 
+/**
+ * For @see HexMesh::getSurfaceDataWireframeFacesLineDensityControl.
+*/
+struct HexahedralCellFaceLineDensityControl {
+    glm::vec4 vertexPositions[4];
+    float edgeAttributes[4];
+    float edgeLodValues[4];
+    /**
+     * Bit 0: 1 if the edge is singular.
+     * Bit 1: 1 if the edge belongs to the boundary.
+     * Bit 2-31: The valence of the edge (i.e., the number of incident cells).
+     */
+    uint32_t edgeSingularityInformationList[4];
+};
+
 class HexMesh {
 public:
     HexMesh(TransferFunctionWindow &transferFunctionWindow, RayMeshIntersection& rayMeshIntersection)
@@ -425,6 +440,26 @@ public:
     void getSurfaceDataWireframeFacesUnified_AttributePerVertex(
             std::vector<uint32_t>& triangleIndices,
             std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
+            int& maxLodValue);
+
+    /**
+     * Get all surface faces including the colors of their edges.
+     * For rendering, the shader "WireframeLineDensityControl.glsl" can be used.
+     * Backface culling needs to be disabled.
+     *
+     * vertex 1     edge 1    vertex 2
+     *          | - - - - - |
+     *          | \         |
+     *          |   \       |
+     *   edge 0 |     \     | edge 2
+     *          |       \   |
+     *          |         \ |
+     *          | - - - - - |
+     * vertex 0     edge 3    vertex 3
+     */
+    void getSurfaceDataWireframeFacesLineDensityControl(
+            std::vector<uint32_t>& triangleIndices,
+            std::vector<HexahedralCellFaceLineDensityControl>& hexahedralCellFaces,
             int& maxLodValue);
 
     static const glm::vec4 glowColorRegular;

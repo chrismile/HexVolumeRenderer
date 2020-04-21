@@ -86,7 +86,7 @@ void gatherFragment(float importanceAttribute, float depth, vec3 lineDirection) 
 
     if (insertIndex < linkedListSize) {
         // Insert the fragment into the linked list
-        frag.next = atomicExchange(startOffset[pixelIndex], insertIndex);
+        fragmentNode.next = atomicExchange(startOffset[pixelIndex], insertIndex);
         fragmentBuffer[insertIndex] = fragmentNode;
     }
 }
@@ -113,16 +113,17 @@ void main()
         discard;
     }
 
+    // TODO: Remove color.
+    vec4 lineBaseColor = vec4(0.0);
     float fragmentDepth;
     #if defined(LINE_RENDERING_STYLE_HALO)
-    vec4 color = flatShadingWireframeSurfaceHalo_DepthCue(lineBaseColor, fragmentDepth, lineCoordinates);
+    vec4 color = flatShadingWireframeSurfaceHalo(lineBaseColor, fragmentDepth, lineCoordinates);
     #elif defined(LINE_RENDERING_STYLE_TRON)
     vec4 color = flatShadingWireframeSurfaceTronHalo(lineBaseColor, fragmentDepth, lineCoordinates);
     #else //#elif defined(LINE_RENDERING_STYLE_SINGLE_COLOR)
     vec4 color = flatShadingWireframeSingleColor(lineBaseColor, fragmentDepth, lineCoordinates);
     #endif
 
-    vec3 lineDirection = normalize(vertexPositions[(minDistanceIndex + 1) % 4] - vertexPositions[minDistanceIndex]);
     gatherFragment(lineAttribute, fragmentDepth, lineDirection);
 }
 

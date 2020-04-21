@@ -13,24 +13,20 @@
  *          | - - - - - |
  * vertex 0     edge 3    vertex 3
 */
-struct HexahedralCellFace {
+struct LodHexahedralCellFace {
     vec4 vertexPositions[4];
     vec4 edgeColors[4];
-    vec4 cornerColors[4];
-    float edgeLodValues[4];
-    float cornerLodValues[4];
+    vec4 edgeLodValues;
 };
 
 layout (std430, binding = 6) readonly buffer HexahedralCellFaces {
-    HexahedralCellFace hexahedralCellFaces[];
+    LodHexahedralCellFace hexahedralCellFaces[];
 };
 
 out vec3 fragmentPositionWorld;
 flat out vec3 vertexPositions[4];
 flat out vec4 edgeColors[4];
-flat out vec4 cornerColors[4];
-flat out float edgeLodValues[4];
-flat out float cornerLodValues[4];
+flat out vec4 edgeLodValues;
 
 void main()
 {
@@ -38,13 +34,11 @@ void main()
     int faceId = globalId / 4;
     int vertexId = globalId % 4;
 
-    HexahedralCellFace hexahedralCellFace = hexahedralCellFaces[faceId];
+    LodHexahedralCellFace hexahedralCellFace = hexahedralCellFaces[faceId];
     for (int i = 0; i < 4; i++) {
         vertexPositions[i] = hexahedralCellFace.vertexPositions[i].xyz;
         edgeColors[i] = hexahedralCellFace.edgeColors[i];
-        cornerColors[i] = hexahedralCellFace.cornerColors[i];
         edgeLodValues[i] = hexahedralCellFace.edgeLodValues[i];
-        cornerLodValues[i] = hexahedralCellFace.cornerLodValues[i];
     }
 
     vec4 vertexPosition = hexahedralCellFace.vertexPositions[vertexId];
@@ -60,9 +54,7 @@ void main()
 in vec3 fragmentPositionWorld;
 flat in vec3 vertexPositions[4];
 flat in vec4 edgeColors[4];
-flat in vec4 cornerColors[4];
-flat in float edgeLodValues[4];
-flat in float cornerLodValues[4];
+flat in vec4 edgeLodValues;
 
 #if defined(DIRECT_BLIT_GATHER)
 out vec4 fragColor;
@@ -99,40 +91,14 @@ void main()
         }
     }
 
-    // Compute the distance to the corners.
-    float minDistancePoints = INF;
-    int minDistancePointsIndex = 0;
-    for (int i = 0; i < 4; i++) {
-        currentDistance = length(fragmentPositionWorld - vertexPositions[i]);
-        if (currentDistance < minDistancePoints && cornerLodValues[i] <= maxLod + LOD_EPSILON) {
-            minDistancePoints = currentDistance;
-            minDistancePointsIndex = i;
-        }
-    }
-
-    vec4 baseColor;
-    float fragmentLodValue;
-    float minDistance;
-    if (minDistanceLines < minDistancePoints) {
-        baseColor = edgeColors[minDistanceLinesIndex];
-        fragmentLodValue = edgeLodValues[minDistanceLinesIndex];
-        minDistance = minDistanceLines;
-    } else {
-        baseColor = cornerColors[minDistancePointsIndex];
-        fragmentLodValue = cornerLodValues[minDistancePointsIndex];
-        minDistance = minDistancePoints;
-    }
-    baseColor = edgeColors[minDistanceLinesIndex];
-    fragmentLodValue = edgeLodValues[minDistanceLinesIndex];
-    minDistance = minDistanceLines;
+    vec4 baseColor = edgeColors[minDistanceLinesIndex];
+    float fragmentLodValue = edgeLodValues[minDistanceLinesIndex];
+    float minDistance = minDistanceLines;
 
     if (fragmentLodValue > maxLod + LOD_EPSILON) {
         discard;
     }
     float lineWidthPrime = lineWidth * (1.3 * (1.0 - fragmentLodValue) + 0.2);
-    //if (minDistanceLines > minDistancePoints) {
-    //    lineWidthPrime *= 0.0;
-    //}
 
     float lineCoordinates = clamp(minDistance / lineWidthPrime * 2.0, 0.0, 1.0);
     float fragmentDepth;
