@@ -27,12 +27,12 @@
  */
 
 #include <Math/Geometry/MatrixUtil.hpp>
+#include <Utils/AppSettings.hpp>
 #include <Graphics/Window.hpp>
 #include <Graphics/Renderer.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 #include <Graphics/OpenGL/GeometryBuffer.hpp>
 #include <Graphics/OpenGL/Shader.hpp>
-#include <Utils/AppSettings.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
 #include "PerPixelLinkedListRenderer.hpp"
@@ -86,12 +86,14 @@ void PerPixelLinkedListRenderer::initShaders(const std::list<std::string>& gathe
             glm::vec3(-1,-1,0), glm::vec3(1,1,0), glm::vec3(-1,1,0)};
     sgl::GeometryBufferPtr geomBuffer = sgl::Renderer->createGeometryBuffer(
             sizeof(glm::vec3)*fullscreenQuad.size(), (void*)&fullscreenQuad.front());
-    blitRenderData->addGeometryBuffer(geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+    blitRenderData->addGeometryBuffer(
+            geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     clearRenderData = sgl::ShaderManager->createShaderAttributes(clearShader);
     geomBuffer = sgl::Renderer->createGeometryBuffer(
             sizeof(glm::vec3)*fullscreenQuad.size(), (void*)&fullscreenQuad.front());
-    clearRenderData->addGeometryBuffer(geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+    clearRenderData->addGeometryBuffer(
+            geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     onResolutionChanged();
 }

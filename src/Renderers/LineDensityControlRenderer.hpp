@@ -51,17 +51,45 @@ public:
      */
     virtual void generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
 
+    // Called when the resolution of the application window has changed.
+    virtual void onResolutionChanged();
+
     // Renders the object to the scene framebuffer.
     virtual void render();
     // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
     virtual void renderGui();
 
 protected:
+    virtual void setUniformData();
+    virtual void clear();
+    virtual void gather();
+    virtual void resolve();
     HexMeshPtr mesh;
 
-    sgl::ShaderProgramPtr lineShaderProgram;
-    sgl::ShaderAttributesPtr lineShaderAttributes;
+    // Rendering data for both the attribute texture creation pass and the line rendering pass.
     sgl::GeometryBufferPtr hexahedralCellFacesBuffer;
+
+    // Rendering data for rendering the lines to the screen.
+    sgl::ShaderProgramPtr lineDensityControlShader;
+    sgl::ShaderAttributesPtr lineDensityControlRenderData;
+
+    // For creating the attribute texture using per-pixel linked lists.
+    sgl::ShaderProgramPtr createAttributeTextureClearShader;
+    sgl::ShaderProgramPtr createAttributeTextureGatherShader;
+    sgl::ShaderProgramPtr createAttributeTextureResolveShader;
+    size_t fragmentBufferSize = 0;
+    sgl::GeometryBufferPtr createAttributeTextureFragmentBuffer;
+    sgl::GeometryBufferPtr createAttributeTextureStartOffsetBuffer;
+    sgl::GeometryBufferPtr createAttributeTextureAtomicCounterBuffer;
+    // Blit data (ignores model-view-projection matrix and uses normalized device coordinates)
+    sgl::ShaderAttributesPtr createAttributeTextureGatherRenderData;
+    sgl::ShaderAttributesPtr createAttributeTextureResolveRenderData;
+    sgl::ShaderAttributesPtr createAttributeTextureClearRenderData;
+
+    // The attribute texture.
+    sgl::TexturePtr attributeTexture;
+    float attributeTextureSubsamplingFactor = 0.5f;
+    glm::ivec2 attributeTextureResolution;
 
     // GUI data.
     bool showRendererWindow = true;
