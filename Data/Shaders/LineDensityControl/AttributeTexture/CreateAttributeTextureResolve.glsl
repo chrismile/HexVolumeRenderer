@@ -17,6 +17,10 @@ void main() {
 
 // The maximum number of fragments to account for 100% coverage.
 const int MAX_NUM_FRAGMENTS_COVERAGE = 128;
+const int MAX_NUM_FRAGMENTS = 1024;
+
+uniform float zNear;
+uniform float zFar;
 
 /**
  * Channel 0: Maximum importance M.
@@ -37,19 +41,20 @@ void main() {
 
     // Data for this pixel of the attribute texture.
     float maximumImportance = 0.0f;
-    float maximumImportanceDepth = 1e12; // some very high value
+    float maximumImportanceDepth = zFar;
     vec3 lineDirectionSum = vec3(0.0);
 
     // Collect all fragments for this pixel,
     int numFrags = 0;
     LinkedListFragmentNodeAttributeTextures fragmentNode;
-    for (int i = 0; i < MAX_NUM_FRAGMENTS_COVERAGE; i++) {
+    for (int i = 0; i < MAX_NUM_FRAGMENTS; i++) {
         if (fragOffset == -1) {
             // End of list reached.
             break;
         }
 
         fragmentNode = fragmentBuffer[fragOffset];
+        fragOffset = fragmentNode.next;
 
         // Compute the maximum importance and the corresponding depth.
         if ((fragmentNode.importanceAttribute == maximumImportance && fragmentNode.depth < maximumImportanceDepth)

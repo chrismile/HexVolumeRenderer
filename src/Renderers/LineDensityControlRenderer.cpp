@@ -90,7 +90,8 @@ LineDensityControlRenderer::LineDensityControlRenderer(SceneData &sceneData, Tra
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Create render data for blurring.
-    blurShader = sgl::ShaderManager->getShaderProgram({"GaussianBlur.Vertex", "GaussianBlur.Fragment"});
+    blurShader = sgl::ShaderManager->getShaderProgram(
+            {"GaussianBlurFloatTexture.Vertex", "GaussianBlurFloatTexture.Fragment"});
     blurRenderData = sgl::ShaderManager->createShaderAttributes(blurShader);
 
     // Set-up the vertex data of the rectangle
@@ -103,10 +104,10 @@ LineDensityControlRenderer::LineDensityControlRenderer(SceneData &sceneData, Tra
             sizeof(sgl::VertexTextured) * fullscreenTexturedQuad.size(), &fullscreenTexturedQuad.front());
     blurRenderData = sgl::ShaderManager->createShaderAttributes(blurShader);
     blurRenderData->addGeometryBuffer(
-            geomBufferTextured, "position",
+            geomBufferTextured, "vertexPosition",
             sgl::ATTRIB_FLOAT, 3, 0, stride);
     blurRenderData->addGeometryBuffer(
-            geomBufferTextured, "texcoord",
+            geomBufferTextured, "vertexTextureCoordinates",
             sgl::ATTRIB_FLOAT, 2, sizeof(glm::vec3), stride);
 
     onResolutionChanged();
@@ -204,16 +205,31 @@ void LineDensityControlRenderer::setUniformData() {
 
     createAttributeTextureGatherShader->setUniform("viewportW", attributeTextureResolution.x);
     createAttributeTextureGatherShader->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
-    createAttributeTextureGatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
+    if (createAttributeTextureGatherShader->hasUniform("cameraPosition")) {
+        createAttributeTextureGatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
+    }
     createAttributeTextureGatherShader->setUniform("lineWidth", lineWidth);
 
     createAttributeTextureResolveShader->setUniform("viewportW", attributeTextureResolution.x);
+    if (createAttributeTextureResolveShader->hasUniform("zNear")) {
+        createAttributeTextureResolveShader->setUniform("zNear", sceneData.camera->getNearClipDistance());
+    }
+    if (createAttributeTextureResolveShader->hasUniform("zFar")) {
+        createAttributeTextureResolveShader->setUniform("zFar", sceneData.camera->getFarClipDistance());
+    }
 
     createAttributeTextureClearShader->setUniform("viewportW", attributeTextureResolution.x);
 
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    lineDensityControlShader->setUniform("cameraPosition", sceneData.camera->getPosition());
+    if (lineDensityControlShader->hasUniform("cameraPosition")) {
+        lineDensityControlShader->setUniform("cameraPosition", sceneData.camera->getPosition());
+    }
     lineDensityControlShader->setUniform("lineWidth", lineWidth);
+    lineDensityControlShader->setUniform("lambda", lambda);
+    lineDensityControlShader->setUniform("factor_m", factor_m);
+    lineDensityControlShader->setUniform("factor_c", factor_c);
+    lineDensityControlShader->setUniform("factor_v", factor_v);
+    lineDensityControlShader->setUniform("factor_d", factor_d);
     lineDensityControlShader->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
     lineDensityControlShader->setUniform(
@@ -225,6 +241,8 @@ void LineDensityControlRenderer::setUniformData() {
 
 
 void LineDensityControlRenderer::attributeTextureClear() {
+    glViewport(0, 0, attributeTextureResolution.x, attributeTextureResolution.y);
+
     // In the clear and gather pass, we just want to write data to an SSBO.
     sgl::Renderer->bindFBO(attributeTextureFramebuffer);
     glDepthMask(GL_FALSE);
@@ -245,7 +263,6 @@ void LineDensityControlRenderer::attributeTextureClear() {
 }
 
 void LineDensityControlRenderer::attributeTextureGather() {
-
     sgl::Renderer->setProjectionMatrix(sceneData.camera->getProjectionMatrix());
     sgl::Renderer->setViewMatrix(sceneData.camera->getViewMatrix());
     sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
@@ -265,24 +282,28 @@ void LineDensityControlRenderer::attributeTextureResolve() {
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     sgl::Renderer->render(createAttributeTextureResolveRenderData);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-    glEnable(GL_BLEND);
 }
 
 void LineDensityControlRenderer::attributeTextureBlur() {
+    blurShader->setUniform("textureSize", glm::vec2(this->attributeTextureResolution));
+
     // Perform a horizontal and a vertical blur.
     blurFramebuffer->bindTexture(tempBlurTexture);
     sgl::Renderer->bindFBO(blurFramebuffer);
-    blurShader->setUniform("horzBlur", true);
+    blurShader->setUniform("textureImage", attributeTexture, 3);
+    blurShader->setUniform("horizontalBlur", true);
     sgl::Renderer->render(blurRenderData);
 
     blurFramebuffer->bindTexture(attributeTexture);
     sgl::Renderer->bindFBO(blurFramebuffer, true);
-    blurShader->setUniform("texture", tempBlurTexture);
-    blurShader->setUniform("horzBlur", false);
+    blurShader->setUniform("textureImage", tempBlurTexture, 3);
+    blurShader->setUniform("horizontalBlur", false);
     sgl::Renderer->render(blurRenderData);
 }
 
 void LineDensityControlRenderer::lineDensityControlRendering() {
+    glViewport(0, 0, sceneData.sceneTexture->getW(), sceneData.sceneTexture->getH());
+
     sgl::Renderer->setProjectionMatrix(sceneData.camera->getProjectionMatrix());
     sgl::Renderer->setViewMatrix(sceneData.camera->getViewMatrix());
     sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
@@ -292,6 +313,7 @@ void LineDensityControlRenderer::lineDensityControlRendering() {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glDepthMask(GL_TRUE);
+    glEnable(GL_BLEND);
 
     glDisable(GL_CULL_FACE);
     sgl::Renderer->render(lineDensityControlRenderData);

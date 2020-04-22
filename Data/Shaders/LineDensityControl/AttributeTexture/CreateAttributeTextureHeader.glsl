@@ -29,7 +29,13 @@ void unpackLineDirection(in uint directionQuantized, out vec3 direction) {
     uint quantizedY = (directionQuantized >> 16u) & 65535u;
     direction.x = float(quantizedX) / 65535.0f;
     direction.y = float(quantizedY) / 65535.0f;
-    direction.z = sqrt(1.0f - direction.x*direction.x - direction.y*direction.y);
+    float zLengthSquared = 1.0f - direction.x*direction.x - direction.y*direction.y;
+    // Avoid NaN.
+    if (zLengthSquared > 1e-8) {
+        direction.z = sqrt(zLengthSquared);
+    } else {
+        direction.z = 0.0;
+    }
 }
 
 // fragment-and-link buffer and a start-offset buffer

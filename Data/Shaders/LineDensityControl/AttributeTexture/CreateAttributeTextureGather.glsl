@@ -57,29 +57,38 @@ flat in vec4 edgeAttributes;
 uniform vec3 cameraPosition;
 uniform float lineWidth;
 
-#define WIREFRAME_SURFACE_HALO_LIGHTING
-#include "Lighting.glsl"
 #include "PointToLineDistance.glsl"
-
 #include "CreateAttributeTextureHeader.glsl"
+#define DEPTH_HELPER_USE_PROJECTION_MATRIX
+#include "DepthHelper.glsl"
+
+/**
+ * Flat shading, but adds a constant-sized halo at the outline of the surface. Assumes the following global variables
+ * are given: cameraPosition, fragmentPositionWorld.
+*/
+void flatShadingWireframeSurfaceHaloDepth(out float fragmentDepthFrag, in float lineCoordinates) {
+    float fragmentDepth = convertDepthBufferValueToLinearDepth(gl_FragCoord.z);
+    const float WHITE_THRESHOLD = 0.7;
+    float EPSILON = clamp(fragmentDepth / 2.0, 0.0, 0.49);
+
+    if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
+        fragmentDepth += 0.008;
+    }
+    fragmentDepthFrag = fragmentDepth;
+}
 
 void gatherFragment(float importanceAttribute, float depth, vec3 lineDirection) {
     int x = int(gl_FragCoord.x);
     int y = int(gl_FragCoord.y);
     uint pixelIndex = addrGen(uvec2(x,y));
 
-    LinkedListFragmentNodeAttributeTextures fragmentNode;
-
-    fragmentNode.importanceAttribute = importanceAttribute;
-
-    //fragmentNode.depth = convertDepthBufferValueToLinearDepth(gl_FragCoord.z);
-    //fragmentNode.depth = length(fragmentPositionWorld - cameraPosition);
-    fragmentNode.depth = depth;
-
     uint packedLineDirection;
     packLineDirection(lineDirection, packedLineDirection);
-    fragmentNode.directionQuantized = packedLineDirection;
 
+    LinkedListFragmentNodeAttributeTextures fragmentNode;
+    fragmentNode.importanceAttribute = importanceAttribute;
+    fragmentNode.depth = depth;
+    fragmentNode.directionQuantized = packedLineDirection;
     fragmentNode.next = -1;
 
     uint insertIndex = atomicCounterIncrement(fragCounter);
@@ -113,16 +122,8 @@ void main()
         discard;
     }
 
-    // TODO: Remove color.
-    vec4 lineBaseColor = vec4(0.0);
     float fragmentDepth;
-    #if defined(LINE_RENDERING_STYLE_HALO)
-    vec4 color = flatShadingWireframeSurfaceHalo(lineBaseColor, fragmentDepth, lineCoordinates);
-    #elif defined(LINE_RENDERING_STYLE_TRON)
-    vec4 color = flatShadingWireframeSurfaceTronHalo(lineBaseColor, fragmentDepth, lineCoordinates);
-    #else //#elif defined(LINE_RENDERING_STYLE_SINGLE_COLOR)
-    vec4 color = flatShadingWireframeSingleColor(lineBaseColor, fragmentDepth, lineCoordinates);
-    #endif
+    flatShadingWireframeSurfaceHaloDepth(fragmentDepth, lineCoordinates);
 
     gatherFragment(lineAttribute, fragmentDepth, lineDirection);
 }

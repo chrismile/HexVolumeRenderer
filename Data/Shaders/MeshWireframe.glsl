@@ -109,37 +109,43 @@ uniform float maxLodValue;
 
 void main()
 {
+    float distanceToFocusPointNormalized = length(fragmentPositionWorld - sphereCenter) / sphereRadius;
+    const float lineRadiusFocus = lineWidth / 2.0f * (-distanceToFocusPointNormalized * 0.6 + 1.0);
+
     // Add the focus fragment.
     // Compute the distance to the edges and get the minimum distance.
     float minDistance = 1e9;
+    float minLodEdgeValue = 1e9;
     int minDistanceIndex = 0;
     float currentDistance;
     for (int i = 0; i < 4; i++) {
         currentDistance = distanceToLineSegment(
                fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
+        //if ((edgeLodValues[i] >= minLodEdgeValue && minDistance > lineRadiusFocus && currentDistance < minDistance)
+        //        || (edgeLodValues[i] < minLodEdgeValue && currentDistance <= lineRadiusFocus)) {
         if (currentDistance < minDistance) {
             minDistance = currentDistance;
+            minLodEdgeValue = edgeLodValues[i];
             minDistanceIndex = i;
         }
     }
 
     float lodLineValue = edgeLodValues[minDistanceIndex];
     float discreteLodValue = lodLineValue * maxLodValue;
-    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
 
     const float CUTOFF_EPSILON = 0.05;
 
     vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
-    float lineCoordinates = max(minDistance / lineWidth * 2.0, 0.0);
-    if (lineCoordinates <= 1.0) {
+    float lineCoordinatesFocus = max(minDistance / lineRadiusFocus, 0.0);
+    if (lineCoordinatesFocus <= 1.0) {
         // Focus wireframe
         float fragmentDepth;
         #if defined(LINE_RENDERING_STYLE_HALO)
-        vec4 color = flatShadingWireframeSurfaceHalo_DepthCue(lineBaseColor, fragmentDepth, lineCoordinates);
+        vec4 color = flatShadingWireframeSurfaceHalo_DepthCue(lineBaseColor, fragmentDepth, lineCoordinatesFocus);
         #elif defined(LINE_RENDERING_STYLE_TRON)
-        vec4 color = flatShadingWireframeSurfaceTronHalo(lineBaseColor, fragmentDepth, lineCoordinates);
+        vec4 color = flatShadingWireframeSurfaceTronHalo(lineBaseColor, fragmentDepth, lineCoordinatesFocus);
         #else //#elif defined(LINE_RENDERING_STYLE_SINGLE_COLOR)
-        vec4 color = flatShadingWireframeSingleColor(lineBaseColor, fragmentDepth, lineCoordinates);
+        vec4 color = flatShadingWireframeSingleColor(lineBaseColor, fragmentDepth, lineCoordinatesFocus);
         #endif
         float expOpacityFactorFocus = exp(-4.0 * (fragmentDepth - 0.2) * discreteLodValue / lineWidth * 0.001) + 0.4;
         color.a *= clamp(expOpacityFactorFocus, 0.0, 1.0);
@@ -149,25 +155,50 @@ void main()
         gatherFragmentCustomDepth(color, fragmentDepth);
     }
 
-    float distanceToFocusRing = length(fragmentPositionWorld - sphereCenter) - sphereRadius;
-    float expFactor = exp(-3.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValue);
-    float expFactorOpacity = exp(-6.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValue);
-    float boostFactor = clamp(2.5 * expFactorOpacity, 0.0, 2.0);
 
     // Add the context fragment.
+    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
+    float distanceToFocusRing = length(fragmentPositionWorld - sphereCenter) - sphereRadius;
     vec4 colorContext = fragmentColor;
-    bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
     const float EPSILON = 1e-5;
-    float lineWidthFactor;
-    float lineWidthPrime = lineWidth * (
-    #if defined(HIGHLIGHT_SINGULAR_EDGES)
-        isSingularEdge ? 1.0 :
-    #endif
-        max(expFactor, EPSILON) / log2(discreteLodValue/4.0+1.75)) / 1.5;
-    if (expFactor < 0.2) {
-        lineWidthPrime = mix(lineWidthPrime, 1e-8, smoothstep(0.2, 0.2 + CUTOFF_EPSILON, expFactor));
+
+    float lineRadiiContext[4];
+    minDistance = 1e9;
+    minLodEdgeValue = 1e9;
+    minDistanceIndex = 0;
+    for (int i = 0; i < 4; i++) {
+        currentDistance = distanceToLineSegment(
+                fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
+
+        float discreteLodValueCurrent = edgeLodValues[i] * maxLodValue;
+        float expFactor = exp(-3.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValueCurrent);
+        bool isSingularEdge = (edgeSingularityInformationList[i] & 1u) == 1u;
+        float lineWidthPrime = lineWidth * (
+        #if defined(HIGHLIGHT_SINGULAR_EDGES)
+            isSingularEdge ? 1.0 :
+        #endif
+            max(expFactor, EPSILON) / log2(discreteLodValueCurrent/4.0+1.75)) / 1.5;
+        if (expFactor < 0.2) {
+            lineWidthPrime = mix(lineWidthPrime, 1e-8, smoothstep(0.2, 0.2 + CUTOFF_EPSILON, expFactor));
+        }
+        float lineCoordinatesContext = max(minDistance / lineWidthPrime * 2.0, 0.0);
+        lineRadiiContext[i] = lineWidthPrime / 2.0;
+
+        if ((edgeLodValues[i] >= minLodEdgeValue && minDistance > lineRadiiContext[minDistanceIndex] && currentDistance < lineRadiiContext[i])
+                || (edgeLodValues[i] < minLodEdgeValue && currentDistance <= lineRadiiContext[i]) || i == 0) {
+            minDistance = currentDistance;
+            minLodEdgeValue = edgeLodValues[i];
+            minDistanceIndex = i;
+        }
     }
-    float lineCoordinatesContext = max(minDistance / lineWidthPrime * 2.0, 0.0);
+
+    discreteLodValue = edgeLodValues[minDistanceIndex] * maxLodValue;
+    lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
+    float expFactorOpacity = exp(-6.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValue);
+    float boostFactor = clamp(2.5 * expFactorOpacity, 0.0, 2.0);
+    float lineCoordinatesContext = max(minDistance / lineRadiiContext[minDistanceIndex], 0.0);
+    bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
+
     #ifdef HIGHLIGHT_EDGES
     if (lineCoordinatesContext <= 1.0) {
         #ifdef HIGHLIGHT_LOW_LOD_EDGES

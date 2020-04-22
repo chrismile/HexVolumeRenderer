@@ -53,6 +53,9 @@ uniform float factor_c = 0.25f;
 uniform float factor_v = 0.25f;
 uniform float factor_d = 0.25f;
 
+#define DEPTH_HELPER_USE_PROJECTION_MATRIX
+#include "DepthHelper.glsl"
+
 /**
  * Channel 0: Maximum importance M.
  * Channel 1: Maximum importance depth D.
@@ -72,33 +75,41 @@ const float LOD_EPSILON = 1e-5;
  * https://www.in.tum.de/cg/research/publications/2016/line-density-control-in-screen-space-via-balanced-line-hierarchies/
  */
 void computeLineVisibilityValues(
-        HexahedralCellFaceLineDensityControl hexahedralCellFace,
-        vec3 vertexPositionWorld, vec4 vertexPositionClipSpace) {
-    vec3 vertexPositionNdc = vertexPositionClipSpace.xyz / vertexPositionClipSpace.w;
-    vec2 screenTextureCoordinates = vertexPositionNdc.xy * vec2(0.5) + vec2(0.5);
-    float vertexDepth = length(vertexPositionWorld - cameraPosition);
+        HexahedralCellFaceLineDensityControl hexahedralCellFace) {
+    float P[4];
+    for (int i = 0; i < 4; i++) {
+        vec4 vertexPositionClipSpace = mvpMatrix * hexahedralCellFace.vertexPositions[i];
+        vec3 vertexPositionNdc = vertexPositionClipSpace.xyz / vertexPositionClipSpace.w;
+        vec2 screenTextureCoordinates = vertexPositionNdc.xy * vec2(0.5) + vec2(0.5);
+        float vertexDepth = convertDepthBufferValueToLinearDepth(vertexPositionNdc.z * 0.5 + 0.5);
 
-    vec4 attributeTextureEntry = texture(
-            attributeTexture, screenTextureCoordinates);
-    float maximumImportance = attributeTextureEntry[0];
-    float maximumImportanceDepth = attributeTextureEntry[1];
-    float coverage = attributeTextureEntry[2];
-    float directionalVariance = attributeTextureEntry[3];
+        vec4 attributeTextureEntry = texture(
+                attributeTexture, screenTextureCoordinates);
+        float maximumImportance = attributeTextureEntry[0];
+        float maximumImportanceDepth = attributeTextureEntry[1];
+        float coverage = attributeTextureEntry[2];
+        float directionalVariance = attributeTextureEntry[3];
 
-    // Compute the visibility value.
-    float P = factor_m * maximumImportance + factor_c * coverage + factor_v * directionalVariance;
-    if (vertexDepth < maximumImportanceDepth) {
-        P += factor_d;
+        // Compute the visibility value.
+        P[i] = factor_m * maximumImportance + factor_c * coverage + factor_v * directionalVariance;
+        if (vertexDepth < maximumImportanceDepth) {
+            P[i] += factor_d;
+        }
     }
 
     uint shouldRenderEdgeBitMapLocal = 0u;
     for (int i = 0; i < 4; i++) {
         float g_i = hexahedralCellFace.edgeAttributes[i];
-        float rho_i = 1.0 / (1.0 + (1.0 - pow(g_i, lambda)) * P);
+        float rho_i0 = 1.0, rho_i1 = 1.0;
+        if (lambda > 0.0) {
+            // Avoid pow(0.0, 0.0).
+            rho_i0 = 1.0 / (1.0 + (1.0 - pow(g_i, lambda)) * P[i]);
+            rho_i1 = 1.0 / (1.0 + (1.0 - pow(g_i, lambda)) * P[(i + 1) % 4]);
+        }
 
-        shouldRenderEdgeBitMapLocal = shouldRenderEdgeBitMapLocal << 1u;
-        if (hexahedralCellFace.edgeLodValues[i] <= rho_i + LOD_EPSILON) {
-            shouldRenderEdgeBitMapLocal = shouldRenderEdgeBitMapLocal | 1u;
+        if (hexahedralCellFace.edgeLodValues[i] <= rho_i0 + LOD_EPSILON
+                && hexahedralCellFace.edgeLodValues[i] <= rho_i1 + LOD_EPSILON) {
+            shouldRenderEdgeBitMapLocal = shouldRenderEdgeBitMapLocal | (1u << uint(i));
         }
     }
     shouldRenderEdgeBitMap = shouldRenderEdgeBitMapLocal;
@@ -115,7 +126,7 @@ void main()
     vec4 vertexPosition = hexahedralCellFace.vertexPositions[vertexId];
     vec3 vertexPositionWorld = (mMatrix * vertexPosition).xyz;
     vec4 vertexPositionClipSpace = mvpMatrix * vertexPosition;
-    computeLineVisibilityValues(hexahedralCellFace, vertexPositionWorld, vertexPositionClipSpace);
+    computeLineVisibilityValues(hexahedralCellFace);
 
     // Copy the edge data.
     for (int i = 0; i < 4; i++) {
@@ -168,11 +179,30 @@ uniform float lineWidth;
 #include OIT_GATHER_HEADER
 #endif
 
-#define WIREFRAME_SURFACE_HALO_LIGHTING
-#include "Lighting.glsl"
+//#define WIREFRAME_SURFACE_HALO_LIGHTING
+//#include "Lighting.glsl"
 #include "PointToLineDistance.glsl"
 #define DEPTH_HELPER_USE_PROJECTION_MATRIX
 #include "DepthHelper.glsl"
+
+/**
+ * Flat shading, but adds a constant-sized halo at the outline of the surface. Assumes the following global variables
+ * are given: cameraPosition, fragmentPositionWorld.
+*/
+vec4 flatShadingWireframeSurfaceHalo(in vec4 baseColor, out float fragmentDepthFrag, in float lineCoordinates) {
+    float fragmentDepth = convertDepthBufferValueToLinearDepth(gl_FragCoord.z);
+    const float WHITE_THRESHOLD = 0.7;
+    float EPSILON = clamp(fragmentDepth / 2.0, 0.0, 0.49);
+    vec4 color = vec4(mix(baseColor.rgb, vec3(1.0, 1.0, 1.0),
+            smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), baseColor.a);
+
+    if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
+        fragmentDepth += 0.008;
+    }
+    fragmentDepthFrag = fragmentDepth;
+
+    return color;
+}
 
 void main()
 {
@@ -208,13 +238,7 @@ void main()
     }
 
     float fragmentDepth;
-    #if defined(LINE_RENDERING_STYLE_HALO)
     vec4 color = flatShadingWireframeSurfaceHalo(lineBaseColor, fragmentDepth, lineCoordinates);
-    #elif defined(LINE_RENDERING_STYLE_TRON)
-    vec4 color = flatShadingWireframeSurfaceTronHalo(lineBaseColor, fragmentDepth, lineCoordinates);
-    #else //#elif defined(LINE_RENDERING_STYLE_SINGLE_COLOR)
-    vec4 color = flatShadingWireframeSingleColor(lineBaseColor, fragmentDepth, lineCoordinates);
-    #endif
 
     #if defined(DIRECT_BLIT_GATHER)
     if (color.a < 0.01) {

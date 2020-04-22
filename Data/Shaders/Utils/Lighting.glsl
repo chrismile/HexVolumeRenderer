@@ -103,7 +103,7 @@ vec4 flatShadingTubeHalo(in vec4 baseColor, out float fragmentDepthFrag) {
     // To counteract depth fighting with overlay wireframe.
     float depthOffset = -0.00001;
     if (angle >= WHITE_THRESHOLD - EPSILON) {
-        fragmentDepth += 0.004;
+        fragmentDepth += 0.005;
     }
     fragmentDepthFrag = fragmentDepth;
 
@@ -234,9 +234,9 @@ vec4 flatShadingWireframeSurfaceHalo_DepthCue(in vec4 baseColor, out float fragm
     outlineColor = mix(outlineColor, baseColor.rgb, clamp(max(depthCueFactorFocus, depthCueFactorDistance), 0.0, 1.0));
     #endif
 
-    #ifdef DEPTH_CUE_LINE_WIDTH
-    lineCoordinates /= -distanceToFocusPointNormalized * 0.6 + 1.0;
-    #endif
+    //#ifdef DEPTH_CUE_LINE_WIDTH
+    //lineCoordinates /= -distanceToFocusPointNormalized * 0.6 + 1.0;
+    //#endif
 
     // Fade out the outline with increasing distance
     const float WHITE_THRESHOLD = 0.7;
