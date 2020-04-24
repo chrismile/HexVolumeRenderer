@@ -41,7 +41,7 @@ void main() {
 
     // Data for this pixel of the attribute texture.
     float maximumImportance = 0.0f;
-    float maximumImportanceDepth = zFar;
+    float maximumImportanceDepth = 1.0; // far depth
     vec3 lineDirectionSum = vec3(0.0);
 
     // Collect all fragments for this pixel,

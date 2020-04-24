@@ -67,12 +67,14 @@ uniform float lineWidth;
  * are given: cameraPosition, fragmentPositionWorld.
 */
 void flatShadingWireframeSurfaceHaloDepth(out float fragmentDepthFrag, in float lineCoordinates) {
-    float fragmentDepth = convertDepthBufferValueToLinearDepth(gl_FragCoord.z);
+    float fragmentDepth = gl_FragCoord.z;
+    //float fragmentDepth = convertDepthBufferValueToLinearDepth(gl_FragCoord.z);
     const float WHITE_THRESHOLD = 0.7;
-    float EPSILON = clamp(fragmentDepth / 2.0, 0.0, 0.49);
+    float EPSILON = clamp(convertDepthBufferValueToLinearDepth(fragmentDepth) / 2.0, 0.0, 0.49);
 
     if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
-        fragmentDepth += 0.008;
+        fragmentDepth = convertLinearDepthToDepthBufferValue(
+                convertDepthBufferValueToLinearDepth(fragmentDepth) + 0.008);
     }
     fragmentDepthFrag = fragmentDepth;
 }
@@ -107,7 +109,7 @@ void main()
     int minDistanceIndex = 0;
     float currentDistance;
     for (int i = 0; i < 4; i++) {
-        currentDistance = distanceToLineSegment(
+        currentDistance = getDistanceToLineSegment(
                 fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
         if (currentDistance < minDistance) {
             minDistance = currentDistance;

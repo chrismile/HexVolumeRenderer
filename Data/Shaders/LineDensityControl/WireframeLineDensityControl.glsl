@@ -34,6 +34,7 @@ flat out vec3 vertexPositions[4];
 flat out vec4 lineColors[4];
 flat out uvec4 edgeSingularityInformationList;
 flat out uint shouldRenderEdgeBitMap;
+out vec2 lineFadeOutFactors[4];
 
 #include "TransferFunction.glsl"
 
@@ -65,7 +66,8 @@ uniform float factor_d = 0.25f;
  */
 uniform sampler2D attributeTexture;
 
-const float LOD_EPSILON = 1e-5;
+const float LOD_EPSILON = 1e-6;
+const float FADE_OUT_SPEED = 0.01;
 
 /**
  * This function uses the algorithm uses line density control with pre-generated attribute textures.
@@ -81,7 +83,9 @@ void computeLineVisibilityValues(
         vec4 vertexPositionClipSpace = mvpMatrix * hexahedralCellFace.vertexPositions[i];
         vec3 vertexPositionNdc = vertexPositionClipSpace.xyz / vertexPositionClipSpace.w;
         vec2 screenTextureCoordinates = vertexPositionNdc.xy * vec2(0.5) + vec2(0.5);
-        float vertexDepth = convertDepthBufferValueToLinearDepth(vertexPositionNdc.z * 0.5 + 0.5);
+        // Convert to range [0,1].
+        float vertexDepth = vertexPositionNdc.z * 0.5 + 0.5;
+        //float vertexDepth = convertDepthBufferValueToLinearDepth(vertexPositionNdc.z * 0.5 + 0.5);
 
         vec4 attributeTextureEntry = texture(
                 attributeTexture, screenTextureCoordinates);
@@ -92,7 +96,7 @@ void computeLineVisibilityValues(
 
         // Compute the visibility value.
         P[i] = factor_m * maximumImportance + factor_c * coverage + factor_v * directionalVariance;
-        if (vertexDepth < maximumImportanceDepth) {
+        if (vertexDepth < maximumImportanceDepth - 1e-5) {
             P[i] += factor_d;
         }
     }
@@ -107,8 +111,16 @@ void computeLineVisibilityValues(
             rho_i1 = 1.0 / (1.0 + (1.0 - pow(g_i, lambda)) * P[(i + 1) % 4]);
         }
 
-        if (hexahedralCellFace.edgeLodValues[i] <= rho_i0 + LOD_EPSILON
+        lineFadeOutFactors[i][0] = 1.0 - smoothstep(
+                rho_i0 + LOD_EPSILON, rho_i0 + LOD_EPSILON + FADE_OUT_SPEED, hexahedralCellFace.edgeLodValues[i]);
+        lineFadeOutFactors[i][1] = 1.0 - smoothstep(
+                rho_i1 + LOD_EPSILON, rho_i1 + LOD_EPSILON + FADE_OUT_SPEED, hexahedralCellFace.edgeLodValues[i]);
+
+        /*if (hexahedralCellFace.edgeLodValues[i] <= rho_i0 + LOD_EPSILON
                 && hexahedralCellFace.edgeLodValues[i] <= rho_i1 + LOD_EPSILON) {
+            shouldRenderEdgeBitMapLocal = shouldRenderEdgeBitMapLocal | (1u << uint(i));
+        }*/
+        if (lineFadeOutFactors[i][0] > 1e-8 || lineFadeOutFactors[i][1] > 1e-8) {
             shouldRenderEdgeBitMapLocal = shouldRenderEdgeBitMapLocal | (1u << uint(i));
         }
     }
@@ -166,6 +178,7 @@ flat in vec3 vertexPositions[4];
 flat in vec4 lineColors[4];
 flat in uvec4 edgeSingularityInformationList;
 flat in uint shouldRenderEdgeBitMap;
+in vec2 lineFadeOutFactors[4];
 
 #if defined(DIRECT_BLIT_GATHER)
 out vec4 fragColor;
@@ -182,6 +195,7 @@ uniform float lineWidth;
 //#define WIREFRAME_SURFACE_HALO_LIGHTING
 //#include "Lighting.glsl"
 #include "PointToLineDistance.glsl"
+#include "ClosestPointOnLine.glsl"
 #define DEPTH_HELPER_USE_PROJECTION_MATRIX
 #include "DepthHelper.glsl"
 
@@ -217,22 +231,40 @@ void main()
         discard;
     }
 
+    vec3 closestLinePoints[4];
+    float lineFadeOutFactorsInterpolated[4];
+    for (int i = 0; i < 4; i++) {
+        vec3 linePoints[2];
+        linePoints[0] = vertexPositions[i];
+        linePoints[1] = vertexPositions[(i + 1) % 4];
+        closestLinePoints[i] = getClosestPointOnLineSegment(fragmentPositionWorld, linePoints[0], linePoints[1]);
+        float interpolationFactor = length(closestLinePoints[i] - linePoints[0]) / length(linePoints[1] - linePoints[0]);
+        //lineFadeOutFactorsInterpolated[i] = mix(lineFadeOutFactors[i][0], lineFadeOutFactors[i][1], interpolationFactor);
+        lineFadeOutFactorsInterpolated[i] = mix(lineFadeOutFactors[i][0], lineFadeOutFactors[i][1], interpolationFactor);
+    }
+
     // Compute the distance to the edges and get the minimum distance.
     float minDistance = 1e9;
     int minDistanceIndex = 0;
     float currentDistance;
     for (int i = 0; i < 4; i++) {
-        currentDistance = distanceToLineSegment(
-                fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
+        //currentDistance = getDistanceToLineSegment(
+        //        fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
+        currentDistance = length(fragmentPositionWorld - closestLinePoints[i]);
         if (currentDistance < minDistance && shouldRenderEdge[i]) {
             minDistance = currentDistance;
             minDistanceIndex = i;
         }
     }
 
+    // TODO: Don't render arrow shapes => Move into for-loop (compare MeshWireframe.glsl).
+    float lineFadeOutFactor = lineFadeOutFactorsInterpolated[minDistanceIndex];
+    float lineWidthPrime = lineWidth * lineFadeOutFactor;
+    float lineRadius = lineWidthPrime / 2.0;
+
     //vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
     vec4 lineBaseColor = lineColors[minDistanceIndex];
-    float lineCoordinates = max(minDistance / lineWidth * 2.0, 0.0);
+    float lineCoordinates = max(minDistance / lineRadius, 0.0);
     if (lineCoordinates > 1.0) {
         discard;
     }

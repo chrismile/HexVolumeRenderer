@@ -93,7 +93,7 @@ protected:
     // The attribute texture.
     sgl::FramebufferObjectPtr attributeTextureFramebuffer;
     sgl::TexturePtr attributeTexture;
-    float attributeTextureSubsamplingFactor = 0.5f;
+    float attributeTextureSubsamplingFactor = 0.25f;
     glm::ivec2 attributeTextureResolution;
 
     // For blurring the attribute texture.
@@ -109,10 +109,10 @@ protected:
 
     // Scalar weights for computing visibility values rho and visibility parameter lambda.
     float lambda = 1.0f;
-    float factor_m = 0.25f;
-    float factor_c = 0.25f;
-    float factor_v = 0.25f;
-    float factor_d = 0.25f;
+    float factor_m = 10.0f;
+    float factor_c = 10.0f;
+    float factor_v = 10.0f;
+    float factor_d = 10.0f;
 };
 
 

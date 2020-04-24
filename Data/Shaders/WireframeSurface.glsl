@@ -74,7 +74,7 @@ void main()
     int minDistanceIndex = 0;
     float currentDistance;
     for (int i = 0; i < 4; i++) {
-        currentDistance = distanceToLineSegment(
+        currentDistance = getDistanceToLineSegment(
         fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
         if (currentDistance < minDistance) {
             minDistance = currentDistance;
@@ -139,7 +139,7 @@ void main()
     int minDistanceIndex = 0;
     float currentDistance;
     for (int i = 0; i < 4; i++) {
-        currentDistance = distanceToLineSegment(
+        currentDistance = getDistanceToLineSegment(
         fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
         if (currentDistance < minDistance) {
             minDistance = currentDistance;

@@ -119,7 +119,7 @@ void main()
     int minDistanceIndex = 0;
     float currentDistance;
     for (int i = 0; i < 4; i++) {
-        currentDistance = distanceToLineSegment(
+        currentDistance = getDistanceToLineSegment(
                fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
         //if ((edgeLodValues[i] >= minLodEdgeValue && minDistance > lineRadiusFocus && currentDistance < minDistance)
         //        || (edgeLodValues[i] < minLodEdgeValue && currentDistance <= lineRadiusFocus)) {
@@ -167,7 +167,7 @@ void main()
     minLodEdgeValue = 1e9;
     minDistanceIndex = 0;
     for (int i = 0; i < 4; i++) {
-        currentDistance = distanceToLineSegment(
+        currentDistance = getDistanceToLineSegment(
                 fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
 
         float discreteLodValueCurrent = edgeLodValues[i] * maxLodValue;

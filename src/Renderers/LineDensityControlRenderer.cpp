@@ -336,19 +336,19 @@ void LineDensityControlRenderer::renderGui() {
         if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             reRender = true;
         }
-        if (ImGui::SliderFloat(u8"\u03BB", &lambda, 0.0f, 1.0f, "%.4f")) {
+        if (ImGui::SliderFloat(u8"\u03BB", &lambda, 0.0f, 10.0f, "%.4f")) {
             reRender = true;
         }
-        if (ImGui::SliderFloat(u8"m", &factor_m, 0.0f, 1.0f, "%.4f")) {
+        if (ImGui::SliderFloat(u8"m", &factor_m, 0.0f, 50.0f, "%.4f")) {
             reRender = true;
         }
-        if (ImGui::SliderFloat(u8"c", &factor_c, 0.0f, 1.0f, "%.4f")) {
+        if (ImGui::SliderFloat(u8"c", &factor_c, 0.0f, 50.0f, "%.4f")) {
             reRender = true;
         }
-        if (ImGui::SliderFloat(u8"v", &factor_v, 0.0f, 1.0f, "%.4f")) {
+        if (ImGui::SliderFloat(u8"v", &factor_v, 0.0f, 50.0f, "%.4f")) {
             reRender = true;
         }
-        if (ImGui::SliderFloat(u8"d", &factor_d, 0.0f, 1.0f, "%.4f")) {
+        if (ImGui::SliderFloat(u8"d", &factor_d, 0.0f, 50.0f, "%.4f")) {
             reRender = true;
         }
     }
