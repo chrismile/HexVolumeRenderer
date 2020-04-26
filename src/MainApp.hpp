@@ -111,6 +111,9 @@ private:
     std::string saveDirectoryScreenshots = "Data/Screenshots/";
     std::string saveFilenameScreenshots = "Screenshot";
     int screenshotNumber = 0;
+    std::string saveDirectoryVideos = "Data/Videos/";
+    std::string saveFilenameVideos = "Video";
+    int videoNumber = 0;
     float MOVE_SPEED = 0.2f;
     float ROT_SPEED = 1.0f;
     float MOUSE_ROT_SPEED = 0.05f;

@@ -58,15 +58,19 @@ void main()
     for (int i = 0; i < 4; i++) {
         uint edgeSingularityInformation = hexahedralCellFace.edgeSingularityInformationList[i];
         vec4 lineColor;
+        #ifdef USE_SINGULAR_EDGE_COLOR_MAP
         if ((edgeSingularityInformation & 1u) == 1u) {
             // Singular edge.
             lineColor = lookupSingularEdgeColor(edgeSingularityInformation);
             lineAttributes[i] = 1.0;
         } else {
+        #endif
             // Regular edge.
             lineColor = vec4(transferFunction(hexahedralCellFace.edgeAttributes[i]).rgb, 1.0);
             lineAttributes[i] = hexahedralCellFace.edgeAttributes[i];
+        #ifdef USE_SINGULAR_EDGE_COLOR_MAP
         }
+        #endif
         lineColors[i] = lineColor;
         edgeLodValues[i] = hexahedralCellFace.edgeLodValues[i];
         edgeSingularityInformationList[i] = edgeSingularityInformation;
@@ -266,6 +270,7 @@ uniform float lineWidth;
 uniform float maxLodValue;
 uniform float selectedLodValueFocus;
 uniform float selectedLodValueContext;
+uniform float importantLineBoostFactor;
 
 #include "ClearView.glsl"
 
@@ -318,9 +323,9 @@ void main()
 
         float val = max(
         #ifdef USE_PER_LINE_ATTRIBUTES
-                (1.0 - lineAttributes[i]) * discreteSelectedLodValueFocus,
+                clamp(1.0 - lineAttributes[i] * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
         #else
-                (1.0 - fragmentAttribute) * discreteSelectedLodValueFocus,
+                clamp(1.0 - fragmentAttribute * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
         #endif
                 distanceToFocusPointNormalized * discreteSelectedLodValueFocus);
         float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;
@@ -347,9 +352,9 @@ void main()
 
     float val = max(
     #ifdef USE_PER_LINE_ATTRIBUTES
-            (1.0 - lineAttributes[minDistanceIndex]) * discreteSelectedLodValueFocus,
+            clamp(1.0 - lineAttributes[i] * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
     #else
-            (1.0 - fragmentAttribute) * discreteSelectedLodValueFocus,
+            clamp(1.0 - fragmentAttribute * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
     #endif
             distanceToFocusPointNormalized * discreteSelectedLodValueFocus);
     float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;
@@ -435,6 +440,7 @@ uniform float lineWidth;
 uniform float maxLodValue;
 uniform float selectedLodValueFocus;
 uniform float selectedLodValueContext;
+uniform float importantLineBoostFactor;
 
 // Camera data
 uniform vec3 cameraPosition;
@@ -490,24 +496,24 @@ void main()
 
         float val = max(
         #ifdef USE_PER_LINE_ATTRIBUTES
-                (1.0 - lineAttributes[i]) * discreteSelectedLodValueFocus,
+                clamp(1.0 - lineAttributes[i] * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
         #else
-                (1.0 - fragmentAttribute) * discreteSelectedLodValueFocus,
+                clamp(1.0 - fragmentAttribute * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
         #endif
-                screenSpaceSphereDistanceNormalized * discreteSelectedLodValueFocus);
+                screenSpaceSphereDistanceNormalized * discreteSelectedLodValueFocus / 10.0);
         float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;
 
         float lodLineValue = edgeLodValues[i];
         float discreteLodValue = lodLineValue * maxLodValue;
         float lodLevelOpacityFactor = mix(
         #ifdef USE_PER_LINE_ATTRIBUTES
-                discreteLodValue <= lodLevelContext ? 1.0 : 0.0,
-                discreteLodValue <= lodLevelFocus ? 1.0 : 0.0,
+                discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 0.0,
+                discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 0.0,
         #else
-                discreteLodValue <= lodLevelContext ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
-                discreteLodValue <= lodLevelFocus ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
+                discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
+                discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
         #endif
-        focusFactor);
+                focusFactor);
         bool drawLine = lodLevelOpacityFactor > 0.2;
 
         if (currentDistance < minDistance && drawLine) {
@@ -519,24 +525,24 @@ void main()
 
     float val = max(
     #ifdef USE_PER_LINE_ATTRIBUTES
-            (1.0 - lineAttributes[minDistanceIndex]) * discreteSelectedLodValueFocus,
+            clamp(1.0 - lineAttributes[minDistanceIndex] * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
     #else
-            (1.0 - fragmentAttribute) * discreteSelectedLodValueFocus,
+            clamp(1.0 - fragmentAttribute * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
     #endif
-            screenSpaceSphereDistanceNormalized * discreteSelectedLodValueFocus);
+            screenSpaceSphereDistanceNormalized * discreteSelectedLodValueFocus / 10.0);
     float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;
 
     float lodLineValue = edgeLodValues[minDistanceIndex];
     float discreteLodValue = lodLineValue * maxLodValue;
     float lodLevelOpacityFactor = mix(
     #ifdef USE_PER_LINE_ATTRIBUTES
-            discreteLodValue <= lodLevelContext ? 1.0 : 0.0,
-            discreteLodValue <= lodLevelFocus ? 1.0 : 0.0,
+            discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 0.0,
+            discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 0.0,
     #else
-            discreteLodValue <= lodLevelContext ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
-            discreteLodValue <= lodLevelFocus ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
+            discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
+            discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
     #endif
-    focusFactor);
+            focusFactor);
 
     bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
     //vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);

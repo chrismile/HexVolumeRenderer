@@ -65,7 +65,7 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
         : ClearViewRenderer(sceneData, transferFunctionWindow) {
     windowName = "ClearView Renderer (Unified)";
     clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED;
-    useScreenSpaceLens = true; // TODO
+    useScreenSpaceLens = true;
 
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
@@ -251,6 +251,9 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     if (usePerLineAttributes) {
         sgl::ShaderManager->addPreprocessorDefine("USE_PER_LINE_ATTRIBUTES", "");
     }
+    if (useSingularEdgeColorMap) {
+        sgl::ShaderManager->addPreprocessorDefine("USE_SINGULAR_EDGE_COLOR_MAP", "");
+    }
 
     if (useScreenSpaceLens) {
         gatherShader = sgl::ShaderManager->getShaderProgram(
@@ -280,6 +283,9 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     }
     if (usePerLineAttributes) {
         sgl::ShaderManager->removePreprocessorDefine("USE_PER_LINE_ATTRIBUTES");
+    }
+    if (useSingularEdgeColorMap) {
+        sgl::ShaderManager->removePreprocessorDefine("USE_SINGULAR_EDGE_COLOR_MAP");
     }
 }
 
@@ -391,9 +397,11 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     }
     gatherShader->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
-    gatherShader->setUniform(
-            "singularEdgeColorLookupTexture",
-            singularEdgeColorMapWidget.getSingularEdgeColorLookupTexture(), 1);
+    if (gatherShader->hasUniform("singularEdgeColorLookupTexture")) {
+        gatherShader->setUniform(
+                "singularEdgeColorLookupTexture",
+                singularEdgeColorMapWidget.getSingularEdgeColorLookupTexture(), 1);
+    }
 
     if (gatherShader->hasUniform("lineWidth")) {
         gatherShader->setUniform("lineWidth", lineWidth);
@@ -406,6 +414,9 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     }
     if (gatherShader->hasUniform("selectedLodValueContext")) {
         gatherShader->setUniform("selectedLodValueContext", float(selectedLodValueContext));
+    }
+    if (gatherShader->hasUniform("importantLineBoostFactor")) {
+        gatherShader->setUniform("importantLineBoostFactor", float(importantLineBoostFactor));
     }
 
     if (useScreenSpaceLens) {
@@ -561,7 +572,7 @@ void ClearViewRenderer_FacesUnified::resolve() {
 void ClearViewRenderer_FacesUnified::renderGui() {
     ClearViewRenderer::renderGui();
 
-    if (highlightEdges && singularEdgeColorMapWidget.renderGui()) {
+    if (highlightEdges && useSingularEdgeColorMap && singularEdgeColorMapWidget.renderGui()) {
         reRender = true;
     }
 }
@@ -596,13 +607,24 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
         reRender = true;
     }
     if ((useScreenSpaceLens || useExperimentalApproach)
-            && ImGui::SliderFloat("LOD Value Context", &selectedLodValueContext, 0.0f, 1.0f)) {
+        && ImGui::SliderFloat("LOD Value Context", &selectedLodValueContext, 0.0f, 1.0f)) {
         if (selectedLodValueFocus < selectedLodValueContext) {
             selectedLodValueFocus = selectedLodValueContext;
         }
         reRender = true;
     }
+    if ((useScreenSpaceLens || useExperimentalApproach)
+        && ImGui::SliderFloat("Important Line Boost", &importantLineBoostFactor, 0.0f, 5.0f)) {
+        reRender = true;
+    }
     if ((useScreenSpaceLens || useExperimentalApproach) && ImGui::Checkbox("Per Line Attributes", &usePerLineAttributes)) {
+        reloadGatherShader();
+        if (shaderAttributes) {
+            shaderAttributes = shaderAttributes->copy(gatherShader);
+        }
+        reRender = true;
+    }
+    if (ImGui::Checkbox("Use Singular Edge Color Map", &useSingularEdgeColorMap)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);

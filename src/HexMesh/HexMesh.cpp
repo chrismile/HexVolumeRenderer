@@ -602,6 +602,17 @@ float HexMesh::interpolateCellAttributePerEdge(uint32_t e_id, const std::vector<
     return edgeAttribute;
 }
 
+float HexMesh::maximumCellAttributePerEdge(uint32_t e_id, const std::vector<float>& cellVolumes) {
+    Hybrid_E& e = baseComplexMesh->Es.at(e_id);
+
+    float maximumCellAttributeValue = 0.0f;
+    for (uint32_t h_id : e.neighbor_hs) {
+        maximumCellAttributeValue = std::max(
+                maximumCellAttributeValue, 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id));
+    }
+    return maximumCellAttributeValue;
+}
+
 
 glm::vec4 HexMesh::edgeColorMap(bool isSingular, bool isBoundary, int valence) {
     if (!isSingular) {
@@ -2131,7 +2142,7 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
     // Compute all edge attributes.
     std::vector<float> edgeAttributes(mesh->Es.size());
     for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
-        float edgeAttribute = interpolateCellAttributePerEdge(e_id, cellVolumes);
+        float edgeAttribute = maximumCellAttributePerEdge(e_id, cellVolumes);
         edgeAttributes.at(e_id) = edgeAttribute;
     }
 
@@ -2229,7 +2240,7 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
     // Compute all edge attributes.
     std::vector<float> edgeAttributes(mesh->Es.size());
     for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
-        float edgeAttribute = interpolateCellAttributePerEdge(e_id, cellVolumes);
+        float edgeAttribute = maximumCellAttributePerEdge(e_id, cellVolumes);
         edgeAttributes.at(e_id) = edgeAttribute;
     }
 

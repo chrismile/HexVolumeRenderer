@@ -81,6 +81,7 @@ cmake-build-*/
 Data/Meshes/*
 Data/CameraPaths/*
 Data/Screenshots/*
+Data/Videos/*
 Data/TransferFunctions/*
 
 Data/ControlPoints.txt

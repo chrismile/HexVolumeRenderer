@@ -114,7 +114,7 @@ protected:
     const float rhoLoG = 1.0f;
 
     // Window data.
-    const float screenSpaceLensPixelRadiusWindowFactor = 0.5f;
+    const float screenSpaceLensPixelRadiusWindowFactor = 0.25f;
     int windowWidth = 0;
     int windowHeight = 0;
 
@@ -123,6 +123,8 @@ protected:
     bool useExperimentalApproach = true;
     float selectedLodValueFocus = 0.2f;
     float selectedLodValueContext = 0.1f;
+    float importantLineBoostFactor = 2.0f;
+    bool useSingularEdgeColorMap = false;
     bool usePerLineAttributes = true;
     enum OutlineMode {
         OUTLINE_MODE_NONE, OUTLINE_MODE_DEPTH, OUTLINE_MODE_STENCIL

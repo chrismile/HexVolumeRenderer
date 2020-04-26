@@ -107,6 +107,7 @@ MainApp::MainApp()
                   *rayMeshIntersection),
           videoWriter(NULL) {
     sgl::FileUtils::get()->ensureDirectoryExists(saveDirectoryScreenshots);
+    sgl::FileUtils::get()->ensureDirectoryExists(saveDirectoryVideos);
     setPrintFPS(false);
 
     gammaCorrectionShader = sgl::ShaderManager->getShaderProgram({"GammaCorrection.Vertex", "GammaCorrection.Fragment"});
@@ -293,7 +294,7 @@ void MainApp::processSDLEvent(const SDL_Event &event) {
 
 void MainApp::render() {
     if (videoWriter == NULL && recording) {
-        videoWriter = new sgl::VideoWriter("video.mp4", 25);
+        videoWriter = new sgl::VideoWriter(saveFilenameVideos + "video.mp4", 30);
     }
 
     prepareVisualizationPipeline();
@@ -558,10 +559,28 @@ void MainApp::renderSceneSettingsGUI() {
     ImGui::Separator();
 
     ImGui::InputText("##savescreenshotlabel", &saveFilenameScreenshots);
-    if (ImGui::Button("Save screenshot")) {
+    if (ImGui::Button("Save Screenshot")) {
         saveScreenshot(
                 saveDirectoryScreenshots + saveFilenameScreenshots
                 + "_" + sgl::toString(screenshotNumber++) + ".png");
+    }
+
+    ImGui::Separator();
+
+    ImGui::InputText("##savevideolabel", &saveFilenameVideos);
+    if (!recording) {
+        if (ImGui::Button("Start Recording Video")) {
+            recording = true;
+            videoWriter = new sgl::VideoWriter(
+                    saveDirectoryVideos + saveFilenameVideos
+                    + "_" + sgl::toString(videoNumber++) + ".mp4", 30);
+        }
+    } else {
+        if (ImGui::Button("Stop Recording Video")) {
+            recording = false;
+            delete videoWriter;
+            videoWriter = nullptr;
+        }
     }
 }
 
