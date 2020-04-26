@@ -247,6 +247,9 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     if (highlightLowLodEdges) {
         sgl::ShaderManager->addPreprocessorDefine("HIGHLIGHT_LOW_LOD_EDGES", "");
     }
+    if (usePerLineAttributes) {
+        sgl::ShaderManager->addPreprocessorDefine("USE_PER_LINE_ATTRIBUTES", "");
+    }
 
     if (useExperimentalApproach) {
         gatherShader = sgl::ShaderManager->getShaderProgram(
@@ -268,6 +271,9 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     }
     if (highlightLowLodEdges) {
         sgl::ShaderManager->removePreprocessorDefine("HIGHLIGHT_LOW_LOD_EDGES");
+    }
+    if (usePerLineAttributes) {
+        sgl::ShaderManager->removePreprocessorDefine("USE_PER_LINE_ATTRIBUTES");
     }
 }
 
@@ -559,6 +565,13 @@ void ClearViewRenderer_FacesUnified::childClassRenderGui() {
     if (useExperimentalApproach && ImGui::SliderFloat("LOD Value Context", &selectedLodValueContext, 0.0f, 1.0f)) {
         if (selectedLodValueFocus < selectedLodValueContext) {
             selectedLodValueFocus = selectedLodValueContext;
+        }
+        reRender = true;
+    }
+    if (useExperimentalApproach && ImGui::Checkbox("Per Line Attributes", &usePerLineAttributes)) {
+        reloadGatherShader();
+        if (shaderAttributes) {
+            shaderAttributes = shaderAttributes->copy(gatherShader);
         }
         reRender = true;
     }

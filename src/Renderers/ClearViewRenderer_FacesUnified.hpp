@@ -117,6 +117,7 @@ protected:
     bool useExperimentalApproach = true;
     float selectedLodValueFocus = 0.2f;
     float selectedLodValueContext = 0.1f;
+    bool usePerLineAttributes = true;
     enum OutlineMode {
         OUTLINE_MODE_NONE, OUTLINE_MODE_DEPTH, OUTLINE_MODE_STENCIL
     };

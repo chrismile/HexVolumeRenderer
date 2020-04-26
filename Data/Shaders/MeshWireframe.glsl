@@ -295,41 +295,6 @@ void main()
     vec4 blendedColor = volumeColor;
 
     #ifdef HIGHLIGHT_EDGES
-    // Line color.
-    // Compute the distance to the edges and get the minimum distance.
-    /*float minDistance = 1e9;
-    float minLodEdgeValue = 1e9;
-    int minDistanceIndex = 0;
-    float currentDistance;
-    for (int i = 0; i < 4; i++) {
-        currentDistance = getDistanceToLineSegment(
-                fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
-        //if (currentDistance < minDistance) {
-        if ((edgeLodValues[i] >= minLodEdgeValue && minDistance > lineRadius && currentDistance < minDistance)
-                || (edgeLodValues[i] < minLodEdgeValue && currentDistance <= lineRadius)) {
-            minDistance = currentDistance;
-            minLodEdgeValue = edgeLodValues[i];
-            minDistanceIndex = i;
-        }
-    }
-
-    float discreteSelectedLodValue = selectedLodValue * maxLodValue;
-    float val = max(
-    (1.0 - fragmentAttribute) * discreteSelectedLodValue,
-    //(1.0 - lineAttributes[minDistanceIndex]) * discreteSelectedLodValue,
-    distanceToFocusPointNormalized * discreteSelectedLodValue);
-    float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValue;
-    float lodLevelContext = discreteSelectedLodValue;
-    //float lodLevel = mix(lodLevelFocus, lodLevelContext, focusFactor);
-    float lodLevel = mix(lodLevelFocus, lodLevelContext, contextFactor);
-    const float LOD_EPSILON = 0.001;
-
-    float lodLineValue = edgeLodValues[minDistanceIndex];
-    float discreteLodValue = lodLineValue * maxLodValue;
-    float lodLevelOpacityFactor = discreteLodValue <= lodLevel ? 1.0 : 0.0;//smoothstep(discreteLodValue - 0.5, discreteLodValue, lodLevel); // TODO: Smooth?
-    bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;*/
-
-
     const float LOD_EPSILON = 0.001;
     float discreteSelectedLodValueFocus = max(selectedLodValueFocus * maxLodValue, LOD_EPSILON);
     float discreteSelectedLodValueContext = max(selectedLodValueContext * maxLodValue, LOD_EPSILON);
@@ -348,16 +313,24 @@ void main()
                 fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
 
         float val = max(
-                //(1.0 - fragmentAttribute) * discreteSelectedLodValueFocus,
+        #ifdef USE_PER_LINE_ATTRIBUTES
                 (1.0 - lineAttributes[i]) * discreteSelectedLodValueFocus,
+        #else
+                (1.0 - fragmentAttribute) * discreteSelectedLodValueFocus,
+        #endif
                 distanceToFocusPointNormalized * discreteSelectedLodValueFocus);
         float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;
 
         float lodLineValue = edgeLodValues[i];
         float discreteLodValue = lodLineValue * maxLodValue;
         float lodLevelOpacityFactor = mix(
-                discreteLodValue <= lodLevelContext ? 1.0 : 0.0,//1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
-                discreteLodValue <= lodLevelFocus ? 1.0 : 0.0,//1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
+        #ifdef USE_PER_LINE_ATTRIBUTES
+                discreteLodValue <= lodLevelContext ? 1.0 : 0.0,
+                discreteLodValue <= lodLevelFocus ? 1.0 : 0.0,
+        #else
+                discreteLodValue <= lodLevelContext ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
+                discreteLodValue <= lodLevelFocus ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
+        #endif
                 focusFactor);
         bool drawLine = lodLevelOpacityFactor > 0.2;
 
@@ -369,16 +342,24 @@ void main()
     }
 
     float val = max(
-            //(1.0 - fragmentAttribute) * discreteSelectedLodValueFocus,
+    #ifdef USE_PER_LINE_ATTRIBUTES
             (1.0 - lineAttributes[minDistanceIndex]) * discreteSelectedLodValueFocus,
+    #else
+            (1.0 - fragmentAttribute) * discreteSelectedLodValueFocus,
+    #endif
             distanceToFocusPointNormalized * discreteSelectedLodValueFocus);
     float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;
 
     float lodLineValue = edgeLodValues[minDistanceIndex];
     float discreteLodValue = lodLineValue * maxLodValue;
     float lodLevelOpacityFactor = mix(
-            discreteLodValue <= lodLevelContext ? 1.0 : 0.0,//1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
-            discreteLodValue <= lodLevelFocus ? 1.0 : 0.0,//1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
+    #ifdef USE_PER_LINE_ATTRIBUTES
+            discreteLodValue <= lodLevelContext ? 1.0 : 0.0,
+            discreteLodValue <= lodLevelFocus ? 1.0 : 0.0,
+    #else
+            discreteLodValue <= lodLevelContext ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
+            discreteLodValue <= lodLevelFocus ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
+    #endif
             focusFactor);
 
     bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
