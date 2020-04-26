@@ -26,6 +26,7 @@ layout (std430, binding = 6) readonly buffer HexahedralCellFaces {
 };
 
 out vec3 fragmentPositionWorld;
+out vec4 fragmentPositionClip;
 out vec4 fragmentColor;
 out float fragmentAttribute;
 flat out vec3 vertexPositions[4];
@@ -80,7 +81,8 @@ void main()
     fragmentPositionWorld = (mMatrix * vertexPosition).xyz;
     fragmentColor = transferFunction(hexahedralCellFace.vertexAttributes[vertexId]);
     fragmentAttribute = hexahedralCellFace.vertexAttributes[vertexId];
-    gl_Position = mvpMatrix * vertexPosition;
+    fragmentPositionClip = mvpMatrix * vertexPosition;
+    gl_Position = fragmentPositionClip;
 }
 
 -- Fragment.ClearView_0
@@ -88,6 +90,7 @@ void main()
 #version 430 core
 
 in vec3 fragmentPositionWorld;
+in vec4 fragmentPositionClip;
 in vec4 fragmentColor;
 out float fragmentAttribute;
 flat in vec3 vertexPositions[4];
@@ -246,6 +249,7 @@ void main()
 #version 430 core
 
 in vec3 fragmentPositionWorld;
+in vec4 fragmentPositionClip;
 in vec4 fragmentColor;
 in float fragmentAttribute;
 flat in vec3 vertexPositions[4];
@@ -394,6 +398,178 @@ void main()
         float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
         vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
                 smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
+
+        if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
+            fragmentDistance += 0.005;
+        }
+
+        // Fade between volume and line color.
+        blendedColor = mix(volumeColor, lineColor, lineColorToVolumeColorBlendFactor);
+    }
+    #endif
+
+    gatherFragmentCustomDepth(blendedColor, fragmentDistance);
+}
+
+
+-- Fragment.ClearView_ScreenSpace
+
+#version 430 core
+
+in vec3 fragmentPositionWorld;
+in vec4 fragmentPositionClip;
+in vec4 fragmentColor;
+in float fragmentAttribute;
+flat in vec3 vertexPositions[4];
+flat in vec4 lineColors[4];
+flat in float lineAttributes[4];
+flat in float edgeLodValues[4];
+flat in uint edgeSingularityInformationList[4];
+
+#if defined(DIRECT_BLIT_GATHER)
+out vec4 fragColor;
+#endif
+
+uniform ivec2 viewportSize;
+uniform float lineWidth;
+uniform float maxLodValue;
+uniform float selectedLodValueFocus;
+uniform float selectedLodValueContext;
+
+// Camera data
+uniform vec3 cameraPosition;
+uniform vec3 lookingDirection;
+
+// Focus region data
+uniform vec2 sphereCenterScreen;
+uniform float sphereRadiusPixels;
+
+#if !defined(DIRECT_BLIT_GATHER)
+#define GATHER_NO_DISCARD // as we gather two fragments in one shader
+#include OIT_GATHER_HEADER
+#endif
+
+#include "PointToLineDistance.glsl"
+
+void main()
+{
+    vec3 fragmentPositionNdc = fragmentPositionClip.xyz / fragmentPositionClip.w;
+    // Origin at lower left corner of screen.
+    vec2 fragmentWindowPosition = (fragmentPositionNdc.xy * vec2(0.5) + vec2(0.5)) * vec2(viewportSize);
+    float screenSpaceSphereDistanceNormalized = min(length(fragmentWindowPosition - sphereCenterScreen) / sphereRadiusPixels, 1.0);
+
+    float fragmentDistance = length(fragmentPositionWorld - cameraPosition);
+    float contextFactor = pow(screenSpaceSphereDistanceNormalized, 4.0);
+    float focusFactor = 1.0 - pow(screenSpaceSphereDistanceNormalized, 10.0);
+
+    float lineWidthPrime = lineWidth * (-screenSpaceSphereDistanceNormalized * 0.4 + 1.0);
+    float lineRadius = lineWidthPrime / 2.0f;
+
+    // Volume color.
+    vec4 volumeColor = fragmentColor;
+    volumeColor.a *= pow(screenSpaceSphereDistanceNormalized, 4.0);//contextFactor;
+    vec4 blendedColor = volumeColor;
+
+    #ifdef HIGHLIGHT_EDGES
+    const float LOD_EPSILON = 0.001;
+    float discreteSelectedLodValueFocus = max(selectedLodValueFocus * maxLodValue, LOD_EPSILON);
+    float discreteSelectedLodValueContext = max(selectedLodValueContext * maxLodValue, LOD_EPSILON);
+    /*float val = max(
+            (1.0 - fragmentAttribute) * discreteSelectedLodValueFocus,
+            screenSpaceSphereDistanceNormalized * discreteSelectedLodValueFocus);
+    float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;*/
+    float lodLevelContext = discreteSelectedLodValueContext;
+
+    float minDistance = 1e9;
+    float minLodEdgeValue = 1e9;
+    int minDistanceIndex = 0;
+    float currentDistance;
+    for (int i = 0; i < 4; i++) {
+        currentDistance = getDistanceToLineSegment(
+        fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
+
+        float val = max(
+        #ifdef USE_PER_LINE_ATTRIBUTES
+                (1.0 - lineAttributes[i]) * discreteSelectedLodValueFocus,
+        #else
+                (1.0 - fragmentAttribute) * discreteSelectedLodValueFocus,
+        #endif
+                screenSpaceSphereDistanceNormalized * discreteSelectedLodValueFocus);
+        float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;
+
+        float lodLineValue = edgeLodValues[i];
+        float discreteLodValue = lodLineValue * maxLodValue;
+        float lodLevelOpacityFactor = mix(
+        #ifdef USE_PER_LINE_ATTRIBUTES
+                discreteLodValue <= lodLevelContext ? 1.0 : 0.0,
+                discreteLodValue <= lodLevelFocus ? 1.0 : 0.0,
+        #else
+                discreteLodValue <= lodLevelContext ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
+                discreteLodValue <= lodLevelFocus ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
+        #endif
+        focusFactor);
+        bool drawLine = lodLevelOpacityFactor > 0.2;
+
+        if (currentDistance < minDistance && drawLine) {
+            minDistance = currentDistance;
+            minLodEdgeValue = edgeLodValues[i];
+            minDistanceIndex = i;
+        }
+    }
+
+    float val = max(
+    #ifdef USE_PER_LINE_ATTRIBUTES
+            (1.0 - lineAttributes[minDistanceIndex]) * discreteSelectedLodValueFocus,
+    #else
+            (1.0 - fragmentAttribute) * discreteSelectedLodValueFocus,
+    #endif
+            screenSpaceSphereDistanceNormalized * discreteSelectedLodValueFocus);
+    float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;
+
+    float lodLineValue = edgeLodValues[minDistanceIndex];
+    float discreteLodValue = lodLineValue * maxLodValue;
+    float lodLevelOpacityFactor = mix(
+    #ifdef USE_PER_LINE_ATTRIBUTES
+            discreteLodValue <= lodLevelContext ? 1.0 : 0.0,
+            discreteLodValue <= lodLevelFocus ? 1.0 : 0.0,
+    #else
+            discreteLodValue <= lodLevelContext ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
+            discreteLodValue <= lodLevelFocus ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
+    #endif
+    focusFactor);
+
+    bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
+    //vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
+    vec4 lineBaseColor = lineColors[minDistanceIndex];
+    if (!isSingularEdge) {
+        vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.4);
+        vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
+        //lineBaseColor.rgb = mix(lineBaseColorFocus, lineBaseColorContext, contextFactor);
+        lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
+    }
+
+    float lineCoordinates = max(minDistance / lineRadius, 0.0);
+    if (lineCoordinates <= 1.0) {
+        float depthCueFactor = min(contextFactor, focusFactor);
+        float lineColorToVolumeColorBlendFactor = lodLevelOpacityFactor;
+
+        float depthCueFactorFocus = clamp(pow(screenSpaceSphereDistanceNormalized, 1.9), 0.0, 1.0);
+        float depthCueFactorDistance = clamp(fragmentDistance, 0.0, 1.0) * 0.002 / lineWidthPrime;
+
+        // Color depth cue.
+        lineBaseColor.rgb = mix(lineBaseColor.rgb, vec3(0.5, 0.5, 0.5), depthCueFactor * 0.6);
+
+        // Fade out the outline with increasing distance to the viewer and increasing distance to the focus center.
+        vec3 outlineColor = vec3(1.0, 1.0, 1.0);
+        // Outline color depth cue.
+        outlineColor = mix(outlineColor, lineBaseColor.rgb, clamp(max(depthCueFactorFocus, depthCueFactorDistance), 0.0, 1.0));
+
+        // Fade out the outline with increasing distance
+        const float WHITE_THRESHOLD = 0.7 + 0.3 * contextFactor;
+        float EPSILON = clamp(fragmentDistance / 2.0, 0.0, 0.49);
+        float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
+        vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
+        smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
 
         if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
             fragmentDistance += 0.005;

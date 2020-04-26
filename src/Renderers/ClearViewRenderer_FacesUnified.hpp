@@ -73,7 +73,8 @@ protected:
     void gather();
     void resolve();
     void renderLaplacianOfGaussianContours();
-    void childClassRenderGui();
+    void childClassRenderGuiBegin();
+    void childClassRenderGuiEnd();
 
     // Don't highlight singular edges when we have far too many of them.
     void reloadGatherShader();
@@ -111,6 +112,11 @@ protected:
     sgl::TexturePtr weightTextureLoG;
     glm::ivec2 weightTextureSize = glm::ivec2(5, 5);
     const float rhoLoG = 1.0f;
+
+    // Window data.
+    const float screenSpaceLensPixelRadiusWindowFactor = 0.5f;
+    int windowWidth = 0;
+    int windowHeight = 0;
 
     // GUI data.
     SingularEdgeColorMapWidget singularEdgeColorMapWidget;

@@ -63,7 +63,8 @@ protected:
     virtual void clear()=0;
     virtual void gather()=0;
     virtual void resolve()=0;
-    virtual void childClassRenderGui() {}
+    virtual void childClassRenderGuiBegin() {}
+    virtual void childClassRenderGuiEnd() {}
 
 #ifdef USE_CSG
 #else
@@ -123,6 +124,9 @@ protected:
 
     // GUI data
     bool showRendererWindow = true;
+    bool useScreenSpaceLens = false;
+    float screenSpaceLensPixelRadius = 0.0f;
+    glm::vec2 focusPointScreen = glm::vec2(0.0, 0.0f);
     float focusRadius = 0.05f;
     float lineWidth = 0.0015f;
     bool useShading = false;

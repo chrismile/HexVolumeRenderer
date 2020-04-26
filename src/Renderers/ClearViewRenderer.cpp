@@ -309,15 +309,17 @@ void ClearViewRenderer::render() {
 
 void ClearViewRenderer::renderGui() {
     if (ImGui::Begin(windowName.c_str(), &showRendererWindow)) {
-        if (ImGui::SliderFloat("Focus Radius", &focusRadius, MIN_FOCUS_RADIUS, MAX_FOCUS_RADIUS)) {
+        childClassRenderGuiBegin();
+        if (!useScreenSpaceLens
+                && ImGui::SliderFloat("Focus Radius", &focusRadius, MIN_FOCUS_RADIUS, MAX_FOCUS_RADIUS)) {
             reloadSphereRenderData();
             reRender = true;
         }
-        if (ImGui::SliderFloat3("Focus Point", &focusPoint.x, -0.4f, 0.4f)) {
+        if (!useScreenSpaceLens && ImGui::SliderFloat3("Focus Point", &focusPoint.x, -0.4f, 0.4f)) {
             hasHitInformation = false;
             reRender = true;
         }
-        if (ImGui::ColorEdit4("Focus Point Color", &focusPointColor.x)) {
+        if (!useScreenSpaceLens && ImGui::ColorEdit4("Focus Point Color", &focusPointColor.x)) {
             reRender = true;
         }
         if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
@@ -349,20 +351,44 @@ void ClearViewRenderer::renderGui() {
             loadFocusRepresentation();
             reRender = true;
         }
-        childClassRenderGui();
+        childClassRenderGuiEnd();
     }
     ImGui::End();
 }
 
 void ClearViewRenderer::update(float dt) {
-    if (sgl::Keyboard->getModifier() & KMOD_SHIFT) {
-        if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
-            float scrollAmount = sgl::Mouse->getScrollWheel() * dt * 2.0;
-            focusRadius += scrollAmount;
-            focusRadius = glm::clamp(focusRadius, 0.001f, 0.4f);
-            reRender = true;
+    if (!useScreenSpaceLens) {
+        if (sgl::Keyboard->getModifier() & KMOD_SHIFT) {
+            if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
+                float scrollAmount = sgl::Mouse->getScrollWheel() * dt * 2.0;
+                focusRadius += scrollAmount;
+                focusRadius = glm::clamp(focusRadius, 0.001f, 0.4f);
+                reRender = true;
+            }
+        }
+
+        Pickable::updatePickable(dt, reRender, sceneData);
+    } else {
+        if (sgl::Keyboard->getModifier() & KMOD_SHIFT) {
+            if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
+                float scrollAmount = sgl::Mouse->getScrollWheel() * dt * 2.0;
+                screenSpaceLensPixelRadius += scrollAmount;
+                sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+                int width = window->getWidth();
+                int height = window->getHeight();
+                screenSpaceLensPixelRadius = glm::min(screenSpaceLensPixelRadius, float(std::max(width, height)));
+                reRender = true;
+            }
+        }
+
+        if (sgl::Keyboard->getModifier() & KMOD_CTRL) {
+            if (sgl::Mouse->buttonPressed(1) || (sgl::Mouse->isButtonDown(1) && sgl::Mouse->mouseMoved())) {
+                sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+                int mouseX = sgl::Mouse->getX();
+                int mouseY = sgl::Mouse->getY();
+                focusPointScreen = glm::vec2(mouseX, window->getHeight() - mouseY - 1);
+                reRender = true;
+            }
         }
     }
-
-    Pickable::updatePickable(dt, reRender, sceneData);
 }

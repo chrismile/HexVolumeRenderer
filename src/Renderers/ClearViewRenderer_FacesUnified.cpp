@@ -65,6 +65,7 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
         : ClearViewRenderer(sceneData, transferFunctionWindow) {
     windowName = "ClearView Renderer (Unified)";
     clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED;
+    useScreenSpaceLens = true; // TODO
 
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
@@ -251,12 +252,17 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
         sgl::ShaderManager->addPreprocessorDefine("USE_PER_LINE_ATTRIBUTES", "");
     }
 
-    if (useExperimentalApproach) {
+    if (useScreenSpaceLens) {
         gatherShader = sgl::ShaderManager->getShaderProgram(
-                {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_1"});
+                {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_ScreenSpace"});
     } else {
-        gatherShader = sgl::ShaderManager->getShaderProgram(
-                {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_0"});
+        if (useExperimentalApproach) {
+            gatherShader = sgl::ShaderManager->getShaderProgram(
+                    {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_1"});
+        } else {
+            gatherShader = sgl::ShaderManager->getShaderProgram(
+                    {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_0"});
+        }
     }
 
     sgl::ShaderManager->removePreprocessorDefine(lineRenderingStyleDefineName);
@@ -339,6 +345,9 @@ void ClearViewRenderer_FacesUnified::onResolutionChanged() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
+    screenSpaceLensPixelRadius = std::min(width, height) * screenSpaceLensPixelRadiusWindowFactor;
+    windowWidth = width;
+    windowHeight = height;
 
     size_t fragmentBufferSize = expectedDepthComplexity * width * height;
     size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
@@ -380,8 +389,6 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     if (gatherShader->hasUniform("lookingDirection")) {
         gatherShader->setUniform("lookingDirection", lookingDirection);
     }
-    gatherShader->setUniform("sphereCenter", focusPoint);
-    gatherShader->setUniform("sphereRadius", focusRadius);
     gatherShader->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
     gatherShader->setUniform(
@@ -399,6 +406,15 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     }
     if (gatherShader->hasUniform("selectedLodValueContext")) {
         gatherShader->setUniform("selectedLodValueContext", float(selectedLodValueContext));
+    }
+
+    if (useScreenSpaceLens) {
+        gatherShader->setUniform("viewportSize", glm::ivec2(windowWidth, windowHeight));
+        gatherShader->setUniform("sphereCenterScreen", focusPointScreen);
+        gatherShader->setUniform("sphereRadiusPixels", screenSpaceLensPixelRadius);
+    } else {
+        gatherShader->setUniform("sphereCenter", focusPoint);
+        gatherShader->setUniform("sphereRadius", focusRadius);
     }
 
     shaderProgramSurface->setUniform("viewportW", width);
@@ -478,10 +494,12 @@ void ClearViewRenderer_FacesUnified::gather() {
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     // Render the focus point.
-    sgl::Renderer->setModelMatrix(sgl::matrixTranslation(focusPoint));
-    sgl::Renderer->render(focusPointShaderAttributes);
-    sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    if (!useScreenSpaceLens) {
+        sgl::Renderer->setModelMatrix(sgl::matrixTranslation(focusPoint));
+        sgl::Renderer->render(focusPointShaderAttributes);
+        sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    }
 }
 
 void ClearViewRenderer_FacesUnified::renderLaplacianOfGaussianContours() {
@@ -548,27 +566,43 @@ void ClearViewRenderer_FacesUnified::renderGui() {
     }
 }
 
-void ClearViewRenderer_FacesUnified::childClassRenderGui() {
-    if (ImGui::Checkbox("Use Experimental Approach", &useExperimentalApproach)) {
+void ClearViewRenderer_FacesUnified::childClassRenderGuiBegin() {
+    if (ImGui::Checkbox("Use Screen Space Lens", &useScreenSpaceLens)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);
         }
         reRender = true;
     }
-    if (useExperimentalApproach && ImGui::SliderFloat("LOD Value Focus", &selectedLodValueFocus, 0.0f, 1.0f)) {
+    if (useScreenSpaceLens && ImGui::SliderFloat(
+            "Lens Pixel Radius", &screenSpaceLensPixelRadius, 0.0f, std::max(windowWidth, windowHeight))) {
+        reRender = true;
+    }
+}
+
+void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
+    if (!useScreenSpaceLens && ImGui::Checkbox("Use Experimental Approach", &useExperimentalApproach)) {
+        reloadGatherShader();
+        if (shaderAttributes) {
+            shaderAttributes = shaderAttributes->copy(gatherShader);
+        }
+        reRender = true;
+    }
+    if ((useScreenSpaceLens || useExperimentalApproach)
+            && ImGui::SliderFloat("LOD Value Focus", &selectedLodValueFocus, 0.0f, 1.0f)) {
         if (selectedLodValueFocus < selectedLodValueContext) {
             selectedLodValueContext = selectedLodValueFocus;
         }
         reRender = true;
     }
-    if (useExperimentalApproach && ImGui::SliderFloat("LOD Value Context", &selectedLodValueContext, 0.0f, 1.0f)) {
+    if ((useScreenSpaceLens || useExperimentalApproach)
+            && ImGui::SliderFloat("LOD Value Context", &selectedLodValueContext, 0.0f, 1.0f)) {
         if (selectedLodValueFocus < selectedLodValueContext) {
             selectedLodValueFocus = selectedLodValueContext;
         }
         reRender = true;
     }
-    if (useExperimentalApproach && ImGui::Checkbox("Per Line Attributes", &usePerLineAttributes)) {
+    if ((useScreenSpaceLens || useExperimentalApproach) && ImGui::Checkbox("Per Line Attributes", &usePerLineAttributes)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);
@@ -582,14 +616,16 @@ void ClearViewRenderer_FacesUnified::childClassRenderGui() {
         }
         reRender = true;
     }
-    if (!useExperimentalApproach && highlightEdges && ImGui::Checkbox("Highlight Low LOD Edges", &highlightLowLodEdges)) {
+    if (!useScreenSpaceLens && !useExperimentalApproach && highlightEdges
+            && ImGui::Checkbox("Highlight Low LOD Edges", &highlightLowLodEdges)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);
         }
         reRender = true;
     }
-    if (!useExperimentalApproach && highlightEdges && ImGui::Checkbox("Highlight Singular Edges", &highlightSingularEdges)) {
+    if (!useScreenSpaceLens && !useExperimentalApproach && highlightEdges
+            && ImGui::Checkbox("Highlight Singular Edges", &highlightSingularEdges)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);
