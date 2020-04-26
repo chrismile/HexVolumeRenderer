@@ -247,8 +247,15 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     if (highlightLowLodEdges) {
         sgl::ShaderManager->addPreprocessorDefine("HIGHLIGHT_LOW_LOD_EDGES", "");
     }
-    gatherShader = sgl::ShaderManager->getShaderProgram(
-            {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView"});
+
+    if (useExperimentalApproach) {
+        gatherShader = sgl::ShaderManager->getShaderProgram(
+                {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_1"});
+    } else {
+        gatherShader = sgl::ShaderManager->getShaderProgram(
+                {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_0"});
+    }
+
     sgl::ShaderManager->removePreprocessorDefine(lineRenderingStyleDefineName);
     if (tooMuchSingularEdgeMode) {
         sgl::ShaderManager->removePreprocessorDefine("TOO_MUCH_SINGULAR_EDGE_MODE");
@@ -364,7 +371,9 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     gatherShader->setUniform("viewportW", width);
     gatherShader->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
     gatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
-    gatherShader->setUniform("lookingDirection", lookingDirection);
+    if (gatherShader->hasUniform("lookingDirection")) {
+        gatherShader->setUniform("lookingDirection", lookingDirection);
+    }
     gatherShader->setUniform("sphereCenter", focusPoint);
     gatherShader->setUniform("sphereRadius", focusRadius);
     gatherShader->setUniform(
@@ -373,9 +382,17 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
             "singularEdgeColorLookupTexture",
             singularEdgeColorMapWidget.getSingularEdgeColorLookupTexture(), 1);
 
-    gatherShader->setUniform("lineWidth", lineWidth);
+    if (gatherShader->hasUniform("lineWidth")) {
+        gatherShader->setUniform("lineWidth", lineWidth);
+    }
     if (gatherShader->hasUniform("maxLodValue")) {
         gatherShader->setUniform("maxLodValue", float(maxLodValue));
+    }
+    if (gatherShader->hasUniform("selectedLodValueFocus")) {
+        gatherShader->setUniform("selectedLodValueFocus", float(selectedLodValueFocus));
+    }
+    if (gatherShader->hasUniform("selectedLodValueContext")) {
+        gatherShader->setUniform("selectedLodValueContext", float(selectedLodValueContext));
     }
 
     shaderProgramSurface->setUniform("viewportW", width);
@@ -526,6 +543,25 @@ void ClearViewRenderer_FacesUnified::renderGui() {
 }
 
 void ClearViewRenderer_FacesUnified::childClassRenderGui() {
+    if (ImGui::Checkbox("Use Experimental Approach", &useExperimentalApproach)) {
+        reloadGatherShader();
+        if (shaderAttributes) {
+            shaderAttributes = shaderAttributes->copy(gatherShader);
+        }
+        reRender = true;
+    }
+    if (useExperimentalApproach && ImGui::SliderFloat("LOD Value Focus", &selectedLodValueFocus, 0.0f, 1.0f)) {
+        if (selectedLodValueFocus < selectedLodValueContext) {
+            selectedLodValueContext = selectedLodValueFocus;
+        }
+        reRender = true;
+    }
+    if (useExperimentalApproach && ImGui::SliderFloat("LOD Value Context", &selectedLodValueContext, 0.0f, 1.0f)) {
+        if (selectedLodValueFocus < selectedLodValueContext) {
+            selectedLodValueFocus = selectedLodValueContext;
+        }
+        reRender = true;
+    }
     if (ImGui::Checkbox("Highlight Edges", &highlightEdges)) {
         reloadGatherShader();
         if (shaderAttributes) {
@@ -533,14 +569,14 @@ void ClearViewRenderer_FacesUnified::childClassRenderGui() {
         }
         reRender = true;
     }
-    if (highlightEdges && ImGui::Checkbox("Highlight Low LOD Edges", &highlightLowLodEdges)) {
+    if (!useExperimentalApproach && highlightEdges && ImGui::Checkbox("Highlight Low LOD Edges", &highlightLowLodEdges)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);
         }
         reRender = true;
     }
-    if (highlightEdges && ImGui::Checkbox("Highlight Singular Edges", &highlightSingularEdges)) {
+    if (!useExperimentalApproach && highlightEdges && ImGui::Checkbox("Highlight Singular Edges", &highlightSingularEdges)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);

@@ -63,7 +63,7 @@ const char *const RENDERING_MODE_NAMES[] = {
         "LOD Lines (Preview)", "LOD Lines (Preview, Sheets)",
         "Singularity Type Counter", "Line Density Control"
 };
-const int NUM_RENDERING_MODES = ((int)(sizeof(QUALITY_MEASURE_NAMES) / sizeof(*QUALITY_MEASURE_NAMES)));
+const int NUM_RENDERING_MODES = ((int)(sizeof(RENDERING_MODE_NAMES) / sizeof(*RENDERING_MODE_NAMES)));
 
 
 class MainApp : public sgl::AppLogic {

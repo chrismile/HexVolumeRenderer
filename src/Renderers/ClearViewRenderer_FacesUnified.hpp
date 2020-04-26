@@ -114,6 +114,9 @@ protected:
 
     // GUI data.
     SingularEdgeColorMapWidget singularEdgeColorMapWidget;
+    bool useExperimentalApproach = true;
+    float selectedLodValueFocus = 0.2f;
+    float selectedLodValueContext = 0.1f;
     enum OutlineMode {
         OUTLINE_MODE_NONE, OUTLINE_MODE_DEPTH, OUTLINE_MODE_STENCIL
     };

@@ -48,9 +48,8 @@ public:
     // Returns if the data needs to be re-rendered, but the visualization mapping is valid.
     virtual bool needsReRender() { bool tmp = reRender; reRender = false; return tmp; }
 
-    // Re-generates the visualization mapping. "isNewMesh" indicates if a neew
     /**
-     * e-generates the visualization mapping.
+     * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.
      * @param isNewMesh Whether a new mesh is loaded or just a new renderer is used.
      */
