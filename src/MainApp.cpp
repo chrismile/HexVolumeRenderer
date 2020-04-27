@@ -555,6 +555,7 @@ void MainApp::renderSceneSettingsGUI() {
     }
 
     ImGui::SliderFloat("Move Speed", &MOVE_SPEED, 0.02f, 0.5f);
+    ImGui::SliderFloat("Mouse Speed", &MOUSE_ROT_SPEED, 0.01f, 0.10f);
 
     ImGui::Separator();
 

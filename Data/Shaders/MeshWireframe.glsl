@@ -313,61 +313,67 @@ void main()
     float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;*/
     float lodLevelContext = discreteSelectedLodValueContext;
 
+    bool isLineNear = false;
+    bool isAnyLineNear = false;
     float minDistance = 1e9;
-    float minLodEdgeValue = 1e9;
     int minDistanceIndex = 0;
+    float minDistanceAll = 1e9;
+    int minDistanceIndexAll = 0;
     float currentDistance;
     for (int i = 0; i < 4; i++) {
         currentDistance = getDistanceToLineSegment(
                 fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
 
-        float val = max(
+        float lodLevelFocus = max(
         #ifdef USE_PER_LINE_ATTRIBUTES
-                clamp(1.0 - lineAttributes[i] * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
+                (lineAttributes[i] < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
         #else
-                clamp(1.0 - fragmentAttribute * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
+                (fragmentAttribute < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
         #endif
-                distanceToFocusPointNormalized * discreteSelectedLodValueFocus);
-        float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;
+        discreteSelectedLodValueFocus);
 
         float lodLineValue = edgeLodValues[i];
         float discreteLodValue = lodLineValue * maxLodValue;
         float lodLevelOpacityFactor = mix(
         #ifdef USE_PER_LINE_ATTRIBUTES
-                discreteLodValue <= lodLevelContext ? 1.0 : 0.0,
-                discreteLodValue <= lodLevelFocus ? 1.0 : 0.0,
+                discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 0.0,
+                discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 0.0,
         #else
-                discreteLodValue <= lodLevelContext ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
-                discreteLodValue <= lodLevelFocus ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
+                discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
+                discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
         #endif
                 focusFactor);
         bool drawLine = lodLevelOpacityFactor > 0.2;
 
         if (currentDistance < minDistance && drawLine) {
             minDistance = currentDistance;
-            minLodEdgeValue = edgeLodValues[i];
             minDistanceIndex = i;
+            isLineNear = true;
+        }
+        if (currentDistance < minDistanceAll) {
+            minDistanceAll = currentDistance;
+            minDistanceIndexAll = i;
+            isAnyLineNear = true;
         }
     }
 
-    float val = max(
+    float lodLevelFocus = max(
     #ifdef USE_PER_LINE_ATTRIBUTES
-            clamp(1.0 - lineAttributes[i] * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
+            (lineAttributes[minDistanceIndex] < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
     #else
-            clamp(1.0 - fragmentAttribute * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
+            (fragmentAttribute < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
     #endif
-            distanceToFocusPointNormalized * discreteSelectedLodValueFocus);
-    float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;
+            discreteSelectedLodValueFocus);
 
     float lodLineValue = edgeLodValues[minDistanceIndex];
     float discreteLodValue = lodLineValue * maxLodValue;
     float lodLevelOpacityFactor = mix(
     #ifdef USE_PER_LINE_ATTRIBUTES
-            discreteLodValue <= lodLevelContext ? 1.0 : 0.0,
-            discreteLodValue <= lodLevelFocus ? 1.0 : 0.0,
+            discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 0.0,
+            discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 0.0,
     #else
-            discreteLodValue <= lodLevelContext ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
-            discreteLodValue <= lodLevelFocus ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
+            discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
+            discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
     #endif
             focusFactor);
 
@@ -382,6 +388,7 @@ void main()
     }
 
     float lineCoordinates = max(minDistance / lineRadius, 0.0);
+    float lineCoordinatesAll = max(minDistanceAll / lineRadius * 1.5, 0.0);
     if (lineCoordinates <= 1.0) {
         float depthCueFactor = min(contextFactor, focusFactor);
         float lineColorToVolumeColorBlendFactor = lodLevelOpacityFactor;
@@ -398,18 +405,30 @@ void main()
         outlineColor = mix(outlineColor, lineBaseColor.rgb, clamp(max(depthCueFactorFocus, depthCueFactorDistance), 0.0, 1.0));
 
         // Fade out the outline with increasing distance
-        const float WHITE_THRESHOLD = 0.7 + 0.3 * contextFactor;
-        float EPSILON = clamp(fragmentDistance / 2.0, 0.0, 0.49);
-        float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
+        const float EPSILON = clamp(fragmentDistance * 0.5, 0.0, 0.49);
+        const float WHITE_THRESHOLD = 0.7 + (0.3 + EPSILON) * contextFactor;
+        float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates); // TODO
         vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
-                smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
+        smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
 
         if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
             fragmentDistance += 0.005;
         }
 
-        // Fade between volume and line color.
-        blendedColor = mix(volumeColor, lineColor, lineColorToVolumeColorBlendFactor);
+        // Fade between volume and line color using back-to-front alpha blending.
+        lineColor.a *= coverage * lineColorToVolumeColorBlendFactor;
+        blendedColor.a = lineColor.a + volumeColor.a * (1.0 - lineColor.a);
+        blendedColor.rgb = lineColor.rgb * lineColor.a + volumeColor.rgb * volumeColor.a * (1.0 - lineColor.a);
+        if (blendedColor.a > 1e-4) {
+            blendedColor.rgb /= blendedColor.a;
+        }
+    } else if (lineCoordinatesAll <= 1.0) {
+    #ifdef ACCENTUATE_ALL_EDGES
+        vec3 lineBaseColorAll = lineColors[minDistanceIndexAll].rgb;
+        vec3 lineColor = mix(lineBaseColor.rgb, vec3(1.0), 0.1);
+        blendedColor.rgb = mix(volumeColor.rgb, lineColor.rgb, clamp(0.6 - fragmentDistance, 0.0, 0.3));
+        blendedColor.a = clamp(blendedColor.a * 1.5, 0.0, 1.0);
+    #endif
     }
     #endif
 
@@ -478,30 +497,28 @@ void main()
 
     #ifdef HIGHLIGHT_EDGES
     const float LOD_EPSILON = 0.001;
-    float discreteSelectedLodValueFocus = max(selectedLodValueFocus * maxLodValue, LOD_EPSILON);
-    float discreteSelectedLodValueContext = max(selectedLodValueContext * maxLodValue, LOD_EPSILON);
-    /*float val = max(
-            (1.0 - fragmentAttribute) * discreteSelectedLodValueFocus,
-            screenSpaceSphereDistanceNormalized * discreteSelectedLodValueFocus);
-    float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;*/
+    float discreteSelectedLodValueFocus = selectedLodValueFocus * maxLodValue;
+    float discreteSelectedLodValueContext = selectedLodValueContext * maxLodValue;
     float lodLevelContext = discreteSelectedLodValueContext;
 
+    bool isLineNear = false;
+    bool isAnyLineNear = false;
     float minDistance = 1e9;
-    float minLodEdgeValue = 1e9;
     int minDistanceIndex = 0;
+    float minDistanceAll = 1e9;
+    int minDistanceIndexAll = 0;
     float currentDistance;
     for (int i = 0; i < 4; i++) {
         currentDistance = getDistanceToLineSegment(
-        fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
+                fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
 
-        float val = max(
+        float lodLevelFocus = max(
         #ifdef USE_PER_LINE_ATTRIBUTES
-                clamp(1.0 - lineAttributes[i] * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
+                (lineAttributes[i] < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
         #else
-                clamp(1.0 - fragmentAttribute * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
+                (fragmentAttribute < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
         #endif
-                screenSpaceSphereDistanceNormalized * discreteSelectedLodValueFocus / 10.0);
-        float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;
+                discreteSelectedLodValueFocus);
 
         float lodLineValue = edgeLodValues[i];
         float discreteLodValue = lodLineValue * maxLodValue;
@@ -518,19 +535,23 @@ void main()
 
         if (currentDistance < minDistance && drawLine) {
             minDistance = currentDistance;
-            minLodEdgeValue = edgeLodValues[i];
             minDistanceIndex = i;
+            isLineNear = true;
+        }
+        if (currentDistance < minDistanceAll) {
+            minDistanceAll = currentDistance;
+            minDistanceIndexAll = i;
+            isAnyLineNear = true;
         }
     }
 
-    float val = max(
+    float lodLevelFocus = max(
     #ifdef USE_PER_LINE_ATTRIBUTES
-            clamp(1.0 - lineAttributes[minDistanceIndex] * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
+            (lineAttributes[minDistanceIndex] < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
     #else
-            clamp(1.0 - fragmentAttribute * importantLineBoostFactor, 0.0, 1.0) * discreteSelectedLodValueFocus,
+            (fragmentAttribute < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
     #endif
-            screenSpaceSphereDistanceNormalized * discreteSelectedLodValueFocus / 10.0);
-    float lodLevelFocus = val + maxLodValue - (maxLodValue * val) / discreteSelectedLodValueFocus;
+            discreteSelectedLodValueFocus);
 
     float lodLineValue = edgeLodValues[minDistanceIndex];
     float discreteLodValue = lodLineValue * maxLodValue;
@@ -555,7 +576,8 @@ void main()
     }
 
     float lineCoordinates = max(minDistance / lineRadius, 0.0);
-    if (lineCoordinates <= 1.0) {
+    float lineCoordinatesAll = max(minDistanceAll / lineRadius * 1.5, 0.0);
+    if (isLineNear && lineCoordinates <= 1.0) {
         float depthCueFactor = min(contextFactor, focusFactor);
         float lineColorToVolumeColorBlendFactor = lodLevelOpacityFactor;
 
@@ -571,18 +593,32 @@ void main()
         outlineColor = mix(outlineColor, lineBaseColor.rgb, clamp(max(depthCueFactorFocus, depthCueFactorDistance), 0.0, 1.0));
 
         // Fade out the outline with increasing distance
-        const float WHITE_THRESHOLD = 0.7 + 0.3 * contextFactor;
-        float EPSILON = clamp(fragmentDistance / 2.0, 0.0, 0.49);
-        float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
+        const float EPSILON = clamp(fragmentDistance * 0.5, 0.0, 0.49);
+        const float WHITE_THRESHOLD = 0.7 + (0.3 + EPSILON) * contextFactor;
+        float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates); // TODO
         vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
-        smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
+                smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
 
         if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
             fragmentDistance += 0.005;
         }
 
-        // Fade between volume and line color.
-        blendedColor = mix(volumeColor, lineColor, lineColorToVolumeColorBlendFactor);
+        // Fade between volume and line color using back-to-front alpha blending.
+        lineColor.a *= coverage * lineColorToVolumeColorBlendFactor;
+        blendedColor.a = lineColor.a + volumeColor.a * (1.0 - lineColor.a);
+        blendedColor.rgb = lineColor.rgb * lineColor.a + volumeColor.rgb * volumeColor.a * (1.0 - lineColor.a);
+        if (blendedColor.a > 1e-4) {
+            blendedColor.rgb /= blendedColor.a;
+        }
+    } else if (lineCoordinatesAll <= 1.0) {
+        //const float EPSILON = clamp(fragmentDistance * 0.5, 0.0, 0.49);
+        //float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates); // TODO
+    #ifdef ACCENTUATE_ALL_EDGES
+        vec3 lineBaseColorAll = lineColors[minDistanceIndexAll].rgb;
+        vec3 lineColor = mix(lineBaseColor.rgb, vec3(1.0), 0.1);
+        blendedColor.rgb = mix(volumeColor.rgb, lineColor.rgb, clamp(0.6 - fragmentDistance, 0.0, 0.3));
+        blendedColor.a = clamp(blendedColor.a * 1.5, 0.0, 1.0);
+    #endif
     }
     #endif
 

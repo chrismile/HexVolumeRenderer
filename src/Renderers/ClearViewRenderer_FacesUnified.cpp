@@ -254,6 +254,9 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     if (useSingularEdgeColorMap) {
         sgl::ShaderManager->addPreprocessorDefine("USE_SINGULAR_EDGE_COLOR_MAP", "");
     }
+    if (accentuateAllEdges) {
+        sgl::ShaderManager->addPreprocessorDefine("ACCENTUATE_ALL_EDGES", "");
+    }
 
     if (useScreenSpaceLens) {
         gatherShader = sgl::ShaderManager->getShaderProgram(
@@ -286,6 +289,9 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     }
     if (useSingularEdgeColorMap) {
         sgl::ShaderManager->removePreprocessorDefine("USE_SINGULAR_EDGE_COLOR_MAP");
+    }
+    if (accentuateAllEdges) {
+        sgl::ShaderManager->removePreprocessorDefine("ACCENTUATE_ALL_EDGES");
     }
 }
 
@@ -352,6 +358,7 @@ void ClearViewRenderer_FacesUnified::onResolutionChanged() {
     int width = window->getWidth();
     int height = window->getHeight();
     screenSpaceLensPixelRadius = std::min(width, height) * screenSpaceLensPixelRadiusWindowFactor;
+    focusPointScreen = glm::vec2(width / 2.0f, height / 2.0f);
     windowWidth = width;
     windowHeight = height;
 
@@ -614,10 +621,19 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
         reRender = true;
     }
     if ((useScreenSpaceLens || useExperimentalApproach)
-        && ImGui::SliderFloat("Important Line Boost", &importantLineBoostFactor, 0.0f, 5.0f)) {
+            && ImGui::SliderFloat("Important Lines", &importantLineBoostFactor, 0.0f, 1.0f)) {
         reRender = true;
     }
-    if ((useScreenSpaceLens || useExperimentalApproach) && ImGui::Checkbox("Per Line Attributes", &usePerLineAttributes)) {
+    if ((useScreenSpaceLens || useExperimentalApproach)
+            && ImGui::Checkbox("Accentuate Edges", &accentuateAllEdges)) {
+        reloadGatherShader();
+        if (shaderAttributes) {
+            shaderAttributes = shaderAttributes->copy(gatherShader);
+        }
+        reRender = true;
+    }
+    if ((useScreenSpaceLens || useExperimentalApproach)
+            && ImGui::Checkbox("Per Line Attributes", &usePerLineAttributes)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);

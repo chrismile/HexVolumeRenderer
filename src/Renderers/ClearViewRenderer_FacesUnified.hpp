@@ -123,7 +123,8 @@ protected:
     bool useExperimentalApproach = true;
     float selectedLodValueFocus = 0.2f;
     float selectedLodValueContext = 0.1f;
-    float importantLineBoostFactor = 2.0f;
+    float importantLineBoostFactor = 0.2f;
+    bool accentuateAllEdges = true;
     bool useSingularEdgeColorMap = false;
     bool usePerLineAttributes = true;
     enum OutlineMode {
