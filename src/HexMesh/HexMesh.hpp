@@ -145,6 +145,7 @@ public:
     // For filters
     HexaLab::Mesh& getHexaLabMesh();
     bool isCellMarked(uint32_t h_id);
+    float getCellAttribute(uint32_t h_id);
 
     // For tube generation
     Mesh& getBaseComplexMesh();
@@ -409,6 +410,26 @@ public:
             std::vector<HexahedralCellFace>& hexahedralCellFaces,
             bool onlyBoundary = false,
             bool useGlowColors = false);
+
+    /**
+     * Get all surface faces including the colors of their edges.
+     * For rendering, the shader "WireframeSurface.glsl" can be used.
+     *
+     * vertex 1     edge 1    vertex 2
+     *          | - - - - - |
+     *          | \         |
+     *          |   \       |
+     *   edge 0 |     \     | edge 2
+     *          |       \   |
+     *          |         \ |
+     *          | - - - - - |
+     * vertex 0     edge 3    vertex 3
+     */
+    void getSurfaceDataWireframeFaces(
+            std::vector<uint32_t>& indices,
+            std::vector<HexahedralCellFace>& hexahedralCellFaces,
+            const std::vector<uint32_t>& faceIds,
+            bool useSingularEdgeColorMap = true);
 
     /**
      * Get all surface faces including the colors of their edges.

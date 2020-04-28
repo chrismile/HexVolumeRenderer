@@ -86,6 +86,7 @@
 #include "Renderers/LodLinePreviewRenderer_SheetsFaces.hpp"
 #include "Renderers/SingularityTypeCounterRenderer.hpp"
 #include "Renderers/LineDensityControlRenderer.hpp"
+#include "Renderers/HexSheetRenderer.hpp"
 #ifdef USE_EMBREE
 #include "Renderers/Intersection/RayMeshIntersection_Embree.hpp"
 #endif
@@ -223,6 +224,8 @@ void MainApp::setRenderers() {
         meshRenderers.push_back(new SingularityTypeCounterRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_LINE_DENSITY_CONTROL) {
         meshRenderers.push_back(new LineDensityControlRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_HEX_SHEETS) {
+        meshRenderers.push_back(new HexSheetRenderer(sceneData, transferFunctionWindow));
     }
 }
 
@@ -556,6 +559,9 @@ void MainApp::renderSceneSettingsGUI() {
 
     ImGui::SliderFloat("Move Speed", &MOVE_SPEED, 0.02f, 0.5f);
     ImGui::SliderFloat("Mouse Speed", &MOUSE_ROT_SPEED, 0.01f, 0.10f);
+    if (ImGui::Checkbox("Rotate by X", &rotateModelByX)) {
+        loadHexahedralMesh(getSelectedMeshFilename());
+    }
 
     ImGui::Separator();
 
@@ -686,7 +692,7 @@ void MainApp::update(float dt) {
 
 // --- Visualization pipeline ---
 
-sgl::AABB3 computeAABB3(const std::vector<glm::vec3>& vertices) {
+sgl::AABB3 MainApp::computeAABB3(const std::vector<glm::vec3>& vertices) {
     sgl::AABB3 aabb;
     float minX = FLT_MAX, minY = FLT_MAX, minZ = FLT_MAX, maxX = -FLT_MAX, maxY = -FLT_MAX, maxZ = -FLT_MAX;
     #pragma omp parallel for reduction(min: minX) reduction(min: minY) reduction(min: minZ) reduction(max: maxX) reduction(max: maxY) reduction(max: maxZ)
@@ -704,7 +710,7 @@ sgl::AABB3 computeAABB3(const std::vector<glm::vec3>& vertices) {
     return aabb;
 }
 
-void normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
+void MainApp::normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
     sgl::AABB3 aabb = computeAABB3(vertices);
     glm::vec3 translation = -aabb.getCenter();
     glm::vec3 scale3D = 0.5f / aabb.getDimensions();
@@ -714,9 +720,20 @@ void normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
     for (size_t i = 0; i < vertices.size(); i++) {
         vertices.at(i) = (vertices.at(i) + translation) * scale;
     }
+
+    if (rotateModelByX) {
+        glm::mat4 rotationMatrix = glm::rotate(sgl::HALF_PI, glm::vec3(1.0f, 0.0f, 0.0f));
+
+        #pragma omp parallel for
+        for (size_t i = 0; i < vertices.size(); i++) {
+            glm::vec4 rotatedVertex = rotationMatrix * glm::vec4(
+                    vertices.at(i).x, vertices.at(i).y, vertices.at(i).z, 1.0f);
+            vertices.at(i) = rotatedVertex;
+        }
+    }
 }
 
-void applyVertexDeformations(
+void MainApp::applyVertexDeformations(
         std::vector<glm::vec3>& vertices, const std::vector<glm::vec3>& deformations, const float deformationFactor) {
     float maxDeformation = -FLT_MAX;
     #pragma omp parallel for reduction(max: maxDeformation)

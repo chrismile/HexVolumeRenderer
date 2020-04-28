@@ -98,7 +98,7 @@ void main()
     if (fragmentLodValue > maxLod + LOD_EPSILON) {
         discard;
     }
-    float lineWidthPrime = lineWidth * (1.3 * (1.0 - fragmentLodValue) + 0.2);
+    float lineWidthPrime = lineWidth * (1.0 + (1.0 - fragmentLodValue) * 0.5);
 
     float lineCoordinates = clamp(minDistance / lineWidthPrime * 2.0, 0.0, 1.0);
     float fragmentDepth;

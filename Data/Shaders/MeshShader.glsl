@@ -157,6 +157,7 @@ out vec4 fragColor;
 
 uniform vec3 lightDirection = vec3(1.0, 0.0, 0.0);
 uniform vec3 cameraPosition; // in world space
+uniform int useShading = 1;
 
 #if !defined(DIRECT_BLIT_GATHER)
 #include OIT_GATHER_HEADER
@@ -166,11 +167,57 @@ uniform vec3 cameraPosition; // in world space
 
 void main()
 {
-    vec4 phongColor = blinnPhongShading(color);
+    vec4 phongColor;
+    if (useShading == 1) {
+        phongColor = blinnPhongShading(color);
+    } else {
+        phongColor = color;
+    }
 
     #if defined(DIRECT_BLIT_GATHER)
     // Direct rendering, no transparency.
     fragColor = vec4(phongColor.rgb, 1.0);
+    #else
+    gatherFragment(phongColor);
+    #endif
+}
+
+-- Fragment.Plain.PositiveDepthBias
+
+#version 430 core
+
+uniform vec4 color;
+
+in vec3 fragmentPositionWorld;
+in vec3 fragmentNormal;
+
+#if defined(DIRECT_BLIT_GATHER)
+out vec4 fragColor;
+#endif
+
+uniform vec3 lightDirection = vec3(1.0, 0.0, 0.0);
+uniform vec3 cameraPosition; // in world space
+uniform int useShading = 1;
+
+#if !defined(DIRECT_BLIT_GATHER)
+#include OIT_GATHER_HEADER
+#endif
+
+#include "Lighting.glsl"
+
+void main()
+{
+    vec4 phongColor;
+    if (useShading == 1) {
+        phongColor = blinnPhongShading(color);
+    } else {
+        phongColor = color;
+    }
+
+    #if defined(DIRECT_BLIT_GATHER)
+    // Direct rendering, no transparency.
+    fragColor = phongColor.rgba;
+    gl_FragDepth = gl_FragCoord.z + 1e-6;
     #else
     gatherFragment(phongColor);
     #endif

@@ -370,6 +370,10 @@ bool HexMesh::isCellMarked(uint32_t h_id) {
     return hexaLabApp->is_cell_marked(h_id);
 }
 
+float HexMesh::getCellAttribute(uint32_t h_id) {
+    return 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id);
+}
+
 Mesh& HexMesh::getBaseComplexMesh(){
     rebuildInternalRepresentationIfNecessary();
     return *baseComplexMesh;
@@ -641,7 +645,7 @@ void HexMesh::getSurfaceData(
         std::vector<glm::vec3>& vertexPositions,
         std::vector<glm::vec3>& vertexNormals,
         std::vector<float>& vertexAttributes) {
-    rebuildInternalRepresentationIfNecessary();
+    /*rebuildInternalRepresentationIfNecessary();
     triangleIndices.clear();
     triangleIndices.reserve(hexaLabApp->get_visible_model()->surface_ibuffer.size());
     for (HexaLab::Index& idx : hexaLabApp->get_visible_model()->surface_ibuffer) {
@@ -649,7 +653,80 @@ void HexMesh::getSurfaceData(
     }
     vertexPositions = hexaLabApp->get_visible_model()->surface_vert_pos;
     vertexNormals = hexaLabApp->get_visible_model()->surface_vert_norm;
-    vertexAttributes = hexaLabApp->get_visible_model()->surface_vert_attribute;
+    vertexAttributes = hexaLabApp->get_visible_model()->surface_vert_attribute;*/
+
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    size_t indexOffset = 0;
+    for (size_t i = 0; i < mesh->Hs.size(); i++) {
+        Hybrid& h = mesh->Hs.at(i);
+        float cellAttribute = getCellAttribute(h.id);
+        for (size_t j = 0; j < h.fs.size(); j++) {
+            Hybrid_F& f = mesh->Fs.at(h.fs.at(j));
+            if (!f.boundary) {
+                continue;
+            }
+            if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+                return hexaLabApp->is_cell_marked(h_id);
+            })) {
+                continue;
+            }
+
+            assert(f.neighbor_hs.size() >= 1 && f.neighbor_hs.size() <= 2);
+            bool invertWinding = f.neighbor_hs.at(0) != h.id;
+
+            assert(f.vs.size() == 4);
+            for (size_t j = 0; j < 4; j++) {
+                uint32_t v_id = f.vs.at(j);
+                glm::vec4 vertexPosition(
+                        mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
+                vertexPositions.push_back(vertexPosition);
+                vertexAttributes.push_back(cellAttribute);
+            }
+
+            size_t oldTriangleIndicesSize = triangleIndices.size();
+            if (!invertWinding) {
+                /**
+                 * vertex 1     edge 1    vertex 2
+                 *          | - - - - - |
+                 *          | \         |
+                 *          |   \       |
+                 *   edge 0 |     \     | edge 2
+                 *          |       \   |
+                 *          |         \ |
+                 *          | - - - - - |
+                 * vertex 0     edge 3    vertex 3
+                 */
+                triangleIndices.push_back(indexOffset + 0);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 2);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 3);
+            }
+            if (invertWinding) {
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 0);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 2);
+            }
+
+            for (size_t j = 0; j < 2; j++) {
+                glm::vec3 v[3];
+                for (int k = 0; k < 3; k++) {
+                    v[k] = vertexPositions.at(triangleIndices.at(oldTriangleIndicesSize + j*3 + k));
+                }
+                glm::vec3 vertexNormal = glm::normalize(glm::cross(v[1] - v[0], v[2] - v[0]));
+                vertexNormals.push_back(vertexNormal);
+                vertexNormals.push_back(vertexNormal);
+            }
+
+            indexOffset += 4;
+        }
+    }
 }
 
 void HexMesh::getSurfaceData(
@@ -657,13 +734,6 @@ void HexMesh::getSurfaceData(
         std::vector<glm::vec3>& vertexPositions) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
-
-    // Compute all edge attributes.
-    std::vector<float> edgeAttributes(mesh->Es.size());
-    for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
-        float edgeAttribute = interpolateCellAttributePerEdge(e_id, cellVolumes);
-        edgeAttributes.at(e_id) = edgeAttribute;
-    }
 
     size_t indexOffset = 0;
     for (size_t i = 0; i < mesh->Hs.size(); i++) {
@@ -2114,6 +2184,69 @@ void HexMesh::getSurfaceDataWireframeFaces(
         indexOffset += 4;
     }
 }
+
+void HexMesh::getSurfaceDataWireframeFaces(
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<HexahedralCellFace>& hexahedralCellFaces,
+        const std::vector<uint32_t>& faceIds,
+        bool useSingularEdgeColorMap) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    size_t indexOffset = 0;
+    for (size_t i = 0; i < faceIds.size(); i++) {
+        Hybrid_F& f = mesh->Fs.at(faceIds.at(i));
+        if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+            return hexaLabApp->is_cell_marked(h_id);
+        })) {
+            continue;
+        }
+
+        hexahedralCellFaces.push_back(HexahedralCellFace());
+        HexahedralCellFace& hexahedralCellFace = hexahedralCellFaces.back();
+
+        assert(f.vs.size() == 4);
+        for (size_t j = 0; j < 4; j++) {
+            uint32_t v_id = f.vs.at(j);
+            glm::vec4 vertexPosition(
+                    mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
+            hexahedralCellFace.vertexPositions[j] = vertexPosition;
+        }
+
+        /**
+         * vertex 1     edge 1    vertex 2
+         *          | - - - - - |
+         *          | \         |
+         *          |   \       |
+         *   edge 0 |     \     | edge 2
+         *          |       \   |
+         *          |         \ |
+         *          | - - - - - |
+         * vertex 0     edge 3    vertex 3
+         */
+        triangleIndices.push_back(indexOffset + 0);
+        triangleIndices.push_back(indexOffset + 3);
+        triangleIndices.push_back(indexOffset + 1);
+        triangleIndices.push_back(indexOffset + 2);
+        triangleIndices.push_back(indexOffset + 1);
+        triangleIndices.push_back(indexOffset + 3);
+
+        assert(f.es.size() == 4);
+        for (size_t j = 0; j < 4; j++) {
+            uint32_t e_id = f.es.at(j);
+            Hybrid_E& e = mesh->Es.at(e_id);
+            glm::vec4 vertexColor(0.0f, 0.0f, 0.0f, 1.0f);
+            if (useSingularEdgeColorMap) {
+                int edgeValence = int(e.neighbor_hs.size());
+                vertexColor = edgeColorMap(singularEdgeIds.find(e_id) != singularEdgeIds.end(), e.boundary, edgeValence);
+            }
+            hexahedralCellFace.lineColors[j] = vertexColor;
+        }
+
+        indexOffset += 4;
+    }
+}
+
 
 uint32_t HexMesh::packEdgeSingularityInformation(uint32_t e_id) {
     Hybrid_E& e = baseComplexMesh->Es.at(e_id);

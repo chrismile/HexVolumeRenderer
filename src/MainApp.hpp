@@ -52,7 +52,7 @@ enum RenderingMode {
     RENDERING_MODE_SINGULARITY, RENDERING_MODE_BASE_COMPLEX_LINES, RENDERING_MODE_BASE_COMPLEX_SURFACE,
     RENDERING_MODE_PARTITION_LINES, RENDERING_MODE_LOD_LINES, RENDERING_MODE_LOD_LINES_PER_FRAGMENT,
     RENDERING_MODE_LOD_LINES_PREVIEW, RENDERING_MODE_LOD_LINES_PREVIEW_SHEETS,
-    RENDERING_MODE_SINGULARITY_TYPE_COUNTER, RENDERING_MODE_LINE_DENSITY_CONTROL
+    RENDERING_MODE_SINGULARITY_TYPE_COUNTER, RENDERING_MODE_LINE_DENSITY_CONTROL, RENDERING_MODE_HEX_SHEETS
 };
 const char *const RENDERING_MODE_NAMES[] = {
         "Surface", "Wireframe", "Depth Complexity",
@@ -61,7 +61,7 @@ const char *const RENDERING_MODE_NAMES[] = {
         "Singularity", "Base Complex (Lines)", "Base Complex (Surface)",
         "Partition Lines", "LOD Lines", "LOD Lines (Per Frag.)",
         "LOD Lines (Preview)", "LOD Lines (Preview, Sheets)",
-        "Singularity Type Counter", "Line Density Control"
+        "Singularity Type Counter", "Line Density Control", "Hex Sheets"
 };
 const int NUM_RENDERING_MODES = ((int)(sizeof(RENDERING_MODE_NAMES) / sizeof(*RENDERING_MODE_NAMES)));
 
@@ -117,6 +117,7 @@ private:
     float MOVE_SPEED = 0.2f;
     float ROT_SPEED = 1.0f;
     float MOUSE_ROT_SPEED = 0.05f;
+    bool rotateModelByX = false;
 
     // Data set GUI information.
     void loadAvailableDataSetSources();
@@ -166,7 +167,13 @@ private:
     /// Sets the used renderers
     void setRenderers();
 
-    /// The data loaded from the input file (or a wrapped nullptr).
+    /// Helpers.
+    sgl::AABB3 computeAABB3(const std::vector<glm::vec3>& vertices);
+    void normalizeVertexPositions(std::vector<glm::vec3>& vertices);
+    void applyVertexDeformations(
+            std::vector<glm::vec3>& vertices, const std::vector<glm::vec3>& deformations, const float deformationFactor);
+
+        /// The data loaded from the input file (or a wrapped nullptr).
     HexMeshPtr inputData;
     bool newMeshLoaded = true;
 

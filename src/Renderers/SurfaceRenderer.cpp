@@ -78,6 +78,7 @@ void SurfaceRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNew
 }
 
 void SurfaceRenderer::render() {
+    shaderProgram->setUniform("useShading", int(useShading));
     shaderProgram->setUniform("cameraPosition", sceneData.camera->getPosition());
     shaderProgram->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
@@ -85,5 +86,10 @@ void SurfaceRenderer::render() {
 }
 
 void SurfaceRenderer::renderGui() {
-    ;
+    if (ImGui::Begin("Volume Renderer (Faces)", &showRendererWindow)) {
+        if (ImGui::Checkbox("Use Shading", &useShading)) {
+            reRender = true;
+        }
+    }
+    ImGui::End();
 }

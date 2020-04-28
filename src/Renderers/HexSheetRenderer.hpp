@@ -26,20 +26,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_SURFACERENDERER_H
-#define HEXVOLUMERENDERER_SURFACERENDERER_H
+#ifndef HEXVOLUMERENDERER_HEXSHEETRENDERER_HPP
+#define HEXVOLUMERENDERER_HEXSHEETRENDERER_HPP
 
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
 #include "HexahedralMeshRenderer.hpp"
+#include "LOD/HexahedralSheet.hpp"
 
-/**
- * Renders all boundary surfaces of the hexahedral mesh.
- */
-class SurfaceRenderer : public HexahedralMeshRenderer {
+class HexSheetRenderer : public HexahedralMeshRenderer {
 public:
-    SurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
-    virtual ~SurfaceRenderer() {}
+    HexSheetRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    virtual ~HexSheetRenderer() {}
 
     /**
      * Re-generates the visualization mapping.
@@ -54,12 +52,29 @@ public:
     virtual void renderGui();
 
 protected:
-    sgl::ShaderProgramPtr shaderProgram;
-    sgl::ShaderAttributesPtr shaderAttributes;
+    void recreateRenderingData();
+    sgl::ShaderProgramPtr shaderProgramHull;
+    sgl::ShaderProgramPtr shaderProgramSheet;
+    sgl::ShaderAttributesPtr shaderAttributesHull;
+    sgl::ShaderAttributesPtr shaderAttributesSheet;
+    sgl::ShaderProgramPtr shaderProgramWireframe;
+    sgl::ShaderAttributesPtr shaderAttributesWireframe;
+    sgl::GeometryBufferPtr wireframeFacesBuffer;
+
+    HexMeshPtr hexMesh;
+
+    std::vector<HexahedralSheet> hexahedralSheets;
+    std::set<ComponentConnectionData> connectionDataSet;
+    std::set<ComponentConnectionData> currentSheetConnectionDataSet;
+    int selectedSheetIndex0 = -1, selectedSheetIndex1 = -1;
+    int selectedRow = -1;
 
     // GUI data
     bool showRendererWindow = true;
+    float lineWidth = 0.0015f;
+    float hullOpacity = 0.3f;
     bool useShading = true;
+    bool showConnectedSheets = true;
 };
 
-#endif //HEXVOLUMERENDERER_SURFACERENDERER_H
+#endif //HEXVOLUMERENDERER_HEXSHEETRENDERER_HPP
