@@ -118,11 +118,12 @@ void LineDensityControlRenderer::onResolutionChanged() {
     attributeTextureResolution.x = std::round(window->getWidth() * attributeTextureSubsamplingFactor);
     attributeTextureResolution.y = std::round(window->getHeight() * attributeTextureSubsamplingFactor);
 
-    fragmentBufferSize = EXPECTED_DEPTH_COMPLEXITY * attributeTextureResolution.x * attributeTextureResolution.y;
+    fragmentBufferSize = size_t(EXPECTED_DEPTH_COMPLEXITY)
+            * size_t(attributeTextureResolution.x) * size_t(attributeTextureResolution.y);
     size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNodeAttributeTextures) * fragmentBufferSize;
     if (fragmentBufferSize >= (1ull << 32ull)) {
         sgl::Logfile::get()->writeError(
-                std::string() + "Fragment buffer size was larger than 4GiB. Clamping to 4GiB.");
+                std::string() + "Fragment buffer size was larger than or equal to 4GiB. Clamping to 4GiB.");
         fragmentBufferSizeBytes = (1ull << 32ull) - sizeof(LinkedListFragmentNodeAttributeTextures);
         fragmentBufferSize = fragmentBufferSizeBytes / sizeof(LinkedListFragmentNodeAttributeTextures);
     } else {

@@ -33,6 +33,8 @@
 #include "SceneData.hpp"
 
 class TransferFunctionWindow;
+struct InternalState;
+class SettingsMap;
 
 /**
  * Super-class for hexahedral mesh renderers.
@@ -43,9 +45,9 @@ public:
         : sceneData(sceneData), transferFunctionWindow(transferFunctionWindow) {}
     virtual ~HexahedralMeshRenderer() {}
 
-    // Returns if the visualization mapping needs to be re-generated.
+    /// Returns if the visualization mapping needs to be re-generated.
     inline bool isDirty() { return dirty; }
-    // Returns if the data needs to be re-rendered, but the visualization mapping is valid.
+    /// Returns if the data needs to be re-rendered, but the visualization mapping is valid.
     virtual bool needsReRender() { bool tmp = reRender; reRender = false; return tmp; }
 
     /**
@@ -55,18 +57,22 @@ public:
      */
     virtual void generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh)=0;
 
-    // Renders the object to the scene framebuffer.
+    /// Renders the object to the scene framebuffer.
     virtual void render()=0;
-    // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
+    /// Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
     virtual void renderGui()=0;
-    // Updates the internal logic (called once per frame).
+    /// Updates the internal logic (called once per frame).
     virtual void update(float dt) {}
 
-    // Called when the resolution of the application window has changed.
+    /// Called when the resolution of the application window has changed.
     virtual void onResolutionChanged() {}
 
-    // Called when the transfer function was changed.
+    /// Called when the transfer function was changed.
     virtual void onTransferFunctionMapRebuilt() {}
+
+    /// For changing performance measurement modes.
+    virtual void setNewState(const InternalState& newState) {}
+    virtual void setNewSettings(const SettingsMap& settings) {}
 
 protected:
     SceneData &sceneData;

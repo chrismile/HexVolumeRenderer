@@ -36,6 +36,7 @@
 #include <Utils/Timer.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
+#include "Utils/AutomaticPerformanceMeasurer.hpp"
 #include "DepthComplexityRenderer.hpp"
 
 DepthComplexityRenderer::DepthComplexityRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
@@ -176,6 +177,10 @@ void DepthComplexityRenderer::resolve() {
 }
 
 void DepthComplexityRenderer::render() {
+    if (sceneData.performanceMeasurer != nullptr || sceneData.recordingMode) {
+        computeStatistics();
+    }
+
     setUniformData();
     clear();
     gather();
@@ -257,7 +262,18 @@ void DepthComplexityRenderer::computeStatistics() {
 
     fragmentCounterBuffer->unmapBuffer();
 
-    numFragmentsMaxColor = std::max(maxComplexity, 4ul)/intensity;
+    bool performanceMeasureMode = sceneData.performanceMeasurer != nullptr;
+    if (!(performanceMeasureMode || sceneData.recordingMode) || firstFrame) {
+        firstFrame = false;
+        numFragmentsMaxColor = std::max(maxComplexity, 4ul)/intensity;
+    }
+
+    if (performanceMeasureMode) {
+        sceneData.performanceMeasurer->pushDepthComplexityFrame(
+                minComplexity, maxComplexity,
+                (float)totalNumFragments / usedLocations,
+                (float)totalNumFragments / bufferSize, totalNumFragments);
+    }
 
     if (totalNumFragments == 0) usedLocations = 1; // Avoid dividing by zero in code below
     std::cout << "Depth complexity: avg used: " << ((float)totalNumFragments / usedLocations)

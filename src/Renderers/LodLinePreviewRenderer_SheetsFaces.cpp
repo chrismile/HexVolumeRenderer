@@ -39,7 +39,7 @@
 LodLinePreviewRenderer_SheetsFaces::LodLinePreviewRenderer_SheetsFaces(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : PerPixelLinkedListRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->addPreprocessorDefine("LINE_RENDERING_STYLE_HALO", "");
-    initShaders({"WireframeSurfaceSingular.Vertex", "WireframeSurfaceSingular.Fragment"});
+    initShaders({"WireframeSurfacePreview.Vertex", "WireframeSurfacePreview.Fragment"});
     sgl::ShaderManager->removePreprocessorDefine("LINE_RENDERING_STYLE_HALO");
 }
 
@@ -49,8 +49,8 @@ void LodLinePreviewRenderer_SheetsFaces::generateVisualizationMapping(HexMeshPtr
             MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
 
     std::vector<uint32_t> indices;
-    std::vector<LodHexahedralCellFace> hexahedralCellFaces;
-    generateSheetLevelOfDetailLineStructureAndVertexData(
+    std::vector<LodPreviewHexahedralCellFace> hexahedralCellFaces;
+    generateSheetPreviewLevelOfDetailLineStructureAndVertexData(
             meshIn.get(), indices, hexahedralCellFaces, lodMergeFactor,
             useVolumeAndAreaMeasures, useWeightsForMerging);
 
@@ -64,7 +64,7 @@ void LodLinePreviewRenderer_SheetsFaces::generateVisualizationMapping(HexMeshPtr
 
     // Create an SSBO for the hexahedral cell faces.
     hexahedralCellFacesBuffer = sgl::Renderer->createGeometryBuffer(
-            hexahedralCellFaces.size()*sizeof(LodHexahedralCellFace), (void*)&hexahedralCellFaces.front(),
+            hexahedralCellFaces.size()*sizeof(LodPreviewHexahedralCellFace), (void*)&hexahedralCellFaces.front(),
             sgl::SHADER_STORAGE_BUFFER);
 
     /*std::vector<glm::vec3> vertices;
@@ -101,6 +101,8 @@ void LodLinePreviewRenderer_SheetsFaces::setUniformData(){
     PerPixelLinkedListRenderer::setUniformData();
     gatherShader->setUniform("maxLod", maxLod);
     gatherShader->setUniform("lineWidth", lineWidth);
+    gatherShader->setUniform(
+            "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
     sgl::ShaderManager->bindShaderStorageBuffer(6, hexahedralCellFacesBuffer);
 }
 

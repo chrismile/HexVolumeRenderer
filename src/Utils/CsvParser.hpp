@@ -26,43 +26,22 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_SURFACERENDERER_H
-#define HEXVOLUMERENDERER_SURFACERENDERER_H
+#ifndef HEXVOLUMERENDERER_CSVPARSER_HPP
+#define HEXVOLUMERENDERER_CSVPARSER_HPP
 
-#include <Graphics/Shader/ShaderAttributes.hpp>
+#include <string>
+#include <vector>
+#include <list>
+#include <fstream>
+#include <iostream>
 
-#include "HexahedralMeshRenderer.hpp"
+typedef std::list<std::vector<std::string>> RowMap;
 
-/**
- * Renders all boundary surfaces of the hexahedral mesh.
+/** Parser for the middle_states.csv file
+ * @param filename: The filename of the CSV file
+ * @param filterComments: Filers lines starting with a hashtag (#)
+ * @return A list of rows stored in the CSV file
  */
-class SurfaceRenderer : public HexahedralMeshRenderer {
-public:
-    SurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
-    virtual ~SurfaceRenderer() {}
+RowMap parseCsv(const std::string &filename, bool filterComments = true);
 
-    /**
-     * Re-generates the visualization mapping.
-     * @param meshIn The mesh to generate a visualization mapping for.
-     * @param isNewMesh Whether a new mesh is loaded or just a new renderer is used.
-     */
-    virtual void generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
-
-    // Renders the object to the scene framebuffer.
-    virtual void render();
-    // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
-    virtual void renderGui();
-
-protected:
-    sgl::ShaderProgramPtr shaderProgramSurface;
-    sgl::ShaderProgramPtr shaderProgramHull;
-    sgl::ShaderAttributesPtr shaderAttributesSurface;
-    sgl::ShaderAttributesPtr shaderAttributesHull;
-
-    // GUI data
-    bool showRendererWindow = true;
-    float hullOpacity = 0.0f;
-    bool useShading = true;
-};
-
-#endif //HEXVOLUMERENDERER_SURFACERENDERER_H
+#endif //HEXVOLUMERENDERER_CSVPARSER_HPP

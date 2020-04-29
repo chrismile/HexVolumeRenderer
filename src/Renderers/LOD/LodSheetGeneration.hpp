@@ -141,4 +141,21 @@ void generateSheetLevelOfDetailLineStructureAndVertexData(
         bool useVolumeAndAreaMeasures = false,
         bool useWeightsForMerging = false);
 
+
+struct LodPreviewHexahedralCellFace {
+    glm::vec4 vertexPositions[4];
+    float edgeLodValues[4];
+};
+
+/**
+ * Similar to @see generateSheetLevelOfDetailLineStructureAndVertexData, but instead of lines uses face-based rendering.
+ */
+void generateSheetPreviewLevelOfDetailLineStructureAndVertexData(
+        HexMesh* hexMesh,
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<LodPreviewHexahedralCellFace>& hexahedralCellFaces,
+        float lodMergeFactor = 2.0f,
+        bool useVolumeAndAreaMeasures = false,
+        bool useWeightsForMerging = false);
+
 #endif //HEXVOLUMERENDERER_LODSHEETGENERATION_HPP

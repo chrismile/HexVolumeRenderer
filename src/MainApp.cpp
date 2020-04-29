@@ -60,6 +60,7 @@
 #include <Graphics/Shader/ShaderManager.hpp>
 #include <Graphics/Texture/TextureManager.hpp>
 #include <Graphics/Texture/Bitmap.hpp>
+#include <Graphics/OpenGL/SystemGL.hpp>
 
 #include "Loaders/VtkLoader.hpp"
 #include "Loaders/MeshLoader.hpp"
@@ -104,17 +105,33 @@ MainApp::MainApp()
           rayMeshIntersection(new RayMeshIntersection_NanoRT(camera)),
 #endif
           sceneData(
-                  sceneFramebuffer, sceneTexture, sceneDepthRBO, camera, clearColor,
-                  *rayMeshIntersection),
-          videoWriter(NULL) {
+                  sceneFramebuffer, sceneTexture, sceneDepthRBO, camera, clearColor, performanceMeasurer,
+                  recording, *rayMeshIntersection),
+          checkpointWindow(sceneData), videoWriter(NULL) {
+    // https://www.khronos.org/registry/OpenGL/extensions/NVX/NVX_gpu_memory_info.txt
+    GLint freeMemKilobytes = 0;
+    if (usePerformanceMeasurementMode
+            && sgl::SystemGL::get()->isGLExtensionAvailable("GL_NVX_gpu_memory_info")) {
+        glGetIntegerv(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, &freeMemKilobytes);
+    }
+
     sgl::FileUtils::get()->ensureDirectoryExists(saveDirectoryScreenshots);
     sgl::FileUtils::get()->ensureDirectoryExists(saveDirectoryVideos);
+    sgl::FileUtils::get()->ensureDirectoryExists(saveDirectoryCameraPaths);
     setPrintFPS(false);
 
-    gammaCorrectionShader = sgl::ShaderManager->getShaderProgram({"GammaCorrection.Vertex", "GammaCorrection.Fragment"});
+    if (usePerformanceMeasurementMode) {
+        useCameraFlight = true;
+    }
+    if (useCameraFlight && recording) {
+        realTimeCameraFlight = false;
+    }
+
+    gammaCorrectionShader = sgl::ShaderManager->getShaderProgram(
+            {"GammaCorrection.Vertex", "GammaCorrection.Fragment"});
 
     sgl::EventManager::get()->addListener(sgl::RESOLUTION_CHANGED_EVENT,
-            [this](sgl::EventPtr event){ this->resolutionChanged(event); });
+                                          [this](sgl::EventPtr event) { this->resolutionChanged(event); });
 
     camera->setNearClipDistance(0.001f);
     camera->setFarClipDistance(100.0f);
@@ -154,6 +171,19 @@ MainApp::MainApp()
     customMeshFileName = sgl::FileUtils::get()->getUserDirectory();
     hexaLabDataSetsDownloaded = sgl::FileUtils::get()->exists(meshDirectory + "index.json");
     loadAvailableDataSetSources();
+
+    recordingTimeStampStart = sgl::Timer->getTicksMicroseconds();
+    usesNewState = true;
+    if (usePerformanceMeasurementMode) {
+        sgl::FileUtils::get()->ensureDirectoryExists("images");
+        performanceMeasurer = new AutomaticPerformanceMeasurer(
+                getTestModesPaper(), "performance.csv", "depth_complexity.csv",
+                [this](const InternalState &newState) { this->setNewState(newState); });
+        performanceMeasurer->setInitialFreeMemKilobytes(freeMemKilobytes);
+        sceneData.performanceMeasurer = performanceMeasurer;
+    } else {
+        sceneData.performanceMeasurer = nullptr;
+    }
 }
 
 MainApp::~MainApp() {
@@ -170,10 +200,78 @@ MainApp::~MainApp() {
     }
     meshRenderers.clear();
 
+    if (usePerformanceMeasurementMode) {
+        delete performanceMeasurer;
+        performanceMeasurer = nullptr;
+    }
     if (videoWriter != NULL) {
         delete videoWriter;
     }
     delete rayMeshIntersection;
+}
+
+void MainApp::setNewState(const InternalState &newState) {
+    if (performanceMeasurer) {
+        performanceMeasurer->setCurrentAlgorithmBufferSizeBytes(0);
+    }
+
+    // 1. Change the window resolution?
+    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    int currentWindowWidth = window->getWidth();
+    int currentWindowHeight = window->getHeight();
+    glm::ivec2 newResolution = newState.windowResolution;
+    if (newResolution.x > 0 && newResolution.x > 0 && currentWindowWidth != newResolution.x
+            && currentWindowHeight != newResolution.y) {
+        window->setWindowSize(newResolution.x, newResolution.y);
+    }
+
+    // 1.1. Handle the new tiling mode for SSBO accesses (TODO).
+    //setNewTilingMode(newState.tilingWidth, newState.tilingHeight, newState.useMortonCodeForTiling);
+
+    // 1.2. Load the new transfer function if necessary.
+    if (!newState.transferFunctionName.empty() && newState.transferFunctionName != lastState.transferFunctionName) {
+        transferFunctionWindow.loadFunctionFromFile("Data/TransferFunctions/" + newState.transferFunctionName);
+    }
+
+    // 2.1. Do we need to load new renderers?
+    if (firstState || newState.renderingMode != lastState.renderingMode
+            || newState.rendererSettings != lastState.rendererSettings) {
+        for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
+            delete meshRenderer;
+        }
+        meshRenderers.clear();
+
+        renderingMode = newState.renderingMode;
+        setRenderers();
+    }
+
+    // 2.2. Pass state change to renderers to handle internally necessary state changes.
+    for (HexahedralMeshRenderer* renderer : meshRenderers) {
+        renderer->setNewState(newState);
+    }
+    for (size_t i = 0; i < newState.rendererSettings.size(); i++) {
+        meshRenderers.at(i)->setNewSettings(newState.rendererSettings.at(i));
+    }
+
+    // 3. Pass state change to filters to handle internally necessary state changes.
+    for (HexahedralMeshFilter* filter : meshFilters) {
+        filter->setNewState(newState);
+    }
+    for (size_t i = 0; i < newState.filterSettings.size(); i++) {
+        meshFilters.at(i)->setNewSettings(newState.filterSettings.at(i));
+    }
+
+    // 4. Load the correct mesh file.
+    if (newState.meshDescriptor != lastState.meshDescriptor) {
+        loadHexahedralMesh(newState.meshDescriptor.getFilename());
+    }
+
+    recordingTime = 0.0f;
+    recordingTimeLast = 0.0f;
+    recordingTimeStampStart = sgl::Timer->getTicksMicroseconds();
+    lastState = newState;
+    firstState = false;
+    usesNewState = true;
 }
 
 void MainApp::setRenderers() {
@@ -234,6 +332,7 @@ void MainApp::resolutionChanged(sgl::EventPtr event) {
     int width = window->getWidth();
     int height = window->getHeight();
     glViewport(0, 0, width, height);
+    windowResolution = glm::ivec2(width, height);
 
     // Buffers for off-screen rendering
     sceneFramebuffer = sgl::Renderer->createFBO();
@@ -297,7 +396,7 @@ void MainApp::processSDLEvent(const SDL_Event &event) {
 
 void MainApp::render() {
     if (videoWriter == NULL && recording) {
-        videoWriter = new sgl::VideoWriter(saveFilenameVideos + "video.mp4", 30);
+        videoWriter = new sgl::VideoWriter(saveFilenameVideos + "video.mp4", FRAME_RATE_VIDEOS);
     }
 
     prepareVisualizationPipeline();
@@ -312,6 +411,10 @@ void MainApp::render() {
     glViewport(0, 0, width, height);
 
     if (reRender || continuousRendering) {
+        if (usePerformanceMeasurementMode) {
+            performanceMeasurer->startMeasure(recordingTimeLast);
+        }
+
         sgl::Renderer->bindFBO(sceneFramebuffer);
         sgl::Renderer->clearFramebuffer(
                 GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, clearColor);
@@ -330,6 +433,11 @@ void MainApp::render() {
                 meshRenderer->render();
             }
         }
+
+        if (usePerformanceMeasurementMode) {
+            performanceMeasurer->endMeasure();
+        }
+
         reRender = false;
     }
 
@@ -401,6 +509,10 @@ void MainApp::renderGUI() {
                 meshRenderer->onTransferFunctionMapRebuilt();
             }
         }
+    }
+
+    if (checkpointWindow.renderGui()) {
+        reRender = true;
     }
 
     for (HexahedralMeshFilter* meshFilter : meshFilters) {
@@ -559,7 +671,7 @@ void MainApp::renderSceneSettingsGUI() {
 
     ImGui::SliderFloat("Move Speed", &MOVE_SPEED, 0.02f, 0.5f);
     ImGui::SliderFloat("Mouse Speed", &MOUSE_ROT_SPEED, 0.01f, 0.10f);
-    if (ImGui::Checkbox("Rotate by X", &rotateModelByX)) {
+    if (ImGui::SliderInt("Rotate by X", &rotateModelByXTurns, 0, 3)) {
         loadHexahedralMesh(getSelectedMeshFilename());
     }
 
@@ -580,7 +692,7 @@ void MainApp::renderSceneSettingsGUI() {
             recording = true;
             videoWriter = new sgl::VideoWriter(
                     saveDirectoryVideos + saveFilenameVideos
-                    + "_" + sgl::toString(videoNumber++) + ".mp4", 30);
+                    + "_" + sgl::toString(videoNumber++) + ".mp4", FRAME_RATE_VIDEOS);
         }
     } else {
         if (ImGui::Button("Stop Recording Video")) {
@@ -589,6 +701,14 @@ void MainApp::renderSceneSettingsGUI() {
             videoWriter = nullptr;
         }
     }
+
+    ImGui::Separator();
+
+    ImGui::SliderInt2("Window Resolution", &windowResolution.x, 480, 3840);
+    if (ImGui::Button("Set Resolution")) {
+        sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+        window->setWindowSize(windowResolution.x, windowResolution.y);
+    }
 }
 
 void MainApp::update(float dt) {
@@ -596,6 +716,43 @@ void MainApp::update(float dt) {
 
     fpsArrayOffset = (fpsArrayOffset + 1) % fpsArray.size();
     fpsArray[fpsArrayOffset] = 1.0f/dt;
+    recordingTimeLast = recordingTime;
+
+    if (usePerformanceMeasurementMode && !performanceMeasurer->update(recordingTime)) {
+        // All modes were tested -> quit.
+        quit();
+    }
+
+    if (useCameraFlight && inputData.get() != nullptr) {
+        cameraPath.update(recordingTime);
+        camera->overwriteViewMatrix(cameraPath.getViewMatrix());
+        reRender = true;
+    }
+
+    // Already recorded full cycle?
+    if (useCameraFlight && recording && recordingTime > cameraPath.getEndTime()) {
+        quit();
+    }
+
+    if (useCameraFlight) {
+        // Update camera position.
+        if (usePerformanceMeasurementMode) {
+            recordingTime += 1.0f;
+        } else{
+            if (realTimeCameraFlight) {
+                uint64_t currentTimeStamp = sgl::Timer->getTicksMicroseconds();
+                uint64_t timeElapsedMicroSec = currentTimeStamp - recordingTimeStampStart;
+                recordingTime = timeElapsedMicroSec * 1e-6;
+                if (usesNewState) {
+                    // A new state was just set. Don't recompute, as this would result in time of ca. 1-2ns
+                    usesNewState = false;
+                    recordingTime = 0.0f;
+                }
+            } else {
+                recordingTime += FRAME_TIME_CAMERA_PATH;
+            }
+        }
+    }
 
     transferFunctionWindow.update(dt);
 
@@ -721,8 +878,8 @@ void MainApp::normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
         vertices.at(i) = (vertices.at(i) + translation) * scale;
     }
 
-    if (rotateModelByX) {
-        glm::mat4 rotationMatrix = glm::rotate(sgl::HALF_PI, glm::vec3(1.0f, 0.0f, 0.0f));
+    if (rotateModelByXTurns != 0) {
+        glm::mat4 rotationMatrix = glm::rotate(rotateModelByXTurns * sgl::HALF_PI, glm::vec3(1.0f, 0.0f, 0.0f));
 
         #pragma omp parallel for
         for (size_t i = 0; i < vertices.size(); i++) {
@@ -776,6 +933,7 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
             fileName, hexMeshVertices, hexMeshCellIndices, hexMeshDeformations);
     if (loadingSuccessful) {
         newMeshLoaded = true;
+        checkpointWindow.onLoadMesh(fileName);
 
         // A copy of the mesh data is stored for allowing the user to alter the deformation factor also after loading.
         std::vector<glm::vec3> vertices;
@@ -787,9 +945,23 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         }
 
         normalizeVertexPositions(vertices);
+        modelBoundingBox = computeAABB3(vertices);
+
         inputData = HexMeshPtr(new HexMesh(transferFunctionWindow, *rayMeshIntersection));
         inputData->setHexMeshData(vertices, hexMeshCellIndices);
         inputData->setQualityMeasure(selectedQualityMeasure);
+
+        if (useCameraFlight) {
+            std::string cameraPathFilename =
+                    saveDirectoryCameraPaths + sgl::FileUtils::get()->getPathAsList(fileName).back() + ".binpath";
+            if (sgl::FileUtils::get()->exists(cameraPathFilename)) {
+                cameraPath.fromBinaryFile(cameraPathFilename);
+            } else {
+                cameraPath.fromCirclePath(modelBoundingBox, fileName, usePerformanceMeasurementMode
+                        ? CAMERA_PATH_TIME_PERFORMANCE_MEASUREMENT : CAMERA_PATH_TIME_RECORDING);
+                //cameraPath.saveToBinaryFile(cameraPathFilename);
+            }
+        }
     }
 }
 
@@ -800,6 +972,7 @@ void MainApp::onDeformationFactorChanged() {
         applyVertexDeformations(vertices, hexMeshDeformations, deformationFactor);
     }
     normalizeVertexPositions(vertices);
+    modelBoundingBox = computeAABB3(vertices);
     inputData->updateVertexPositions(vertices);
 }
 

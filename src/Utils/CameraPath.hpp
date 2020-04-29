@@ -26,43 +26,46 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_SURFACERENDERER_H
-#define HEXVOLUMERENDERER_SURFACERENDERER_H
+#ifndef HEXVOLUMERENDERER_CAMERAPATH_HPP
+#define HEXVOLUMERENDERER_CAMERAPATH_HPP
 
-#include <Graphics/Shader/ShaderAttributes.hpp>
+#include <vector>
+#include <glm/gtc/quaternion.hpp>
 
-#include "HexahedralMeshRenderer.hpp"
+#include <Math/Geometry/MatrixUtil.hpp>
+#include <Math/Geometry/AABB3.hpp>
 
-/**
- * Renders all boundary surfaces of the hexahedral mesh.
- */
-class SurfaceRenderer : public HexahedralMeshRenderer {
+class ControlPoint
+{
 public:
-    SurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
-    virtual ~SurfaceRenderer() {}
+    ControlPoint() {}
+    ControlPoint(float time, float tx, float ty, float tz, float yaw, float pitch);
 
-    /**
-     * Re-generates the visualization mapping.
-     * @param meshIn The mesh to generate a visualization mapping for.
-     * @param isNewMesh Whether a new mesh is loaded or just a new renderer is used.
-     */
-    virtual void generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
-
-    // Renders the object to the scene framebuffer.
-    virtual void render();
-    // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
-    virtual void renderGui();
-
-protected:
-    sgl::ShaderProgramPtr shaderProgramSurface;
-    sgl::ShaderProgramPtr shaderProgramHull;
-    sgl::ShaderAttributesPtr shaderAttributesSurface;
-    sgl::ShaderAttributesPtr shaderAttributesHull;
-
-    // GUI data
-    bool showRendererWindow = true;
-    float hullOpacity = 0.0f;
-    bool useShading = true;
+    float time = 0.0f;
+    glm::vec3 position;
+    glm::quat orientation;
 };
 
-#endif //HEXVOLUMERENDERER_SURFACERENDERER_H
+class CameraPath
+{
+public:
+    CameraPath() {}
+    void fromCirclePath(sgl::AABB3& sceneBoundingBox, const std::string& modelFilenamePure, float totalTime = 10.0f);
+    void fromControlPoints(const std::vector<ControlPoint>& controlPoints);
+    bool fromBinaryFile(const std::string& filename);
+    bool saveToBinaryFile(const std::string& filename);
+    void normalizeToTotalTime(float totalTime);
+    void update(float currentTime);
+    inline const glm::mat4x4& getViewMatrix() const { return currentTransform; }
+    inline float getEndTime() { return controlPoints.back().time; }
+
+private:
+    glm::mat4x4 toTransform(const glm::vec3 &position, const glm::quat &orientation);
+
+    const uint32_t CAMERA_PATH_FORMAT_VERSION = 1u;
+    glm::mat4x4 currentTransform;
+    std::vector<ControlPoint> controlPoints;
+    float time = 0.0f;
+};
+
+#endif //HEXVOLUMERENDERER_CAMERAPATH_HPP

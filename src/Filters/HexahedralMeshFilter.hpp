@@ -31,6 +31,9 @@
 
 #include "HexMesh/HexMesh.hpp"
 
+struct InternalState;
+class SettingsMap;
+
 class HexahedralMeshFilter {
 public:
     virtual ~HexahedralMeshFilter() {}
@@ -46,6 +49,10 @@ public:
 
     // Renders the GUI. The "dirty" flag might be set depending on the user's actions.
     virtual void renderGui()=0;
+
+    /// For changing performance measurement modes.
+    virtual void setNewState(const InternalState& newState) {}
+    virtual void setNewSettings(const SettingsMap& settings) {}
 
 protected:
     HexMeshPtr output;

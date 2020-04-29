@@ -69,7 +69,7 @@
 #include "HexaLab/hex_quality_color_maps.h"
 #include "HexaLab/mesh.h"
 #include "QualityMeasure/QualityMeasure.hpp"
-#include "Renderers/TransferFunctionWindow.hpp"
+#include "Renderers/Widgets/TransferFunctionWindow.hpp"
 #include "Renderers/Intersection/RayMeshIntersection.hpp"
 
 class Mesh;
@@ -233,13 +233,15 @@ public:
             std::vector<uint32_t>& triangleIndices,
             std::vector<glm::vec3>& vertexPositions,
             std::vector<glm::vec3>& vertexNormals,
-            std::vector<float>& vertexAttributes);
+            std::vector<float>& vertexAttributes,
+            bool removeFilteredCells = true);
     /**
      * Get the triangle data of the boundary surface of the hexahedral mesh.
      */
     void getSurfaceData(
             std::vector<uint32_t>& triangleIndices,
-            std::vector<glm::vec3>& vertexPositions);
+            std::vector<glm::vec3>& vertexPositions,
+            bool removeFilteredCells = true);
     /**
      * Get the wireframe data of the boundary surface of the hexahedral mesh.
      */

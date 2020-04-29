@@ -644,7 +644,8 @@ void HexMesh::getSurfaceData(
         std::vector<uint32_t>& triangleIndices,
         std::vector<glm::vec3>& vertexPositions,
         std::vector<glm::vec3>& vertexNormals,
-        std::vector<float>& vertexAttributes) {
+        std::vector<float>& vertexAttributes,
+        bool removeFilteredCells) {
     /*rebuildInternalRepresentationIfNecessary();
     triangleIndices.clear();
     triangleIndices.reserve(hexaLabApp->get_visible_model()->surface_ibuffer.size());
@@ -664,10 +665,13 @@ void HexMesh::getSurfaceData(
         float cellAttribute = getCellAttribute(h.id);
         for (size_t j = 0; j < h.fs.size(); j++) {
             Hybrid_F& f = mesh->Fs.at(h.fs.at(j));
-            if (!f.boundary) {
+            if ((!removeFilteredCells && !f.boundary) || (removeFilteredCells
+                    && !f.boundary && !std::any_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+                return hexaLabApp->is_cell_marked(h_id);
+            }))) {
                 continue;
             }
-            if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+            if (removeFilteredCells && std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
                 return hexaLabApp->is_cell_marked(h_id);
             })) {
                 continue;
@@ -731,7 +735,8 @@ void HexMesh::getSurfaceData(
 
 void HexMesh::getSurfaceData(
         std::vector<uint32_t>& triangleIndices,
-        std::vector<glm::vec3>& vertexPositions) {
+        std::vector<glm::vec3>& vertexPositions,
+        bool removeFilteredCells) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
 
@@ -740,10 +745,12 @@ void HexMesh::getSurfaceData(
         Hybrid& h = mesh->Hs.at(i);
         for (size_t j = 0; j < h.fs.size(); j++) {
             Hybrid_F& f = mesh->Fs.at(h.fs.at(j));
-            if (!f.boundary) {
+            if (!f.boundary && !std::any_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+                return hexaLabApp->is_cell_marked(h_id);
+            })) {
                 continue;
             }
-            if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+            if (removeFilteredCells && std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
                 return hexaLabApp->is_cell_marked(h_id);
             })) {
                 continue;

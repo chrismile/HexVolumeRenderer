@@ -27,6 +27,7 @@
  */
 
 #include <Math/Geometry/MatrixUtil.hpp>
+#include <Utils/File/Logfile.hpp>
 #include <Graphics/Window.hpp>
 #include <Graphics/Renderer.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
@@ -38,6 +39,8 @@
 #include <Input/Mouse.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
+#include "Utils/InternalState.hpp"
+#include "Utils/AutomaticPerformanceMeasurer.hpp"
 #include "Tubes/Tubes.hpp"
 #include "Helpers/Sphere.hpp"
 #include "Helpers/LineRenderingDefines.hpp"
@@ -47,7 +50,7 @@
 static bool useStencilBuffer = true;
 
 /// Expected (average) depth complexity, i.e. width*height* this value = number of fragments that can be stored.
-static int expectedDepthComplexity = 100;
+static int EXPECTED_DEPTH_COMPLEXITY = 100;
 /// Maximum number of fragments to sort in second pass.
 static int maxNumFragmentsSorting = 256;
 
@@ -295,6 +298,21 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     }
 }
 
+void ClearViewRenderer_FacesUnified::setNewSettings(const SettingsMap& settings) {
+    lineWidthBoostFactor = 1.0f;
+    focusRadiusBoostFactor = 1.0f;
+    settings.getValueOpt("lineWidthBoostFactor", lineWidthBoostFactor);
+    settings.getValueOpt("focusRadiusBoostFactor", focusRadiusBoostFactor);
+
+    if (mesh) {
+        const float avgCellVolumeCbrt = std::cbrt(mesh->getAverageCellVolume());
+        lineWidth = lineWidthBoostFactor * glm::clamp(
+                avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
+        focusRadius = focusRadiusBoostFactor * glm::clamp(
+                avgCellVolumeCbrt * FOCUS_RADIUS_VOLUME_CBRT_FACTOR, MIN_FOCUS_RADIUS_AUTO, MAX_FOCUS_RADIUS_AUTO);
+    }
+}
+
 void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     if (isNewMesh) {
         Pickable::focusPoint = glm::vec3(0.0f);
@@ -302,9 +320,9 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
 
     mesh = meshIn;
     const float avgCellVolumeCbrt = std::cbrt(meshIn->getAverageCellVolume());
-    lineWidth = glm::clamp(
+    lineWidth = lineWidthBoostFactor * glm::clamp(
             avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
-    focusRadius = glm::clamp(
+    focusRadius = focusRadiusBoostFactor * glm::clamp(
             avgCellVolumeCbrt * FOCUS_RADIUS_VOLUME_CBRT_FACTOR, MIN_FOCUS_RADIUS_AUTO, MAX_FOCUS_RADIUS_AUTO);
     reloadSphereRenderData();
 
@@ -362,9 +380,22 @@ void ClearViewRenderer_FacesUnified::onResolutionChanged() {
     windowWidth = width;
     windowHeight = height;
 
-    size_t fragmentBufferSize = expectedDepthComplexity * width * height;
+    fragmentBufferSize = size_t(EXPECTED_DEPTH_COMPLEXITY) * size_t(width) * size_t(height);
     size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
-    std::cout << "Fragment buffer size GiB: " << (fragmentBufferSizeBytes / 1024.0 / 1024.0 / 1024.0) << std::endl;
+    if (fragmentBufferSize >= (1ull << 32ull)) {
+        sgl::Logfile::get()->writeError(
+                std::string() + "Fragment buffer size was larger than or equal to 4GiB. Clamping to 4GiB.");
+        fragmentBufferSizeBytes = (1ull << 32ull) - sizeof(LinkedListFragmentNode);
+        fragmentBufferSize = fragmentBufferSizeBytes / sizeof(LinkedListFragmentNode);
+    } else {
+        sgl::Logfile::get()->writeInfo(
+                std::string() + "Fragment buffer size GiB: "
+                + std::to_string(fragmentBufferSizeBytes / 1024.0 / 1024.0 / 1024.0));
+    }
+
+    if (sceneData.performanceMeasurer) {
+        sceneData.performanceMeasurer->setCurrentAlgorithmBufferSizeBytes(fragmentBufferSizeBytes);
+    }
 
     fragmentBuffer = sgl::GeometryBufferPtr(); // Delete old data first (-> refcount 0)
     fragmentBuffer = sgl::Renderer->createGeometryBuffer(
@@ -386,8 +417,6 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
-
-    size_t fragmentBufferSize = expectedDepthComplexity * width * height;
 
     glm::mat4 inverseViewMatrix = glm::inverse(sceneData.camera->getViewMatrix());
     glm::vec3 lookingDirection(-inverseViewMatrix[2].x, -inverseViewMatrix[2].y, -inverseViewMatrix[2].z);

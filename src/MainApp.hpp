@@ -42,34 +42,20 @@
 #include "Loaders/HexahedralMeshLoader.hpp"
 #include "Filters/HexahedralMeshFilter.hpp"
 #include "Renderers/SceneData.hpp"
-#include "Renderers/TransferFunctionWindow.hpp"
 #include "Renderers/HexahedralMeshRenderer.hpp"
-
-enum RenderingMode {
-    RENDERING_MODE_SURFACE, RENDERING_MODE_WIREFRAME, RENDERING_MODE_DEPTH_COMPLEXITY,
-    RENDERING_MODE_VOLUME, RENDERING_MODE_CLEAR_VIEW,
-    RENDERING_MODE_VOLUME_FACES, RENDERING_MODE_CLEAR_VIEW_FACES, RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED,
-    RENDERING_MODE_SINGULARITY, RENDERING_MODE_BASE_COMPLEX_LINES, RENDERING_MODE_BASE_COMPLEX_SURFACE,
-    RENDERING_MODE_PARTITION_LINES, RENDERING_MODE_LOD_LINES, RENDERING_MODE_LOD_LINES_PER_FRAGMENT,
-    RENDERING_MODE_LOD_LINES_PREVIEW, RENDERING_MODE_LOD_LINES_PREVIEW_SHEETS,
-    RENDERING_MODE_SINGULARITY_TYPE_COUNTER, RENDERING_MODE_LINE_DENSITY_CONTROL, RENDERING_MODE_HEX_SHEETS
-};
-const char *const RENDERING_MODE_NAMES[] = {
-        "Surface", "Wireframe", "Depth Complexity",
-        "Volume", "ClearView",
-        "Volume (Faces)", "ClearView (Faces)", "ClearView (Unified)",
-        "Singularity", "Base Complex (Lines)", "Base Complex (Surface)",
-        "Partition Lines", "LOD Lines", "LOD Lines (Per Frag.)",
-        "LOD Lines (Preview)", "LOD Lines (Preview, Sheets)",
-        "Singularity Type Counter", "Line Density Control", "Hex Sheets"
-};
-const int NUM_RENDERING_MODES = ((int)(sizeof(RENDERING_MODE_NAMES) / sizeof(*RENDERING_MODE_NAMES)));
-
+#include "Renderers/Widgets/TransferFunctionWindow.hpp"
+#include "Renderers/Widgets/CheckpointWindow.hpp"
+#include "Utils/CameraPath.hpp"
+#include "Utils/AutomaticPerformanceMeasurer.hpp"
 
 class MainApp : public sgl::AppLogic {
 public:
     MainApp();
     ~MainApp();
+
+    /// For changing performance measurement modes.
+    void setNewState(const InternalState& newState);
+
     void render();
     void update(float dt);
     void resolutionChanged(sgl::EventPtr event);
@@ -117,7 +103,8 @@ private:
     float MOVE_SPEED = 0.2f;
     float ROT_SPEED = 1.0f;
     float MOUSE_ROT_SPEED = 0.05f;
-    bool rotateModelByX = false;
+    int rotateModelByXTurns = 0;
+    glm::ivec2 windowResolution;
 
     // Data set GUI information.
     void loadAvailableDataSetSources();
@@ -144,12 +131,35 @@ private:
     QualityMeasure selectedQualityMeasure;
     TransferFunctionWindow transferFunctionWindow;
 
+    // For loading and saving camera checkpoints.
+    CheckpointWindow checkpointWindow;
+
     // For downloading files in the background.
     LoaderThread loaderThread;
 
     // For recording videos.
     bool recording = false;
-    sgl::VideoWriter* videoWriter;
+    sgl::VideoWriter* videoWriter = nullptr;
+    const int FRAME_RATE_VIDEOS = 30;
+    float recordingTime = 0.0f;
+    float recordingTimeLast = 0.0f;
+    uint64_t recordingTimeStampStart;
+
+    // Camera paths for recording videos without human interaction.
+    CameraPath cameraPath;
+    bool useCameraFlight = false;
+    bool realTimeCameraFlight = true; // Move camera in real elapsed time or camera frame rate?
+    const std::string saveDirectoryCameraPaths = "Data/CameraPaths/";
+    float FRAME_TIME_CAMERA_PATH = 1.0f / FRAME_RATE_VIDEOS; ///< Simulate constant frame rate.
+    const float CAMERA_PATH_TIME_RECORDING = 40.0f;
+    const float CAMERA_PATH_TIME_PERFORMANCE_MEASUREMENT = 10.0f;
+
+    // For making performance measurements.
+    bool usePerformanceMeasurementMode = false;
+    AutomaticPerformanceMeasurer *performanceMeasurer = nullptr;
+    InternalState lastState;
+    bool firstState = true;
+    bool usesNewState = true;
 
 
     /// --- Visualization pipeline ---
@@ -171,9 +181,12 @@ private:
     sgl::AABB3 computeAABB3(const std::vector<glm::vec3>& vertices);
     void normalizeVertexPositions(std::vector<glm::vec3>& vertices);
     void applyVertexDeformations(
-            std::vector<glm::vec3>& vertices, const std::vector<glm::vec3>& deformations, const float deformationFactor);
+            std::vector<glm::vec3>& vertices,
+            const std::vector<glm::vec3>& deformations,
+            const float deformationFactor);
+    sgl::AABB3 modelBoundingBox;
 
-        /// The data loaded from the input file (or a wrapped nullptr).
+    /// The data loaded from the input file (or a wrapped nullptr).
     HexMeshPtr inputData;
     bool newMeshLoaded = true;
 

@@ -34,19 +34,25 @@
 #include <Graphics/Color.hpp>
 #include "Intersection/RayMeshIntersection.hpp"
 
+class AutomaticPerformanceMeasurer;
+
 struct SceneData {
     SceneData(
             sgl::FramebufferObjectPtr& framebuffer, sgl::TexturePtr& sceneTexture,
             sgl::RenderbufferObjectPtr& sceneDepthRBO, sgl::CameraPtr& camera, sgl::Color& clearColor,
+            AutomaticPerformanceMeasurer* performanceMeasurer, bool recordingMode,
             RayMeshIntersection& rayMeshIntersection)
         : framebuffer(framebuffer), sceneTexture(sceneTexture), sceneDepthRBO(sceneDepthRBO), camera(camera),
-          clearColor(clearColor), rayMeshIntersection(rayMeshIntersection) {}
+          clearColor(clearColor), performanceMeasurer(performanceMeasurer), recordingMode(recordingMode),
+          rayMeshIntersection(rayMeshIntersection) {}
     sgl::FramebufferObjectPtr& framebuffer;
     sgl::TexturePtr& sceneTexture;
     sgl::RenderbufferObjectPtr& sceneDepthRBO;
 
     sgl::CameraPtr& camera;
     sgl::Color& clearColor;
+    AutomaticPerformanceMeasurer* performanceMeasurer;
+    bool recordingMode = false;
     RayMeshIntersection& rayMeshIntersection;
 };
 

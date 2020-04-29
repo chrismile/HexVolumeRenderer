@@ -26,43 +26,51 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_SURFACERENDERER_H
-#define HEXVOLUMERENDERER_SURFACERENDERER_H
+#ifndef HEXVOLUMERENDERER_CHECKPOINTWINDOW_HPP
+#define HEXVOLUMERENDERER_CHECKPOINTWINDOW_HPP
 
-#include <Graphics/Shader/ShaderAttributes.hpp>
+#include <string>
+#include <map>
+#include <glm/glm.hpp>
 
-#include "HexahedralMeshRenderer.hpp"
+#include "Renderers/SceneData.hpp"
 
-/**
- * Renders all boundary surfaces of the hexahedral mesh.
- */
-class SurfaceRenderer : public HexahedralMeshRenderer {
+class Checkpoint
+{
 public:
-    SurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
-    virtual ~SurfaceRenderer() {}
+    Checkpoint() {}
+    Checkpoint(const glm::vec3& position, float yaw, float pitch) : position(position), yaw(yaw), pitch(pitch) {}
+    Checkpoint(float tx, float ty, float tz, float yaw, float pitch) : position(tx, ty, tz), yaw(yaw), pitch(pitch) {}
 
-    /**
-     * Re-generates the visualization mapping.
-     * @param meshIn The mesh to generate a visualization mapping for.
-     * @param isNewMesh Whether a new mesh is loaded or just a new renderer is used.
-     */
-    virtual void generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
-
-    // Renders the object to the scene framebuffer.
-    virtual void render();
-    // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
-    virtual void renderGui();
-
-protected:
-    sgl::ShaderProgramPtr shaderProgramSurface;
-    sgl::ShaderProgramPtr shaderProgramHull;
-    sgl::ShaderAttributesPtr shaderAttributesSurface;
-    sgl::ShaderAttributesPtr shaderAttributesHull;
-
-    // GUI data
-    bool showRendererWindow = true;
-    float hullOpacity = 0.0f;
-    bool useShading = true;
+    glm::vec3 position;
+    float yaw;
+    float pitch;
 };
 
-#endif //HEXVOLUMERENDERER_SURFACERENDERER_H
+class CheckpointWindow {
+public:
+    CheckpointWindow(SceneData& sceneData);
+    ~CheckpointWindow();
+    void onLoadMesh(const std::string& meshName);
+
+    /// @return true if re-rendering the scene is necessary.
+    bool renderGui();
+
+private:
+    bool readFromFile(const std::string& filename);
+    bool writeToFile(const std::string& filename);
+
+    SceneData& sceneData;
+    const uint32_t CHECKPOINT_FORMAT_VERSION = 1u;
+
+    const std::string saveDirectoryCheckpoints = "Data/Checkpoints/";
+    const std::string checkpointsFilename = saveDirectoryCheckpoints + "checkpoints.bin";
+    std::map<std::string, std::map<std::string, Checkpoint>> meshCheckpointMap;
+    std::string loadedMeshName;
+    std::vector<std::pair<std::string, Checkpoint>> loadedMeshCheckpoints;
+
+    bool showWindow = true;
+};
+
+
+#endif //HEXVOLUMERENDERER_CHECKPOINTWINDOW_HPP

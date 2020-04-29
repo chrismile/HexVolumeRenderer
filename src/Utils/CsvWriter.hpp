@@ -26,43 +26,42 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_SURFACERENDERER_H
-#define HEXVOLUMERENDERER_SURFACERENDERER_H
+#ifndef HEXVOLUMERENDERER_CSVWRITER_HPP
+#define HEXVOLUMERENDERER_CSVWRITER_HPP
 
-#include <Graphics/Shader/ShaderAttributes.hpp>
+#include <string>
+#include <vector>
+#include <fstream>
 
-#include "HexahedralMeshRenderer.hpp"
-
-/**
- * Renders all boundary surfaces of the hexahedral mesh.
- */
-class SurfaceRenderer : public HexahedralMeshRenderer {
+class CsvWriter {
 public:
-    SurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
-    virtual ~SurfaceRenderer() {}
+    CsvWriter();
+    CsvWriter(const std::string& filename);
+    ~CsvWriter();
+
+    bool open(const std::string& filename);
+    void close();
+
+    // Note: All writing functions use "escapeString" to convert strings to a format valid for CSV.
+    // For more details see: https://en.wikipedia.org/wiki/Comma-separated_values
 
     /**
-     * Re-generates the visualization mapping.
-     * @param meshIn The mesh to generate a visualization mapping for.
-     * @param isNewMesh Whether a new mesh is loaded or just a new renderer is used.
+     * Writes a row of string to the CSV file. The row is escaped internally if necessary.
+     * NOTE: After a call to "writeCell", "writeRow" can only be called after calling "newRow" to end the row.
      */
-    virtual void generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
+    void writeRow(const std::vector<std::string>& row);
 
-    // Renders the object to the scene framebuffer.
-    virtual void render();
-    // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
-    virtual void renderGui();
+    /**
+     * Writes a single cell string to the CSV file. The string is escaped internally if necessary.
+     */
+    void writeCell(const std::string& cell);
+    void newRow();
 
-protected:
-    sgl::ShaderProgramPtr shaderProgramSurface;
-    sgl::ShaderProgramPtr shaderProgramHull;
-    sgl::ShaderAttributesPtr shaderAttributesSurface;
-    sgl::ShaderAttributesPtr shaderAttributesHull;
-
-    // GUI data
-    bool showRendererWindow = true;
-    float hullOpacity = 0.0f;
-    bool useShading = true;
+private:
+    std::string escapeString(const std::string& s);
+    bool isOpen = false;
+    bool writingRow = false;
+    std::ofstream file;
 };
 
-#endif //HEXVOLUMERENDERER_SURFACERENDERER_H
+#endif //HEXVOLUMERENDERER_CSVWRITER_HPP

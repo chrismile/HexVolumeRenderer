@@ -58,11 +58,14 @@ public:
      */
     virtual void generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
 
-    // Called when the resolution of the application window has changed.
+    /// Called when the resolution of the application window has changed.
     virtual void onResolutionChanged();
 
-    // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
+    /// Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
     virtual void renderGui();
+
+    /// For changing performance measurement modes.
+    virtual void setNewSettings(const SettingsMap& settings);
 
 protected:
     void createWeightTextureLoG();
@@ -85,6 +88,7 @@ protected:
     sgl::ShaderAttributesPtr shaderAttributes;
 
     // Per-pixel linked list data.
+    size_t fragmentBufferSize = 0;
     sgl::GeometryBufferPtr fragmentBuffer;
     sgl::GeometryBufferPtr startOffsetBuffer;
     sgl::GeometryBufferPtr atomicCounterBuffer;
@@ -117,6 +121,10 @@ protected:
     const float screenSpaceLensPixelRadiusWindowFactor = 0.25f;
     int windowWidth = 0;
     int windowHeight = 0;
+
+    // Settings for changing internal state.
+    float lineWidthBoostFactor = 1.0f;
+    float focusRadiusBoostFactor = 1.0f;
 
     // GUI data.
     SingularEdgeColorMapWidget singularEdgeColorMapWidget;

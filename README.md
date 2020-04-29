@@ -1,7 +1,7 @@
 # HexVolumeRenderer
 A program for rendering hexahedral meshes in the form of transparent volumes.
 
-This repository was created for the paper "Interactive Focus+Context Rendering for Volumetric Mesh Inspection", Christoph A. Neuhauser, Junpeng Wang, Rüdiger Westermann (still to be published).
+This repository was created for the paper "Interactive Focus+Context Rendering for Volumetric Mesh Inspection", Christoph A. Neuhauser, Junpeng Wang, Rüdiger Westermann (to be published).
 
 The rendering mode discussed in the paper can be used when selecting the renderer "ClearView (Unified)" in the program.
 The LOD structure discussed can be viewed with the renderer "LOD Lines (Preview, Sheets)".
