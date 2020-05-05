@@ -51,6 +51,7 @@ bool CsvWriter::open(const std::string& filename) {
         return false;
     }
 
+    isOpen = true;
     return true;
 }
 

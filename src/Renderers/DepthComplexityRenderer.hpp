@@ -63,11 +63,13 @@ public:
     virtual void onTransferFunctionMapRebuilt() {}
 
 protected:
-    void computeStatistics();
+    void computeStatistics(bool isReRender);
     void setUniformData();
     void clear();
     void gather();
     void resolve();
+
+    HexMeshPtr hexMesh;
 
     ImVec4 colorSelection = ImColor(0, 255, 255, 127);
     sgl::Color renderColor = sgl::Color(0, 255, 255);
@@ -94,7 +96,6 @@ protected:
     // Blit data (ignores model-view-projection matrix and uses normalized device coordinates)
     sgl::ShaderAttributesPtr blitRenderData;
     sgl::ShaderAttributesPtr clearRenderData;
-
 };
 
 #endif //HEXVOLUMERENDERER_DEPTHCOMPLEXITYRENDERER_HPP

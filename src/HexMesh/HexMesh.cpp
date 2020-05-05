@@ -2436,6 +2436,42 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
     }
 }
 
+void HexMesh::getVolumeData_DepthComplexity(
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<glm::vec3>& vertexPositions) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    for (Hybrid_V& v : mesh->Vs) {
+        glm::vec3 vertexPosition(mesh->V(0, v.id), mesh->V(1, v.id), mesh->V(2, v.id));
+        vertexPositions.push_back(vertexPosition);
+    }
+
+    size_t indexOffset = 0;
+    for (Hybrid_F& f : mesh->Fs) {
+        if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+            return hexaLabApp->is_cell_marked(h_id);
+        })) {
+            continue;
+        }
+
+        assert(f.vs.size() == 4);
+        uint32_t v_ids[4];
+        for (size_t j = 0; j < 4; j++) {
+            v_ids[j] = f.vs.at(j);
+        }
+
+        triangleIndices.push_back(v_ids[0]);
+        triangleIndices.push_back(v_ids[3]);
+        triangleIndices.push_back(v_ids[1]);
+        triangleIndices.push_back(v_ids[2]);
+        triangleIndices.push_back(v_ids[1]);
+        triangleIndices.push_back(v_ids[3]);
+
+        indexOffset += 4;
+    }
+}
+
 void HexMesh::getSurfaceDataWireframeFacesLineDensityControl(
         std::vector<uint32_t>& triangleIndices,
         std::vector<HexahedralCellFaceLineDensityControl>& hexahedralCellFaces,

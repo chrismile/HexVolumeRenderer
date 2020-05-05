@@ -38,6 +38,8 @@
 #include "CsvWriter.hpp"
 #include "InternalState.hpp"
 
+const float TIME_PERFORMANCE_MEASUREMENT = 128.0f;
+
 class AutomaticPerformanceMeasurer {
 public:
     AutomaticPerformanceMeasurer(std::vector<InternalState> _states,
@@ -54,8 +56,8 @@ public:
     bool update(float currentTime);
 
     // Called by OIT_DepthComplexity
-    void pushDepthComplexityFrame(uint64_t minComplexity, uint64_t maxComplexity, float avgUsed, float avgAll,
-                                  uint64_t totalNumFragments);
+    void pushDepthComplexityFrame(
+            uint64_t minComplexity, uint64_t maxComplexity, float avgUsed, float avgAll, uint64_t totalNumFragments);
 
     // Called by OIT algorithms.
     void setCurrentAlgorithmBufferSizeBytes(size_t numBytes);
@@ -74,6 +76,8 @@ private:
     InternalState currentState;
     std::function<void(const InternalState&)> newStateCallback; // Application callback
 
+    float nextModeCounter = 0.0f;
+
     sgl::TimerGL timerGL;
     int initialFreeMemKilobytes;
     CsvWriter file;
@@ -81,6 +85,9 @@ private:
     CsvWriter perfFile;
     size_t depthComplexityFrameNumber = 0;
     size_t currentAlgorithmsBufferSizeBytes = 0;
+
+    bool newDepthComplexityMode = true;
+    size_t maxPPLLNumFragments = 0;
 };
 
 

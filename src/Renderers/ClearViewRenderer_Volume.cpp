@@ -78,6 +78,7 @@ ClearViewRenderer_Volume::ClearViewRenderer_Volume(SceneData &sceneData, Transfe
         : ClearViewRenderer(sceneData, transferFunctionWindow) {
     windowName = "ClearView Renderer (Volume)";
     clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_VOLUME;
+    useWeightedVertexAttributes = false;
 
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();

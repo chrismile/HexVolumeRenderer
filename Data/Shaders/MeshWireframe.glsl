@@ -287,7 +287,16 @@ void main()
     float fragmentDistance = length(fragmentPositionWorld - cameraPosition);
     float contextFactor = getClearViewContextFragmentOpacityFactor();
     //float focusFactor = getClearViewFocusFragmentOpacityFactor();
-    float focusFactor = 1.0 - pow(distanceToFocusPointNormalized, 10.0);
+    //float focusFactor = 1.0 - pow(distanceToFocusPointNormalized, 10.0);
+
+    const float LOD_BLEND_FACTOR_BLEND_START = 0.7;
+    float focusFactor = 1.0;
+    if (distanceToFocusPointNormalized >= 1.0) {
+        focusFactor = 0.0;
+    } else if (distanceToFocusPointNormalized > LOD_BLEND_FACTOR_BLEND_START){
+        float t = (distanceToFocusPointNormalized - LOD_BLEND_FACTOR_BLEND_START) / (1.0 - LOD_BLEND_FACTOR_BLEND_START);
+        focusFactor = 1.0 - t * t * (3.0 - 2.0 * t);
+    }
 
     // Intersect view ray with plane parallel to camera looking direction containing the sphere center.
     vec3 negativeLookingDirection = -lookingDirection; // Assuming right-handed coordinate system.
@@ -343,7 +352,7 @@ void main()
                 discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
         #endif
                 focusFactor);
-        bool drawLine = lodLevelOpacityFactor > 0.2;
+        bool drawLine = lodLevelOpacityFactor > 0.01;
 
         if (currentDistance < minDistance && drawLine) {
             minDistance = currentDistance;
@@ -485,7 +494,15 @@ void main()
 
     float fragmentDistance = length(fragmentPositionWorld - cameraPosition);
     float contextFactor = pow(screenSpaceSphereDistanceNormalized, 4.0);
-    float focusFactor = 1.0 - pow(screenSpaceSphereDistanceNormalized, 10.0);
+
+    const float LOD_BLEND_FACTOR_BLEND_START = 0.7;
+    float focusFactor = 1.0;
+    if (screenSpaceSphereDistanceNormalized >= 1.0) {
+        focusFactor = 0.0;
+    } else if (screenSpaceSphereDistanceNormalized > LOD_BLEND_FACTOR_BLEND_START){
+        float t = (screenSpaceSphereDistanceNormalized - LOD_BLEND_FACTOR_BLEND_START) / (1.0 - LOD_BLEND_FACTOR_BLEND_START);
+        focusFactor = 1.0 - t * t * (3.0 - 2.0 * t);
+    }
 
     float lineWidthPrime = lineWidth * (-screenSpaceSphereDistanceNormalized * 0.4 + 1.0);
     float lineRadius = lineWidthPrime / 2.0f;
@@ -531,7 +548,7 @@ void main()
                 discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
         #endif
                 focusFactor);
-        bool drawLine = lodLevelOpacityFactor > 0.2;
+        bool drawLine = lodLevelOpacityFactor > 0.01;
 
         if (currentDistance < minDistance && drawLine) {
             minDistance = currentDistance;

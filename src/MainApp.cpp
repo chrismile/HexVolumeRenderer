@@ -106,7 +106,7 @@ MainApp::MainApp()
 #endif
           sceneData(
                   sceneFramebuffer, sceneTexture, sceneDepthRBO, camera, clearColor, performanceMeasurer,
-                  recording, *rayMeshIntersection),
+                  recording, useCameraFlight, *rayMeshIntersection),
           checkpointWindow(sceneData), videoWriter(NULL) {
     // https://www.khronos.org/registry/OpenGL/extensions/NVX/NVX_gpu_memory_info.txt
     GLint freeMemKilobytes = 0;
@@ -114,18 +114,12 @@ MainApp::MainApp()
             && sgl::SystemGL::get()->isGLExtensionAvailable("GL_NVX_gpu_memory_info")) {
         glGetIntegerv(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, &freeMemKilobytes);
     }
+    glEnable(GL_CULL_FACE);
 
     sgl::FileUtils::get()->ensureDirectoryExists(saveDirectoryScreenshots);
     sgl::FileUtils::get()->ensureDirectoryExists(saveDirectoryVideos);
     sgl::FileUtils::get()->ensureDirectoryExists(saveDirectoryCameraPaths);
     setPrintFPS(false);
-
-    if (usePerformanceMeasurementMode) {
-        useCameraFlight = true;
-    }
-    if (useCameraFlight && recording) {
-        realTimeCameraFlight = false;
-    }
 
     gammaCorrectionShader = sgl::ShaderManager->getShaderProgram(
             {"GammaCorrection.Vertex", "GammaCorrection.Fragment"});
@@ -145,14 +139,20 @@ MainApp::MainApp()
     transferFunctionWindow.setClearColor(clearColor);
     transferFunctionWindow.setUseLinearRGB(useLinearRGB);
 
+    int desktopWidth = 0;
+    int desktopHeight = 0;
+    int refreshRate = 60;
+    sgl::AppSettings::get()->getDesktopDisplayMode(desktopWidth, desktopHeight, refreshRate);
+    sgl::Logfile::get()->writeInfo("Desktop refresh rate: " + std::to_string(refreshRate) + " FPS");
+
     bool useVsync = sgl::AppSettings::get()->getSettings().getBoolValue("window-vSync");
     if (useVsync) {
-        sgl::Timer->setFPSLimit(true, 60);
+        sgl::Timer->setFPSLimit(true, refreshRate);
     } else {
-        sgl::Timer->setFPSLimit(false, 60);
+        sgl::Timer->setFPSLimit(false, refreshRate);
     }
 
-    fpsArray.resize(16, 60.0f);
+    fpsArray.resize(16, refreshRate);
     framerateSmoother = FramerateSmoother(1);
 
     sgl::Renderer->setErrorCallback(&openglErrorCallback);
@@ -166,6 +166,28 @@ MainApp::MainApp()
     meshLoaderMap.insert(std::make_pair("mesh", new MeshLoader));
     meshFilters.push_back(new PlaneFilter);
     meshFilters.push_back(new QualityFilter);
+
+    if (usePerformanceMeasurementMode) {
+        useCameraFlight = true;
+    }
+    if (useCameraFlight && recording) {
+        sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+        window->setWindowSize(recordingResolution.x, recordingResolution.y);
+        realTimeCameraFlight = false;
+        transferFunctionWindow.loadFunctionFromFile("Data/TransferFunctions/Standard_PerVertex.xml");
+        loadHexahedralMesh(
+                "Data/Meshes/2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation/anc101_a1.mesh");
+        renderingMode = RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED;
+    }
+
+    if (!recording && !usePerformanceMeasurementMode) {
+        // Just for convenience...
+        if (desktopWidth == 3840 && desktopHeight == 2160) {
+            sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+            window->setWindowSize(2186, 1358);
+        }
+    }
+
     setRenderers();
 
     customMeshFileName = sgl::FileUtils::get()->getUserDirectory();
@@ -180,9 +202,6 @@ MainApp::MainApp()
                 getTestModesPaper(), "performance.csv", "depth_complexity.csv",
                 [this](const InternalState &newState) { this->setNewState(newState); });
         performanceMeasurer->setInitialFreeMemKilobytes(freeMemKilobytes);
-        sceneData.performanceMeasurer = performanceMeasurer;
-    } else {
-        sceneData.performanceMeasurer = nullptr;
     }
 }
 
@@ -396,7 +415,7 @@ void MainApp::processSDLEvent(const SDL_Event &event) {
 
 void MainApp::render() {
     if (videoWriter == NULL && recording) {
-        videoWriter = new sgl::VideoWriter(saveFilenameVideos + "video.mp4", FRAME_RATE_VIDEOS);
+        videoWriter = new sgl::VideoWriter(saveFilenameVideos + ".mp4", FRAME_RATE_VIDEOS);
     }
 
     prepareVisualizationPipeline();

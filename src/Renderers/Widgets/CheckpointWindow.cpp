@@ -174,24 +174,27 @@ bool CheckpointWindow::renderGui() {
         ImGui::Separator();
         for (size_t i = 0; i < loadedMeshCheckpoints.size(); i++) {
             auto& meshCheckpoint = loadedMeshCheckpoints.at(i);
-            std::string label = "##input-" + std::to_string(i);
-            ImGui::InputText(label.c_str(), &meshCheckpoint.first); ImGui::NextColumn();
+            std::string inputTextLabel = "##input-" + std::to_string(i);
+            std::string loadLabel = "Load##input-" + std::to_string(i);
+            std::string updateLabel = "Update##input-" + std::to_string(i);
+            std::string deleteLabel = "Delete##input-" + std::to_string(i);
+            ImGui::InputText(inputTextLabel.c_str(), &meshCheckpoint.first); ImGui::NextColumn();
             //ImGui::Text(
             //        "%f, %f, %f", meshCheckpoint.second.position.x, meshCheckpoint.second.position.y,
             //        meshCheckpoint.second.position.z); ImGui::NextColumn();
             //ImGui::Text("%f, %f", meshCheckpoint.second.yaw, meshCheckpoint.second.pitch); ImGui::NextColumn();
-            if (ImGui::Button("Load")) {
+            if (ImGui::Button(loadLabel.c_str())) {
                 sceneData.camera->setPosition(meshCheckpoint.second.position);
                 sceneData.camera->setYaw(meshCheckpoint.second.yaw);
                 sceneData.camera->setPitch(meshCheckpoint.second.pitch);
                 reRender = true;
             } ImGui::NextColumn();
-            if (ImGui::Button("Update")) {
+            if (ImGui::Button(updateLabel.c_str())) {
                 meshCheckpoint.second.position = sceneData.camera->getPosition();
                 meshCheckpoint.second.yaw = sceneData.camera->getYaw();
                 meshCheckpoint.second.pitch = sceneData.camera->getPitch();
             } ImGui::NextColumn();
-            if (ImGui::Button("Delete")) {
+            if (ImGui::Button(deleteLabel.c_str())) {
                 deleteElementId = i;
                 shallDeleteElement = true;
             } ImGui::NextColumn();

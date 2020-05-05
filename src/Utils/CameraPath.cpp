@@ -64,7 +64,7 @@ void CameraPath::fromCirclePath(sgl::AABB3& sceneBoundingBox, const std::string&
     if (boost::starts_with(modelFilename,
             "Data/Meshes/2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation/anc101_a1.mesh")) {
         centerOffset = glm::vec3(0.0f, -0.02f, 0.0f);
-        pulseFactor = 2.5f;
+        pulseFactor = 3.0f;
         standardZoom = 1.6f;
     }
 
@@ -89,8 +89,8 @@ void CameraPath::fromControlPoints(const std::vector<ControlPoint>& controlPoint
 bool CameraPath::fromBinaryFile(const std::string& filename) {
     std::ifstream file(filename.c_str(), std::ifstream::binary);
     if (!file.is_open()) {
-        sgl::Logfile::get()->writeError(std::string() + "Error in CameraPath::fromBinaryFile: File \""
-                                        + filename + "\" not found.");
+        sgl::Logfile::get()->writeError(
+                std::string() + "Error in CameraPath::fromBinaryFile: File \"" + filename + "\" not found.");
         return false;
     }
 

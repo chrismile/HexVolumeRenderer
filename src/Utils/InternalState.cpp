@@ -58,13 +58,15 @@ void getTestModesPaperForMesh(std::vector<InternalState> &states, InternalState 
 std::vector<InternalState> getTestModesPaper()
 {
     std::vector<InternalState> states;
-    //std::vector<glm::ivec2> windowResolutions = { glm::ivec2(1280, 720), glm::ivec2(1920, 1080), glm::ivec2(2560, 1440) };
-    std::vector<glm::ivec2> windowResolutions = { glm::ivec2(1920, 1080) };
+    std::vector<glm::ivec2> windowResolutions = {
+            glm::ivec2(1280, 720), glm::ivec2(1920, 1080), glm::ivec2(2560, 1440) };
+    //std::vector<glm::ivec2> windowResolutions = { glm::ivec2(2560, 1440) };
+    //std::vector<glm::ivec2> windowResolutions = { glm::ivec2(2186, 1358) };
     std::vector<MeshDescriptor> meshDescriptors = {
             MeshDescriptor(
                     "2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation",
                     "anc101_a1", "mesh") };
-    std::vector<std::string> transferFunctionNames = { };
+    std::vector<std::string> transferFunctionNames = { "Standard_PerVertex.xml" };
     InternalState state;
 
     for (size_t i = 0; i < windowResolutions.size(); i++) {

@@ -371,7 +371,7 @@ void ClearViewRenderer::update(float dt) {
     } else {
         if (sgl::Keyboard->getModifier() & KMOD_SHIFT) {
             if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
-                float scrollAmount = sgl::Mouse->getScrollWheel() * dt * 2.0;
+                float scrollAmount = sgl::Mouse->getScrollWheel() * dt * 800.0;
                 screenSpaceLensPixelRadius += scrollAmount;
                 sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
                 int width = window->getWidth();

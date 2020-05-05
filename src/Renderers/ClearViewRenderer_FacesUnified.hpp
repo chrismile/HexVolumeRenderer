@@ -129,9 +129,9 @@ protected:
     // GUI data.
     SingularEdgeColorMapWidget singularEdgeColorMapWidget;
     bool useExperimentalApproach = true;
-    float selectedLodValueFocus = 0.2f;
-    float selectedLodValueContext = 0.1f;
-    float importantLineBoostFactor = 0.2f;
+    float selectedLodValueFocus = 0.3f;
+    float selectedLodValueContext = 0.16f;
+    float importantLineBoostFactor = 0.5f;
     bool accentuateAllEdges = true;
     bool useSingularEdgeColorMap = false;
     bool usePerLineAttributes = true;

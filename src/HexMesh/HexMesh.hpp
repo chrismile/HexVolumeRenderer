@@ -474,6 +474,14 @@ public:
             int& maxLodValue);
 
     /**
+     * Get all volume faces including the colors of their edges.
+     * Backface culling needs to be disabled.
+     */
+    void getVolumeData_DepthComplexity(
+            std::vector<uint32_t>& triangleIndices,
+            std::vector<glm::vec3>& vertexPositions);
+
+    /**
      * Get all surface faces including the colors of their edges.
      * For rendering, the shader "WireframeLineDensityControl.glsl" can be used.
      * Backface culling needs to be disabled.

@@ -68,11 +68,17 @@ DepthComplexityRenderer::DepthComplexityRenderer(SceneData &sceneData, TransferF
 }
 
 void DepthComplexityRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
-    std::vector<uint32_t> triangleIndices;
+    hexMesh = meshIn;
+
+    /*std::vector<uint32_t> triangleIndices;
     std::vector<glm::vec3> vertexPositions;
     std::vector<glm::vec3> vertexNormals;
     std::vector<float> vertexAttributes;
-    meshIn->getVolumeData_Faces(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);
+    meshIn->getVolumeData_Faces(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);*/
+
+    std::vector<uint32_t> triangleIndices;
+    std::vector<glm::vec3> vertexPositions;
+    meshIn->getVolumeData_DepthComplexity(triangleIndices, vertexPositions);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(gatherShader);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -87,6 +93,13 @@ void DepthComplexityRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bo
             vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+
+    firstFrame = true;
+    totalNumFragments = 0;
+    usedLocations = 1;
+    maxComplexity = 0;
+    bufferSize = 1;
+    intensity = 1.5f;
 
     dirty = false;
     reRender = true;
@@ -146,6 +159,7 @@ void DepthComplexityRenderer::gather() {
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     glStencilMask(0xFF);
     glClear(GL_STENCIL_BUFFER_BIT);
+    glDisable(GL_CULL_FACE);
 
     sgl::Renderer->setProjectionMatrix(sceneData.camera->getProjectionMatrix());
     sgl::Renderer->setViewMatrix(sceneData.camera->getViewMatrix());
@@ -154,6 +168,7 @@ void DepthComplexityRenderer::gather() {
     // Now, the final gather step.
     sgl::Renderer->render(shaderAttributes);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    glEnable(GL_CULL_FACE);
 }
 
 void DepthComplexityRenderer::resolve() {
@@ -177,14 +192,14 @@ void DepthComplexityRenderer::resolve() {
 }
 
 void DepthComplexityRenderer::render() {
-    if (sceneData.performanceMeasurer != nullptr || sceneData.recordingMode) {
-        computeStatistics();
-    }
-
     setUniformData();
     clear();
     gather();
     resolve();
+
+    if (sceneData.performanceMeasurer != nullptr || sceneData.recordingMode) {
+        computeStatistics(false);
+    }
 }
 
 // Converts e.g. 123456789 to "123,456,789"
@@ -224,8 +239,8 @@ bool DepthComplexityRenderer::needsReRender() {
     // Update & print statistics if enough time has passed
     static float counterPrintFrags = 0.0f;
     counterPrintFrags += sgl::Timer->getElapsedSeconds();
-    if (counterPrintFrags > 1.0f || firstFrame) {
-        computeStatistics();
+    if (hexMesh && (counterPrintFrags > 1.0f || firstFrame)) {
+        computeStatistics(true);
         counterPrintFrags = 0.0f;
         firstFrame = false;
         return true;
@@ -233,7 +248,7 @@ bool DepthComplexityRenderer::needsReRender() {
     return false;
 }
 
-void DepthComplexityRenderer::computeStatistics() {
+void DepthComplexityRenderer::computeStatistics(bool isReRender) {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
@@ -263,8 +278,10 @@ void DepthComplexityRenderer::computeStatistics() {
     fragmentCounterBuffer->unmapBuffer();
 
     bool performanceMeasureMode = sceneData.performanceMeasurer != nullptr;
-    if (!(performanceMeasureMode || sceneData.recordingMode) || firstFrame) {
-        firstFrame = false;
+    if ((performanceMeasureMode || sceneData.recordingMode) || firstFrame) {
+        if (!isReRender) {
+            firstFrame = false;
+        }
         numFragmentsMaxColor = std::max(maxComplexity, 4ul)/intensity;
     }
 

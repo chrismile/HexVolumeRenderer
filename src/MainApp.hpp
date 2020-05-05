@@ -139,6 +139,7 @@ private:
 
     // For recording videos.
     bool recording = false;
+    glm::ivec2 recordingResolution = glm::ivec2(2560, 1440); // 1920, 1080
     sgl::VideoWriter* videoWriter = nullptr;
     const int FRAME_RATE_VIDEOS = 30;
     float recordingTime = 0.0f;
@@ -151,8 +152,8 @@ private:
     bool realTimeCameraFlight = true; // Move camera in real elapsed time or camera frame rate?
     const std::string saveDirectoryCameraPaths = "Data/CameraPaths/";
     float FRAME_TIME_CAMERA_PATH = 1.0f / FRAME_RATE_VIDEOS; ///< Simulate constant frame rate.
-    const float CAMERA_PATH_TIME_RECORDING = 40.0f;
-    const float CAMERA_PATH_TIME_PERFORMANCE_MEASUREMENT = 10.0f;
+    const float CAMERA_PATH_TIME_RECORDING = 30.0f;
+    const float CAMERA_PATH_TIME_PERFORMANCE_MEASUREMENT = TIME_PERFORMANCE_MEASUREMENT;
 
     // For making performance measurements.
     bool usePerformanceMeasurementMode = false;

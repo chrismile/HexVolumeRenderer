@@ -50,7 +50,7 @@
 static bool useStencilBuffer = true;
 
 /// Expected (average) depth complexity, i.e. width*height* this value = number of fragments that can be stored.
-static int EXPECTED_DEPTH_COMPLEXITY = 100;
+static int EXPECTED_DEPTH_COMPLEXITY = 80;
 /// Maximum number of fragments to sort in second pass.
 static int maxNumFragmentsSorting = 256;
 
@@ -69,6 +69,14 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
     windowName = "ClearView Renderer (Unified)";
     clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED;
     useScreenSpaceLens = true;
+
+    // Recording mode.
+    if (sceneData.recordingMode && sceneData.useCameraFlight) {
+        lineWidthBoostFactor = 1.4f;
+        selectedLodValueFocus = 0.3f;
+        selectedLodValueContext = 0.16f;
+        importantLineBoostFactor = 0.8f;
+    }
 
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
@@ -320,6 +328,7 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
 
     mesh = meshIn;
     const float avgCellVolumeCbrt = std::cbrt(meshIn->getAverageCellVolume());
+    // Higher radius for recording...
     lineWidth = lineWidthBoostFactor * glm::clamp(
             avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
     focusRadius = focusRadiusBoostFactor * glm::clamp(
@@ -382,7 +391,7 @@ void ClearViewRenderer_FacesUnified::onResolutionChanged() {
 
     fragmentBufferSize = size_t(EXPECTED_DEPTH_COMPLEXITY) * size_t(width) * size_t(height);
     size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
-    if (fragmentBufferSize >= (1ull << 32ull)) {
+    if (fragmentBufferSizeBytes >= (1ull << 32ull)) {
         sgl::Logfile::get()->writeError(
                 std::string() + "Fragment buffer size was larger than or equal to 4GiB. Clamping to 4GiB.");
         fragmentBufferSizeBytes = (1ull << 32ull) - sizeof(LinkedListFragmentNode);
@@ -512,6 +521,11 @@ void ClearViewRenderer_FacesUnified::clear() {
 }
 
 void ClearViewRenderer_FacesUnified::gather() {
+    // Recording mode.
+    if (sceneData.recordingMode && sceneData.useCameraFlight) {
+        // TODO: Apapt focus radius depending on distance of camera to origin?
+    }
+
     // Enable the depth test, but disable depth write for gathering.
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
