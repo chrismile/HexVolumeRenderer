@@ -109,6 +109,22 @@ struct HexahedralCellFaceUnified {
     uint32_t edgeSingularityInformationList[4];
 };
 
+// For @see HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell and
+// @see HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex.
+struct HexahedralCellFaceUnified_Volume2 {
+    glm::vec4 vertexPositions[4];
+    float vertexAttributes[4];
+    float edgeAttributes[4];
+    float edgeLodValues[4];
+    /**
+     * Bit 0: 1 if the edge is singular.
+     * Bit 1: 1 if the edge belongs to the boundary.
+     * Bit 2-31: The valence of the edge (i.e., the number of incident cells).
+     */
+    uint32_t edgeSingularityInformationList[4];
+    uint bitfield[4]; // bit 0: Is boundary surface?
+};
+
 /**
  * For @see HexMesh::getSurfaceDataWireframeFacesLineDensityControl.
 */
@@ -471,6 +487,46 @@ public:
     void getSurfaceDataWireframeFacesUnified_AttributePerVertex(
             std::vector<uint32_t>& triangleIndices,
             std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
+            int& maxLodValue);
+
+    /**
+     * Get all surface faces including the colors of their edges.
+     * For rendering, the shader "MeshWireframe.glsl" can be used.
+     * Backface culling needs to be enabled.
+     *
+     * vertex 1     edge 1    vertex 2
+     *          | - - - - - |
+     *          | \         |
+     *          |   \       |
+     *   edge 0 |     \     | edge 2
+     *          |       \   |
+     *          |         \ |
+     *          | - - - - - |
+     * vertex 0     edge 3    vertex 3
+     */
+    void getSurfaceDataWireframeFacesUnified_AttributePerCell_Volume2(
+            std::vector<uint32_t>& triangleIndices,
+            std::vector<HexahedralCellFaceUnified_Volume2>& hexahedralCellFaces,
+            int& maxLodValue);
+
+    /**
+     * Get all surface faces including the colors of their edges.
+     * For rendering, the shader "MeshWireframe.glsl" can be used.
+     * Backface culling needs to be enabled.
+     *
+     * vertex 1     edge 1    vertex 2
+     *          | - - - - - |
+     *          | \         |
+     *          |   \       |
+     *   edge 0 |     \     | edge 2
+     *          |       \   |
+     *          |         \ |
+     *          | - - - - - |
+     * vertex 0     edge 3    vertex 3
+     */
+    void getSurfaceDataWireframeFacesUnified_AttributePerVertex_Volume2(
+            std::vector<uint32_t>& triangleIndices,
+            std::vector<HexahedralCellFaceUnified_Volume2>& hexahedralCellFaces,
             int& maxLodValue);
 
     /**

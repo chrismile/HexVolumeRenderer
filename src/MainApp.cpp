@@ -75,6 +75,7 @@
 #include "Renderers/ClearViewRenderer_Faces.hpp"
 #include "Renderers/ClearViewRenderer_FacesUnified.hpp"
 #include "Renderers/ClearViewRenderer_Volume.hpp"
+#include "Renderers/ClearViewRenderer_Volume2.hpp"
 #include "Renderers/DepthComplexityRenderer.hpp"
 #include "Renderers/SingularityRenderer.hpp"
 #include "Renderers/BaseComplexLineRenderer.hpp"
@@ -343,6 +344,8 @@ void MainApp::setRenderers() {
         meshRenderers.push_back(new LineDensityControlRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_HEX_SHEETS) {
         meshRenderers.push_back(new HexSheetRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_CLEAR_VIEW_VOLUME2) {
+        meshRenderers.push_back(new ClearViewRenderer_Volume2(sceneData, transferFunctionWindow));
     }
 }
 

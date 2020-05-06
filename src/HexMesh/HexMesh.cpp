@@ -2436,6 +2436,247 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
     }
 }
 
+void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell_Volume2(
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<HexahedralCellFaceUnified_Volume2>& hexahedralCellFaces,
+        int& maxLodValue) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    // Compute the per-edge LOD values between 0 and 1.
+    std::vector<float> edgeLodValues;
+    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue);
+
+    // Compute all cell volumes.
+    if (cellVolumes.empty()) {
+        computeAllCellVolumes();
+    }
+
+    // Compute all edge attributes.
+    std::vector<float> edgeAttributes(mesh->Es.size());
+    for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
+        float edgeAttribute = maximumCellAttributePerEdge(e_id, cellVolumes);
+        edgeAttributes.at(e_id) = edgeAttribute;
+    }
+
+    size_t indexOffset = 0;
+    for (size_t i = 0; i < mesh->Hs.size(); i++) {
+        Hybrid& h = mesh->Hs.at(i);
+        for (size_t j = 0; j < h.fs.size(); j++) {
+            Hybrid_F& f = mesh->Fs.at(h.fs.at(j));
+            if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+                return hexaLabApp->is_cell_marked(h_id);
+            })) {
+                continue;
+            }
+
+            assert(f.neighbor_hs.size() >= 1 && f.neighbor_hs.size() <= 2);
+            bool invertWinding = f.neighbor_hs.at(0) != h.id;
+
+            hexahedralCellFaces.push_back(HexahedralCellFaceUnified_Volume2());
+            HexahedralCellFaceUnified_Volume2& hexahedralCellFace = hexahedralCellFaces.back();
+            hexahedralCellFace.bitfield[0] = hexahedralCellFace.bitfield[1] = hexahedralCellFace.bitfield[2]
+                    = hexahedralCellFace.bitfield[3] = 0u;
+
+            assert(f.vs.size() == 4);
+            for (size_t j = 0; j < 4; j++) {
+                uint32_t v_id = f.vs.at(j);
+                glm::vec4 vertexPosition(
+                        mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
+                hexahedralCellFace.vertexPositions[j] = vertexPosition;
+                hexahedralCellFace.vertexAttributes[j] = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h.id);
+            }
+
+            if (!invertWinding) {
+                /**
+                 * vertex 1     edge 1    vertex 2
+                 *          | - - - - - |
+                 *          | \         |
+                 *          |   \       |
+                 *   edge 0 |     \     | edge 2
+                 *          |       \   |
+                 *          |         \ |
+                 *          | - - - - - |
+                 * vertex 0     edge 3    vertex 3
+                 */
+                triangleIndices.push_back(indexOffset + 0);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 2);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 3);
+            }
+            if (invertWinding || f.boundary) {
+                if (f.boundary) {
+                    indexOffset += 4;
+                }
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 0);
+                triangleIndices.push_back(indexOffset + 3);
+                triangleIndices.push_back(indexOffset + 1);
+                triangleIndices.push_back(indexOffset + 2);
+            }
+
+            assert(f.es.size() == 4);
+            for (size_t j = 0; j < 4; j++) {
+                uint32_t e_id = f.es.at(j);
+                Hybrid_E& e = mesh->Es.at(e_id);
+                hexahedralCellFace.edgeAttributes[j] = edgeAttributes.at(e_id);
+                hexahedralCellFace.edgeLodValues[j] = edgeLodValues.at(e_id);
+                hexahedralCellFace.edgeSingularityInformationList[j] = packEdgeSingularityInformation(e_id);
+            }
+
+            indexOffset += 4;
+
+            if (f.boundary) {
+                hexahedralCellFaces.push_back(HexahedralCellFaceUnified_Volume2());
+                HexahedralCellFaceUnified_Volume2& hexahedralCellBackface = hexahedralCellFaces.back();
+                hexahedralCellBackface.bitfield[0] = hexahedralCellBackface.bitfield[1] = hexahedralCellBackface.bitfield[2]
+                        = hexahedralCellBackface.bitfield[3] = 1u;
+
+                assert(f.vs.size() == 4);
+                for (size_t j = 0; j < 4; j++) {
+                    uint32_t v_id = f.vs.at(j);
+                    glm::vec4 vertexPosition(
+                            mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
+                    hexahedralCellBackface.vertexPositions[j] = vertexPosition;
+                    hexahedralCellBackface.vertexAttributes[j] = 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h.id);
+                }
+
+                assert(f.es.size() == 4);
+                for (size_t j = 0; j < 4; j++) {
+                    uint32_t e_id = f.es.at(j);
+                    Hybrid_E& e = mesh->Es.at(e_id);
+                    hexahedralCellBackface.edgeAttributes[j] = edgeAttributes.at(e_id);
+                    hexahedralCellBackface.edgeLodValues[j] = edgeLodValues.at(e_id);
+                    hexahedralCellBackface.edgeSingularityInformationList[j] = packEdgeSingularityInformation(e_id);
+                }
+            }
+        }
+    }
+}
+
+void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex_Volume2(
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<HexahedralCellFaceUnified_Volume2>& hexahedralCellFaces,
+        int& maxLodValue) {
+    rebuildInternalRepresentationIfNecessary();
+    Mesh* mesh = baseComplexMesh;
+
+    // Compute the per-edge LOD values between 0 and 1.
+    std::vector<float> edgeLodValues;
+    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue);
+
+    // Compute all cell volumes.
+    if (cellVolumes.empty()) {
+        computeAllCellVolumes();
+    }
+
+    // Compute all vertex attributes.
+    std::vector<float> vertexAttributes(mesh->Vs.size());
+    for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
+        float vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
+        vertexAttributes.at(v_id) = vertexAttribute;
+    }
+
+    // Compute all edge attributes.
+    std::vector<float> edgeAttributes(mesh->Es.size());
+    for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
+        float edgeAttribute = maximumCellAttributePerEdge(e_id, cellVolumes);
+        edgeAttributes.at(e_id) = edgeAttribute;
+    }
+
+    size_t indexOffset = 0;
+    for (size_t i = 0; i < mesh->Fs.size(); i++) {
+        Hybrid_F& f = mesh->Fs.at(i);
+        if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+            return hexaLabApp->is_cell_marked(h_id);
+        })) {
+            continue;
+        }
+
+        hexahedralCellFaces.push_back(HexahedralCellFaceUnified_Volume2());
+        HexahedralCellFaceUnified_Volume2& hexahedralCellFace = hexahedralCellFaces.back();
+        hexahedralCellFace.bitfield[0] = hexahedralCellFace.bitfield[1] = hexahedralCellFace.bitfield[2]
+                = hexahedralCellFace.bitfield[3] = 0u;
+
+        assert(f.vs.size() == 4);
+        for (size_t j = 0; j < 4; j++) {
+            uint32_t v_id = f.vs.at(j);
+            glm::vec4 vertexPosition(
+                    mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
+            hexahedralCellFace.vertexPositions[j] = vertexPosition;
+            hexahedralCellFace.vertexAttributes[j] = vertexAttributes.at(v_id);
+        }
+
+        /**
+         * vertex 1     edge 1    vertex 2
+         *          | - - - - - |
+         *          | \         |
+         *          |   \       |
+         *   edge 0 |     \     | edge 2
+         *          |       \   |
+         *          |         \ |
+         *          | - - - - - |
+         * vertex 0     edge 3    vertex 3
+         */
+        triangleIndices.push_back(indexOffset + 0);
+        triangleIndices.push_back(indexOffset + 3);
+        triangleIndices.push_back(indexOffset + 1);
+        triangleIndices.push_back(indexOffset + 2);
+        triangleIndices.push_back(indexOffset + 1);
+        triangleIndices.push_back(indexOffset + 3);
+
+        // Backface
+        if (f.boundary) {
+            indexOffset += 4;
+        }
+        triangleIndices.push_back(indexOffset + 1);
+        triangleIndices.push_back(indexOffset + 3);
+        triangleIndices.push_back(indexOffset + 0);
+        triangleIndices.push_back(indexOffset + 3);
+        triangleIndices.push_back(indexOffset + 1);
+        triangleIndices.push_back(indexOffset + 2);
+
+        indexOffset += 4;
+
+        assert(f.es.size() == 4);
+        for (size_t j = 0; j < 4; j++) {
+            uint32_t e_id = f.es.at(j);
+            Hybrid_E& e = mesh->Es.at(e_id);
+            hexahedralCellFace.edgeAttributes[j] = edgeAttributes.at(e_id);
+            hexahedralCellFace.edgeLodValues[j] = edgeLodValues.at(e_id);
+            hexahedralCellFace.edgeSingularityInformationList[j] = packEdgeSingularityInformation(e_id);
+        }
+
+        if (f.boundary) {
+            hexahedralCellFaces.push_back(HexahedralCellFaceUnified_Volume2());
+            HexahedralCellFaceUnified_Volume2& hexahedralCellBackface = hexahedralCellFaces.back();
+            hexahedralCellBackface.bitfield[0] = hexahedralCellBackface.bitfield[1] = hexahedralCellBackface.bitfield[2]
+                    = hexahedralCellBackface.bitfield[3] = 1u;
+
+            assert(f.vs.size() == 4);
+            for (size_t j = 0; j < 4; j++) {
+                uint32_t v_id = f.vs.at(j);
+                glm::vec4 vertexPosition(
+                        mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
+                hexahedralCellBackface.vertexPositions[j] = vertexPosition;
+                hexahedralCellBackface.vertexAttributes[j] = vertexAttributes.at(v_id);
+            }
+
+            assert(f.es.size() == 4);
+            for (size_t j = 0; j < 4; j++) {
+                uint32_t e_id = f.es.at(j);
+                Hybrid_E& e = mesh->Es.at(e_id);
+                hexahedralCellBackface.edgeAttributes[j] = edgeAttributes.at(e_id);
+                hexahedralCellBackface.edgeLodValues[j] = edgeLodValues.at(e_id);
+                hexahedralCellBackface.edgeSingularityInformationList[j] = packEdgeSingularityInformation(e_id);
+            }
+        }
+    }
+}
+
 void HexMesh::getVolumeData_DepthComplexity(
         std::vector<uint32_t>& triangleIndices,
         std::vector<glm::vec3>& vertexPositions) {

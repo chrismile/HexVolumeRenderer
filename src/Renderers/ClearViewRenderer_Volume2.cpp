@@ -44,7 +44,7 @@
 #include "Tubes/Tubes.hpp"
 #include "Helpers/Sphere.hpp"
 #include "Helpers/LineRenderingDefines.hpp"
-#include "ClearViewRenderer_FacesUnified.hpp"
+#include "ClearViewRenderer_Volume2.hpp"
 
 // Use stencil buffer to mask unused pixels
 static bool useStencilBuffer = true;
@@ -58,15 +58,15 @@ static int maxNumFragmentsSorting = 256;
 struct LinkedListFragmentNode {
     // RGBA color of the node.
     uint32_t color;
-    // Depth value of the fragment (in view space).
-    float depth;
+    // Depth value of the fragment.
+    uint32_t depth;
     // The index of the next node in the "nodes" array.
     uint32_t next;
 };
 
-ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+ClearViewRenderer_Volume2::ClearViewRenderer_Volume2(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : ClearViewRenderer(sceneData, transferFunctionWindow) {
-    windowName = "ClearView Renderer (Unified)";
+    windowName = "ClearView Renderer (Volume 2)";
     clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED;
     useScreenSpaceLens = true;
 
@@ -80,7 +80,7 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
 
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
-    sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "\"LinkedListGather.glsl\"");
+    sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "\"LinkedListVolume2Gather.glsl\"");
     sgl::ShaderManager->addPreprocessorDefine("MAX_NUM_FRAGS", sgl::toString(maxNumFragmentsSorting));
 
     shaderProgramSurface = sgl::ShaderManager->getShaderProgram(
@@ -88,10 +88,9 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
     reloadSphereRenderData();
 
     reloadGatherShader();
-    resolveShader = sgl::ShaderManager->getShaderProgram(
-            {"LinkedListResolve.Vertex", "LinkedListResolve.Fragment"});
+    reloadResolveShader();
     clearShader = sgl::ShaderManager->getShaderProgram(
-            {"LinkedListClear.Vertex", "LinkedListClear.Fragment"});
+            {"LinkedListVolume2Clear.Vertex", "LinkedListVolume2Clear.Fragment"});
     shaderFullScreenBlitLoG = sgl::ShaderManager->getShaderProgram(
             {"Mesh.Vertex.Plain", "Mesh.Fragment.Plain"});
     colorTextureShaderLoG = sgl::ShaderManager->getShaderProgram(
@@ -133,7 +132,7 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
     onResolutionChanged();
 }
 
-void ClearViewRenderer_FacesUnified::reloadTexturesLoG() {
+void ClearViewRenderer_Volume2::reloadTexturesLoG() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
@@ -171,7 +170,7 @@ void ClearViewRenderer_FacesUnified::reloadTexturesLoG() {
     }
 }
 
-void ClearViewRenderer_FacesUnified::reloadModelLoG() {
+void ClearViewRenderer_Volume2::reloadModelLoG() {
     if (!mesh) {
         return;
     }
@@ -195,7 +194,7 @@ void ClearViewRenderer_FacesUnified::reloadModelLoG() {
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 }
 
-void ClearViewRenderer_FacesUnified::createWeightTextureLoG() {
+void ClearViewRenderer_Volume2::createWeightTextureLoG() {
     float* textureData = new float[weightTextureSize.x * weightTextureSize.y];
     const float FACTOR_1 = -1.0f / (sgl::PI * std::pow(rhoLoG, 4.0f));
     const float FACTOR_2 = -1.0f / (2.0f * rhoLoG * rhoLoG);
@@ -243,7 +242,7 @@ void ClearViewRenderer_FacesUnified::createWeightTextureLoG() {
     delete[] textureData;
 }
 
-void ClearViewRenderer_FacesUnified::reloadGatherShader() {
+void ClearViewRenderer_Volume2::reloadGatherShader() {
     sgl::ShaderManager->invalidateShaderCache();
     std::string lineRenderingStyleDefineName = "LINE_RENDERING_STYLE_HALO";
     sgl::ShaderManager->addPreprocessorDefine(lineRenderingStyleDefineName, "");
@@ -271,14 +270,14 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
 
     if (useScreenSpaceLens) {
         gatherShader = sgl::ShaderManager->getShaderProgram(
-                {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_ScreenSpace"});
+                {"MeshLinkedListVolume2.Vertex", "MeshLinkedListVolume2.Fragment.ClearView_ScreenSpace"});
     } else {
         if (useExperimentalApproach) {
             gatherShader = sgl::ShaderManager->getShaderProgram(
-                    {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_1"});
+                    {"MeshLinkedListVolume2.Vertex", "MeshLinkedListVolume2.Fragment.ClearView_1"});
         } else {
             gatherShader = sgl::ShaderManager->getShaderProgram(
-                    {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_0"});
+                    {"MeshLinkedListVolume2.Vertex", "MeshLinkedListVolume2.Fragment.ClearView_0"});
         }
     }
 
@@ -306,7 +305,19 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     }
 }
 
-void ClearViewRenderer_FacesUnified::setNewSettings(const SettingsMap& settings) {
+void ClearViewRenderer_Volume2::reloadResolveShader() {
+    sgl::ShaderManager->invalidateShaderCache();
+    sgl::ShaderManager->addPreprocessorDefine("VOLUME_FACTOR",
+            std::to_string(volumeOpacityFactor * 400.0f));
+    resolveShader = sgl::ShaderManager->getShaderProgram(
+            {"LinkedListVolume2Resolve.Vertex", "LinkedListVolume2Resolve.Fragment"});
+    if (blitRenderData) {
+        blitRenderData = blitRenderData->copy(resolveShader);
+    }
+    sgl::ShaderManager->removePreprocessorDefine("VOLUME_FACTOR");
+}
+
+void ClearViewRenderer_Volume2::setNewSettings(const SettingsMap& settings) {
     lineWidthBoostFactor = 1.0f;
     focusRadiusBoostFactor = 1.0f;
     settings.getValueOpt("lineWidthBoostFactor", lineWidthBoostFactor);
@@ -321,7 +332,7 @@ void ClearViewRenderer_FacesUnified::setNewSettings(const SettingsMap& settings)
     }
 }
 
-void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void ClearViewRenderer_Volume2::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     if (isNewMesh) {
         Pickable::focusPoint = glm::vec3(0.0f);
     }
@@ -351,20 +362,20 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
 
     // Load the unified data for the focus and context region.
     std::vector<uint32_t> indices;
-    std::vector<HexahedralCellFaceUnified> hexahedralCellFaces;
+    std::vector<HexahedralCellFaceUnified_Volume2> hexahedralCellFaces;
     if (useWeightedVertexAttributes) {
-        mesh->getSurfaceDataWireframeFacesUnified_AttributePerVertex(
+        mesh->getSurfaceDataWireframeFacesUnified_AttributePerVertex_Volume2(
                 indices, hexahedralCellFaces, maxLodValue);
     } else {
-        mesh->getSurfaceDataWireframeFacesUnified_AttributePerCell(
+        mesh->getSurfaceDataWireframeFacesUnified_AttributePerCell_Volume2(
                 indices, hexahedralCellFaces, maxLodValue);
     }
 
     size_t modelBufferSizeBytes = indices.size() * sizeof(uint32_t)
-            + hexahedralCellFaces.size() * sizeof(HexahedralCellFaceUnified);
+                                  + hexahedralCellFaces.size() * sizeof(HexahedralCellFaceUnified);
     sgl::Logfile::get()->writeInfo(
             std::string() + "GPU model buffer size MiB: "
-            + std::to_string(modelBufferSizeBytes / 1024.0 / 1024.0));
+            + std::to_string(modelBufferSizeBytes / 1024.0 / 1024.0 / 1024.0));
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(gatherShader);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -376,8 +387,8 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
 
     // Create an SSBO for the hexahedral cell faces.
     hexahedralCellFacesBuffer = sgl::Renderer->createGeometryBuffer(
-            hexahedralCellFaces.size()*sizeof(HexahedralCellFaceUnified), (void*)&hexahedralCellFaces.front(),
-            sgl::SHADER_STORAGE_BUFFER);
+            hexahedralCellFaces.size()*sizeof(HexahedralCellFaceUnified_Volume2),
+            (void*)&hexahedralCellFaces.front(), sgl::SHADER_STORAGE_BUFFER);
 
     reloadModelLoG();
 
@@ -386,7 +397,7 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
     hasHitInformation = false;
 }
 
-void ClearViewRenderer_FacesUnified::onResolutionChanged() {
+void ClearViewRenderer_Volume2::onResolutionChanged() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
@@ -428,7 +439,7 @@ void ClearViewRenderer_FacesUnified::onResolutionChanged() {
     reloadTexturesLoG();
 }
 
-void ClearViewRenderer_FacesUnified::setUniformData() {
+void ClearViewRenderer_Volume2::setUniformData() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
@@ -442,7 +453,9 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
 
     gatherShader->setUniform("viewportW", width);
     gatherShader->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
-    gatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
+    if (gatherShader->hasUniform("cameraPosition")) {
+        gatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
+    }
     if (gatherShader->hasUniform("lookingDirection")) {
         gatherShader->setUniform("lookingDirection", lookingDirection);
     }
@@ -481,10 +494,17 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
 
     shaderProgramSurface->setUniform("viewportW", width);
     shaderProgramSurface->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
-    shaderProgramSurface->setUniform("cameraPosition", sceneData.camera->getPosition());
+    if (shaderProgramSurface->hasUniform("cameraPosition")) {
+        shaderProgramSurface->setUniform("cameraPosition", sceneData.camera->getPosition());
+    }
     shaderProgramSurface->setUniform("color", focusPointColor);
 
     resolveShader->setUniform("viewportW", width);
+    if (resolveShader->hasUniform("zNear")) {
+        resolveShader->setUniform("zNear", sceneData.camera->getNearClipDistance());
+        resolveShader->setUniform("zFar", sceneData.camera->getFarClipDistance());
+    }
+
     clearShader->setUniform("viewportW", width);
 
     shaderFullScreenBlitLoG->setUniform("color", sgl::Color(255, 255, 255));
@@ -505,7 +525,7 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     }
 }
 
-void ClearViewRenderer_FacesUnified::clear() {
+void ClearViewRenderer_Volume2::clear() {
     glDepthMask(GL_FALSE);
 
     //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -526,7 +546,7 @@ void ClearViewRenderer_FacesUnified::clear() {
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 }
 
-void ClearViewRenderer_FacesUnified::gather() {
+void ClearViewRenderer_Volume2::gather() {
     // Recording mode.
     if (sceneData.recordingMode && sceneData.useCameraFlight) {
         // TODO: Apapt focus radius depending on distance of camera to origin?
@@ -551,13 +571,13 @@ void ClearViewRenderer_FacesUnified::gather() {
 
     // Now, the final gather step.
     sgl::ShaderManager->bindShaderStorageBuffer(6, hexahedralCellFacesBuffer);
-    if (useWeightedVertexAttributes) {
-        glDisable(GL_CULL_FACE);
-    }
+    //if (useWeightedVertexAttributes) {
+    //    glDisable(GL_CULL_FACE);
+    //}
     sgl::Renderer->render(shaderAttributes);
-    if (useWeightedVertexAttributes) {
-        glEnable(GL_CULL_FACE);
-    }
+    //if (useWeightedVertexAttributes) {
+    //    glEnable(GL_CULL_FACE);
+    //}
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     // Render the focus point.
@@ -569,7 +589,7 @@ void ClearViewRenderer_FacesUnified::gather() {
     }
 }
 
-void ClearViewRenderer_FacesUnified::renderLaplacianOfGaussianContours() {
+void ClearViewRenderer_Volume2::renderLaplacianOfGaussianContours() {
     if (outlineMode == OUTLINE_MODE_DEPTH) {
         sgl::Renderer->setProjectionMatrix(sceneData.camera->getProjectionMatrix());
         sgl::Renderer->setViewMatrix(sceneData.camera->getViewMatrix());
@@ -603,7 +623,7 @@ void ClearViewRenderer_FacesUnified::renderLaplacianOfGaussianContours() {
     }
 }
 
-void ClearViewRenderer_FacesUnified::resolve() {
+void ClearViewRenderer_Volume2::resolve() {
     sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
     sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
     sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
@@ -625,7 +645,7 @@ void ClearViewRenderer_FacesUnified::resolve() {
     glDepthMask(GL_TRUE);
 }
 
-void ClearViewRenderer_FacesUnified::renderGui() {
+void ClearViewRenderer_Volume2::renderGui() {
     ClearViewRenderer::renderGui();
 
     if (highlightEdges && useSingularEdgeColorMap && singularEdgeColorMapWidget.renderGui()) {
@@ -633,7 +653,7 @@ void ClearViewRenderer_FacesUnified::renderGui() {
     }
 }
 
-void ClearViewRenderer_FacesUnified::childClassRenderGuiBegin() {
+void ClearViewRenderer_Volume2::childClassRenderGuiBegin() {
     if (ImGui::Checkbox("Use Screen Space Lens", &useScreenSpaceLens)) {
         reloadGatherShader();
         if (shaderAttributes) {
@@ -647,7 +667,11 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiBegin() {
     }
 }
 
-void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
+void ClearViewRenderer_Volume2::childClassRenderGuiEnd() {
+    if (ImGui::SliderFloat("volumeOpacityFactor", &volumeOpacityFactor, 0.0f, 2.0f)) {
+        reloadResolveShader();
+        reRender = true;
+    }
     if (!useScreenSpaceLens && ImGui::Checkbox("Use Experimental Approach", &useExperimentalApproach)) {
         reloadGatherShader();
         if (shaderAttributes) {
@@ -656,7 +680,7 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
         reRender = true;
     }
     if ((useScreenSpaceLens || useExperimentalApproach)
-            && ImGui::SliderFloat("LOD Value Focus", &selectedLodValueFocus, 0.0f, 1.0f)) {
+        && ImGui::SliderFloat("LOD Value Focus", &selectedLodValueFocus, 0.0f, 1.0f)) {
         if (selectedLodValueFocus < selectedLodValueContext) {
             selectedLodValueContext = selectedLodValueFocus;
         }
@@ -670,11 +694,11 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
         reRender = true;
     }
     if ((useScreenSpaceLens || useExperimentalApproach)
-            && ImGui::SliderFloat("Important Lines", &importantLineBoostFactor, 0.0f, 1.0f)) {
+        && ImGui::SliderFloat("Important Lines", &importantLineBoostFactor, 0.0f, 1.0f)) {
         reRender = true;
     }
     if ((useScreenSpaceLens || useExperimentalApproach)
-            && ImGui::Checkbox("Accentuate Edges", &accentuateAllEdges)) {
+        && ImGui::Checkbox("Accentuate Edges", &accentuateAllEdges)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);
@@ -682,7 +706,7 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
         reRender = true;
     }
     if ((useScreenSpaceLens || useExperimentalApproach)
-            && ImGui::Checkbox("Per Line Attributes", &usePerLineAttributes)) {
+        && ImGui::Checkbox("Per Line Attributes", &usePerLineAttributes)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);
@@ -704,7 +728,7 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
         reRender = true;
     }
     if (!useScreenSpaceLens && !useExperimentalApproach && highlightEdges
-            && ImGui::Checkbox("Highlight Low LOD Edges", &highlightLowLodEdges)) {
+        && ImGui::Checkbox("Highlight Low LOD Edges", &highlightLowLodEdges)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);
@@ -712,7 +736,7 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
         reRender = true;
     }
     if (!useScreenSpaceLens && !useExperimentalApproach && highlightEdges
-            && ImGui::Checkbox("Highlight Singular Edges", &highlightSingularEdges)) {
+        && ImGui::Checkbox("Highlight Singular Edges", &highlightSingularEdges)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);
@@ -737,6 +761,7 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);
         }
+        reloadResolveShader();
         reRender = true;
     }
 }
