@@ -460,6 +460,7 @@ float HexMesh::getFaceIdsAreaSum(const std::vector<uint32_t>& f_ids) {
     //for (uint32_t f_id : f_ids) {
     //    areaSum += faceAreas.at(f_id);
     //}
+    return areaSum;
 }
 
 void HexMesh::computeAllFaceAreas() {
@@ -496,6 +497,7 @@ float HexMesh::getCellIdsVolumeSum(const std::vector<uint32_t>& h_ids) {
     //for (uint32_t h_id : h_ids) {
     //    volumeSum += cellVolumes.at(h_id);
     //}
+    return volumeSum;
 }
 
 void HexMesh::computeAllCellVolumes() {

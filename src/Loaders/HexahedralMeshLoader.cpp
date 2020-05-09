@@ -94,7 +94,7 @@ bool readFileLineByLine(
      * files don't need to fit into memory at once.
      */
     char* fileBuffer = new char[length];
-    fread(fileBuffer, 1, length, file);
+    bool readSuccessful = fread(fileBuffer, 1, length, file);
     fclose(file);
     std::string lineBuffer;
     std::string numberString;

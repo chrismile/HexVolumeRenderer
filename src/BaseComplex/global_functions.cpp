@@ -1418,6 +1418,8 @@ bool triangle_mesh_feature(Mesh_Feature &mf, Mesh &hmi){
 			int pos = find(mf.corners.begin(), mf.corners.end(), vid) - mf.corners.begin();
 			mf.corner_curves[pos].push_back(i);
 		}
+
+    return true;
 }
 bool initial_feature(Mesh_Feature &mf, Feature_Constraints &fc, Mesh &hmi) {
 

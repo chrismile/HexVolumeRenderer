@@ -26,6 +26,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
+
 #include <Math/Geometry/MatrixUtil.hpp>
 #include <Utils/AppSettings.hpp>
 #include <Graphics/Window.hpp>
