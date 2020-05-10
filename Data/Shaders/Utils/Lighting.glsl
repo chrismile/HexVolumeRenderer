@@ -151,10 +151,11 @@ vec4 flatShadingTubeTronHalo(in vec4 baseColor, out float fragmentDepthFrag) {
  * Flat shading, but adds a constant-sized halo at the outline of the surface. Assumes the following global variables
  * are given: cameraPosition, fragmentPositionWorld.
 */
-vec4 flatShadingWireframeSurfaceHalo(in vec4 baseColor, out float fragmentDepthFrag, in float lineCoordinates) {
+vec4 flatShadingWireframeSurfaceHalo(
+        in vec4 baseColor, out float fragmentDepthFrag, in float lineCoordinates, float lineRadius) {
     float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
     const float WHITE_THRESHOLD = 0.7;
-    float EPSILON = clamp(fragmentDepth / 2.0, 0.0, 0.49);
+    float EPSILON = clamp(fragmentDepth / lineRadius * 0.0005, 0.0, 0.49);
     float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
     vec4 color = vec4(mix(baseColor.rgb, vec3(1.0, 1.0, 1.0),
     smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), baseColor.a * coverage);

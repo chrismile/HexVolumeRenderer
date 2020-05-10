@@ -66,6 +66,8 @@ uniform float lineWidth;
 #define WIREFRAME_SURFACE_HALO_LIGHTING
 #include "Lighting.glsl"
 #include "PointToLineDistance.glsl"
+#define DEPTH_HELPER_USE_PROJECTION_MATRIX
+#include "DepthHelper.glsl"
 
 void main()
 {
@@ -87,7 +89,7 @@ void main()
     float fragmentDepth;
     //vec4 color = flatShadingWireframeSurfaceHalo(lineBaseColor, fragmentDepth, lineCoordinates);
     #if defined(LINE_RENDERING_STYLE_HALO)
-    vec4 color = flatShadingWireframeSurfaceHalo(lineBaseColor, fragmentDepth, lineCoordinates);
+    vec4 color = flatShadingWireframeSurfaceHalo(lineBaseColor, fragmentDepth, lineCoordinates, lineWidth / 2.0);
     #elif defined(LINE_RENDERING_STYLE_TRON)
     vec4 color = flatShadingWireframeSurfaceTronHalo(lineBaseColor, fragmentDepth, lineCoordinates);
     #else //#elif defined(LINE_RENDERING_STYLE_SINGLE_COLOR)
@@ -99,8 +101,8 @@ void main()
     if (color.a < 0.01) {
         discard;
     }
-    gl_FragDepth = gl_FragCoord.z - 0.00001;
-    //gl_FragDepth = gl_FragCoord.z + fragmentDepth - length(fragmentPositionWorld - cameraPosition);
+    //gl_FragDepth = gl_FragCoord.z - 0.00001;
+    gl_FragDepth = convertLinearDepthToDepthBufferValue(convertDepthBufferValueToLinearDepth(gl_FragCoord.z) + fragmentDepth - length(fragmentPositionWorld - cameraPosition) - 0.0001);
     fragColor = color;
     #else
     gatherFragmentCustomDepth(color, fragmentDepth);

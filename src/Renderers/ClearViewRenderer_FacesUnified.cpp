@@ -644,7 +644,7 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiBegin() {
         reRender = true;
     }
     if (useScreenSpaceLens && ImGui::SliderFloat(
-            "Lens Pixel Radius", &screenSpaceLensPixelRadius, 0.0f, std::max(windowWidth, windowHeight))) {
+            "Lens Pixel Radius", &screenSpaceLensPixelRadius, 0.0f, 2*std::max(windowWidth, windowHeight))) {
         reRender = true;
     }
 }

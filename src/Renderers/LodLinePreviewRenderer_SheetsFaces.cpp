@@ -44,6 +44,7 @@ LodLinePreviewRenderer_SheetsFaces::LodLinePreviewRenderer_SheetsFaces(SceneData
 }
 
 void LodLinePreviewRenderer_SheetsFaces::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+    mesh = meshIn;
     lineWidth = glm::clamp(
             std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
             MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);

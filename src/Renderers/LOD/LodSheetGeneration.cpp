@@ -229,7 +229,8 @@ void generateSheetLevelOfDetailEdgeStructure(
         // Mark all edges that vanished from this LOD.
         for (uint32_t e_id : vanishedEdgeIds) {
             bool isSingular = singularEdgeIds.find(e_id) != singularEdgeIds.end();
-            if (isSingular && !tooMuchSingularEdgeMode) {
+            //if (isSingular && !tooMuchSingularEdgeMode) {
+            if (isSingular) {
                 continue;
             }
 
@@ -336,14 +337,14 @@ void generateSheetLevelOfDetailEdgeStructure(
 
 
     if (tooMuchSingularEdgeMode) {
-        for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
+        /*for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
             if (lodEdgeVisibilityMap.at(i) != 0) {
                 lodEdgeVisibilityMap.at(i)++;
             }
         }
         for (uint32_t e_id : singularEdgeIds) {
             lodEdgeVisibilityMap.at(e_id) = 1;
-        }
+        }*/
     }
 
     // We want to normalize the LOD values to the range [0, 1]. First, compute the maximum value.
@@ -363,10 +364,17 @@ void generateSheetLevelOfDetailEdgeStructure(
         }
     }
 
+    if (tooMuchSingularEdgeMode) {
+        for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
+            lodEdgeVisibilityMap.at(i)++;
+        }
+        maxValueInt++;
+    }
+
     if (!tooMuchSingularEdgeMode && numValenceOneBoundaryEdges > 0
             && singularEdgeIds.size() > numValenceOneBoundaryEdges) {
         // Add a final LOD where only valence 1 edges are shown.
-        for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
+        /*for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
             if (lodEdgeVisibilityMap.at(i) == 0 || singularEdgeIds.find(i) != singularEdgeIds.end()) {
                 size_t valence = mesh.Es.at(i).neighbor_hs.size();
                 if (valence != 1u) {
@@ -376,7 +384,7 @@ void generateSheetLevelOfDetailEdgeStructure(
                 lodEdgeVisibilityMap.at(i)++;
             }
         }
-        maxValueInt++;
+        maxValueInt++;*/
     }
 
     float maxValue = float(maxValueInt);

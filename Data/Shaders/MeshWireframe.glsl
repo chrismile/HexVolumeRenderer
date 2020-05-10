@@ -414,7 +414,7 @@ void main()
         outlineColor = mix(outlineColor, lineBaseColor.rgb, clamp(max(depthCueFactorFocus, depthCueFactorDistance), 0.0, 1.0));
 
         // Fade out the outline with increasing distance
-        const float EPSILON = clamp(fragmentDistance * 0.5, 0.0, 0.49);
+        const float EPSILON = clamp(fragmentDistance / lineRadius * 0.0005, 0.0, 0.49);
         const float WHITE_THRESHOLD = 0.7 + (0.3 + EPSILON) * contextFactor;
         float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates); // TODO
         vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
@@ -610,7 +610,7 @@ void main()
         outlineColor = mix(outlineColor, lineBaseColor.rgb, clamp(max(depthCueFactorFocus, depthCueFactorDistance), 0.0, 1.0));
 
         // Fade out the outline with increasing distance
-        const float EPSILON = clamp(fragmentDistance * 0.5, 0.0, 0.49);
+        const float EPSILON = clamp(fragmentDistance / lineRadius * 0.0005, 0.0, 0.49);
         const float WHITE_THRESHOLD = 0.7 + (0.3 + EPSILON) * contextFactor;
         float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates); // TODO
         vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
@@ -628,7 +628,7 @@ void main()
             blendedColor.rgb /= blendedColor.a;
         }
     } else if (lineCoordinatesAll <= 1.0) {
-        //const float EPSILON = clamp(fragmentDistance * 0.5, 0.0, 0.49);
+        //const float EPSILON = clamp(fragmentDistance / lineRadius * 0.0005, 0.0, 0.49);
         //float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates); // TODO
     #ifdef ACCENTUATE_ALL_EDGES
         vec3 lineBaseColorAll = lineColors[minDistanceIndexAll].rgb;
