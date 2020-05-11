@@ -65,8 +65,16 @@ std::vector<InternalState> getTestModesPaper()
     std::vector<MeshDescriptor> meshDescriptors = {
             MeshDescriptor(
                     "2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation",
-                    "anc101_a1", "mesh") };
-    std::vector<std::string> transferFunctionNames = { "Standard_PerVertex.xml" };
+                    "anc101_a1", "mesh"),
+            MeshDescriptor(
+                    "2016 - All-Hex Meshing Using Closed-Form Induced Polycube",
+                    "grayloc-hex", "vtk"),
+            MeshDescriptor(
+                    "2018 - Fuzzy clustering based pseudo-swept volume decomposition for hexahedral meshing",
+                    "Example_3", "mesh")};
+    std::vector<std::string> transferFunctionNames = {
+            "Standard_PerVertex.xml", "Standard_PerVertex.xml", "Test_PerVertex.xml"
+    };
     InternalState state;
 
     for (size_t i = 0; i < windowResolutions.size(); i++) {

@@ -56,6 +56,7 @@ public:
     bool saveToBinaryFile(const std::string& filename);
     void normalizeToTotalTime(float totalTime);
     void update(float currentTime);
+    void resetTime();
     inline const glm::mat4x4& getViewMatrix() const { return currentTransform; }
     inline float getEndTime() { return controlPoints.back().time; }
 

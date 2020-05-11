@@ -8,8 +8,16 @@ namespace HexaLab {
 
     // PUBLIC
 
+    App::~App() {
+        if (mesh != nullptr) {
+            delete mesh;
+        }
+    }
+
     bool App::import_mesh ( const vector<glm::vec3>& verts, const vector<HexaLab::Index>& indices ) {
-        delete mesh;
+        if (mesh != nullptr) {
+            delete mesh;
+        }
         mesh = new Mesh();
 
         // Build

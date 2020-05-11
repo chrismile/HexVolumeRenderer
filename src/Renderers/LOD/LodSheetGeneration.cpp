@@ -374,7 +374,7 @@ void generateSheetLevelOfDetailEdgeStructure(
     if (!tooMuchSingularEdgeMode && numValenceOneBoundaryEdges > 0
             && singularEdgeIds.size() > numValenceOneBoundaryEdges) {
         // Add a final LOD where only valence 1 edges are shown.
-        /*for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
+        for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
             if (lodEdgeVisibilityMap.at(i) == 0 || singularEdgeIds.find(i) != singularEdgeIds.end()) {
                 size_t valence = mesh.Es.at(i).neighbor_hs.size();
                 if (valence != 1u) {
@@ -384,7 +384,7 @@ void generateSheetLevelOfDetailEdgeStructure(
                 lodEdgeVisibilityMap.at(i)++;
             }
         }
-        maxValueInt++;*/
+        maxValueInt++;
     }
 
     float maxValue = float(maxValueInt);

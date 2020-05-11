@@ -36,6 +36,7 @@ namespace HexaLab {
     class App {
     public:
         App() {}
+        ~App();
 
         // Currently loaded mesh. Initially a nullptr.
         Mesh* mesh = nullptr;

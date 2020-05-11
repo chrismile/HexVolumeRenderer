@@ -693,8 +693,18 @@ void MainApp::renderSceneSettingsGUI() {
 
     ImGui::SliderFloat("Move Speed", &MOVE_SPEED, 0.02f, 0.5f);
     ImGui::SliderFloat("Mouse Speed", &MOUSE_ROT_SPEED, 0.01f, 0.10f);
-    if (ImGui::SliderInt("Rotate by X", &rotateModelByXTurns, 0, 3)) {
+    if (ImGui::SliderFloat3("Rotation Axis", &modelRotationAxis.x, 0.0f, 1.0f)) {
+        if (rotateModelBy90DegreeTurns != 0) {
+            loadHexahedralMesh(getSelectedMeshFilename());
+        }
+    }
+    if (ImGui::SliderInt("Rotation 90°", &rotateModelBy90DegreeTurns, 0, 3)) {
         loadHexahedralMesh(getSelectedMeshFilename());
+    }
+
+    if (ImGui::Checkbox("Use Camera Flight", &useCameraFlight)) {
+        startedCameraFlightPerUI = true;
+        reRender = true;
     }
 
     ImGui::Separator();
@@ -710,7 +720,26 @@ void MainApp::renderSceneSettingsGUI() {
 
     ImGui::InputText("##savevideolabel", &saveFilenameVideos);
     if (!recording) {
+        bool startRecording = false;
         if (ImGui::Button("Start Recording Video")) {
+            startRecording = true;
+        } ImGui::SameLine();
+        if (ImGui::Button("Start Recording Video Camera Path")) {
+            startRecording = true;
+            useCameraFlight = true;
+            startedCameraFlightPerUI = true;
+            recordingTime = 0.0f;
+            realTimeCameraFlight = false;
+            cameraPath.resetTime();
+            reRender = true;
+        }
+
+        if (startRecording) {
+            sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+            if (window->getWindowResolution() != recordingResolution) {
+                window->setWindowSize(recordingResolution.x, recordingResolution.y);
+            }
+
             recording = true;
             videoWriter = new sgl::VideoWriter(
                     saveDirectoryVideos + saveFilenameVideos
@@ -753,7 +782,18 @@ void MainApp::update(float dt) {
 
     // Already recorded full cycle?
     if (useCameraFlight && recording && recordingTime > cameraPath.getEndTime()) {
-        quit();
+        if (!startedCameraFlightPerUI) {
+            quit();
+        } else {
+            if (recording) {
+                recording = false;
+                delete videoWriter;
+                videoWriter = nullptr;
+                realTimeCameraFlight = true;
+            }
+            useCameraFlight = false;
+        }
+        recordingTime = 0.0f;
     }
 
     if (useCameraFlight) {
@@ -779,13 +819,13 @@ void MainApp::update(float dt) {
     transferFunctionWindow.update(dt);
 
     ImGuiIO &io = ImGui::GetIO();
-    if (io.WantCaptureKeyboard) {
+    if (io.WantCaptureKeyboard && !recording) {
         // Ignore inputs below
         return;
     }
 
     // Rotate scene around camera origin
-    if (sgl::Keyboard->isKeyDown(SDLK_x)) {
+    /*if (sgl::Keyboard->isKeyDown(SDLK_x)) {
         glm::quat rot = glm::quat(glm::vec3(dt*ROT_SPEED, 0.0f, 0.0f));
         camera->rotate(rot);
         reRender = true;
@@ -798,6 +838,22 @@ void MainApp::update(float dt) {
     if (sgl::Keyboard->isKeyDown(SDLK_z)) {
         glm::quat rot = glm::quat(glm::vec3(0.0f, 0.0f, dt*ROT_SPEED));
         camera->rotate(rot);
+        reRender = true;
+    }*/
+    if (sgl::Keyboard->isKeyDown(SDLK_q)) {
+        camera->rotateYaw(-1.9f*dt*MOVE_SPEED);
+        reRender = true;
+    }
+    if (sgl::Keyboard->isKeyDown(SDLK_e)) {
+        camera->rotateYaw(1.9f*dt*MOVE_SPEED);
+        reRender = true;
+    }
+    if (sgl::Keyboard->isKeyDown(SDLK_r)) {
+        camera->rotatePitch(1.9f*dt*MOVE_SPEED);
+        reRender = true;
+    }
+    if (sgl::Keyboard->isKeyDown(SDLK_f)) {
+        camera->rotatePitch(-1.9f*dt*MOVE_SPEED);
         reRender = true;
     }
 
@@ -858,8 +914,8 @@ void MainApp::update(float dt) {
             float pitch = -dt*MOUSE_ROT_SPEED*pixelMovement.y;
 
             glm::quat rotYaw = glm::quat(glm::vec3(0.0f, yaw, 0.0f));
-            glm::quat rotPitch = glm::quat(pitch*glm::vec3(rotationMatrix[0][0], rotationMatrix[1][0],
-                                                           rotationMatrix[2][0]));
+            glm::quat rotPitch = glm::quat(
+                    pitch*glm::vec3(rotationMatrix[0][0], rotationMatrix[1][0], rotationMatrix[2][0]));
             camera->rotateYaw(yaw);
             camera->rotatePitch(pitch);
             reRender = true;
@@ -900,8 +956,8 @@ void MainApp::normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
         vertices.at(i) = (vertices.at(i) + translation) * scale;
     }
 
-    if (rotateModelByXTurns != 0) {
-        glm::mat4 rotationMatrix = glm::rotate(rotateModelByXTurns * sgl::HALF_PI, glm::vec3(1.0f, 0.0f, 0.0f));
+    if (rotateModelBy90DegreeTurns != 0) {
+        glm::mat4 rotationMatrix = glm::rotate(rotateModelBy90DegreeTurns * sgl::HALF_PI, modelRotationAxis);
 
         #pragma omp parallel for
         for (size_t i = 0; i < vertices.size(); i++) {
@@ -973,7 +1029,7 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         inputData->setHexMeshData(vertices, hexMeshCellIndices);
         inputData->setQualityMeasure(selectedQualityMeasure);
 
-        if (useCameraFlight) {
+        if (true) { // useCameraFlight
             std::string cameraPathFilename =
                     saveDirectoryCameraPaths + sgl::FileUtils::get()->getPathAsList(fileName).back() + ".binpath";
             if (sgl::FileUtils::get()->exists(cameraPathFilename)) {

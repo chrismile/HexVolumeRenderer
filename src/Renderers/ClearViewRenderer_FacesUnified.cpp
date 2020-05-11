@@ -564,10 +564,10 @@ void ClearViewRenderer_FacesUnified::gather() {
 
     // Render the focus point.
     if (!useScreenSpaceLens) {
-        sgl::Renderer->setModelMatrix(sgl::matrixTranslation(focusPoint));
-        sgl::Renderer->render(focusPointShaderAttributes);
-        sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+        //sgl::Renderer->setModelMatrix(sgl::matrixTranslation(focusPoint));
+        //sgl::Renderer->render(focusPointShaderAttributes);
+        //sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
+        //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     }
 }
 

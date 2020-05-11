@@ -48,6 +48,7 @@ int main(int argc, char *argv[]) {
     ImVector<ImWchar> fontRanges;
     ImFontGlyphRangesBuilder builder;
     builder.AddChar(L'\u03BB'); // lambda
+    builder.AddChar(L'\u2113'); // ell / SCRIPT SMALL L
     builder.BuildRanges(&fontRanges);
     sgl::AppSettings::get()->setLoadGUI(fontRanges.Data);
 

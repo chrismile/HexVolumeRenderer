@@ -101,9 +101,9 @@ private:
     std::string saveFilenameVideos = "Video";
     int videoNumber = 0;
     float MOVE_SPEED = 0.2f;
-    float ROT_SPEED = 1.0f;
     float MOUSE_ROT_SPEED = 0.05f;
-    int rotateModelByXTurns = 0;
+    glm::vec3 modelRotationAxis = glm::vec3(1.0f, 0.0f, 0.0f);
+    int rotateModelBy90DegreeTurns = 0;
     glm::ivec2 windowResolution;
 
     // Data set GUI information.
@@ -149,6 +149,7 @@ private:
     // Camera paths for recording videos without human interaction.
     CameraPath cameraPath;
     bool useCameraFlight = false;
+    bool startedCameraFlightPerUI = false;
     bool realTimeCameraFlight = true; // Move camera in real elapsed time or camera frame rate?
     const std::string saveDirectoryCameraPaths = "Data/CameraPaths/";
     float FRAME_TIME_CAMERA_PATH = 1.0f / FRAME_RATE_VIDEOS; ///< Simulate constant frame rate.

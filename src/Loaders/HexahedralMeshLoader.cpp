@@ -133,5 +133,7 @@ bool readFileLineByLine(
         lineWords.clear();
     }
 
+    delete[] fileBuffer;
+
     return true;
 }

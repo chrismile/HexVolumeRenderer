@@ -167,6 +167,10 @@ void CameraPath::update(float currentTime) {
     }
 }
 
+void CameraPath::resetTime() {
+    update(0.0f);
+}
+
 glm::mat4x4 CameraPath::toTransform(const glm::vec3& position, const glm::quat& orientation) {
     return glm::toMat4(orientation) * sgl::matrixTranslation(-position);
 }
