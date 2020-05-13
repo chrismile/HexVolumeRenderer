@@ -356,7 +356,7 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
     std::vector<HexahedralCellFaceUnified> hexahedralCellFaces;
     if (useWeightedVertexAttributes) {
         mesh->getSurfaceDataWireframeFacesUnified_AttributePerVertex(
-                indices, hexahedralCellFaces, maxLodValue);
+                indices, hexahedralCellFaces, maxLodValue, useVolumeWeighting);
     } else {
         mesh->getSurfaceDataWireframeFacesUnified_AttributePerCell(
                 indices, hexahedralCellFaces, maxLodValue);

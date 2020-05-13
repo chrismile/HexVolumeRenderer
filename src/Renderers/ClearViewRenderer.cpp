@@ -338,6 +338,10 @@ void ClearViewRenderer::renderGui() {
             useShading = false;
             if (this->mesh) generateVisualizationMapping(mesh, false);
         }
+        if (useWeightedVertexAttributes && ImGui::Checkbox("Use Volume Weighting", &useVolumeWeighting)) {
+            if (this->mesh) generateVisualizationMapping(mesh, false);
+            reRender = true;
+        }
         if (clearViewRendererType != CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED && ImGui::Combo(
                 "Line Rendering", (int*)&lineRenderingMode, LINE_RENDERING_MODE_NAMES,
                 NUM_LINE_RENDERING_MODES)) {

@@ -64,16 +64,20 @@ std::vector<InternalState> getTestModesPaper()
     //std::vector<glm::ivec2> windowResolutions = { glm::ivec2(2186, 1358) };
     std::vector<MeshDescriptor> meshDescriptors = {
             MeshDescriptor(
-                    "2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation",
-                    "anc101_a1", "mesh"),
-            MeshDescriptor(
                     "2016 - All-Hex Meshing Using Closed-Form Induced Polycube",
                     "grayloc-hex", "vtk"),
             MeshDescriptor(
+                    "2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation",
+                    "anc101_a1", "mesh"),
+            MeshDescriptor(
                     "2018 - Fuzzy clustering based pseudo-swept volume decomposition for hexahedral meshing",
-                    "Example_3", "mesh")};
+                    "Example_3", "mesh"),
+            MeshDescriptor(
+                    "0001 - Deformation",
+                    "HexMesh_128cubic_Deformed", "vtk", 0.5f)
+    };
     std::vector<std::string> transferFunctionNames = {
-            "Standard_PerVertex.xml", "Standard_PerVertex.xml", "Test_PerVertex.xml"
+            "Standard_PerVertex.xml", "Standard_PerVertex.xml", "Standard_PerVertex.xml", "Standard_PerVertex.xml"
     };
     InternalState state;
 

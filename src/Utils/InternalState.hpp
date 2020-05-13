@@ -122,6 +122,10 @@ struct MeshDescriptor {
     MeshDescriptor() {}
     MeshDescriptor(const std::string& paperName, const std::string& meshName, const std::string& meshFileEnding)
             : paperName(paperName), meshName(meshName), meshFileEnding(meshFileEnding) {}
+    MeshDescriptor(
+            const std::string& paperName, const std::string& meshName,
+            const std::string& meshFileEnding, float deformation)
+            : paperName(paperName), meshName(meshName), meshFileEnding(meshFileEnding), deformation(deformation) {}
 
     bool operator==(const MeshDescriptor& rhs) const {
         return this->paperName == rhs.paperName && this->meshName == rhs.meshName
@@ -138,6 +142,7 @@ struct MeshDescriptor {
     std::string paperName;
     std::string meshName;
     std::string meshFileEnding;
+    float deformation = 0.0f; ///< For deformed meshes only.
 };
 
 struct InternalState {

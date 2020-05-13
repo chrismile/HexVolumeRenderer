@@ -140,6 +140,9 @@ void HexMesh::setHexMeshData(
     cellVolumes.clear();
     faceAreas.clear();
 
+    sgl::Logfile::get()->writeInfo(std::string() + "Number of mesh vertices: " + std::to_string(vertices.size()));
+    sgl::Logfile::get()->writeInfo(std::string() + "Number of mesh cells: " + std::to_string(indices.size()/8ull));
+
     dirty = true;
 }
 
@@ -568,6 +571,17 @@ float HexMesh::interpolateCellAttributePerVertex(uint32_t v_id, const std::vecto
     return vertexAttribute;
 }
 
+float HexMesh::maximumCellAttributePerVertex(uint32_t v_id) {
+    Hybrid_V& v = baseComplexMesh->Vs.at(v_id);
+
+    float maximumCellAttributeValue = 0.0f;
+    for (uint32_t h_id : v.neighbor_hs) {
+        maximumCellAttributeValue = std::max(
+                maximumCellAttributeValue, 1.0f - hexaLabApp->get_normalized_hexa_quality_cell(h_id));
+    }
+    return maximumCellAttributeValue;
+}
+
 float HexMesh::interpolateCellAttributePerEdge(uint32_t e_id, const std::vector<float>& cellVolumes) {
     Hybrid_E& e = baseComplexMesh->Es.at(e_id);
 
@@ -608,7 +622,7 @@ float HexMesh::interpolateCellAttributePerEdge(uint32_t e_id, const std::vector<
     return edgeAttribute;
 }
 
-float HexMesh::maximumCellAttributePerEdge(uint32_t e_id, const std::vector<float>& cellVolumes) {
+float HexMesh::maximumCellAttributePerEdge(uint32_t e_id) {
     Hybrid_E& e = baseComplexMesh->Es.at(e_id);
 
     float maximumCellAttributeValue = 0.0f;
@@ -2284,7 +2298,7 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
     // Compute all edge attributes.
     std::vector<float> edgeAttributes(mesh->Es.size());
     for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
-        float edgeAttribute = maximumCellAttributePerEdge(e_id, cellVolumes);
+        float edgeAttribute = maximumCellAttributePerEdge(e_id);
         edgeAttributes.at(e_id) = edgeAttribute;
     }
 
@@ -2359,7 +2373,7 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
 void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         std::vector<uint32_t>& triangleIndices,
         std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
-        int& maxLodValue) {
+        int& maxLodValue, bool useVolumeWeighting) {
     rebuildInternalRepresentationIfNecessary();
     Mesh* mesh = baseComplexMesh;
 
@@ -2368,21 +2382,26 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
     generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue);
 
     // Compute all cell volumes.
-    if (cellVolumes.empty()) {
+    if (useVolumeWeighting && cellVolumes.empty()) {
         computeAllCellVolumes();
     }
 
     // Compute all vertex attributes.
     std::vector<float> vertexAttributes(mesh->Vs.size());
     for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
-        float vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
+        float vertexAttribute;
+        if (useVolumeWeighting) {
+            vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
+        } else {
+            vertexAttribute = maximumCellAttributePerVertex(v_id);
+        }
         vertexAttributes.at(v_id) = vertexAttribute;
     }
 
     // Compute all edge attributes.
     std::vector<float> edgeAttributes(mesh->Es.size());
     for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
-        float edgeAttribute = maximumCellAttributePerEdge(e_id, cellVolumes);
+        float edgeAttribute = maximumCellAttributePerEdge(e_id);
         edgeAttributes.at(e_id) = edgeAttribute;
     }
 
@@ -2457,7 +2476,7 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell_Volume2(
     // Compute all edge attributes.
     std::vector<float> edgeAttributes(mesh->Es.size());
     for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
-        float edgeAttribute = maximumCellAttributePerEdge(e_id, cellVolumes);
+        float edgeAttribute = maximumCellAttributePerEdge(e_id);
         edgeAttributes.at(e_id) = edgeAttribute;
     }
 
@@ -2585,7 +2604,7 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex_Volume2(
     // Compute all edge attributes.
     std::vector<float> edgeAttributes(mesh->Es.size());
     for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
-        float edgeAttribute = maximumCellAttributePerEdge(e_id, cellVolumes);
+        float edgeAttribute = maximumCellAttributePerEdge(e_id);
         edgeAttributes.at(e_id) = edgeAttribute;
     }
 

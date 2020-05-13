@@ -283,6 +283,7 @@ void MainApp::setNewState(const InternalState &newState) {
 
     // 4. Load the correct mesh file.
     if (newState.meshDescriptor != lastState.meshDescriptor) {
+        deformationFactor = newState.meshDescriptor.deformation;
         loadHexahedralMesh(newState.meshDescriptor.getFilename());
     }
 
@@ -1018,7 +1019,7 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         vertices = hexMeshVertices;
 
         // Assume deformed meshes only in source at index 2 for now (don't clutter the UI for other sources).
-        if (deformationFactor != 0.0f && getFileSourceContainsDeformationMeshes()) {
+        if (deformationFactor != 0.0f && (getFileSourceContainsDeformationMeshes() || usePerformanceMeasurementMode)) {
             applyVertexDeformations(vertices, hexMeshDeformations, deformationFactor);
         }
 

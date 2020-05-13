@@ -131,6 +131,7 @@ protected:
     float lineWidth = 0.0015f;
     bool useShading = false;
     bool useWeightedVertexAttributes = true;
+    bool useVolumeWeighting = false;
     LineRenderingMode lineRenderingMode = LINE_RENDERING_MODE_WIREFRAME_FACES;
     LineRenderingStyle lineRenderingStyle = LINE_RENDERING_STYLE_HALO;
 };

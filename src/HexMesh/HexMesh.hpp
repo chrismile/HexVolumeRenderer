@@ -218,6 +218,13 @@ public:
     float interpolateCellAttributePerVertex(uint32_t v_id, const std::vector<float>& cellVolumes);
 
     /**
+     * Assigns the maximum attribute of all cells adjacent to a vertex to get an interpolated per-vertex attribute.
+     * @param v_id The ID of the vertex in the mesh.
+     * @return The maximum per-vertex attribute.
+     */
+    float maximumCellAttributePerVertex(uint32_t v_id);
+
+    /**
      * Weights the attributes of the cells adjacent to an edge to get an interpolated per-edge attribute.
      * @param v_id The ID of the vertex in the mesh.
      * @param cellVolumes A reference to a vector containing the volumes of all cells in the mesh.
@@ -228,10 +235,9 @@ public:
     /**
      * Assigns the maximum attribute of all cells adjacent to an edge to get an interpolated per-edge attribute.
      * @param v_id The ID of the vertex in the mesh.
-     * @param cellVolumes A reference to a vector containing the volumes of all cells in the mesh.
-     * @return The interpolated per-cell attribute.
+     * @return The maximum per-cell attribute.
      */
-    float maximumCellAttributePerEdge(uint32_t v_id, const std::vector<float>& cellVolumes);
+    float maximumCellAttributePerEdge(uint32_t v_id);
 
     /**
      * Maps mesh edge properties to a color for rendering.
@@ -487,7 +493,7 @@ public:
     void getSurfaceDataWireframeFacesUnified_AttributePerVertex(
             std::vector<uint32_t>& triangleIndices,
             std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
-            int& maxLodValue);
+            int& maxLodValue, bool useVolumeWeighting = false);
 
     /**
      * Get all surface faces including the colors of their edges.
