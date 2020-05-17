@@ -57,9 +57,11 @@ protected:
 
     HexMeshPtr mesh;
     sgl::GeometryBufferPtr hexahedralCellFacesBuffer;
+    int maxLodValue = 0;
 
     // GUI data
     bool showRendererWindow = true;
+    bool showLodDifferences = false;
     float maxLod = 0.1f;
     float lineWidth = 0.0015f;
     float lodMergeFactor = 2.0f;

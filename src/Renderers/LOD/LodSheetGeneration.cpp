@@ -402,13 +402,16 @@ void generateSheetLevelOfDetailEdgeStructure(
 void generateSheetLevelOfDetailLineStructureAndVertexData(
         HexMesh* hexMesh,
         std::vector<glm::vec3> &lineVertices, std::vector<glm::vec4> &lineColors, std::vector<float> &lineLodValues,
-        float lodMergeFactor, bool useVolumeAndAreaMeasures, bool useWeightsForMerging) {
+        int* maxValueIntPtr, float lodMergeFactor, bool useVolumeAndAreaMeasures, bool useWeightsForMerging) {
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     std::vector<float> edgeLodValues;
     int maxValueInt = 0;
     generateSheetLevelOfDetailEdgeStructure(
             hexMesh, edgeLodValues, &maxValueInt, lodMergeFactor, useVolumeAndAreaMeasures, useWeightsForMerging);
     float maxValue = float(maxValueInt);
+    if (maxValueIntPtr != nullptr) {
+        *maxValueIntPtr = maxValueInt;
+    }
 
     // Now, normalize the values by division.
     lineLodValues.reserve(edgeLodValues.size() * 2);
@@ -451,13 +454,16 @@ void generateSheetLevelOfDetailLineStructureAndVertexData(
 void generateSheetLevelOfDetailLineStructureAndVertexData(
         HexMesh* hexMesh,
         std::vector<uint32_t>& triangleIndices, std::vector<LodHexahedralCellFace>& hexahedralCellFaces,
-        float lodMergeFactor, bool useVolumeAndAreaMeasures, bool useWeightsForMerging) {
+        int* maxValueIntPtr, float lodMergeFactor, bool useVolumeAndAreaMeasures, bool useWeightsForMerging) {
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     std::vector<float> edgeLodValues;
     int maxValueInt = 0;
     generateSheetLevelOfDetailEdgeStructure(
             hexMesh, edgeLodValues, &maxValueInt, lodMergeFactor, useVolumeAndAreaMeasures, useWeightsForMerging);
     float maxValue = float(maxValueInt);
+    if (maxValueIntPtr != nullptr) {
+        *maxValueIntPtr = maxValueInt;
+    }
 
     // Find the set of all singular edges.
     std::unordered_set<uint32_t>& singularEdgeIds = hexMesh->getSingularEdgeIds();
@@ -572,13 +578,16 @@ void generateSheetLevelOfDetailLineStructureAndVertexData(
 void generateSheetPreviewLevelOfDetailLineStructureAndVertexData(
         HexMesh* hexMesh,
         std::vector<uint32_t>& triangleIndices, std::vector<LodPreviewHexahedralCellFace>& hexahedralCellFaces,
-        float lodMergeFactor, bool useVolumeAndAreaMeasures, bool useWeightsForMerging) {
+        int* maxValueIntPtr, float lodMergeFactor, bool useVolumeAndAreaMeasures, bool useWeightsForMerging) {
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     std::vector<float> edgeLodValues;
     int maxValueInt = 0;
     generateSheetLevelOfDetailEdgeStructure(
             hexMesh, edgeLodValues, &maxValueInt, lodMergeFactor, useVolumeAndAreaMeasures, useWeightsForMerging);
     float maxValue = float(maxValueInt);
+    if (maxValueIntPtr != nullptr) {
+        *maxValueIntPtr = maxValueInt;
+    }
 
     // Find the set of all singular edges.
     std::unordered_set<uint32_t>& singularEdgeIds = hexMesh->getSingularEdgeIds();

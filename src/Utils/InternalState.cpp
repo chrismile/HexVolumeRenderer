@@ -70,6 +70,9 @@ std::vector<InternalState> getTestModesPaper()
                     "2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation",
                     "anc101_a1", "mesh"),
             MeshDescriptor(
+                    "2014 - l1-Based Construction of Polycube Maps from Complex Shapes",
+                    "cognit/hex", "vtk"),
+            MeshDescriptor(
                     "2018 - Fuzzy clustering based pseudo-swept volume decomposition for hexahedral meshing",
                     "Example_3", "mesh"),
             MeshDescriptor(
@@ -77,7 +80,11 @@ std::vector<InternalState> getTestModesPaper()
                     "HexMesh_128cubic_Deformed", "vtk", 0.5f)
     };
     std::vector<std::string> transferFunctionNames = {
-            "Standard_PerVertex.xml", "Standard_PerVertex.xml", "Standard_PerVertex.xml", "Standard_PerVertex.xml"
+            "Standard_PerVertex.xml",
+            "Standard_PerVertex.xml",
+            "Standard_PerVertex.xml",
+            "Standard_PerVertex.xml",
+            "Standard_PerVertex.xml"
     };
     InternalState state;
 

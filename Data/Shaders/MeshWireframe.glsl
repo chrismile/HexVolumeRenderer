@@ -493,7 +493,6 @@ void main()
     float screenSpaceSphereDistanceNormalized = min(length(fragmentWindowPosition - sphereCenterScreen) / sphereRadiusPixels, 1.0);
 
     float fragmentDistance = length(fragmentPositionWorld - cameraPosition);
-    float contextFactor = pow(screenSpaceSphereDistanceNormalized, 4.0);
 
     const float LOD_BLEND_FACTOR_BLEND_START = 0.7;
     float focusFactor = 1.0;
@@ -503,13 +502,15 @@ void main()
         float t = (screenSpaceSphereDistanceNormalized - LOD_BLEND_FACTOR_BLEND_START) / (1.0 - LOD_BLEND_FACTOR_BLEND_START);
         focusFactor = 1.0 - t * t * (3.0 - 2.0 * t);
     }
+    float contextFactor = pow(screenSpaceSphereDistanceNormalized, 4.0);
+    //float contextFactor = 1.0 - focusFactor;
 
     float lineWidthPrime = lineWidth * (-screenSpaceSphereDistanceNormalized * 0.4 + 1.0);
     float lineRadius = lineWidthPrime / 2.0f;
 
     // Volume color.
     vec4 volumeColor = fragmentColor;
-    volumeColor.a *= pow(screenSpaceSphereDistanceNormalized, 4.0);//contextFactor;
+    volumeColor.a *= contextFactor;
     vec4 blendedColor = volumeColor;
 
     #ifdef HIGHLIGHT_EDGES
@@ -585,12 +586,14 @@ void main()
     bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
     //vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
     vec4 lineBaseColor = lineColors[minDistanceIndex];
-    if (!isSingularEdge) {
-        vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.4);
-        vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
-        //lineBaseColor.rgb = mix(lineBaseColorFocus, lineBaseColorContext, contextFactor);
-        lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
-    }
+    //if (!isSingularEdge) {
+    //    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.4);
+    //    vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
+    //    lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
+    //}
+    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.4);
+    vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
+    lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
 
     float lineCoordinates = max(minDistance / lineRadius, 0.0);
     float lineCoordinatesAll = max(minDistanceAll / lineRadius * 1.5, 0.0);

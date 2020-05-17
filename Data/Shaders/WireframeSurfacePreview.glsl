@@ -62,6 +62,8 @@ out vec4 fragColor;
 #endif
 
 uniform vec3 cameraPosition;
+uniform int showLodDifferences = 0;
+uniform int maxLodValueInt;
 uniform float lineWidth;
 uniform float maxLod;
 
@@ -78,6 +80,7 @@ const float LOD_EPSILON = 0.001;
 void main()
 {
     const float INF = 1e9;
+    int discreteSelectedLodValue = int(round(maxLod * (maxLodValueInt+1)));
 
     // Compute the distance to the edges and get the minimum distance.
     float minDistanceLines = INF;
@@ -86,7 +89,12 @@ void main()
     for (int i = 0; i < 4; i++) {
         currentDistance = getDistanceToLineSegment(
                 fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
-        if (currentDistance < minDistanceLines && edgeLodValues[i] <= maxLod + LOD_EPSILON) {
+        if (showLodDifferences == 0 && currentDistance < minDistanceLines && edgeLodValues[i] <= maxLod + LOD_EPSILON) {
+            minDistanceLines = currentDistance;
+            minDistanceLinesIndex = i;
+        }
+        int discreteFragmentLodValue = int(round(edgeLodValues[i] * (maxLodValueInt+1)));
+        if (showLodDifferences == 1 && currentDistance < minDistanceLines && discreteFragmentLodValue == discreteSelectedLodValue) {
             minDistanceLines = currentDistance;
             minDistanceLinesIndex = i;
         }
@@ -95,8 +103,12 @@ void main()
     vec4 baseColor = edgeColors[minDistanceLinesIndex];
     float fragmentLodValue = edgeLodValues[minDistanceLinesIndex];
     float minDistance = minDistanceLines;
+    int discreteFragmentLodValue = int(round(fragmentLodValue * (maxLodValueInt+1)));
 
-    if (fragmentLodValue > maxLod + LOD_EPSILON) {
+    if (showLodDifferences == 0 && fragmentLodValue > maxLod + LOD_EPSILON) {
+        discard;
+    }
+    if (showLodDifferences == 1 && discreteFragmentLodValue != discreteSelectedLodValue) {
         discard;
     }
     float lineWidthPrime = lineWidth * (1.0 + (1.0 - fragmentLodValue) * 0.5);

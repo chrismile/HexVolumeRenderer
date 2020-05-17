@@ -2,10 +2,9 @@
     <OpacityPoints>
         <OpacityPoint position="0" opacity="0"/>
         <OpacityPoint position="0.062222223728895187" opacity="0.017006814479827881"/>
-        <OpacityPoint position="0.55703705549240112" opacity="0.085034012794494629"/>
-        <OpacityPoint position="0.67111110687255859" opacity="0.17006802558898926"/>
-        <OpacityPoint position="0.76888889074325562" opacity="0.29931974411010742"/>
-        <OpacityPoint position="0.8651852011680603" opacity="0.53401362895965576"/>
+        <OpacityPoint position="0.53185182809829712" opacity="0.13945579528808594"/>
+        <OpacityPoint position="0.69185185432434082" opacity="0.34353739023208618"/>
+        <OpacityPoint position="0.81925928592681885" opacity="0.58503401279449463"/>
         <OpacityPoint position="1" opacity="1"/>
     </OpacityPoints>
     <ColorPoints>

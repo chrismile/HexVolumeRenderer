@@ -207,6 +207,11 @@ MainApp::MainApp()
 }
 
 MainApp::~MainApp() {
+    if (usePerformanceMeasurementMode) {
+        delete performanceMeasurer;
+        performanceMeasurer = nullptr;
+    }
+
     for (auto& it : meshLoaderMap) {
         delete it.second;
     }
@@ -220,10 +225,6 @@ MainApp::~MainApp() {
     }
     meshRenderers.clear();
 
-    if (usePerformanceMeasurementMode) {
-        delete performanceMeasurer;
-        performanceMeasurer = nullptr;
-    }
     if (videoWriter != NULL) {
         delete videoWriter;
     }
@@ -434,7 +435,7 @@ void MainApp::render() {
     glViewport(0, 0, width, height);
 
     if (reRender || continuousRendering) {
-        if (usePerformanceMeasurementMode) {
+        if (renderingMode != RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED && usePerformanceMeasurementMode) {
             performanceMeasurer->startMeasure(recordingTimeLast);
         }
 
@@ -457,7 +458,7 @@ void MainApp::render() {
             }
         }
 
-        if (usePerformanceMeasurementMode) {
+        if (renderingMode != RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED && usePerformanceMeasurementMode) {
             performanceMeasurer->endMeasure();
         }
 
@@ -1037,7 +1038,8 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
                 cameraPath.fromBinaryFile(cameraPathFilename);
             } else {
                 cameraPath.fromCirclePath(modelBoundingBox, fileName, usePerformanceMeasurementMode
-                        ? CAMERA_PATH_TIME_PERFORMANCE_MEASUREMENT : CAMERA_PATH_TIME_RECORDING);
+                        ? CAMERA_PATH_TIME_PERFORMANCE_MEASUREMENT : CAMERA_PATH_TIME_RECORDING,
+                        usePerformanceMeasurementMode);
                 //cameraPath.saveToBinaryFile(cameraPathFilename);
             }
         }

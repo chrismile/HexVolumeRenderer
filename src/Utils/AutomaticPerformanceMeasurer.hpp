@@ -61,6 +61,7 @@ public:
 
     // Called by OIT algorithms.
     void setCurrentAlgorithmBufferSizeBytes(size_t numBytes);
+    inline void setClearViewTimer(sgl::TimerGL* clearViewTimer) { this->clearViewTimer = clearViewTimer; }
 
 private:
     /// Write out the performance data of "currentState" to "file".
@@ -86,8 +87,13 @@ private:
     size_t depthComplexityFrameNumber = 0;
     size_t currentAlgorithmsBufferSizeBytes = 0;
 
+    // For depth complexity renderer.
     bool newDepthComplexityMode = true;
     size_t maxPPLLNumFragments = 0;
+
+    // For ClearView unified renderer.
+    CsvWriter clearViewFile;
+    sgl::TimerGL* clearViewTimer = nullptr;
 };
 
 

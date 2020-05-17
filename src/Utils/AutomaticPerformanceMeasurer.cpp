@@ -42,7 +42,8 @@ AutomaticPerformanceMeasurer::AutomaticPerformanceMeasurer(std::vector<InternalS
                                    const std::string& _csvFilename, const std::string& _depthComplexityFilename,
                                    std::function<void(const InternalState&)> _newStateCallback)
         : states(_states), currentStateIndex(0), newStateCallback(_newStateCallback), file(_csvFilename),
-          depthComplexityFile(_depthComplexityFilename), perfFile("performance_list.csv") {
+          depthComplexityFile(_depthComplexityFilename), perfFile("performance_list.csv"),
+          clearViewFile("ClearViewUnified.csv") {
     sgl::FileUtils::get()->ensureDirectoryExists("images/");
 
     // Write header
@@ -55,6 +56,7 @@ AutomaticPerformanceMeasurer::AutomaticPerformanceMeasurer(std::vector<InternalS
              "Avg Depth Complexity Used", "Avg Depth Complexity All", "Total Number of Fragments",
              "Fragment Buffer Memory (GiB)"});
     perfFile.writeRow({"Name", "Time per frame (ms)"});
+    clearViewFile.writeRow({"Mode Name", "Time PPLL Clear (ms)", "Time F+C Gather (ms)", "Time PPLL Resolve (ms)"});
 
     // Set initial state
     setNextState(true);
@@ -65,6 +67,7 @@ AutomaticPerformanceMeasurer::~AutomaticPerformanceMeasurer() {
     file.close();
     depthComplexityFile.close();
     perfFile.close();
+    clearViewFile.close();
 }
 
 
@@ -82,9 +85,40 @@ bool AutomaticPerformanceMeasurer::update(float currentTime) {
 
 
 void AutomaticPerformanceMeasurer::writeCurrentModeData() {
+    double timeMS = 0.0;
+    std::vector<uint64_t> frameTimesNS;
+
+    if (!clearViewTimer) {
+        timerGL.stopMeasuring();
+        timeMS = timerGL.getTimeMS(currentState.name);
+        auto& performanceProfile = timerGL.getCurrentFrameTimeList();
+        for (auto &perfPair : performanceProfile) {
+            frameTimesNS.push_back(perfPair.second);
+        }
+    } else {
+        clearViewTimer->stopMeasuring();
+        double timePPLLClear = clearViewTimer->getTimeMS("PPLLClear");
+        double timeFCGather = clearViewTimer->getTimeMS("FCGather");
+        double timePPLLResolve = clearViewTimer->getTimeMS("PPLLResolve");
+        clearViewFile.writeCell(currentState.name);
+        clearViewFile.writeCell(std::to_string(timePPLLClear));
+        clearViewFile.writeCell(std::to_string(timeFCGather));
+        clearViewFile.writeCell(std::to_string(timePPLLResolve));
+        clearViewFile.newRow();
+
+        // Push data for performance measurer.
+        std::map<float, uint64_t> frameTimeMap;
+        auto& performanceProfile = clearViewTimer->getCurrentFrameTimeList();
+        for (auto &perfPair : performanceProfile) {
+            frameTimeMap[perfPair.first] += perfPair.second;
+        }
+        for (auto &perfPair : frameTimeMap) {
+            frameTimesNS.push_back(perfPair.second);
+        }
+        timeMS = timePPLLClear + timeFCGather + timePPLLResolve;
+    }
+
     // Write row with performance metrics of this mode
-    timerGL.stopMeasuring();
-    double timeMS = timerGL.getTimeMS(currentState.name);
     file.writeCell(currentState.name);
     perfFile.writeCell(currentState.name);
     file.writeCell(sgl::toString(timeMS));
@@ -94,17 +128,13 @@ void AutomaticPerformanceMeasurer::writeCurrentModeData() {
     file.writeCell(sgl::toString(currentAlgorithmsBufferSizeBytes / 1024.0 / 1024.0 / 1024.0));
 
 
-    auto performanceProfile = timerGL.getCurrentFrameTimeList();
     std::vector<float> frameTimes;
     float averageFrametime = 0.0f;
-    for (auto &perfPair : performanceProfile) {
-        float timeStamp = perfPair.first;
-        uint64_t frameTimeNS = perfPair.second;
+    for (uint64_t frameTimeNS : frameTimesNS) {
         float frameTimeMS = double(frameTimeNS) / double(1e6);
         float frameTimeS = double(frameTimeNS) / double(1e9);
         frameTimes.push_back(frameTimeS);
         averageFrametime += frameTimeS;
-        //file.writeCell(sgl::toString(frameTimeMS));
         perfFile.writeCell(sgl::toString(frameTimeMS));
     }
     std::sort(frameTimes.begin(), frameTimes.end());

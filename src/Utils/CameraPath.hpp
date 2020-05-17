@@ -50,7 +50,9 @@ class CameraPath
 {
 public:
     CameraPath() {}
-    void fromCirclePath(sgl::AABB3& sceneBoundingBox, const std::string& modelFilenamePure, float totalTime = 10.0f);
+    void fromCirclePath(
+            sgl::AABB3& sceneBoundingBox, const std::string& modelFilename, float totalTime,
+            bool performanceMeasurementMode);
     void fromControlPoints(const std::vector<ControlPoint>& controlPoints);
     bool fromBinaryFile(const std::string& filename);
     bool saveToBinaryFile(const std::string& filename);

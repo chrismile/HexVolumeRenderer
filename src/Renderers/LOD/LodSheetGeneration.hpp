@@ -119,6 +119,7 @@ void generateSheetLevelOfDetailLineStructureAndVertexData(
         std::vector<glm::vec3> &lineVertices,
         std::vector<glm::vec4> &lineColors,
         std::vector<float> &lineLodValues,
+        int* maxValueIntPtr = nullptr,
         float lodMergeFactor = 2.0f,
         bool useVolumeAndAreaMeasures = false,
         bool useWeightsForMerging = false);
@@ -137,6 +138,7 @@ void generateSheetLevelOfDetailLineStructureAndVertexData(
         HexMesh* hexMesh,
         std::vector<uint32_t>& triangleIndices,
         std::vector<LodHexahedralCellFace>& hexahedralCellFaces,
+        int* maxValueIntPtr = nullptr,
         float lodMergeFactor = 2.0f,
         bool useVolumeAndAreaMeasures = false,
         bool useWeightsForMerging = false);
@@ -154,6 +156,7 @@ void generateSheetPreviewLevelOfDetailLineStructureAndVertexData(
         HexMesh* hexMesh,
         std::vector<uint32_t>& triangleIndices,
         std::vector<LodPreviewHexahedralCellFace>& hexahedralCellFaces,
+        int* maxValueIntPtr = nullptr,
         float lodMergeFactor = 2.0f,
         bool useVolumeAndAreaMeasures = false,
         bool useWeightsForMerging = false);

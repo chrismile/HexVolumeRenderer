@@ -52,7 +52,7 @@ void LodLinePreviewRenderer_SheetsFaces::generateVisualizationMapping(HexMeshPtr
     std::vector<uint32_t> indices;
     std::vector<LodPreviewHexahedralCellFace> hexahedralCellFaces;
     generateSheetPreviewLevelOfDetailLineStructureAndVertexData(
-            meshIn.get(), indices, hexahedralCellFaces, lodMergeFactor,
+            meshIn.get(), indices, hexahedralCellFaces, &maxLodValue, lodMergeFactor,
             useVolumeAndAreaMeasures, useWeightsForMerging);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(gatherShader);
@@ -100,7 +100,9 @@ void LodLinePreviewRenderer_SheetsFaces::generateVisualizationMapping(HexMeshPtr
 
 void LodLinePreviewRenderer_SheetsFaces::setUniformData(){
     PerPixelLinkedListRenderer::setUniformData();
+    gatherShader->setUniform("showLodDifferences", int(showLodDifferences));
     gatherShader->setUniform("maxLod", maxLod);
+    gatherShader->setUniform("maxLodValueInt", maxLodValue);
     gatherShader->setUniform("lineWidth", lineWidth);
     gatherShader->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
@@ -116,6 +118,9 @@ void LodLinePreviewRenderer_SheetsFaces::gather() {
 
 void LodLinePreviewRenderer_SheetsFaces::renderGui() {
     if (ImGui::Begin("Line LOD Preview Renderer", &showRendererWindow)) {
+        if (ImGui::Checkbox("Show LOD Differences", &showLodDifferences)) {
+            reRender = true;
+        }
         if (ImGui::SliderFloat("Maximum LOD", &maxLod, 0.0f, 1.0f)) {
             reRender = true;
         }

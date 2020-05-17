@@ -53,16 +53,26 @@ ControlPoint::ControlPoint(float time, float tx, float ty, float tz, float yaw, 
             * glm::angleAxis(yaw + sgl::PI / 2.0f, glm::vec3(0, 1, 0));
 }
 
-void CameraPath::fromCirclePath(sgl::AABB3& sceneBoundingBox, const std::string& modelFilename, float totalTime) {
+void CameraPath::fromCirclePath(
+        sgl::AABB3& sceneBoundingBox, const std::string& modelFilename, float totalTime,
+        bool performanceMeasurementMode) {
     const size_t NUM_CIRCLE_POINTS = 64;
     controlPoints.clear();
 
     glm::vec3 centerOffset(0.0f, 0.0f, 0.0f);
     float startAngle = 0.0f;
     float pulseFactor = 2.0f;
-    float standardZoom = 1.6f;
-    if (boost::starts_with(modelFilename,
+    float standardZoom = 1.4f;
+    if (boost::starts_with(
+            modelFilename,
             "Data/Meshes/2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation/anc101_a1.mesh")) {
+        centerOffset = glm::vec3(0.0f, -0.02f, 0.0f);
+        pulseFactor = 3.0f;
+        standardZoom = 1.6f;
+    }
+    if (boost::starts_with(
+            modelFilename,
+            "Data/Meshes/2014 - l1-Based Construction of Polycube Maps from Complex Shapes/cognit/hex.vtk")) {
         centerOffset = glm::vec3(0.0f, -0.02f, 0.0f);
         pulseFactor = 3.0f;
         standardZoom = 1.6f;

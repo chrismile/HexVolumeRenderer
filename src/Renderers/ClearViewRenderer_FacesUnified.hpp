@@ -30,6 +30,7 @@
 #define HEXVOLUMERENDERER_CLEARVIEWRENDERER_FACESUNIFIED_HPP
 
 #include <Graphics/Shader/ShaderAttributes.hpp>
+#include <Graphics/OpenGL/TimerGL.hpp>
 
 #include "Widgets/SingularEdgeColorMapWidget.hpp"
 #include "ClearViewRenderer.hpp"
@@ -49,7 +50,7 @@
 class ClearViewRenderer_FacesUnified : public ClearViewRenderer {
 public:
     ClearViewRenderer_FacesUnified(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
-    virtual ~ClearViewRenderer_FacesUnified() {}
+    virtual ~ClearViewRenderer_FacesUnified();
 
     /**
      * Re-generates the visualization mapping.
@@ -61,10 +62,13 @@ public:
     /// Called when the resolution of the application window has changed.
     virtual void onResolutionChanged();
 
+    // Renders the object to the scene framebuffer.
+    virtual void render();
     /// Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
     virtual void renderGui();
 
     /// For changing performance measurement modes.
+    virtual void setNewState(const InternalState& newState);
     virtual void setNewSettings(const SettingsMap& settings);
 
 protected:
@@ -121,6 +125,12 @@ protected:
     const float screenSpaceLensPixelRadiusWindowFactor = 0.25f;
     int windowWidth = 0;
     int windowHeight = 0;
+
+    // Data for performance measurements.
+    int frameCounter = 0;
+    std::string currentStateName;
+    bool timerDataIsWritten = true;
+    sgl::TimerGL* timer = nullptr;
 
     // Settings for changing internal state.
     float lineWidthBoostFactor = 1.0f;

@@ -52,7 +52,7 @@ void LodLinePreviewRenderer_Sheets::generateVisualizationMapping(HexMeshPtr mesh
     std::vector<glm::vec4> colors;
     std::vector<float> lodValues;
     generateSheetLevelOfDetailLineStructureAndVertexData(
-            meshIn.get(), vertices, colors, lodValues, lodMergeFactor,
+            meshIn.get(), vertices, colors, lodValues, nullptr, lodMergeFactor,
             useVolumeAndAreaMeasures, useWeightsForMerging);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgram);

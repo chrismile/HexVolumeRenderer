@@ -36,6 +36,7 @@
 #include <Graphics/Texture/TextureManager.hpp>
 #include <Graphics/OpenGL/GeometryBuffer.hpp>
 #include <Graphics/OpenGL/Shader.hpp>
+#include <Utils/File/FileUtils.hpp>
 #include <Utils/AppSettings.hpp>
 #include <Input/Keyboard.hpp>
 #include <Input/Mouse.hpp>
@@ -131,8 +132,34 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     createWeightTextureLoG();
-
     onResolutionChanged();
+}
+
+ClearViewRenderer_FacesUnified::~ClearViewRenderer_FacesUnified() {
+    if (sceneData.performanceMeasurer && !timerDataIsWritten && timer) {
+        delete timer;
+        sceneData.performanceMeasurer->setClearViewTimer(nullptr);
+    }
+}
+
+void ClearViewRenderer_FacesUnified::render() {
+    setUniformData();
+    if (sceneData.performanceMeasurer) {
+        timer->startGPU("PPLLClear", frameCounter);
+        clear();
+        timer->end();
+        timer->startGPU("FCGather", frameCounter);
+        gather();
+        timer->end();
+        timer->startGPU("PPLLResolve", frameCounter);
+        resolve();
+        timer->end();
+    } else {
+        clear();
+        gather();
+        resolve();
+    }
+    frameCounter++;
 }
 
 void ClearViewRenderer_FacesUnified::reloadTexturesLoG() {
@@ -308,6 +335,18 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     }
 }
 
+void ClearViewRenderer_FacesUnified::setNewState(const InternalState& newState) {
+    currentStateName = newState.name;
+    timerDataIsWritten = false;
+    if (sceneData.performanceMeasurer && !timerDataIsWritten) {
+        if (timer) {
+            delete timer;
+        }
+        timer = new sgl::TimerGL;
+        sceneData.performanceMeasurer->setClearViewTimer(timer);
+    }
+}
+
 void ClearViewRenderer_FacesUnified::setNewSettings(const SettingsMap& settings) {
     lineWidthBoostFactor = 1.0f;
     focusRadiusBoostFactor = 1.0f;
@@ -327,6 +366,7 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
     if (isNewMesh) {
         Pickable::focusPoint = glm::vec3(0.0f);
     }
+    frameCounter = 0;
 
     mesh = meshIn;
     const float avgCellVolumeCbrt = std::cbrt(meshIn->getAverageCellVolume());
@@ -531,7 +571,7 @@ void ClearViewRenderer_FacesUnified::clear() {
 void ClearViewRenderer_FacesUnified::gather() {
     // Recording mode.
     if (sceneData.recordingMode && sceneData.useCameraFlight) {
-        // TODO: Apapt focus radius depending on distance of camera to origin?
+        // TODO: Adapt focus radius depending on distance of camera to origin?
     }
 
     // Enable the depth test, but disable depth write for gathering.
