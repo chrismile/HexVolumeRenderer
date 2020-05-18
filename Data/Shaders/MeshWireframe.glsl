@@ -30,7 +30,11 @@ out vec4 fragmentPositionClip;
 out vec4 fragmentColor;
 out float fragmentAttribute;
 flat out vec3 vertexPositions[4];
+#ifdef USE_PER_LINE_ATTRIBUTES
 flat out vec4 lineColors[4];
+#else
+flat out vec4 vertexColors[4];
+#endif
 flat out float lineAttributes[4];
 flat out float edgeLodValues[4];
 flat out uint edgeSingularityInformationList[4];
@@ -71,7 +75,11 @@ void main()
         #ifdef USE_SINGULAR_EDGE_COLOR_MAP
         }
         #endif
+
+        #ifdef USE_PER_LINE_ATTRIBUTES
         lineColors[i] = lineColor;
+        #endif
+
         edgeLodValues[i] = hexahedralCellFace.edgeLodValues[i];
         edgeSingularityInformationList[i] = edgeSingularityInformation;
     }
@@ -79,6 +87,10 @@ void main()
     // Copy the face data.
     for (int i = 0; i < 4; i++) {
         vertexPositions[i] = hexahedralCellFace.vertexPositions[i].xyz;
+
+        #ifndef USE_PER_LINE_ATTRIBUTES
+        vertexColors[i] = transferFunction(hexahedralCellFace.vertexAttributes[i]);
+        #endif
     }
 
     vec4 vertexPosition = hexahedralCellFace.vertexPositions[vertexId];
@@ -89,166 +101,7 @@ void main()
     gl_Position = fragmentPositionClip;
 }
 
--- Fragment.ClearView_0
-
-#version 430 core
-
-in vec3 fragmentPositionWorld;
-in vec4 fragmentPositionClip;
-in vec4 fragmentColor;
-out float fragmentAttribute;
-flat in vec3 vertexPositions[4];
-flat in vec4 lineColors[4];
-flat in float lineAttributes[4];
-flat in float edgeLodValues[4];
-flat in uint edgeSingularityInformationList[4];
-
-#if defined(DIRECT_BLIT_GATHER)
-out vec4 fragColor;
-#endif
-
-uniform float lineWidth;
-uniform float maxLodValue;
-
-#include "ClearView.glsl"
-
-#if !defined(DIRECT_BLIT_GATHER)
-#define GATHER_NO_DISCARD // as we gather two fragments in one shader
-#include OIT_GATHER_HEADER
-#endif
-
-#define WIREFRAME_SURFACE_HALO_LIGHTING
-#include "Lighting.glsl"
-#include "PointToLineDistance.glsl"
-
-void main()
-{
-    float distanceToFocusPointNormalized = length(fragmentPositionWorld - sphereCenter) / sphereRadius;
-    const float lineRadiusFocus = lineWidth / 2.0f * (-distanceToFocusPointNormalized * 0.6 + 1.0);
-
-    // Add the focus fragment.
-    // Compute the distance to the edges and get the minimum distance.
-    float minDistance = 1e9;
-    float minLodEdgeValue = 1e9;
-    int minDistanceIndex = 0;
-    float currentDistance;
-    for (int i = 0; i < 4; i++) {
-        currentDistance = getDistanceToLineSegment(
-               fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
-        //if ((edgeLodValues[i] >= minLodEdgeValue && minDistance > lineRadiusFocus && currentDistance < minDistance)
-        //        || (edgeLodValues[i] < minLodEdgeValue && currentDistance <= lineRadiusFocus)) {
-        if (currentDistance < minDistance) {
-            minDistance = currentDistance;
-            minLodEdgeValue = edgeLodValues[i];
-            minDistanceIndex = i;
-        }
-    }
-
-    float lodLineValue = edgeLodValues[minDistanceIndex];
-    float discreteLodValue = lodLineValue * maxLodValue;
-
-    const float CUTOFF_EPSILON = 0.05;
-
-    vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
-    float lineCoordinatesFocus = max(minDistance / lineRadiusFocus, 0.0);
-    if (lineCoordinatesFocus <= 1.0) {
-        // Focus wireframe
-        float fragmentDepth;
-        #if defined(LINE_RENDERING_STYLE_HALO)
-        vec4 color = flatShadingWireframeSurfaceHalo_DepthCue(lineBaseColor, fragmentDepth, lineCoordinatesFocus);
-        #elif defined(LINE_RENDERING_STYLE_TRON)
-        vec4 color = flatShadingWireframeSurfaceTronHalo(lineBaseColor, fragmentDepth, lineCoordinatesFocus);
-        #else //#elif defined(LINE_RENDERING_STYLE_SINGLE_COLOR)
-        vec4 color = flatShadingWireframeSingleColor(lineBaseColor, fragmentDepth, lineCoordinatesFocus);
-        #endif
-        float expOpacityFactorFocus = exp(-4.0 * (fragmentDepth - 0.2) * discreteLodValue / lineWidth * 0.001) + 0.4;
-        color.a *= clamp(expOpacityFactorFocus, 0.0, 1.0);
-        color.a *= getClearViewFocusFragmentOpacityFactor();
-
-        fragmentDepth += 0.00001;
-        gatherFragmentCustomDepth(color, fragmentDepth);
-    }
-
-
-    // Add the context fragment.
-    float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
-    float distanceToFocusRing = length(fragmentPositionWorld - sphereCenter) - sphereRadius;
-    vec4 colorContext = fragmentColor;
-    const float EPSILON = 1e-5;
-
-    float lineRadiiContext[4];
-    minDistance = 1e9;
-    minLodEdgeValue = 1e9;
-    minDistanceIndex = 0;
-    for (int i = 0; i < 4; i++) {
-        currentDistance = getDistanceToLineSegment(
-                fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
-
-        float discreteLodValueCurrent = edgeLodValues[i] * maxLodValue;
-        float expFactor = exp(-3.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValueCurrent);
-        bool isSingularEdge = (edgeSingularityInformationList[i] & 1u) == 1u;
-        float lineWidthPrime = lineWidth * (
-        #if defined(HIGHLIGHT_SINGULAR_EDGES)
-            isSingularEdge ? 1.0 :
-        #endif
-            max(expFactor, EPSILON) / log2(discreteLodValueCurrent/4.0+1.75)) / 1.5;
-        if (expFactor < 0.2) {
-            lineWidthPrime = mix(lineWidthPrime, 1e-8, smoothstep(0.2, 0.2 + CUTOFF_EPSILON, expFactor));
-        }
-        float lineCoordinatesContext = max(minDistance / lineWidthPrime * 2.0, 0.0);
-        lineRadiiContext[i] = lineWidthPrime / 2.0;
-
-        if ((edgeLodValues[i] >= minLodEdgeValue && minDistance > lineRadiiContext[minDistanceIndex] && currentDistance < lineRadiiContext[i])
-                || (edgeLodValues[i] < minLodEdgeValue && currentDistance <= lineRadiiContext[i]) || i == 0) {
-            minDistance = currentDistance;
-            minLodEdgeValue = edgeLodValues[i];
-            minDistanceIndex = i;
-        }
-    }
-
-    bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
-    discreteLodValue = edgeLodValues[minDistanceIndex] * maxLodValue;
-    lineBaseColor = lineColors[minDistanceIndex];
-    if (!isSingularEdge) {
-        lineBaseColor.rgb = mix(lineBaseColor.rgb, vec3(0.0), 0.4);
-    }
-    float expFactorOpacity = exp(-6.0 * min(fragmentDepth, max(distanceToFocusRing * 6.0, 0.01)) * discreteLodValue);
-    float boostFactor = clamp(2.5 * expFactorOpacity, 0.0, 2.0);
-    float lineCoordinatesContext = max(minDistance / lineRadiiContext[minDistanceIndex], 0.0);
-
-    #ifdef HIGHLIGHT_EDGES
-    if (lineCoordinatesContext <= 1.0) {
-        #ifdef HIGHLIGHT_LOW_LOD_EDGES
-        if (discreteLodValue <= 1.001) {
-            colorContext.a = max(colorContext.a, 0.5);
-        } else if (true) {
-            colorContext.a = max(colorContext.a, 0.5 / discreteLodValue);
-        }
-        #endif
-
-        colorContext.rgb = lineBaseColor.rgb;
-        if (isSingularEdge) {
-            //colorContext.a *= 0.5;
-            #if defined(TOO_MUCH_SINGULAR_EDGE_MODE) || !defined(HIGHLIGHT_SINGULAR_EDGES)
-            colorContext.a = clamp(colorContext.a * max(boostFactor, 1.0), 0.0, 1.0);
-            #else
-            colorContext.a = max(colorContext.a * max(boostFactor, 1.0), 0.5);
-            #endif
-        } else {
-            colorContext.rgb = mix(colorContext.rgb, vec3(1.0, 1.0, 1.0), 0.3);
-            if (boostFactor >= 1.0) {
-                colorContext.a = clamp(colorContext.a * boostFactor, 0.0, 1.0);
-            } else {
-                colorContext.rgb = mix(fragmentColor.rgb, colorContext.rgb, boostFactor);
-            }
-        }
-    }
-    #endif
-    colorContext.a *= getClearViewContextFragmentOpacityFactor();
-    gatherFragment(colorContext);
-}
-
--- Fragment.ClearView_1
+-- Fragment.ClearView_ObjectSpace
 
 #version 430 core
 
@@ -257,7 +110,11 @@ in vec4 fragmentPositionClip;
 in vec4 fragmentColor;
 in float fragmentAttribute;
 flat in vec3 vertexPositions[4];
+#ifdef USE_PER_LINE_ATTRIBUTES
 flat in vec4 lineColors[4];
+#else
+flat in vec4 vertexColors[4];
+#endif
 flat in float lineAttributes[4];
 flat in float edgeLodValues[4];
 flat in uint edgeSingularityInformationList[4];
@@ -280,6 +137,9 @@ uniform float importantLineBoostFactor;
 #endif
 
 #include "PointToLineDistance.glsl"
+#ifndef USE_PER_LINE_ATTRIBUTES
+#include "ClosestPointOnLine.glsl"
+#endif
 
 void main()
 {
@@ -334,23 +194,14 @@ void main()
                 fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
 
         float lodLevelFocus = max(
-        #ifdef USE_PER_LINE_ATTRIBUTES
                 (lineAttributes[i] < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
-        #else
-                (fragmentAttribute < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
-        #endif
-        discreteSelectedLodValueFocus);
+                discreteSelectedLodValueFocus);
 
         float lodLineValue = edgeLodValues[i];
         float discreteLodValue = lodLineValue * maxLodValue;
         float lodLevelOpacityFactor = mix(
-        #ifdef USE_PER_LINE_ATTRIBUTES
                 discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 0.0,
                 discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 0.0,
-        #else
-                discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
-                discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
-        #endif
                 focusFactor);
         bool drawLine = lodLevelOpacityFactor > 0.01;
 
@@ -367,34 +218,37 @@ void main()
     }
 
     float lodLevelFocus = max(
-    #ifdef USE_PER_LINE_ATTRIBUTES
             (lineAttributes[minDistanceIndex] < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
-    #else
-            (fragmentAttribute < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
-    #endif
             discreteSelectedLodValueFocus);
 
     float lodLineValue = edgeLodValues[minDistanceIndex];
     float discreteLodValue = lodLineValue * maxLodValue;
     float lodLevelOpacityFactor = mix(
-    #ifdef USE_PER_LINE_ATTRIBUTES
             discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 0.0,
             discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 0.0,
-    #else
-            discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
-            discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
-    #endif
             focusFactor);
 
     bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
     //vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
+    #ifdef USE_PER_LINE_ATTRIBUTES
     vec4 lineBaseColor = lineColors[minDistanceIndex];
-    if (!isSingularEdge) {
-        vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.4);
-        vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
-        //lineBaseColor.rgb = mix(lineBaseColorFocus, lineBaseColorContext, contextFactor);
-        lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
-    }
+    #else
+    vec3 linePoints[2];
+    linePoints[0] = vertexPositions[minDistanceIndex];
+    linePoints[1] = vertexPositions[(minDistanceIndex + 1) % 4];
+    vec3 closestLinePoint = getClosestPointOnLineSegment(fragmentPositionWorld, linePoints[0], linePoints[1]);
+    float interpolationFactor = length(closestLinePoint - linePoints[0]) / length(linePoints[1] - linePoints[0]);
+    vec4 lineBaseColor = vec4(mix(vertexColors[minDistanceIndex].rgb, vertexColors[(minDistanceIndex + 1) % 4].rgb, interpolationFactor), 1.0);
+    #endif
+    //if (!isSingularEdge) {
+    //    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.3);
+    //    vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
+    //    lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
+    //}
+
+    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.3);
+    vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
+    lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
 
     float lineCoordinates = max(minDistance / lineRadius, 0.0);
     float lineCoordinatesAll = max(minDistanceAll / lineRadius * 1.5, 0.0);
@@ -416,9 +270,9 @@ void main()
         // Fade out the outline with increasing distance
         const float EPSILON = clamp(fragmentDistance / lineRadius * 0.0005, 0.0, 0.49);
         const float WHITE_THRESHOLD = 0.7 + (0.3 + EPSILON) * contextFactor;
-        float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates); // TODO
+        float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
         vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
-        smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
+                smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
 
         if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
             fragmentDistance += 0.005;
@@ -433,7 +287,17 @@ void main()
         }
     } else if (lineCoordinatesAll <= 1.0) {
     #ifdef ACCENTUATE_ALL_EDGES
-        vec3 lineBaseColorAll = lineColors[minDistanceIndexAll].rgb;
+        #ifdef USE_PER_LINE_ATTRIBUTES
+        vec4 lineBaseColorAll = lineColors[minDistanceIndexAll];
+        #else
+        vec3 linePoints[2];
+        linePoints[0] = vertexPositions[minDistanceIndexAll];
+        linePoints[1] = vertexPositions[(minDistanceIndexAll + 1) % 4];
+        vec3 closestLinePoint = getClosestPointOnLineSegment(fragmentPositionWorld, linePoints[0], linePoints[1]);
+        float interpolationFactor = length(closestLinePoint - linePoints[0]) / length(linePoints[1] - linePoints[0]);
+        vec4 lineBaseColorAll = vec4(mix(vertexColors[minDistanceIndexAll].rgb, vertexColors[(minDistanceIndexAll + 1) % 4].rgb, interpolationFactor), 1.0);
+        #endif
+
         vec3 lineColor = mix(lineBaseColor.rgb, vec3(1.0), 0.1);
         blendedColor.rgb = mix(volumeColor.rgb, lineColor.rgb, clamp(0.6 - fragmentDistance, 0.0, 0.3));
         blendedColor.a = clamp(blendedColor.a * 1.5, 0.0, 1.0);
@@ -454,7 +318,11 @@ in vec4 fragmentPositionClip;
 in vec4 fragmentColor;
 in float fragmentAttribute;
 flat in vec3 vertexPositions[4];
+#ifdef USE_PER_LINE_ATTRIBUTES
 flat in vec4 lineColors[4];
+#else
+flat in vec4 vertexColors[4];
+#endif
 flat in float lineAttributes[4];
 flat in float edgeLodValues[4];
 flat in uint edgeSingularityInformationList[4];
@@ -484,6 +352,9 @@ uniform float sphereRadiusPixels;
 #endif
 
 #include "PointToLineDistance.glsl"
+#ifndef USE_PER_LINE_ATTRIBUTES
+#include "ClosestPointOnLine.glsl"
+#endif
 
 void main()
 {
@@ -531,23 +402,14 @@ void main()
                 fragmentPositionWorld, vertexPositions[i], vertexPositions[(i + 1) % 4]);
 
         float lodLevelFocus = max(
-        #ifdef USE_PER_LINE_ATTRIBUTES
                 (lineAttributes[i] < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
-        #else
-                (fragmentAttribute < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
-        #endif
                 discreteSelectedLodValueFocus);
 
         float lodLineValue = edgeLodValues[i];
         float discreteLodValue = lodLineValue * maxLodValue;
         float lodLevelOpacityFactor = mix(
-        #ifdef USE_PER_LINE_ATTRIBUTES
                 discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 0.0,
                 discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 0.0,
-        #else
-                discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
-                discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
-        #endif
                 focusFactor);
         bool drawLine = lodLevelOpacityFactor > 0.01;
 
@@ -564,34 +426,35 @@ void main()
     }
 
     float lodLevelFocus = max(
-    #ifdef USE_PER_LINE_ATTRIBUTES
             (lineAttributes[minDistanceIndex] < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
-    #else
-            (fragmentAttribute < 1.0 - importantLineBoostFactor ? 0.0 : 1.0) * maxLodValue,
-    #endif
             discreteSelectedLodValueFocus);
 
     float lodLineValue = edgeLodValues[minDistanceIndex];
     float discreteLodValue = lodLineValue * maxLodValue;
     float lodLevelOpacityFactor = mix(
-    #ifdef USE_PER_LINE_ATTRIBUTES
             discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 0.0,
             discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 0.0,
-    #else
-            discreteLodValue <= lodLevelContext + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelContext),
-            discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 1.0 - smoothstep(0.0, 0.1, discreteLodValue - lodLevelFocus),
-    #endif
             focusFactor);
 
     bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
     //vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
+    #ifdef USE_PER_LINE_ATTRIBUTES
     vec4 lineBaseColor = lineColors[minDistanceIndex];
+    #else
+    vec3 linePoints[2];
+    linePoints[0] = vertexPositions[minDistanceIndex];
+    linePoints[1] = vertexPositions[(minDistanceIndex + 1) % 4];
+    vec3 closestLinePoint = getClosestPointOnLineSegment(fragmentPositionWorld, linePoints[0], linePoints[1]);
+    float interpolationFactor = length(closestLinePoint - linePoints[0]) / length(linePoints[1] - linePoints[0]);
+    vec4 lineBaseColor = vec4(mix(vertexColors[minDistanceIndex].rgb, vertexColors[(minDistanceIndex + 1) % 4].rgb, interpolationFactor), 1.0);
+    #endif
     //if (!isSingularEdge) {
-    //    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.4);
+    //    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.3);
     //    vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
     //    lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
     //}
-    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.4);
+
+    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.3);
     vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
     lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
 
@@ -615,7 +478,7 @@ void main()
         // Fade out the outline with increasing distance
         const float EPSILON = clamp(fragmentDistance / lineRadius * 0.0005, 0.0, 0.49);
         const float WHITE_THRESHOLD = 0.7 + (0.3 + EPSILON) * contextFactor;
-        float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates); // TODO
+        float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
         vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
                 smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
 
@@ -634,7 +497,17 @@ void main()
         //const float EPSILON = clamp(fragmentDistance / lineRadius * 0.0005, 0.0, 0.49);
         //float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates); // TODO
     #ifdef ACCENTUATE_ALL_EDGES
-        vec3 lineBaseColorAll = lineColors[minDistanceIndexAll].rgb;
+        #ifdef USE_PER_LINE_ATTRIBUTES
+        vec4 lineBaseColorAll = lineColors[minDistanceIndexAll];
+        #else
+        vec3 linePoints[2];
+        linePoints[0] = vertexPositions[minDistanceIndexAll];
+        linePoints[1] = vertexPositions[(minDistanceIndexAll + 1) % 4];
+        vec3 closestLinePoint = getClosestPointOnLineSegment(fragmentPositionWorld, linePoints[0], linePoints[1]);
+        float interpolationFactor = length(closestLinePoint - linePoints[0]) / length(linePoints[1] - linePoints[0]);
+        vec4 lineBaseColorAll = vec4(mix(vertexColors[minDistanceIndexAll].rgb, vertexColors[(minDistanceIndexAll + 1) % 4].rgb, interpolationFactor), 1.0);
+        #endif
+
         vec3 lineColor = mix(lineBaseColor.rgb, vec3(1.0), 0.1);
         blendedColor.rgb = mix(volumeColor.rgb, lineColor.rgb, clamp(0.6 - fragmentDistance, 0.0, 0.3));
         blendedColor.a = clamp(blendedColor.a * 1.5, 0.0, 1.0);

@@ -302,13 +302,8 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
         gatherShader = sgl::ShaderManager->getShaderProgram(
                 {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_ScreenSpace"});
     } else {
-        if (useExperimentalApproach) {
-            gatherShader = sgl::ShaderManager->getShaderProgram(
-                    {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_1"});
-        } else {
-            gatherShader = sgl::ShaderManager->getShaderProgram(
-                    {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_0"});
-        }
+        gatherShader = sgl::ShaderManager->getShaderProgram(
+                {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_ObjectSpace"});
     }
 
     sgl::ShaderManager->removePreprocessorDefine(lineRenderingStyleDefineName);
@@ -690,41 +685,29 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiBegin() {
 }
 
 void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
-    if (!useScreenSpaceLens && ImGui::Checkbox("Use Experimental Approach", &useExperimentalApproach)) {
-        reloadGatherShader();
-        if (shaderAttributes) {
-            shaderAttributes = shaderAttributes->copy(gatherShader);
-        }
-        reRender = true;
-    }
-    if ((useScreenSpaceLens || useExperimentalApproach)
-            && ImGui::SliderFloat("LOD Value Focus", &selectedLodValueFocus, 0.0f, 1.0f)) {
+    if (ImGui::SliderFloat("LOD Value Focus", &selectedLodValueFocus, 0.0f, 1.0f)) {
         if (selectedLodValueFocus < selectedLodValueContext) {
             selectedLodValueContext = selectedLodValueFocus;
         }
         reRender = true;
     }
-    if ((useScreenSpaceLens || useExperimentalApproach)
-        && ImGui::SliderFloat("LOD Value Context", &selectedLodValueContext, 0.0f, 1.0f)) {
+    if (ImGui::SliderFloat("LOD Value Context", &selectedLodValueContext, 0.0f, 1.0f)) {
         if (selectedLodValueFocus < selectedLodValueContext) {
             selectedLodValueFocus = selectedLodValueContext;
         }
         reRender = true;
     }
-    if ((useScreenSpaceLens || useExperimentalApproach)
-            && ImGui::SliderFloat("Important Lines", &importantLineBoostFactor, 0.0f, 1.0f)) {
+    if (ImGui::SliderFloat("Important Lines", &importantLineBoostFactor, 0.0f, 1.0f)) {
         reRender = true;
     }
-    if ((useScreenSpaceLens || useExperimentalApproach)
-            && ImGui::Checkbox("Accentuate Edges", &accentuateAllEdges)) {
+    if (ImGui::Checkbox("Accentuate Edges", &accentuateAllEdges)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);
         }
         reRender = true;
     }
-    if ((useScreenSpaceLens || useExperimentalApproach)
-            && ImGui::Checkbox("Per Line Attributes", &usePerLineAttributes)) {
+    if (ImGui::Checkbox("Per Line Attributes", &usePerLineAttributes)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);
@@ -739,22 +722,6 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
         reRender = true;
     }
     if (ImGui::Checkbox("Highlight Edges", &highlightEdges)) {
-        reloadGatherShader();
-        if (shaderAttributes) {
-            shaderAttributes = shaderAttributes->copy(gatherShader);
-        }
-        reRender = true;
-    }
-    if (!useScreenSpaceLens && !useExperimentalApproach && highlightEdges
-            && ImGui::Checkbox("Highlight Low LOD Edges", &highlightLowLodEdges)) {
-        reloadGatherShader();
-        if (shaderAttributes) {
-            shaderAttributes = shaderAttributes->copy(gatherShader);
-        }
-        reRender = true;
-    }
-    if (!useScreenSpaceLens && !useExperimentalApproach && highlightEdges
-            && ImGui::Checkbox("Highlight Singular Edges", &highlightSingularEdges)) {
         reloadGatherShader();
         if (shaderAttributes) {
             shaderAttributes = shaderAttributes->copy(gatherShader);
