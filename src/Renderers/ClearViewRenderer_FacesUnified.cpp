@@ -362,12 +362,8 @@ void ClearViewRenderer_FacesUnified::setNewSettings(const SettingsMap& settings)
 
 void ClearViewRenderer_FacesUnified::updateLargeMeshMode() {
     // More than one million cells?
-    LargeMeshMode newMeshLargeMeshMode = MESH_SIZE_VERY_LARGE;
-    if (mesh->getNumCells() < 1e4) { // < 10k
-        newMeshLargeMeshMode = MESH_SIZE_SMALL;
-    } else if (mesh->getNumCells() < 1e5) { // < 100k
-        newMeshLargeMeshMode = MESH_SIZE_MEDIUM;
-    } else if (mesh->getNumCells() < 1e6) { // < 1m
+    LargeMeshMode newMeshLargeMeshMode = MESH_SIZE_MEDIUM;
+    if (mesh->getNumCells() > 1e6) { // > 1m elements
         newMeshLargeMeshMode = MESH_SIZE_LARGE;
     }
     if (newMeshLargeMeshMode != largeMeshMode) {

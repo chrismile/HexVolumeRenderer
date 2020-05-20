@@ -37,7 +37,7 @@ flat out vec4 lineColors[4];
 #endif
 flat out float lineAttributes[4];
 flat out float edgeLodValues[4];
-flat out uint edgeSingularityInformationList[4];
+//flat out uint edgeSingularityInformationList[4];
 
 #include "TransferFunction.glsl"
 
@@ -60,9 +60,9 @@ void main()
 
     // Copy the edge data.
     for (int i = 0; i < 4; i++) {
-        uint edgeSingularityInformation = hexahedralCellFace.edgeSingularityInformationList[i];
         vec4 lineColor;
         #ifdef USE_SINGULAR_EDGE_COLOR_MAP
+        uint edgeSingularityInformation = hexahedralCellFace.edgeSingularityInformationList[i];
         if ((edgeSingularityInformation & 1u) == 1u) {
             // Singular edge.
             lineColor = lookupSingularEdgeColor(edgeSingularityInformation);
@@ -81,7 +81,7 @@ void main()
         #endif
 
         edgeLodValues[i] = hexahedralCellFace.edgeLodValues[i];
-        edgeSingularityInformationList[i] = edgeSingularityInformation;
+        //edgeSingularityInformationList[i] = edgeSingularityInformation;
     }
 
     // Copy the face data.
@@ -117,7 +117,7 @@ flat in vec4 lineColors[4];
 #endif
 flat in float lineAttributes[4];
 flat in float edgeLodValues[4];
-flat in uint edgeSingularityInformationList[4];
+//flat in uint edgeSingularityInformationList[4];
 
 #if defined(DIRECT_BLIT_GATHER)
 out vec4 fragColor;
@@ -228,8 +228,6 @@ void main()
             discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 0.0,
             focusFactor);
 
-    bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
-    //vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
     #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
     vec4 lineBaseColor = lineColors[minDistanceIndex];
     #else
@@ -241,11 +239,6 @@ void main()
     vec4 lineBaseColor = vec4(mix(vertexColors[minDistanceIndex].rgb, vertexColors[(minDistanceIndex + 1) % 4].rgb, interpolationFactor), 1.0);*/
     vec4 lineBaseColorAll = vec4(fragmentColor.rgb, 1.0);
     #endif
-    //if (!isSingularEdge) {
-    //    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.3);
-    //    vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
-    //    lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
-    //}
 
     vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.3);
     vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
@@ -335,7 +328,7 @@ flat in vec4 lineColors[4];
 #endif
 flat in float lineAttributes[4];
 flat in float edgeLodValues[4];
-flat in uint edgeSingularityInformationList[4];
+//flat in uint edgeSingularityInformationList[4];
 
 #if defined(DIRECT_BLIT_GATHER)
 out vec4 fragColor;
@@ -446,8 +439,6 @@ void main()
             discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 0.0,
             focusFactor);
 
-    bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
-    //vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
     #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
     vec4 lineBaseColor = lineColors[minDistanceIndex];
     #else
@@ -459,11 +450,6 @@ void main()
     vec4 lineBaseColor = vec4(mix(vertexColors[minDistanceIndex].rgb, vertexColors[(minDistanceIndex + 1) % 4].rgb, interpolationFactor), 1.0);*/
     vec4 lineBaseColor = vec4(fragmentColor.rgb, 1.0);
     #endif
-    //if (!isSingularEdge) {
-    //    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.3);
-    //    vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
-    //    lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
-    //}
 
     vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.3);
     vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
