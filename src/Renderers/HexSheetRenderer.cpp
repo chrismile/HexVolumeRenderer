@@ -35,19 +35,6 @@
 
 #include "HexSheetRenderer.hpp"
 
-//const glm::vec4 sheet0Color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-//const glm::vec4 sheet1Color = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
-//const glm::vec4 sheetIntersectionColor = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
-//const glm::vec4 hullColor = glm::vec4(0.537254902f, 0.803921569f, 1.0f, 0.1f);
-const glm::vec4 sheet0Color = glm::vec4(
-        TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(1.0f, 0.0f, 0.0f)), 1.0f);
-const glm::vec4 sheet1Color = glm::vec4(
-        TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(0.537254902f, 0.803921569f, 1.0f)), 1.0f);
-const glm::vec4 sheetIntersectionColor = glm::vec4(
-        TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(1.0f, 1.0f, 0.0f)), 1.0f);
-const glm::vec4 hullColor = glm::vec4(
-        TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(0.5, 0.5, 0.5f)), 0.3f);
-
 HexSheetRenderer::HexSheetRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
@@ -484,6 +471,25 @@ void HexSheetRenderer::renderGui() {
                 counter++;
             }
             ImGui::Columns(1);
+        }
+
+        ImGui::Separator();
+        if (ImGui::CollapsingHeader("Color Settings", NULL, ImGuiTreeNodeFlags_DefaultOpen)) {
+            if (ImGui::ColorEdit3("Sheet 0 Color", &sheet0Color.r)) {
+                recreateRenderingData();
+                reRender = true;
+            }
+            if (ImGui::ColorEdit3("Sheet 1 Color", &sheet1Color.r)) {
+                recreateRenderingData();
+                reRender = true;
+            }
+            if (ImGui::ColorEdit3("Sheet Intersection", &sheetIntersectionColor.r)) {
+                recreateRenderingData();
+                reRender = true;
+            }
+            if (ImGui::ColorEdit3("Hull Color", &hullColor.r)) {
+                reRender = true;
+            }
         }
     }
     ImGui::End();

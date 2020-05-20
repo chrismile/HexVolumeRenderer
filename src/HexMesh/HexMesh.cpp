@@ -118,6 +118,9 @@ void HexMesh::setHexMeshData(
         frame = nullptr;
     }
 
+    meshNumCells = cellIndices.size() / 6ull;
+    meshNumVertices = vertices.size();
+
     hexaLabApp = new HexaLab::App();
     std::vector<HexaLab::Index> indices;
     for (const uint32_t& idx : cellIndices) {

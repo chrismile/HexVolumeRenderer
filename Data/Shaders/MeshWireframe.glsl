@@ -30,7 +30,7 @@ out vec4 fragmentPositionClip;
 out vec4 fragmentColor;
 out float fragmentAttribute;
 flat out vec3 vertexPositions[4];
-#ifdef USE_PER_LINE_ATTRIBUTES
+#if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
 flat out vec4 lineColors[4];
 #else
 flat out vec4 vertexColors[4];
@@ -76,7 +76,7 @@ void main()
         }
         #endif
 
-        #ifdef USE_PER_LINE_ATTRIBUTES
+        #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
         lineColors[i] = lineColor;
         #endif
 
@@ -88,7 +88,7 @@ void main()
     for (int i = 0; i < 4; i++) {
         vertexPositions[i] = hexahedralCellFace.vertexPositions[i].xyz;
 
-        #ifndef USE_PER_LINE_ATTRIBUTES
+        #if !(defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP))
         vertexColors[i] = transferFunction(hexahedralCellFace.vertexAttributes[i]);
         #endif
     }
@@ -110,7 +110,7 @@ in vec4 fragmentPositionClip;
 in vec4 fragmentColor;
 in float fragmentAttribute;
 flat in vec3 vertexPositions[4];
-#ifdef USE_PER_LINE_ATTRIBUTES
+#if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
 flat in vec4 lineColors[4];
 #else
 flat in vec4 vertexColors[4];
@@ -137,7 +137,7 @@ uniform float importantLineBoostFactor;
 #endif
 
 #include "PointToLineDistance.glsl"
-#ifndef USE_PER_LINE_ATTRIBUTES
+#if !(defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP))
 #include "ClosestPointOnLine.glsl"
 #endif
 
@@ -230,7 +230,7 @@ void main()
 
     bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
     //vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
-    #ifdef USE_PER_LINE_ATTRIBUTES
+    #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
     vec4 lineBaseColor = lineColors[minDistanceIndex];
     #else
     vec3 linePoints[2];
@@ -252,6 +252,9 @@ void main()
 
     float lineCoordinates = max(minDistance / lineRadius, 0.0);
     float lineCoordinatesAll = max(minDistanceAll / lineRadius * 1.5, 0.0);
+    //const float fwidthLineCoordinates = fwidth(lineCoordinates);
+    //const float coverage = 1.0 - smoothstep(1.0 - fwidthLineCoordinates, 1.0, lineCoordinates);
+    //const float EPSILON = fwidthLineCoordinates;
     if (lineCoordinates <= 1.0) {
         float depthCueFactor = min(contextFactor, focusFactor);
         float lineColorToVolumeColorBlendFactor = lodLevelOpacityFactor;
@@ -261,6 +264,7 @@ void main()
 
         // Color depth cue.
         lineBaseColor.rgb = mix(lineBaseColor.rgb, vec3(0.5, 0.5, 0.5), depthCueFactor * 0.6);
+        //lineBaseColor.rgb = vec3(lodLineValue * 0.25 + 0.03);
 
         // Fade out the outline with increasing distance to the viewer and increasing distance to the focus center.
         vec3 outlineColor = vec3(1.0, 1.0, 1.0);
@@ -272,7 +276,11 @@ void main()
         const float WHITE_THRESHOLD = 0.7 + (0.3 + EPSILON) * contextFactor;
         float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
         vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
-                smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
+        smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
+
+        //const float WHITE_THRESHOLD = 0.7 + (0.3 + EPSILON) * contextFactor;
+        //vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
+        //        smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
 
         if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
             fragmentDistance += 0.005;
@@ -287,7 +295,7 @@ void main()
         }
     } else if (lineCoordinatesAll <= 1.0) {
     #ifdef ACCENTUATE_ALL_EDGES
-        #ifdef USE_PER_LINE_ATTRIBUTES
+        #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
         vec4 lineBaseColorAll = lineColors[minDistanceIndexAll];
         #else
         vec3 linePoints[2];
@@ -298,7 +306,7 @@ void main()
         vec4 lineBaseColorAll = vec4(mix(vertexColors[minDistanceIndexAll].rgb, vertexColors[(minDistanceIndexAll + 1) % 4].rgb, interpolationFactor), 1.0);
         #endif
 
-        vec3 lineColor = mix(lineBaseColor.rgb, vec3(1.0), 0.1);
+        vec3 lineColor = mix(lineBaseColorAll.rgb, vec3(1.0), 0.1);
         blendedColor.rgb = mix(volumeColor.rgb, lineColor.rgb, clamp(0.6 - fragmentDistance, 0.0, 0.3));
         blendedColor.a = clamp(blendedColor.a * 1.5, 0.0, 1.0);
     #endif
@@ -318,7 +326,7 @@ in vec4 fragmentPositionClip;
 in vec4 fragmentColor;
 in float fragmentAttribute;
 flat in vec3 vertexPositions[4];
-#ifdef USE_PER_LINE_ATTRIBUTES
+#if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
 flat in vec4 lineColors[4];
 #else
 flat in vec4 vertexColors[4];
@@ -352,7 +360,7 @@ uniform float sphereRadiusPixels;
 #endif
 
 #include "PointToLineDistance.glsl"
-#ifndef USE_PER_LINE_ATTRIBUTES
+#if !(defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP))
 #include "ClosestPointOnLine.glsl"
 #endif
 
@@ -438,7 +446,7 @@ void main()
 
     bool isSingularEdge = (edgeSingularityInformationList[minDistanceIndex] & 1u) == 1u;
     //vec4 lineBaseColor = vec4(mix(lineColors[minDistanceIndex].rgb, vec3(0.0), 0.4), lineColors[minDistanceIndex].a);
-    #ifdef USE_PER_LINE_ATTRIBUTES
+    #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
     vec4 lineBaseColor = lineColors[minDistanceIndex];
     #else
     vec3 linePoints[2];
@@ -460,6 +468,9 @@ void main()
 
     float lineCoordinates = max(minDistance / lineRadius, 0.0);
     float lineCoordinatesAll = max(minDistanceAll / lineRadius * 1.5, 0.0);
+    //const float fwidthLineCoordinates = fwidth(lineCoordinates);
+    //const float coverage = 1.0 - smoothstep(1.0 - fwidthLineCoordinates, 1.0, lineCoordinates);
+    //const float EPSILON = fwidthLineCoordinates;
     if (isLineNear && lineCoordinates <= 1.0) {
         float depthCueFactor = min(contextFactor, focusFactor);
         float lineColorToVolumeColorBlendFactor = lodLevelOpacityFactor;
@@ -469,6 +480,7 @@ void main()
 
         // Color depth cue.
         lineBaseColor.rgb = mix(lineBaseColor.rgb, vec3(0.5, 0.5, 0.5), depthCueFactor * 0.6);
+        //lineBaseColor.rgb = vec3(lodLineValue * 0.25 + 0.03);
 
         // Fade out the outline with increasing distance to the viewer and increasing distance to the focus center.
         vec3 outlineColor = vec3(1.0, 1.0, 1.0);
@@ -481,6 +493,9 @@ void main()
         float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
         vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
                 smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
+        //const float WHITE_THRESHOLD = 0.7 + (0.3 + EPSILON) * contextFactor;
+        //vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
+        //        smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
 
         if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
             fragmentDistance += 0.005;
@@ -494,10 +509,8 @@ void main()
             blendedColor.rgb /= blendedColor.a;
         }
     } else if (lineCoordinatesAll <= 1.0) {
-        //const float EPSILON = clamp(fragmentDistance / lineRadius * 0.0005, 0.0, 0.49);
-        //float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates); // TODO
     #ifdef ACCENTUATE_ALL_EDGES
-        #ifdef USE_PER_LINE_ATTRIBUTES
+        #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
         vec4 lineBaseColorAll = lineColors[minDistanceIndexAll];
         #else
         vec3 linePoints[2];
@@ -508,7 +521,7 @@ void main()
         vec4 lineBaseColorAll = vec4(mix(vertexColors[minDistanceIndexAll].rgb, vertexColors[(minDistanceIndexAll + 1) % 4].rgb, interpolationFactor), 1.0);
         #endif
 
-        vec3 lineColor = mix(lineBaseColor.rgb, vec3(1.0), 0.1);
+        vec3 lineColor = mix(lineBaseColorAll.rgb, vec3(1.0), 0.1);
         blendedColor.rgb = mix(volumeColor.rgb, lineColor.rgb, clamp(0.6 - fragmentDistance, 0.0, 0.3));
         blendedColor.a = clamp(blendedColor.a * 1.5, 0.0, 1.0);
     #endif

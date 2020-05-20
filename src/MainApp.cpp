@@ -515,7 +515,6 @@ void MainApp::renderGUI() {
 
             ImGui::Separator();
 
-            static bool showSceneSettings = true;
             if (ImGui::CollapsingHeader("Scene Settings", NULL, ImGuiTreeNodeFlags_DefaultOpen)) {
                 renderSceneSettingsGUI();
             }
@@ -1020,7 +1019,8 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         vertices = hexMeshVertices;
 
         // Assume deformed meshes only in source at index 2 for now (don't clutter the UI for other sources).
-        if (deformationFactor != 0.0f && (getFileSourceContainsDeformationMeshes() || usePerformanceMeasurementMode)) {
+        if (deformationFactor != 0.0f && (getFileSourceContainsDeformationMeshes() || usePerformanceMeasurementMode)
+                && hexMeshDeformations.size() == vertices.size()) {
             applyVertexDeformations(vertices, hexMeshDeformations, deformationFactor);
         }
 
@@ -1049,7 +1049,7 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
 void MainApp::onDeformationFactorChanged() {
     //loadHexahedralMesh(getSelectedMeshFilename());
     std::vector<glm::vec3> vertices = hexMeshVertices;
-    if (deformationFactor != 0.0f) {
+    if (deformationFactor != 0.0f && hexMeshDeformations.size() == vertices.size()) {
         applyVertexDeformations(vertices, hexMeshDeformations, deformationFactor);
     }
     normalizeVertexPositions(vertices);

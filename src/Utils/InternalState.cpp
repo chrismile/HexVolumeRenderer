@@ -72,28 +72,38 @@ std::vector<InternalState> getTestModesPaper()
             MeshDescriptor(
                     "2014 - l1-Based Construction of Polycube Maps from Complex Shapes",
                     "cognit/hex", "vtk"),
-            MeshDescriptor(
-                    "2018 - Fuzzy clustering based pseudo-swept volume decomposition for hexahedral meshing",
-                    "Example_3", "mesh"),
-            MeshDescriptor(
-                    "0001 - Deformation",
-                    "HexMesh_128cubic_Deformed", "vtk", 0.5f)
+            //MeshDescriptor(
+            //        "2018 - Fuzzy clustering based pseudo-swept volume decomposition for hexahedral meshing",
+            //        "Example_3", "mesh"),
+            //MeshDescriptor(
+            //        "0001 - Deformation",
+            //        "HexMesh_128cubic_Deformed", "vtk", 0.5f)
     };
     std::vector<std::string> transferFunctionNames = {
             "Standard_PerVertex.xml",
             "Standard_PerVertex.xml",
             "Standard_PerVertex.xml",
-            "Standard_PerVertex.xml",
-            "Standard_PerVertex.xml"
+            //"Standard_PerVertex.xml",
+            //"Standard_PerVertex.xml"
     };
     InternalState state;
 
-    for (size_t i = 0; i < windowResolutions.size(); i++) {
+    /*for (size_t i = 0; i < windowResolutions.size(); i++) {
         state.windowResolution = windowResolutions.at(i);
         for (size_t j = 0; j < meshDescriptors.size(); j++) {
             state.meshDescriptor = meshDescriptors.at(j);
             if (transferFunctionNames.size() > 0) {
                 state.transferFunctionName = transferFunctionNames.at(j);
+            }
+            getTestModesPaperForMesh(states, state);
+        }
+    }*/
+    for (size_t i = 0; i < meshDescriptors.size(); i++) {
+        state.meshDescriptor = meshDescriptors.at(i);
+        for (size_t j = 0; j < windowResolutions.size(); j++) {
+            state.windowResolution = windowResolutions.at(j);
+            if (transferFunctionNames.size() > 0) {
+                state.transferFunctionName = transferFunctionNames.at(i);
             }
             getTestModesPaperForMesh(states, state);
         }

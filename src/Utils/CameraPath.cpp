@@ -62,7 +62,7 @@ void CameraPath::fromCirclePath(
     glm::vec3 centerOffset(0.0f, 0.0f, 0.0f);
     float startAngle = 0.0f;
     float pulseFactor = 2.0f;
-    float standardZoom = 1.4f;
+    float standardZoom = performanceMeasurementMode ? 1.4f : 1.6f;
     if (boost::starts_with(
             modelFilename,
             "Data/Meshes/2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation/anc101_a1.mesh")) {

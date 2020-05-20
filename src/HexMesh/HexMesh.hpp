@@ -151,6 +151,10 @@ public:
     void unmark();
     bool isDirty() { return dirty; }
 
+    // Get mesh information.
+    inline size_t getNumCells() const { return meshNumCells; }
+    inline size_t getNumVertices() const { return meshNumVertices; }
+
     /**
      * Updates the vertex positions of a deformable mesh. Thus, also the quality measure is recomputed for all cells.
      * The connectivity of the hexahedral mesh vertices does not change.
@@ -643,6 +647,10 @@ private:
     TransferFunctionWindow &transferFunctionWindow;
     RayMeshIntersection& rayMeshIntersection;
     bool dirty = false;
+
+    // Mesh informaton.
+    size_t meshNumCells = 0;
+    size_t meshNumVertices = 0;
 
     // HexaLab data
     HexaLab::App* hexaLabApp = nullptr;

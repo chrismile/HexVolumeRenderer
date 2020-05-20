@@ -157,7 +157,7 @@ private:
     const float CAMERA_PATH_TIME_PERFORMANCE_MEASUREMENT = TIME_PERFORMANCE_MEASUREMENT;
 
     // For making performance measurements.
-    bool usePerformanceMeasurementMode = false;
+    bool usePerformanceMeasurementMode = true;
     AutomaticPerformanceMeasurer *performanceMeasurer = nullptr;
     InternalState lastState;
     bool firstState = true;
