@@ -233,12 +233,13 @@ void main()
     #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
     vec4 lineBaseColor = lineColors[minDistanceIndex];
     #else
-    vec3 linePoints[2];
+    /*vec3 linePoints[2];
     linePoints[0] = vertexPositions[minDistanceIndex];
     linePoints[1] = vertexPositions[(minDistanceIndex + 1) % 4];
     vec3 closestLinePoint = getClosestPointOnLineSegment(fragmentPositionWorld, linePoints[0], linePoints[1]);
     float interpolationFactor = length(closestLinePoint - linePoints[0]) / length(linePoints[1] - linePoints[0]);
-    vec4 lineBaseColor = vec4(mix(vertexColors[minDistanceIndex].rgb, vertexColors[(minDistanceIndex + 1) % 4].rgb, interpolationFactor), 1.0);
+    vec4 lineBaseColor = vec4(mix(vertexColors[minDistanceIndex].rgb, vertexColors[(minDistanceIndex + 1) % 4].rgb, interpolationFactor), 1.0);*/
+    vec4 lineBaseColorAll = vec4(fragmentColor.rgb, 1.0);
     #endif
     //if (!isSingularEdge) {
     //    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.3);
@@ -298,12 +299,13 @@ void main()
         #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
         vec4 lineBaseColorAll = lineColors[minDistanceIndexAll];
         #else
-        vec3 linePoints[2];
+        /*vec3 linePoints[2];
         linePoints[0] = vertexPositions[minDistanceIndexAll];
         linePoints[1] = vertexPositions[(minDistanceIndexAll + 1) % 4];
         vec3 closestLinePoint = getClosestPointOnLineSegment(fragmentPositionWorld, linePoints[0], linePoints[1]);
         float interpolationFactor = length(closestLinePoint - linePoints[0]) / length(linePoints[1] - linePoints[0]);
-        vec4 lineBaseColorAll = vec4(mix(vertexColors[minDistanceIndexAll].rgb, vertexColors[(minDistanceIndexAll + 1) % 4].rgb, interpolationFactor), 1.0);
+        vec4 lineBaseColorAll = vec4(mix(vertexColors[minDistanceIndexAll].rgb, vertexColors[(minDistanceIndexAll + 1) % 4].rgb, interpolationFactor), 1.0);*/
+        vec4 lineBaseColorAll = vec4(fragmentColor.rgb, 1.0);
         #endif
 
         vec3 lineColor = mix(lineBaseColorAll.rgb, vec3(1.0), 0.1);
@@ -449,12 +451,13 @@ void main()
     #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
     vec4 lineBaseColor = lineColors[minDistanceIndex];
     #else
-    vec3 linePoints[2];
+    /*vec3 linePoints[2];
     linePoints[0] = vertexPositions[minDistanceIndex];
     linePoints[1] = vertexPositions[(minDistanceIndex + 1) % 4];
     vec3 closestLinePoint = getClosestPointOnLineSegment(fragmentPositionWorld, linePoints[0], linePoints[1]);
     float interpolationFactor = length(closestLinePoint - linePoints[0]) / length(linePoints[1] - linePoints[0]);
-    vec4 lineBaseColor = vec4(mix(vertexColors[minDistanceIndex].rgb, vertexColors[(minDistanceIndex + 1) % 4].rgb, interpolationFactor), 1.0);
+    vec4 lineBaseColor = vec4(mix(vertexColors[minDistanceIndex].rgb, vertexColors[(minDistanceIndex + 1) % 4].rgb, interpolationFactor), 1.0);*/
+    vec4 lineBaseColor = vec4(fragmentColor.rgb, 1.0);
     #endif
     //if (!isSingularEdge) {
     //    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.3);
@@ -513,12 +516,13 @@ void main()
         #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
         vec4 lineBaseColorAll = lineColors[minDistanceIndexAll];
         #else
-        vec3 linePoints[2];
+        /*vec3 linePoints[2];
         linePoints[0] = vertexPositions[minDistanceIndexAll];
         linePoints[1] = vertexPositions[(minDistanceIndexAll + 1) % 4];
         vec3 closestLinePoint = getClosestPointOnLineSegment(fragmentPositionWorld, linePoints[0], linePoints[1]);
         float interpolationFactor = length(closestLinePoint - linePoints[0]) / length(linePoints[1] - linePoints[0]);
-        vec4 lineBaseColorAll = vec4(mix(vertexColors[minDistanceIndexAll].rgb, vertexColors[(minDistanceIndexAll + 1) % 4].rgb, interpolationFactor), 1.0);
+        vec4 lineBaseColorAll = vec4(mix(vertexColors[minDistanceIndexAll].rgb, vertexColors[(minDistanceIndexAll + 1) % 4].rgb, interpolationFactor), 1.0);*/
+        vec4 lineBaseColorAll = vec4(fragmentColor.rgb, 1.0);
         #endif
 
         vec3 lineColor = mix(lineBaseColorAll.rgb, vec3(1.0), 0.1);
