@@ -72,19 +72,19 @@ std::vector<InternalState> getTestModesPaper()
             MeshDescriptor(
                     "2014 - l1-Based Construction of Polycube Maps from Complex Shapes",
                     "cognit/hex", "vtk"),
-            //MeshDescriptor(
-            //        "2018 - Fuzzy clustering based pseudo-swept volume decomposition for hexahedral meshing",
-            //        "Example_3", "mesh"),
-            //MeshDescriptor(
-            //        "0001 - Deformation",
-            //        "HexMesh_128cubic_Deformed", "vtk", 0.5f)
+            MeshDescriptor(
+                    "2018 - Fuzzy clustering based pseudo-swept volume decomposition for hexahedral meshing",
+                    "Example_3", "mesh"),
+            MeshDescriptor(
+                    "0001 - Deformation",
+                    "HexMesh_128cubic_Deformed", "vtk", 0.5f)
     };
     std::vector<std::string> transferFunctionNames = {
             "Standard_PerVertex.xml",
             "Standard_PerVertex.xml",
             "Standard_PerVertex.xml",
-            //"Standard_PerVertex.xml",
-            //"Standard_PerVertex.xml"
+            "Standard_PerVertex.xml",
+            "Standard_PerVertex.xml"
     };
     InternalState state;
 

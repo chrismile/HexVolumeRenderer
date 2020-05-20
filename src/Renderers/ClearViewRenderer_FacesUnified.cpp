@@ -374,8 +374,6 @@ void ClearViewRenderer_FacesUnified::updateLargeMeshMode() {
         largeMeshMode = newMeshLargeMeshMode;
         expectedAvgDepthComplexity = MESH_MODE_DEPTH_COMPLEXITIES[int(largeMeshMode)][0];
         expectedMaxDepthComplexity = MESH_MODE_DEPTH_COMPLEXITIES[int(largeMeshMode)][1];
-        std::cout << "Mesh size: " << int(largeMeshMode) << ", avg: " << expectedAvgDepthComplexity
-                << ", max: " << expectedMaxDepthComplexity << std::endl;
         reallocateFragmentBuffer();
         reloadResolveShader();
     }
