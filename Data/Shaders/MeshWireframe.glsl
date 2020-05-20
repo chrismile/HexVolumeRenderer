@@ -33,7 +33,7 @@ flat out vec3 vertexPositions[4];
 #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
 flat out vec4 lineColors[4];
 #else
-flat out vec4 vertexColors[4];
+//flat out vec4 vertexColors[4];
 #endif
 flat out float lineAttributes[4];
 flat out float edgeLodValues[4];
@@ -88,9 +88,9 @@ void main()
     for (int i = 0; i < 4; i++) {
         vertexPositions[i] = hexahedralCellFace.vertexPositions[i].xyz;
 
-        #if !(defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP))
+        /*#if !(defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP))
         vertexColors[i] = transferFunction(hexahedralCellFace.vertexAttributes[i]);
-        #endif
+        #endif*/
     }
 
     vec4 vertexPosition = hexahedralCellFace.vertexPositions[vertexId];
@@ -113,7 +113,7 @@ flat in vec3 vertexPositions[4];
 #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
 flat in vec4 lineColors[4];
 #else
-flat in vec4 vertexColors[4];
+//flat in vec4 vertexColors[4];
 #endif
 flat in float lineAttributes[4];
 flat in float edgeLodValues[4];
@@ -331,7 +331,7 @@ flat in vec3 vertexPositions[4];
 #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
 flat in vec4 lineColors[4];
 #else
-flat in vec4 vertexColors[4];
+//flat in vec4 vertexColors[4];
 #endif
 flat in float lineAttributes[4];
 flat in float edgeLodValues[4];
