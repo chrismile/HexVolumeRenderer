@@ -72,6 +72,8 @@ public:
     virtual void setNewSettings(const SettingsMap& settings);
 
 protected:
+    void updateLargeMeshMode();
+    void reallocateFragmentBuffer();
     void createWeightTextureLoG();
     void reloadTexturesLoG();
     void reloadModelLoG();
@@ -85,6 +87,7 @@ protected:
 
     // Don't highlight singular edges when we have far too many of them.
     void reloadGatherShader();
+    void reloadResolveShader();
     bool tooMuchSingularEdgeMode = false;
     int maxLodValue;
 
@@ -96,6 +99,20 @@ protected:
     sgl::GeometryBufferPtr fragmentBuffer;
     sgl::GeometryBufferPtr startOffsetBuffer;
     sgl::GeometryBufferPtr atomicCounterBuffer;
+
+    // Per-pixel linked list settings.
+    enum LargeMeshMode {
+        MESH_SIZE_SMALL, MESH_SIZE_MEDIUM, MESH_SIZE_LARGE, MESH_SIZE_VERY_LARGE
+    };
+    const int MESH_MODE_DEPTH_COMPLEXITIES[4][2] = {
+            50, 80, // avg and max depth complexity small
+            80, 180, // avg and max depth complexity medium
+            110, 256, // avg and max depth complexity large
+            120, 380 // avg and max depth complexity very large
+    };
+    LargeMeshMode largeMeshMode = MESH_SIZE_MEDIUM;
+    int expectedAvgDepthComplexity = MESH_MODE_DEPTH_COMPLEXITIES[1][0];
+    int expectedMaxDepthComplexity = MESH_MODE_DEPTH_COMPLEXITIES[1][1];
 
     // The shaders for rendering.
     sgl::ShaderProgramPtr clearShader;

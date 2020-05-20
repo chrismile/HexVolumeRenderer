@@ -52,11 +52,6 @@
 // Use stencil buffer to mask unused pixels
 static bool useStencilBuffer = true;
 
-/// Expected (average) depth complexity, i.e. width*height* this value = number of fragments that can be stored.
-static int EXPECTED_DEPTH_COMPLEXITY = 80;
-/// Maximum number of fragments to sort in second pass.
-static int maxNumFragmentsSorting = 256;
-
 // A fragment node stores rendering information about one specific fragment.
 struct LinkedListFragmentNode {
     // RGBA color of the node.
@@ -84,15 +79,13 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
     sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "\"LinkedListGather.glsl\"");
-    sgl::ShaderManager->addPreprocessorDefine("MAX_NUM_FRAGS", sgl::toString(maxNumFragmentsSorting));
 
     shaderProgramSurface = sgl::ShaderManager->getShaderProgram(
             {"MeshShader.Vertex.Plain", "MeshShader.Fragment.Plain"});
     reloadSphereRenderData();
 
     reloadGatherShader();
-    resolveShader = sgl::ShaderManager->getShaderProgram(
-            {"LinkedListResolve.Vertex", "LinkedListResolve.Fragment"});
+    reloadResolveShader();
     clearShader = sgl::ShaderManager->getShaderProgram(
             {"LinkedListClear.Vertex", "LinkedListClear.Fragment"});
     shaderFullScreenBlitLoG = sgl::ShaderManager->getShaderProgram(
@@ -272,6 +265,16 @@ void ClearViewRenderer_FacesUnified::createWeightTextureLoG() {
     delete[] textureData;
 }
 
+void ClearViewRenderer_FacesUnified::reloadResolveShader() {
+    sgl::ShaderManager->invalidateShaderCache();
+    sgl::ShaderManager->addPreprocessorDefine("MAX_NUM_FRAGS", sgl::toString(expectedMaxDepthComplexity));
+    resolveShader = sgl::ShaderManager->getShaderProgram(
+            {"LinkedListResolve.Vertex", "LinkedListResolve.Fragment"});
+    if (blitRenderData) {
+        blitRenderData = blitRenderData->copy(resolveShader);
+    }
+}
+
 void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     sgl::ShaderManager->invalidateShaderCache();
     std::string lineRenderingStyleDefineName = "LINE_RENDERING_STYLE_HALO";
@@ -357,6 +360,27 @@ void ClearViewRenderer_FacesUnified::setNewSettings(const SettingsMap& settings)
     }
 }
 
+void ClearViewRenderer_FacesUnified::updateLargeMeshMode() {
+    // More than one million cells?
+    LargeMeshMode newMeshLargeMeshMode = MESH_SIZE_VERY_LARGE;
+    if (mesh->getNumCells() < 1e4) { // < 10k
+        newMeshLargeMeshMode = MESH_SIZE_SMALL;
+    } else if (mesh->getNumCells() < 1e5) { // < 100k
+        newMeshLargeMeshMode = MESH_SIZE_MEDIUM;
+    } else if (mesh->getNumCells() < 1e6) { // < 1m
+        newMeshLargeMeshMode = MESH_SIZE_LARGE;
+    }
+    if (newMeshLargeMeshMode != largeMeshMode) {
+        largeMeshMode = newMeshLargeMeshMode;
+        expectedAvgDepthComplexity = MESH_MODE_DEPTH_COMPLEXITIES[int(largeMeshMode)][0];
+        expectedMaxDepthComplexity = MESH_MODE_DEPTH_COMPLEXITIES[int(largeMeshMode)][1];
+        std::cout << "Mesh size: " << int(largeMeshMode) << ", avg: " << expectedAvgDepthComplexity
+                << ", max: " << expectedMaxDepthComplexity << std::endl;
+        reallocateFragmentBuffer();
+        reloadResolveShader();
+    }
+}
+
 void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     if (isNewMesh) {
         Pickable::focusPoint = glm::vec3(0.0f);
@@ -364,6 +388,7 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
     frameCounter = 0;
 
     mesh = meshIn;
+    updateLargeMeshMode();
     const float avgCellVolumeCbrt = std::cbrt(meshIn->getAverageCellVolume());
     // Higher radius for recording...
     lineWidth = lineWidthBoostFactor * glm::clamp(
@@ -423,16 +448,12 @@ void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr mes
     hasHitInformation = false;
 }
 
-void ClearViewRenderer_FacesUnified::onResolutionChanged() {
+void ClearViewRenderer_FacesUnified::reallocateFragmentBuffer() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
     int height = window->getHeight();
-    screenSpaceLensPixelRadius = std::min(width, height) * screenSpaceLensPixelRadiusWindowFactor;
-    focusPointScreen = glm::vec2(width / 2.0f, height / 2.0f);
-    windowWidth = width;
-    windowHeight = height;
 
-    fragmentBufferSize = size_t(EXPECTED_DEPTH_COMPLEXITY) * size_t(width) * size_t(height);
+    fragmentBufferSize = size_t(expectedAvgDepthComplexity) * size_t(width) * size_t(height);
     size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
     if (fragmentBufferSizeBytes >= (1ull << 32ull)) {
         sgl::Logfile::get()->writeError(
@@ -452,6 +473,18 @@ void ClearViewRenderer_FacesUnified::onResolutionChanged() {
     fragmentBuffer = sgl::GeometryBufferPtr(); // Delete old data first (-> refcount 0)
     fragmentBuffer = sgl::Renderer->createGeometryBuffer(
             fragmentBufferSizeBytes, NULL, sgl::SHADER_STORAGE_BUFFER);
+}
+
+void ClearViewRenderer_FacesUnified::onResolutionChanged() {
+    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    int width = window->getWidth();
+    int height = window->getHeight();
+    screenSpaceLensPixelRadius = std::min(width, height) * screenSpaceLensPixelRadiusWindowFactor;
+    focusPointScreen = glm::vec2(width / 2.0f, height / 2.0f);
+    windowWidth = width;
+    windowHeight = height;
+
+    reallocateFragmentBuffer();
 
     size_t startOffsetBufferSizeBytes = sizeof(uint32_t) * width * height;
     startOffsetBuffer = sgl::GeometryBufferPtr(); // Delete old data first (-> refcount 0)
