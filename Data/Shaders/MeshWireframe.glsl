@@ -237,7 +237,7 @@ void main()
     vec3 closestLinePoint = getClosestPointOnLineSegment(fragmentPositionWorld, linePoints[0], linePoints[1]);
     float interpolationFactor = length(closestLinePoint - linePoints[0]) / length(linePoints[1] - linePoints[0]);
     vec4 lineBaseColor = vec4(mix(vertexColors[minDistanceIndex].rgb, vertexColors[(minDistanceIndex + 1) % 4].rgb, interpolationFactor), 1.0);*/
-    vec4 lineBaseColorAll = vec4(fragmentColor.rgb, 1.0);
+    vec4 lineBaseColor = vec4(fragmentColor.rgb, 1.0);
     #endif
 
     vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.3);
@@ -270,7 +270,7 @@ void main()
         const float WHITE_THRESHOLD = 0.7 + (0.3 + EPSILON) * contextFactor;
         float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
         vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
-        smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
+                smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
 
         //const float WHITE_THRESHOLD = 0.7 + (0.3 + EPSILON) * contextFactor;
         //vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
