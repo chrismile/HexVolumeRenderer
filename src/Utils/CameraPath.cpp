@@ -77,6 +77,9 @@ void CameraPath::fromCirclePath(
         pulseFactor = 3.0f;
         standardZoom = 1.6f;
     }
+    if (performanceMeasurementMode && boost::ends_with(modelFilename, "cubic128.vtk")) {
+        standardZoom = 1.3f;
+    }
 
     for (size_t i = 0; i <= NUM_CIRCLE_POINTS; i++) {
         float time = float(i) / NUM_CIRCLE_POINTS * totalTime;

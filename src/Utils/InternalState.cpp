@@ -77,7 +77,7 @@ std::vector<InternalState> getTestModesPaper()
                     "Example_3", "mesh"),
             MeshDescriptor(
                     "0001 - Deformation",
-                    "HexMesh_128cubic_Deformed", "vtk", 0.5f)
+                    "cubic128", "vtk")
     };
     std::vector<std::string> transferFunctionNames = {
             "Standard_PerVertex.xml",
