@@ -72,6 +72,7 @@ private:
     void updateColorSpaceMode();
     /// Override screenshot function to exclude GUI (if wanted by the user)
     void saveScreenshot(const std::string &filename);
+    void makeScreenshot() {}
 
     /// Scene data (e.g., camera, main framebuffer, ...).
     sgl::CameraPtr camera;

@@ -89,7 +89,7 @@ void SingularityRenderer::render() {
 
     shaderProgram->setUniform("lineWidth", lineWidth);
     sgl::Renderer->render(lineShaderAttributes);
-    shaderProgramPoints->setUniform("radius", 0.002f);
+    shaderProgramPoints->setUniform("radius", 0.0006f);
     sgl::Renderer->render(pointShaderAttributes);
 }
 

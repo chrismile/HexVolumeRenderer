@@ -389,6 +389,7 @@ void MainApp::saveScreenshot(const std::string &filename) {
     sgl::BitmapPtr bitmap(new sgl::Bitmap(width, height, 32));
     glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, bitmap->getPixels());
     bitmap->savePNG(filename.c_str(), true);
+    screenshot = false;
 }
 
 void MainApp::updateColorSpaceMode() {
