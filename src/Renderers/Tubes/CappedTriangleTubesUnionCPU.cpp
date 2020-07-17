@@ -149,7 +149,7 @@ void createCappedTubeCylinder(
         int numCircleSubdivisions,
         std::vector<uint32_t>& triangleIndices,
         std::vector<glm::vec3>& vertexPositions) {
-    if (numCircleSubdivisions != globalCircleVertexPositions.size() || tubeRadius != globalTubeRadius) {
+    if (numCircleSubdivisions != int(globalCircleVertexPositions.size()) || tubeRadius != globalTubeRadius) {
         initGlobalCircleVertexPositions(numCircleSubdivisions, tubeRadius);
     }
 
@@ -243,7 +243,7 @@ void createCappedTriangleTubesUnionRenderDataCPU(
      */
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     Singularity& si = hexMesh->getBaseComplexMeshSingularity();
-    int maxNumThreads = omp_get_max_threads();
+    //int maxNumThreads = omp_get_max_threads();
 
     if (mesh.Es.size() == 0) {
         return;
@@ -382,7 +382,6 @@ void createCappedTriangleTubesUnionRenderDataCPU(
         for (uint32_t e_id : v.neighbor_es) {
             Hybrid_E& e = mesh.Es.at(e_id);
             for (uint32_t v_id : e.vs) {
-                Hybrid_V& v = mesh.Vs.at(v_id);
                 edgeVertexPositions.push_back(
                         glm::vec3(mesh.V(0, v_id), mesh.V(1, v_id), mesh.V(2, v_id)));
             }
@@ -399,7 +398,6 @@ void createCappedTriangleTubesUnionRenderDataCPU(
         // Get the positions of the vertices connected by the edge.
         Hybrid_E& minimum_dist_e = mesh.Es.at(v.neighbor_es.at(minimumEdgeDistanceIndex));
         for (uint32_t v_id : minimum_dist_e.vs) {
-            Hybrid_V& v = mesh.Vs.at(v_id);
             edgeVertexPositions.push_back(
                     glm::vec3(mesh.V(0, v_id), mesh.V(1, v_id), mesh.V(2, v_id)));
         }
