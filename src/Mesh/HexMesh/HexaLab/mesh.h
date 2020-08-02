@@ -8,7 +8,7 @@
 
 #include "common.h"
 #include "mesh_navigator.h"
-#include "hex_quality_color_maps.h"
+#include "Mesh/HexMesh/QualityMeasure/hex_quality_color_maps.h"
 
 // How to save a lot of mem
 // Darts are quite verbous, you need 48 of them for a hexa, and in most of 'reasonable' subdivisions they are uselessy repetitive

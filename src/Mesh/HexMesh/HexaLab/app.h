@@ -8,7 +8,7 @@
 #include "mesh_navigator.h"
 #include "model.h"
 #include "builder.h"
-#include "hex_quality_color_maps.h"
+#include "Mesh/HexMesh/QualityMeasure/hex_quality_color_maps.h"
 
 namespace HexaLab {
     struct MeshStats {

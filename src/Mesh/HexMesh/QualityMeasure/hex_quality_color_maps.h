@@ -3,7 +3,7 @@
 
 #include <glm/vec3.hpp>
 
-#include "common.h"
+#include "Mesh/HexaLab/common.h"
 #include "hex_quality.h"
 
 namespace HexaLab

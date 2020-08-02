@@ -585,7 +585,7 @@ private:
     // Base-complex computations
     /**
      * Converts the passed vertices and cell indices (8*num_cells) of a hexahedral mesh to its singularity and
-     * base-complex representation. The data is stored in baseComplexMesh, si and frame, respectively.
+     * base-complex representation. The data is stored in mesh, si and frame, respectively.
      * @param vertices The hexahedral mesh vertices
      * @param cellIndices Cell vertex indices (8*num_cells).
      */
@@ -657,7 +657,7 @@ private:
     HexaLab::QualityMeasureEnum hexaLabQualityMeasure;
 
     // Base-complex data
-    Mesh* baseComplexMesh = nullptr;
+    Mesh* mesh = nullptr;
     Singularity* si = nullptr;
     Frame* frame = nullptr;
 

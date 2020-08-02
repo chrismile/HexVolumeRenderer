@@ -84,14 +84,36 @@ const glm::vec4 HexMesh::glowColorSingular = glm::vec4(0.8f, 0.1f, 0.1f, 1.0f);
 const glm::vec4 HexMesh::outlineColorRegular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 const glm::vec4 HexMesh::outlineColorSingular = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 
+// See: https://stackoverflow.com/questions/2513505/how-to-get-available-memory-c-g
+#ifdef linux
+#include <unistd.h>
+size_t getUsedSystemMemoryBytes()
+{
+    size_t totalNumPages = sysconf(_SC_PHYS_PAGES);
+    size_t availablePages = sysconf(_SC_AVPHYS_PAGES);
+    size_t pageSizeBytes = sysconf(_SC_PAGE_SIZE);
+    return (totalNumPages - availablePages) * pageSizeBytes;
+}
+#endif
+#ifdef windows
+#include <windows.h>
+size_t getUsedSystemMemoryBytes()
+{
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatusEx(&status);
+    return status.ullTotalPhys - status.ullAvailPhys;
+}
+#endif
+
 HexMesh::~HexMesh() {
     if (hexaLabApp != nullptr) {
         delete hexaLabApp;
         hexaLabApp = nullptr;
     }
-    if (baseComplexMesh != nullptr) {
-        delete baseComplexMesh;
-        baseComplexMesh = nullptr;
+    if (mesh != nullptr) {
+        delete mesh;
+        mesh = nullptr;
         delete si;
         si = nullptr;
         delete frame;
@@ -105,9 +127,9 @@ void HexMesh::setHexMeshData(
         delete hexaLabApp;
         hexaLabApp = nullptr;
     }
-    if (baseComplexMesh != nullptr) {
-        delete baseComplexMesh;
-        baseComplexMesh = nullptr;
+    if (mesh != nullptr) {
+        delete mesh;
+        mesh = nullptr;
     }
     if (si != nullptr) {
         delete si;
@@ -121,6 +143,7 @@ void HexMesh::setHexMeshData(
     meshNumCells = cellIndices.size() / 6ull;
     meshNumVertices = vertices.size();
 
+    //size_t mem0 = getUsedSystemMemoryBytes();
     hexaLabApp = new HexaLab::App();
     std::vector<HexaLab::Index> indices;
     for (const uint32_t& idx : cellIndices) {
@@ -129,9 +152,15 @@ void HexMesh::setHexMeshData(
     hexaLabApp->import_mesh(vertices, indices);
     setQualityMeasure(qualityMeasure);
 
-    baseComplexMesh = new Mesh;
+    //size_t mem1 = getUsedSystemMemoryBytes();
+
+    mesh = new Mesh;
     si = new Singularity;
     computeBaseComplexMesh(vertices, cellIndices);
+    //size_t mem2 = getUsedSystemMemoryBytes();
+
+    //std::cout << "Approx. memory consumption HexaLab (MiB): " << ((mem1 - mem0) / double(1024 * 1024)) << std::endl;
+    //std::cout << "Approx. memory consumption BC (MiB): " << ((mem2 - mem1) / double(1024 * 1024)) << std::endl;
 
     singularEdgeIds.clear();
     for (Singular_E& se : si->SEs) {
@@ -196,28 +225,27 @@ void buildCellEdgeList(Mesh &mesh) {
 
 void HexMesh::computeBaseComplexMesh(
         const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices) {
-    Mesh &mesh = *baseComplexMesh;
     const uint32_t numVertices = vertices.size();
     const uint32_t numCells = cellIndices.size() / 8;
 
-    mesh.type = Mesh_type::Hex;
-    mesh.V.resize(3, numVertices);
-    mesh.V.setZero();
-    mesh.Vs.resize(numVertices);
+    mesh->type = Mesh_type::Hex;
+    mesh->V.resize(3, numVertices);
+    mesh->V.setZero();
+    mesh->Vs.resize(numVertices);
 
     for (uint32_t i = 0; i < numVertices; i++) {
         const glm::vec3 &vertexPosition = vertices.at(i);
-        mesh.V(0, i) = vertexPosition.x;
-        mesh.V(1, i) = vertexPosition.y;
-        mesh.V(2, i) = vertexPosition.z;
+        mesh->V(0, i) = vertexPosition.x;
+        mesh->V(1, i) = vertexPosition.y;
+        mesh->V(2, i) = vertexPosition.z;
 
         Hybrid_V v;
         v.id = i;
         v.boundary = false;
-        mesh.Vs[i] = v;
+        mesh->Vs[i] = v;
     }
 
-    mesh.Hs.resize(numCells);
+    mesh->Hs.resize(numCells);
     Hybrid h;
     h.vs.resize(8);
     for (uint32_t i = 0; i < numCells; i++) {
@@ -225,9 +253,9 @@ void HexMesh::computeBaseComplexMesh(
         for (int vertIdx = 0; vertIdx < 8; vertIdx++) {
             uint32_t vertexIndex = cellIndices.at(i * 8 + vertIdx);
             h.vs[vertIdx] = vertexIndex;
-            mesh.Vs[vertexIndex].neighbor_hs.push_back(h.id);
+            mesh->Vs[vertexIndex].neighbor_hs.push_back(h.id);
         }
-        mesh.Hs[h.id] = h;
+        mesh->Hs[h.id] = h;
     }
 
     build_connectivity(mesh);
@@ -240,7 +268,7 @@ void HexMesh::computeBaseComplexMeshFrame() {
     assert(frame == nullptr);
     frame = new Frame;
     base_complex bc;
-    bc.base_complex_extraction(*si, *frame, *baseComplexMesh);
+    bc.base_complex_extraction(*si, *frame, *mesh);
 
     // Set the singularity attribute on the frame vertices.
     std::unordered_set<uint32_t> singularVertexSet;
@@ -259,10 +287,10 @@ void HexMesh::computeBaseComplexMeshFrame() {
 void HexMesh::updateVertexPositions(const std::vector<glm::vec3>& vertices) {
     // Update the base-complex mesh.
     for (size_t i = 0; i < vertices.size(); i++) {
-        Hybrid_V& v = baseComplexMesh->Vs.at(i);
+        Hybrid_V& v = mesh->Vs.at(i);
         const glm::vec3& vertPos = vertices.at(i);
         for (int j = 0; j < 3; j++) {
-            baseComplexMesh->V(j, v.id) = vertPos[j];
+            mesh->V(j, v.id) = vertPos[j];
         }
     }
 
@@ -382,7 +410,7 @@ float HexMesh::getCellAttribute(uint32_t h_id) {
 
 Mesh& HexMesh::getBaseComplexMesh(){
     rebuildInternalRepresentationIfNecessary();
-    return *baseComplexMesh;
+    return *mesh;
 }
 
 Singularity& HexMesh::getBaseComplexMeshSingularity(){
@@ -427,7 +455,7 @@ size_t HexMesh::getNumberOfSingularEdges() {
 size_t HexMesh::getNumberOfSingularEdges(bool boundary, uint32_t valence) {
     size_t counter = 0;
     for (uint32_t e_id : singularEdgeIds) {
-        Hybrid_E& e = baseComplexMesh->Es.at(e_id);
+        Hybrid_E& e = mesh->Es.at(e_id);
         if (e.boundary == boundary && e.neighbor_hs.size() == valence) {
             counter++;
         }
@@ -442,7 +470,7 @@ std::unordered_set<uint32_t>& HexMesh::getSingularEdgeIds() {
 
 float HexMesh::getFaceArea(uint32_t f_id) {
     glm::vec3 facePointsArray[4];
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
     Hybrid_F& f = mesh->Fs.at(f_id);
     assert(f.vs.size() == 4u);
     for (size_t i = 0; i < f.vs.size(); i++) {
@@ -470,16 +498,16 @@ float HexMesh::getFaceIdsAreaSum(const std::vector<uint32_t>& f_ids) {
 }
 
 void HexMesh::computeAllFaceAreas() {
-    faceAreas.resize(baseComplexMesh->Fs.size());
+    faceAreas.resize(mesh->Fs.size());
     #pragma omp parallel for default(none) shared(faceAreas, baseComplexMesh)
-    for (uint32_t f_id = 0; f_id < baseComplexMesh->Fs.size(); f_id++) {
+    for (uint32_t f_id = 0; f_id < mesh->Fs.size(); f_id++) {
         faceAreas.at(f_id) = getFaceArea(f_id);
     }
 }
 
 float HexMesh::getCellVolume(uint32_t h_id) {
     glm::vec3 cellPointsArray[8];
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
     Hybrid& h = mesh->Hs.at(h_id);
     assert(h.vs.size() == 8u);
     for (size_t i = 0; i < h.vs.size(); i++) {
@@ -507,9 +535,9 @@ float HexMesh::getCellIdsVolumeSum(const std::vector<uint32_t>& h_ids) {
 }
 
 void HexMesh::computeAllCellVolumes() {
-    cellVolumes.resize(baseComplexMesh->Hs.size());
+    cellVolumes.resize(mesh->Hs.size());
     #pragma omp parallel for default(none) shared(cellVolumes, baseComplexMesh)
-    for (uint32_t h_id = 0; h_id < baseComplexMesh->Hs.size(); h_id++) {
+    for (uint32_t h_id = 0; h_id < mesh->Hs.size(); h_id++) {
         cellVolumes.at(h_id) = getCellVolume(h_id);
     }
 }
@@ -519,7 +547,7 @@ float HexMesh::getTotalCellVolume() {
     if (cellVolumes.empty()) {
         computeAllCellVolumes();
     }
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     float totalVolume = 0.0f;
     for (uint32_t i = 0; i < mesh->Hs.size(); i++) {
@@ -530,12 +558,12 @@ float HexMesh::getTotalCellVolume() {
 
 float HexMesh::getAverageCellVolume() {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
     return getTotalCellVolume() / float(mesh->Hs.size());
 }
 
 float HexMesh::interpolateCellAttributePerVertex(uint32_t v_id, const std::vector<float>& cellVolumes) {
-    Hybrid_V& v = baseComplexMesh->Vs.at(v_id);
+    Hybrid_V& v = mesh->Vs.at(v_id);
 
     float volumeSum = 0.0f;
     for (uint32_t h_id : v.neighbor_hs) {
@@ -575,7 +603,7 @@ float HexMesh::interpolateCellAttributePerVertex(uint32_t v_id, const std::vecto
 }
 
 float HexMesh::maximumCellAttributePerVertex(uint32_t v_id) {
-    Hybrid_V& v = baseComplexMesh->Vs.at(v_id);
+    Hybrid_V& v = mesh->Vs.at(v_id);
 
     float maximumCellAttributeValue = 0.0f;
     for (uint32_t h_id : v.neighbor_hs) {
@@ -586,7 +614,7 @@ float HexMesh::maximumCellAttributePerVertex(uint32_t v_id) {
 }
 
 float HexMesh::interpolateCellAttributePerEdge(uint32_t e_id, const std::vector<float>& cellVolumes) {
-    Hybrid_E& e = baseComplexMesh->Es.at(e_id);
+    Hybrid_E& e = mesh->Es.at(e_id);
 
     float volumeSum = 0.0f;
     for (uint32_t h_id : e.neighbor_hs) {
@@ -626,7 +654,7 @@ float HexMesh::interpolateCellAttributePerEdge(uint32_t e_id, const std::vector<
 }
 
 float HexMesh::maximumCellAttributePerEdge(uint32_t e_id) {
-    Hybrid_E& e = baseComplexMesh->Es.at(e_id);
+    Hybrid_E& e = mesh->Es.at(e_id);
 
     float maximumCellAttributeValue = 0.0f;
     for (uint32_t h_id : e.neighbor_hs) {
@@ -676,7 +704,7 @@ void HexMesh::getSurfaceData(
     vertexAttributes = hexaLabApp->get_visible_model()->surface_vert_attribute;*/
 
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     size_t indexOffset = 0;
     for (size_t i = 0; i < mesh->Hs.size(); i++) {
@@ -757,7 +785,7 @@ void HexMesh::getSurfaceData(
         std::vector<glm::vec3>& vertexPositions,
         bool removeFilteredCells) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     size_t indexOffset = 0;
     for (size_t i = 0; i < mesh->Hs.size(); i++) {
@@ -864,7 +892,7 @@ void HexMesh::getVolumeData_FacesShared(
         std::vector<glm::vec3>& vertexPositions,
         std::vector<float>& vertexAttributes) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     // Compute all cell volumes.
     if (cellVolumes.empty()) {
@@ -919,7 +947,7 @@ void HexMesh::getVolumeData_VolumeShared(
         std::vector<glm::vec3>& vertexPositions,
         std::vector<float>& vertexAttributes) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     // Compute all cell volumes.
     if (cellVolumes.empty()) {
@@ -968,7 +996,7 @@ void HexMesh::getSingularityData(
         std::vector<glm::vec3>& pointVertices,
         std::vector<glm::vec4>& pointColors) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     for (size_t i = 0; i < si->SVs.size(); i++) {
         Singular_V& sv = si->SVs.at(i);
@@ -1001,7 +1029,7 @@ void HexMesh::getBaseComplexDataWireframe(
         bool drawRegularLines) {
     rebuildInternalRepresentationIfNecessary();
     if (!frame) computeBaseComplexMeshFrame();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     for (Frame_V& fv : frame->FVs) {
         if (!drawRegularLines && !fv.singular) {
@@ -1053,7 +1081,7 @@ void HexMesh::getBaseComplexDataSurface(
         bool cullInterior) {
     rebuildInternalRepresentationIfNecessary();
     if (!frame) computeBaseComplexMeshFrame();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
     sgl::XorshiftRandomGenerator random(10203);
 
     const int vertexIndices[12] = {
@@ -1214,8 +1242,8 @@ bool HexMesh::indexShared(
         std::unordered_set<uint32_t>& visitedVertices) {
     uint32_t v_id_0 = partitionParam[idx0];
     uint32_t v_id_1 = partitionParam[idx1];
-    Hybrid_V& v_0 = baseComplexMesh->Vs[v_id_0];
-    Hybrid_V& v_1 = baseComplexMesh->Vs[v_id_1];
+    Hybrid_V& v_0 = mesh->Vs[v_id_0];
+    Hybrid_V& v_1 = mesh->Vs[v_id_1];
     assert(v_id_0 != v_id_1);
 
     // Find the common, not yet visited neighbor.
@@ -1245,7 +1273,7 @@ bool HexMesh::indexShared(
 }
 
 std::vector<ParametrizedGrid> HexMesh::computeBaseComplexParametrizedGrid() {
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
     std::unordered_set<uint32_t> visitedVertices;
     std::vector<ParametrizedGrid> gridPartitions;
 
@@ -1725,7 +1753,7 @@ void HexMesh::addEdgeToLodRenderData(
         std::vector<glm::vec3>& lineVertices, std::vector<glm::vec4>& lineColors,
         std::unordered_set<uint64_t>& addedEdgeSet, int level, int numLevels) {
     int* numVertices = grid.numVertices;
-    Mesh* mesh = this->baseComplexMesh;
+    Mesh* mesh = this->mesh;
     uint32_t vertexId0 = grid.gridVertexIds.at(PARAM_IDX_VEC(ptIdx0));
     uint32_t vertexId1 = grid.gridVertexIds.at(PARAM_IDX_VEC(ptIdx1));
     uint64_t vertexPair = makeEdge(vertexId0, vertexId1);
@@ -1872,7 +1900,7 @@ void HexMesh::getCompleteWireframeData(
         std::vector<glm::vec4> &lineColors,
         bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
     const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
     const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
@@ -1891,10 +1919,10 @@ void HexMesh::getCompleteWireframeData(
 
 Hybrid_E* HexMesh::pickNextUnvisitedNeighbor(std::unordered_set<uint32_t>& visitedEdgeIds, Hybrid_E& e, uint32_t v_id) {
     Hybrid_E* neighbor_e = nullptr;
-    Hybrid_V& v = baseComplexMesh->Vs.at(v_id);
+    Hybrid_V& v = mesh->Vs.at(v_id);
     for (uint32_t neighbor_e_id : v.neighbor_es) {
         if (neighbor_e_id != e.id && visitedEdgeIds.find(neighbor_e_id) == visitedEdgeIds.end()) {
-            neighbor_e = &baseComplexMesh->Es.at(neighbor_e_id);
+            neighbor_e = &mesh->Es.at(neighbor_e_id);
             break;
         }
     }
@@ -1906,7 +1934,7 @@ void HexMesh::getCompleteWireframeTubeData(
         std::vector<std::vector<glm::vec4>>& lineColorsList,
         bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
     const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
     const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
@@ -2021,7 +2049,7 @@ void HexMesh::getCompleteVertexData(
         std::vector<glm::vec4> &pointColors,
         bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
     const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
     const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
@@ -2055,7 +2083,7 @@ void HexMesh::getVertexTubeData(
         std::vector<glm::vec4> &pointColors,
         bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
     const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
     const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
@@ -2093,7 +2121,7 @@ void HexMesh::getSurfaceDataBarycentric(
         std::vector<glm::vec3>& barycentricCoordinates,
         bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
     const glm::vec4 regularColor = useGlowColors ? glowColorRegular : outlineColorRegular;
     const glm::vec4 singularColor = useGlowColors ? glowColorSingular : outlineColorSingular;
 
@@ -2150,7 +2178,7 @@ void HexMesh::getSurfaceDataWireframeFaces(
         bool onlyBoundary,
         bool useGlowColors) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     size_t indexOffset = 0;
     for (size_t i = 0; i < mesh->Fs.size(); i++) {
@@ -2217,7 +2245,7 @@ void HexMesh::getSurfaceDataWireframeFaces(
         const std::vector<uint32_t>& faceIds,
         bool useSingularEdgeColorMap) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     size_t indexOffset = 0;
     for (size_t i = 0; i < faceIds.size(); i++) {
@@ -2275,7 +2303,7 @@ void HexMesh::getSurfaceDataWireframeFaces(
 
 
 uint32_t HexMesh::packEdgeSingularityInformation(uint32_t e_id) {
-    Hybrid_E& e = baseComplexMesh->Es.at(e_id);
+    Hybrid_E& e = mesh->Es.at(e_id);
     uint32_t isSingular = singularEdgeIds.find(e_id) != singularEdgeIds.end() ? 1 : 0;
     uint32_t isBoundary = e.boundary ? 1 : 0;
     uint32_t edgeValence = e.neighbor_hs.size();
@@ -2287,7 +2315,7 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
         std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
         int& maxLodValue) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     // Compute the per-edge LOD values between 0 and 1.
     std::vector<float> edgeLodValues;
@@ -2378,7 +2406,7 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
         int& maxLodValue, bool useVolumeWeighting) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     // Compute the per-edge LOD values between 0 and 1.
     std::vector<float> edgeLodValues;
@@ -2465,7 +2493,7 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell_Volume2(
         std::vector<HexahedralCellFaceUnified_Volume2>& hexahedralCellFaces,
         int& maxLodValue) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     // Compute the per-edge LOD values between 0 and 1.
     std::vector<float> edgeLodValues;
@@ -2586,7 +2614,7 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex_Volume2(
         std::vector<HexahedralCellFaceUnified_Volume2>& hexahedralCellFaces,
         int& maxLodValue) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     // Compute the per-edge LOD values between 0 and 1.
     std::vector<float> edgeLodValues;
@@ -2705,7 +2733,7 @@ void HexMesh::getVolumeData_DepthComplexity(
         std::vector<uint32_t>& triangleIndices,
         std::vector<glm::vec3>& vertexPositions) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     for (Hybrid_V& v : mesh->Vs) {
         glm::vec3 vertexPosition(mesh->V(0, v.id), mesh->V(1, v.id), mesh->V(2, v.id));
@@ -2742,7 +2770,7 @@ void HexMesh::getSurfaceDataWireframeFacesLineDensityControl(
         std::vector<HexahedralCellFaceLineDensityControl>& hexahedralCellFaces,
         int& maxLodValue) {
     rebuildInternalRepresentationIfNecessary();
-    Mesh* mesh = baseComplexMesh;
+    Mesh* mesh = mesh;
 
     // Compute the per-edge LOD values between 0 and 1.
     std::vector<float> edgeLodValues;

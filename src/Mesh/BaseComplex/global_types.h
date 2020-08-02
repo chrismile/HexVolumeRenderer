@@ -249,7 +249,7 @@ struct CHord
 
 	Sheet_type type;
 	bool fake;
-	bool side;//false 0, true 1 
+	bool side;//false 0, true 1
 	std::vector<uint32_t> ns;
 	std::vector<uint32_t> es;
 	std::vector<uint32_t> fs;

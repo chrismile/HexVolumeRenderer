@@ -1,4 +1,4 @@
-#include "hex_quality.h"
+#include "Mesh/HexMesh/QualityMeasure/hex_quality.h"
 
 #include "builder.h"
 
