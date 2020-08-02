@@ -125,6 +125,9 @@ void main()
     #endif
     //vec4 color = flatShadingWireframeSurfaceTronHalo(baseColor, fragmentDepth, lineCoordinates);
 
+    //float dist = length(fragmentPositionWorld - cameraPosition) * 0.99 - 0.6;
+    //color.rgb = mix(color.rgb, vec3(0.6), dist);
+
     #if defined(DIRECT_BLIT_GATHER)
     if (color.a < 0.01) {
         discard;

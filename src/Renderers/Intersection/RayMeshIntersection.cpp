@@ -114,8 +114,8 @@ bool RayMeshIntersection_NanoRT::pickPointWorld(
 
     glm::vec3 rayOrigin = cameraPosition;
 
-    static const float EPSILON_DEPTH = 1e-3f;
-    static const float INFINITY_DEPTH = 1e30f;
+    const float EPSILON_DEPTH = 1e-3f;
+    const float INFINITY_DEPTH = 1e30f;
 
     nanort::BVHTraceOptions traceOptions;
     nanort::Ray<float> ray;
