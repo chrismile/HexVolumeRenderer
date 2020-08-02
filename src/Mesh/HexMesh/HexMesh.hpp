@@ -66,8 +66,7 @@
 
 #include <Math/Geometry/AABB3.hpp>
 
-#include "HexaLab/hex_quality_color_maps.h"
-#include "HexaLab/mesh.h"
+#include "QualityMeasure/hex_quality_color_maps.h"
 #include "QualityMeasure/QualityMeasure.hpp"
 #include "Renderers/Widgets/TransferFunctionWindow.hpp"
 #include "Renderers/Intersection/RayMeshIntersection.hpp"
@@ -148,12 +147,16 @@ public:
     void setHexMeshData(const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices);
     void setQualityMeasure(QualityMeasure qualityMeasure);
     void onTransferFunctionMapRebuilt();
-    void unmark();
     bool isDirty() { return dirty; }
 
     // Get mesh information.
     inline size_t getNumCells() const { return meshNumCells; }
     inline size_t getNumVertices() const { return meshNumVertices; }
+
+    // Cell filtering.
+    void markCell(uint32_t h_id);
+    bool isCellMarked(uint32_t h_id);
+    void unmark();
 
     /**
      * Updates the vertex positions of a deformable mesh. Thus, also the quality measure is recomputed for all cells.
@@ -162,9 +165,7 @@ public:
      */
     void updateVertexPositions(const std::vector<glm::vec3>& vertices);
 
-    // For filters
-    HexaLab::Mesh& getHexaLabMesh();
-    bool isCellMarked(uint32_t h_id);
+    // Access to cell attributes.
     float getCellAttribute(uint32_t h_id);
 
     // For tube generation
@@ -642,9 +643,16 @@ private:
     uint32_t packEdgeSingularityInformation(uint32_t e_id);
 
 
+    // Cell deformation data.
     void recomputeHistogram();
     QualityMeasure qualityMeasure = QUALITY_MEASURE_SCALED_JACOBIAN;
     TransferFunctionWindow &transferFunctionWindow;
+    std::vector<float> cellQualityMeasureList;
+    float qualityMin = FLT_MAX;
+    float qualityMax = -FLT_MAX;
+    float qualityMinNormalized = FLT_MAX;
+    float qualityMaxNormalized = -FLT_MAX;
+
     RayMeshIntersection& rayMeshIntersection;
     bool dirty = false;
 
@@ -652,14 +660,13 @@ private:
     size_t meshNumCells = 0;
     size_t meshNumVertices = 0;
 
-    // HexaLab data
-    HexaLab::App* hexaLabApp = nullptr;
-    HexaLab::QualityMeasureEnum hexaLabQualityMeasure;
-
     // Base-complex data
     Mesh* mesh = nullptr;
     Singularity* si = nullptr;
     Frame* frame = nullptr;
+
+    // Cell filtering.
+    std::vector<bool> cellFilteringList;
 
     // Additonal mesh data.
     std::unordered_set<uint32_t> singularEdgeIds;

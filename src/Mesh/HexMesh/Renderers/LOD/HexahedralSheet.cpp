@@ -29,8 +29,8 @@
 #include <unordered_set>
 #include <limits>
 #include <queue>
-#include "BaseComplex/global_types.h"
-#include "HexMesh/HexMesh.hpp"
+#include "Mesh/BaseComplex/global_types.h"
+#include "Mesh/HexMesh/HexMesh.hpp"
 #include "HexahedralSheet.hpp"
 
 void getParallelEdgesInCell(Hybrid& h, uint32_t e_id, uint32_t parallelEdgeIds[3]) {

@@ -26,12 +26,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <unordered_map>
 #include <chrono>
 
 #include <Utils/File/Logfile.hpp>
 
-#include "BaseComplex/global_types.h"
-#include "HexMesh/HexMesh.hpp"
+#include "Mesh/BaseComplex/global_types.h"
+#include "Mesh/HexMesh/HexMesh.hpp"
 #include "HexahedralSheet.hpp"
 #include "LodSheetGeneration.hpp"
 #ifdef USE_LEMON

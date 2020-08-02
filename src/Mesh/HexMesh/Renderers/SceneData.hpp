@@ -32,7 +32,7 @@
 #include <Graphics/Scene/Camera.hpp>
 #include <Graphics/Buffers/FBO.hpp>
 #include <Graphics/Color.hpp>
-#include "Intersection/RayMeshIntersection.hpp"
+#include "Mesh/HexMesh/Renderers/Intersection/RayMeshIntersection.hpp"
 
 class AutomaticPerformanceMeasurer;
 

@@ -30,8 +30,8 @@
 #include <Graphics/Shader/ShaderManager.hpp>
 #include <Graphics/OpenGL/RendererGL.hpp>
 
-#include "BaseComplex/global_types.h"
-#include "Helpers/LineRenderingDefines.hpp"
+#include "Mesh/BaseComplex/global_types.h"
+#include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 
 #include "HexSheetRenderer.hpp"
 
@@ -133,7 +133,7 @@ void computeHexahedralSheetComponentConnectionData_B(
     }
 }
 
-void HexSheetRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void HexSheetRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     hexMesh = meshIn;
     hexahedralSheets.clear();
     connectionDataSet.clear();

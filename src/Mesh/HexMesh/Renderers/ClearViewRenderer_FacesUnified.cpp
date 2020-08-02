@@ -44,9 +44,9 @@
 
 #include "Utils/InternalState.hpp"
 #include "Utils/AutomaticPerformanceMeasurer.hpp"
-#include "Tubes/Tubes.hpp"
-#include "Helpers/Sphere.hpp"
-#include "Helpers/LineRenderingDefines.hpp"
+#include "Mesh/HexMesh/Renderers/Tubes/Tubes.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/Sphere.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "ClearViewRenderer_FacesUnified.hpp"
 
 // Use stencil buffer to mask unused pixels
@@ -375,7 +375,7 @@ void ClearViewRenderer_FacesUnified::updateLargeMeshMode() {
     }
 }
 
-void ClearViewRenderer_FacesUnified::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void ClearViewRenderer_FacesUnified::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     if (isNewMesh) {
         Pickable::focusPoint = glm::vec3(0.0f);
     }

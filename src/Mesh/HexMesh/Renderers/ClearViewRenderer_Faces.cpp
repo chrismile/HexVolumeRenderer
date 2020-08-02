@@ -39,9 +39,9 @@
 #include <Input/Mouse.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
-#include "Tubes/Tubes.hpp"
-#include "Helpers/Sphere.hpp"
-#include "Helpers/LineRenderingDefines.hpp"
+#include "Mesh/HexMesh/Renderers/Tubes/Tubes.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/Sphere.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "ClearViewRenderer_Faces.hpp"
 
 // Use stencil buffer to mask unused pixels
@@ -101,7 +101,7 @@ ClearViewRenderer_Faces::ClearViewRenderer_Faces(SceneData &sceneData, TransferF
     onResolutionChanged();
 }
 
-void ClearViewRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void ClearViewRenderer_Faces::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     if (isNewMesh) {
         Pickable::focusPoint = glm::vec3(0.0f);
     }

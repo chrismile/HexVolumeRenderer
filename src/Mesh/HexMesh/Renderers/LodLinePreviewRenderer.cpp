@@ -30,8 +30,8 @@
 #include <Graphics/Renderer.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
-#include "Helpers/Sphere.hpp"
-#include "Helpers/LineRenderingDefines.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/Sphere.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "LodLinePreviewRenderer.hpp"
 
 LodLinePreviewRenderer::LodLinePreviewRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
@@ -41,7 +41,7 @@ LodLinePreviewRenderer::LodLinePreviewRenderer(SceneData &sceneData, TransferFun
             {"WireframeLod.Vertex", "WireframeLod.Geometry", "WireframeLod.Fragment.Preview"});
 }
 
-void LodLinePreviewRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void LodLinePreviewRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     lineWidth = glm::clamp(
             std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
             MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);

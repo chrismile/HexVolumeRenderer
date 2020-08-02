@@ -29,8 +29,8 @@
 #ifndef HEXVOLUMERENDERER_SINGULAREDGECOLORMAPWIDGET_HPP
 #define HEXVOLUMERENDERER_SINGULAREDGECOLORMAPWIDGET_HPP
 
-#include "../Helpers/SingularityInformation.hpp"
-#include "HexMesh/HexMesh.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/SingularityInformation.hpp"
+#include "Mesh/HexMesh/HexMesh.hpp"
 
 class SingularEdgeColorMapWidget {
 public:

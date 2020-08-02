@@ -36,7 +36,7 @@
 #include <Utils/File/Logfile.hpp>
 #include <Utils/Convert.hpp>
 
-#include "HexMesh/HexMesh.hpp"
+#include "Mesh/HexMesh/HexMesh.hpp"
 #include "VtkLoader.hpp"
 
 bool VtkLoader::loadHexahedralMeshFromFile(

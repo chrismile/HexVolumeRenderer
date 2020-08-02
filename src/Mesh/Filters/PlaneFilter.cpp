@@ -28,38 +28,31 @@
 
 #include <ImGui/ImGuiWrapper.hpp>
 
+#include "Mesh/BaseComplex/global_types.h"
 #include "PlaneFilter.hpp"
 
 void PlaneFilter::filterMesh(HexMeshPtr meshIn) {
     output = meshIn;
-    HexaLab::Mesh& mesh = meshIn->getHexaLabMesh();
+    Mesh& mesh = meshIn->getBaseComplexMesh();
     glm::vec3 normalizedDirection = glm::normalize(direction);
 
     float minOffset = FLT_MAX;
     float maxOffset = -FLT_MAX;
-    for (const HexaLab::Vert &vert : mesh.verts) {
-        float offset = glm::dot(normalizedDirection, vert.position);
+    for (Hybrid_V& v : mesh.Vs) {
+        float offset = glm::dot(normalizedDirection,
+                glm::vec3(mesh.V(0, v.id), mesh.V(1, v.id), mesh.V(2, v.id)));
         minOffset = std::min(minOffset, offset);
         maxOffset = std::max(maxOffset, offset);
     }
     float offset = minOffset + (maxOffset - minOffset) * filterRatio;
 
-    for (size_t i = 0; i < mesh.cells.size(); ++i) {
-        HexaLab::Cell& cell = mesh.cells.at(i);
-        HexaLab::MeshNavigator nav = mesh.navigate(cell);
-
-        HexaLab::MeshNavigator cellNav = mesh.navigate(nav.face());
-        for (int v = 0; v < 8; ++v) {
-            if (v == 4) {
-                nav = nav.rotate_on_cell().rotate_on_cell();
-                cellNav = mesh.navigate(nav.face());
-            }
-
-            if (glm::dot(normalizedDirection, cellNav.vert().position) < offset) {
-                mesh.mark(nav.cell());
+    for (Hybrid& h : mesh.Hs) {
+        for (uint32_t v_id : h.vs) {
+            if (glm::dot(normalizedDirection,
+                    glm::vec3(mesh.V(0, v_id), mesh.V(1, v_id), mesh.V(2, v_id))) < offset) {
+                meshIn->markCell(h.id);
                 break;
             }
-            cellNav = cellNav.rotate_on_face();
         }
     }
     dirty = false;

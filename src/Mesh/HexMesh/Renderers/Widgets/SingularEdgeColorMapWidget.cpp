@@ -30,7 +30,7 @@
 #include <Graphics/OpenGL/GeometryBuffer.hpp>
 #include <Graphics/OpenGL/Shader.hpp>
 
-#include "BaseComplex/global_types.h"
+#include "Mesh/BaseComplex/global_types.h"
 
 #include "SingularEdgeColorMapWidget.hpp"
 

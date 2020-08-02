@@ -32,7 +32,7 @@
 #include <Graphics/Shader/ShaderAttributes.hpp>
 #include <Graphics/OpenGL/TimerGL.hpp>
 
-#include "Widgets/SingularEdgeColorMapWidget.hpp"
+#include "Mesh/HexMesh/Renderers/Widgets/SingularEdgeColorMapWidget.hpp"
 #include "ClearViewRenderer.hpp"
 
 /**
@@ -57,7 +57,7 @@ public:
      * @param meshIn The mesh to generate a visualization mapping for.
      * @param isNewMesh Whether a new mesh is loaded or just a new renderer is used.
      */
-    virtual void generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
+    virtual void uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
 
     /// Called when the resolution of the application window has changed.
     virtual void onResolutionChanged();

@@ -28,16 +28,16 @@
 
 #include <ImGui/ImGuiWrapper.hpp>
 
+#include "Mesh/BaseComplex/global_types.h"
 #include "QualityFilter.hpp"
 
 void QualityFilter::filterMesh(HexMeshPtr meshIn) {
     output = meshIn;
-    HexaLab::Mesh& mesh = meshIn->getHexaLabMesh();
+    Mesh& mesh = meshIn->getBaseComplexMesh();
 
-    for (size_t i = 0; i < mesh.cells.size(); ++i) {
-        HexaLab::Cell& cell = mesh.cells.at(i);
-        if (1.0f - mesh.normalized_hexa_quality.at(i) < filterRatio) {
-            mesh.mark(cell);
+    for (Hybrid& h : mesh.Hs) {
+        if (meshIn->getCellAttribute(h.id) < filterRatio) {
+            meshIn->markCell(h.id);
         }
     }
     dirty = false;

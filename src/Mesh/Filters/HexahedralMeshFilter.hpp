@@ -29,7 +29,7 @@
 #ifndef FILTERS_HEXAHEDRALMESHFILTER_HPP
 #define FILTERS_HEXAHEDRALMESHFILTER_HPP
 
-#include "HexMesh/HexMesh.hpp"
+#include "Mesh/HexMesh/HexMesh.hpp"
 
 struct InternalState;
 class SettingsMap;

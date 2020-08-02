@@ -30,7 +30,7 @@
 #include <Graphics/OpenGL/RendererGL.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
-#include "Helpers/LineRenderingDefines.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "SingularityRenderer.hpp"
 
 SingularityRenderer::SingularityRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
@@ -41,7 +41,7 @@ SingularityRenderer::SingularityRenderer(SceneData &sceneData, TransferFunctionW
     shaderProgramPoints = sgl::ShaderManager->getShaderProgram({"Point.Vertex", "Point.Geometry", "Point.Fragment"});
 }
 
-void SingularityRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void SingularityRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     lineWidth = glm::clamp(
             std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
             MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);

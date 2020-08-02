@@ -39,9 +39,9 @@
 #include <Input/Mouse.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
-#include "Tubes/Tubes.hpp"
-#include "Helpers/Sphere.hpp"
-#include "Helpers/LineRenderingDefines.hpp"
+#include "Mesh/HexMesh/Renderers/Tubes/Tubes.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/Sphere.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "ClearViewRenderer_Volume.hpp"
 
 const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap"};
@@ -123,7 +123,7 @@ ClearViewRenderer_Volume::ClearViewRenderer_Volume(SceneData &sceneData, Transfe
     onResolutionChanged();
 }
 
-void ClearViewRenderer_Volume::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void ClearViewRenderer_Volume::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     if (isNewMesh) {
         Pickable::focusPoint = glm::vec3(0.0f);
     }

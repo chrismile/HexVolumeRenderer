@@ -40,7 +40,7 @@ BaseComplexSurfaceRenderer::BaseComplexSurfaceRenderer(SceneData &sceneData, Tra
     sgl::ShaderManager->removePreprocessorDefine("DIRECT_BLIT_GATHER");
 }
 
-void BaseComplexSurfaceRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void BaseComplexSurfaceRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     std::vector<uint32_t> indices;
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec3> normals;

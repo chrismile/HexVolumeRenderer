@@ -35,7 +35,7 @@
 
 #include <glm/vec3.hpp>
 
-#include "HexMesh/HexMesh.hpp"
+#include "Mesh/HexMesh/HexMesh.hpp"
 
 class HexahedralMeshLoader {
 public:

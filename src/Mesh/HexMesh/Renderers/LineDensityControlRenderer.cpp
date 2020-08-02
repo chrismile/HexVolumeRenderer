@@ -37,8 +37,8 @@
 #include <Graphics/Shader/ShaderManager.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
-#include "Helpers/LineRenderingDefines.hpp"
-#include "LOD/LodSheetGeneration.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
+#include "Mesh/HexMesh/Renderers/LOD/LodSheetGeneration.hpp"
 #include "LineDensityControlRenderer.hpp"
 
 /// Expected (average) depth complexity, i.e. width*height* this value = number of fragments that can be stored.
@@ -165,7 +165,7 @@ void LineDensityControlRenderer::onResolutionChanged() {
             attributeTextureResolution.x, attributeTextureResolution.y, textureSettings);
 }
 
-void LineDensityControlRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void LineDensityControlRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     lineWidth = glm::clamp(
             std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
             MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);

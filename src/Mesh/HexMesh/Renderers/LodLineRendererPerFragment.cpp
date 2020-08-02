@@ -31,8 +31,8 @@
 #include <Graphics/OpenGL/RendererGL.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
-#include "Helpers/Sphere.hpp"
-#include "Helpers/LineRenderingDefines.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/Sphere.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "LodLineRendererPerFragment.hpp"
 
 LodLineRendererPerFragment::LodLineRendererPerFragment(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
@@ -76,7 +76,7 @@ void LodLineRendererPerFragment::reloadSphereRenderData() {
     focusPointShaderAttributes->setIndexGeometryBuffer(focusPointIndexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 }
 
-void LodLineRendererPerFragment::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void LodLineRendererPerFragment::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     if (isNewMesh) {
         Pickable::focusPoint = glm::vec3(0.0f);
     }

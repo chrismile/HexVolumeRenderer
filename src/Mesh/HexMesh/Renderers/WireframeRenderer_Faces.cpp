@@ -30,7 +30,7 @@
 #include <Graphics/OpenGL/RendererGL.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
-#include "Helpers/LineRenderingDefines.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "WireframeRenderer_Faces.hpp"
 
 WireframeRenderer_Faces::WireframeRenderer_Faces(
@@ -50,7 +50,7 @@ WireframeRenderer_Faces::WireframeRenderer_Faces(
     }
 }
 
-void WireframeRenderer_Faces::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void WireframeRenderer_Faces::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     lineWidth = glm::clamp(
             std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
             MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);

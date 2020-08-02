@@ -37,9 +37,9 @@
 #include <Input/Mouse.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
-#include "Tubes/Tubes.hpp"
-#include "Helpers/Sphere.hpp"
-#include "Helpers/LineRenderingDefines.hpp"
+#include "Mesh/HexMesh/Renderers/Tubes/Tubes.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/Sphere.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "ClearViewRenderer.hpp"
 
 const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap"};
@@ -336,10 +336,10 @@ void ClearViewRenderer::renderGui() {
         if (clearViewRendererType != CLEAR_VIEW_RENDERER_TYPE_VOLUME
                 && ImGui::Checkbox("Use Weighted Vertex Attributes", &useWeightedVertexAttributes)) {
             useShading = false;
-            if (this->mesh) generateVisualizationMapping(mesh, false);
+            if (this->mesh) uploadVisualizationMapping(mesh, false);
         }
         if (useWeightedVertexAttributes && ImGui::Checkbox("Use Volume Weighting", &useVolumeWeighting)) {
-            if (this->mesh) generateVisualizationMapping(mesh, false);
+            if (this->mesh) uploadVisualizationMapping(mesh, false);
             reRender = true;
         }
         if (clearViewRendererType != CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED && ImGui::Combo(

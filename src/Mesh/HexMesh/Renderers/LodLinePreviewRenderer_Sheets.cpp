@@ -30,9 +30,9 @@
 #include <Graphics/Renderer.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
-#include "Helpers/Sphere.hpp"
-#include "Helpers/LineRenderingDefines.hpp"
-#include "LOD/LodSheetGeneration.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/Sphere.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
+#include "Mesh/HexMesh/Renderers/LOD/LodSheetGeneration.hpp"
 #include "LodLinePreviewRenderer_Sheets.hpp"
 
 LodLinePreviewRenderer_Sheets::LodLinePreviewRenderer_Sheets(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
@@ -42,7 +42,7 @@ LodLinePreviewRenderer_Sheets::LodLinePreviewRenderer_Sheets(SceneData &sceneDat
             {"WireframeLod.Vertex", "WireframeLod.Geometry", "WireframeLod.Fragment.Preview"});
 }
 
-void LodLinePreviewRenderer_Sheets::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void LodLinePreviewRenderer_Sheets::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     mesh = meshIn;
     lineWidth = glm::clamp(
             std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
@@ -99,19 +99,19 @@ void LodLinePreviewRenderer_Sheets::renderGui() {
         }
         if (ImGui::SliderFloat("LOD Merge Factor", &lodMergeFactor, 0.999f, 4.0f, "%.3f")) {
             if (mesh) {
-                generateVisualizationMapping(mesh, false);
+                uploadVisualizationMapping(mesh, false);
                 reRender = true;
             }
         }
         if (ImGui::Checkbox("Use Volume and Area Measures", &useVolumeAndAreaMeasures)) {
             if (mesh) {
-                generateVisualizationMapping(mesh, false);
+                uploadVisualizationMapping(mesh, false);
                 reRender = true;
             }
         }
         if (ImGui::Checkbox("Use Weights for Merging", &useWeightsForMerging)) {
             if (mesh) {
-                generateVisualizationMapping(mesh, false);
+                uploadVisualizationMapping(mesh, false);
                 reRender = true;
             }
         }

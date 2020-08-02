@@ -33,7 +33,7 @@
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
 #include "HexahedralMeshRenderer.hpp"
-#include "Intersection/Pickable.hpp"
+#include "Mesh/HexMesh/Renderers/Intersection/Pickable.hpp"
 
 /**
  * Renders the hexahedral mesh using lines. All lines are assigned an LOD value between 0 and 1.
@@ -53,7 +53,7 @@ public:
      * @param meshIn The mesh to generate a visualization mapping for.
      * @param isNewMesh Whether a new mesh is loaded or just a new renderer is used.
      */
-    virtual void generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
+    virtual void uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
 
     // Renders the object to the scene framebuffer.
     virtual void render();

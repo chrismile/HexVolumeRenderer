@@ -37,14 +37,14 @@
 #include <Graphics/Shader/Shader.hpp>
 #include <Graphics/Video/VideoWriter.hpp>
 
-#include "QualityMeasure/QualityMeasure.hpp"
-#include "Loaders/HexaLabDatasets.hpp"
-#include "Loaders/HexahedralMeshLoader.hpp"
-#include "Filters/HexahedralMeshFilter.hpp"
-#include "Renderers/SceneData.hpp"
-#include "Renderers/HexahedralMeshRenderer.hpp"
-#include "Renderers/Widgets/TransferFunctionWindow.hpp"
-#include "Renderers/Widgets/CheckpointWindow.hpp"
+#include "Mesh/HexMesh/QualityMeasure/QualityMeasure.hpp"
+#include "Mesh/HexMesh/Loaders/HexaLabDatasets.hpp"
+#include "Mesh/HexMesh/Loaders/HexahedralMeshLoader.hpp"
+#include "Mesh/Filters/HexahedralMeshFilter.hpp"
+#include "Mesh/HexMesh/Renderers/SceneData.hpp"
+#include "Mesh/HexMesh/Renderers/HexahedralMeshRenderer.hpp"
+#include "Mesh/HexMesh/Renderers/Widgets/TransferFunctionWindow.hpp"
+#include "Mesh/HexMesh/Renderers/Widgets/CheckpointWindow.hpp"
 #include "Utils/CameraPath.hpp"
 #include "Utils/AutomaticPerformanceMeasurer.hpp"
 

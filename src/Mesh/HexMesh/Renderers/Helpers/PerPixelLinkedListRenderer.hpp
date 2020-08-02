@@ -31,7 +31,7 @@
 
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
-#include "../HexahedralMeshRenderer.hpp"
+#include "Mesh/HexMesh/Renderers/HexahedralMeshRenderer.hpp"
 
 class PerPixelLinkedListRenderer : public HexahedralMeshRenderer {
 public:

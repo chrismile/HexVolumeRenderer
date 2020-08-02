@@ -29,7 +29,7 @@
 #ifndef HEXVOLUMERENDERER_LODLINEPREVIEWRENDERER_SHEETSFACES_HPP
 #define HEXVOLUMERENDERER_LODLINEPREVIEWRENDERER_SHEETSFACES_HPP
 
-#include "Helpers/PerPixelLinkedListRenderer.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/PerPixelLinkedListRenderer.hpp"
 
 /**
  * Renders the hexahedral mesh using lines. All lines are assigned an LOD value between 0 and 1.
@@ -46,7 +46,7 @@ public:
      * @param meshIn The mesh to generate a visualization mapping for.
      * @param isNewMesh Whether a new mesh is loaded or just a new renderer is used.
      */
-    virtual void generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
+    virtual void uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
 
     // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
     virtual void renderGui();

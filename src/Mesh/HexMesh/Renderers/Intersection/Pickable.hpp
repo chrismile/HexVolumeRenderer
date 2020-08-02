@@ -29,7 +29,7 @@
 #ifndef HEXVOLUMERENDERER_PICKABLE_HPP
 #define HEXVOLUMERENDERER_PICKABLE_HPP
 
-#include "Renderers/SceneData.hpp"
+#include "Mesh/HexMesh/Renderers/SceneData.hpp"
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 

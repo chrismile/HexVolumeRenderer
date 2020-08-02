@@ -40,10 +40,10 @@
 #include <Math/Math.hpp>
 #include <Utils/File/Logfile.hpp>
 
-#include "BaseComplex/global_types.h"
-#include "Renderers/Helpers/PointToLineDistance.hpp"
-#include "Renderers/Helpers/SearchStructures/KDTree.hpp"
-#include "HexMesh/HexMesh.hpp"
+#include "Mesh/BaseComplex/global_types.h"
+#include "Mesh/HexMesh/Renderers/Helpers/PointToLineDistance.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/SearchStructures/KDTree.hpp"
+#include "Mesh/HexMesh/HexMesh.hpp"
 #include "Tubes.hpp"
 
 void addHemisphereToMesh_Union(

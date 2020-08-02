@@ -32,7 +32,7 @@
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
 #include "HexahedralMeshRenderer.hpp"
-#include "LOD/HexahedralSheet.hpp"
+#include "Mesh/HexMesh/Renderers/LOD/HexahedralSheet.hpp"
 
 class HexSheetRenderer : public HexahedralMeshRenderer {
 public:
@@ -44,7 +44,7 @@ public:
      * @param meshIn The mesh to generate a visualization mapping for.
      * @param isNewMesh Whether a new mesh is loaded or just a new renderer is used.
      */
-    virtual void generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
+    virtual void uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
 
     // Renders the object to the scene framebuffer.
     virtual void render();

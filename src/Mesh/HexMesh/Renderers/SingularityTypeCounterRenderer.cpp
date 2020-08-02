@@ -27,14 +27,14 @@
  */
 
 #include "SingularityTypeCounterRenderer.hpp"
-#include "BaseComplex/global_types.h"
+#include "Mesh/BaseComplex/global_types.h"
 
 SingularityTypeCounterRenderer::SingularityTypeCounterRenderer(
         SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
 }
 
-void SingularityTypeCounterRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void SingularityTypeCounterRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     Mesh& mesh = meshIn->getBaseComplexMesh();
     Singularity& si = meshIn->getBaseComplexMeshSingularity();
 

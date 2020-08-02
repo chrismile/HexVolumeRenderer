@@ -30,7 +30,7 @@
 #include <Graphics/OpenGL/RendererGL.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
-#include "Helpers/LineRenderingDefines.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "BaseComplexLineRenderer.hpp"
 
 BaseComplexLineRenderer::BaseComplexLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
@@ -41,7 +41,7 @@ BaseComplexLineRenderer::BaseComplexLineRenderer(SceneData &sceneData, TransferF
     shaderProgramPoints = sgl::ShaderManager->getShaderProgram({"Point.Vertex", "Point.Geometry", "Point.Fragment"});
 }
 
-void BaseComplexLineRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void BaseComplexLineRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     lineWidth = glm::clamp(
             std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
             MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);

@@ -32,7 +32,7 @@
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
 #include "HexahedralMeshRenderer.hpp"
-#include "Intersection/Pickable.hpp"
+#include "Mesh/HexMesh/Renderers/Intersection/Pickable.hpp"
 
 /**
  * Renders the hexahedral mesh using an approach similar to ClearView (see below).

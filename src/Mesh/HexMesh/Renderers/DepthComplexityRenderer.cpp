@@ -69,7 +69,7 @@ DepthComplexityRenderer::DepthComplexityRenderer(SceneData &sceneData, TransferF
     onResolutionChanged();
 }
 
-void DepthComplexityRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void DepthComplexityRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     hexMesh = meshIn;
 
     /*std::vector<uint32_t> triangleIndices;

@@ -30,7 +30,7 @@
 #include <Graphics/OpenGL/RendererGL.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
 
-#include "Helpers/LineRenderingDefines.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "WireframeRenderer.hpp"
 
 WireframeRenderer::WireframeRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
@@ -40,7 +40,7 @@ WireframeRenderer::WireframeRenderer(SceneData &sceneData, TransferFunctionWindo
             {"Wireframe.Vertex", "Wireframe.Geometry", "Wireframe.Fragment.NoOutline"});
 }
 
-void WireframeRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void WireframeRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     lineWidth = glm::clamp(
             std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
             MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);

@@ -33,7 +33,7 @@
 #include <map>
 #include <glm/glm.hpp>
 
-#include "Renderers/SceneData.hpp"
+#include "Mesh/HexMesh/Renderers/SceneData.hpp"
 
 class Checkpoint
 {

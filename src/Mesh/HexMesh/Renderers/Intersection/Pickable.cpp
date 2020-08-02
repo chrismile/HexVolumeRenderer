@@ -33,7 +33,7 @@
 #include <Input/Mouse.hpp>
 
 #include "Pickable.hpp"
-#include "../Helpers/LineRenderingDefines.hpp"
+#include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 
 glm::vec3 Pickable::focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec4 Pickable::focusPointColor = FOCUS_SPHERE_COLOR;

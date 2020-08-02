@@ -62,35 +62,35 @@
 #include <Graphics/Texture/Bitmap.hpp>
 #include <Graphics/OpenGL/SystemGL.hpp>
 
-#include "Loaders/VtkLoader.hpp"
-#include "Loaders/MeshLoader.hpp"
-#include "Loaders/HexaLabDatasets.hpp"
-#include "Filters/PlaneFilter.hpp"
-#include "Filters/QualityFilter.hpp"
-#include "Renderers/SurfaceRenderer.hpp"
-#include "Renderers/WireframeRenderer.hpp"
-#include "Renderers/WireframeRenderer_Faces.hpp"
-#include "Renderers/VolumeRenderer_Faces.hpp"
-#include "Renderers/VolumeRenderer_Volume.hpp"
-#include "Renderers/ClearViewRenderer_Faces.hpp"
-#include "Renderers/ClearViewRenderer_FacesUnified.hpp"
-#include "Renderers/ClearViewRenderer_Volume.hpp"
-#include "Renderers/ClearViewRenderer_Volume2.hpp"
-#include "Renderers/DepthComplexityRenderer.hpp"
-#include "Renderers/SingularityRenderer.hpp"
-#include "Renderers/BaseComplexLineRenderer.hpp"
-#include "Renderers/BaseComplexSurfaceRenderer.hpp"
-#include "Renderers/PartitionLineRenderer.hpp"
-#include "Renderers/LodLineRendererPerFragment.hpp"
-#include "Renderers/LodLineRenderer.hpp"
-#include "Renderers/LodLinePreviewRenderer.hpp"
-#include "Renderers/LodLinePreviewRenderer_Sheets.hpp"
-#include "Renderers/LodLinePreviewRenderer_SheetsFaces.hpp"
-#include "Renderers/SingularityTypeCounterRenderer.hpp"
-#include "Renderers/LineDensityControlRenderer.hpp"
-#include "Renderers/HexSheetRenderer.hpp"
+#include "Mesh/HexMesh/Loaders/VtkLoader.hpp"
+#include "Mesh/HexMesh/Loaders/MeshLoader.hpp"
+#include "Mesh/HexMesh/Loaders/HexaLabDatasets.hpp"
+#include "Mesh/Filters/PlaneFilter.hpp"
+#include "Mesh/Filters/QualityFilter.hpp"
+#include "Mesh/HexMesh/Renderers/SurfaceRenderer.hpp"
+#include "Mesh/HexMesh/Renderers/WireframeRenderer.hpp"
+#include "Mesh/HexMesh/Renderers/WireframeRenderer_Faces.hpp"
+#include "Mesh/HexMesh/Renderers/VolumeRenderer_Faces.hpp"
+#include "Mesh/HexMesh/Renderers/VolumeRenderer_Volume.hpp"
+#include "Mesh/HexMesh/Renderers/ClearViewRenderer_Faces.hpp"
+#include "Mesh/HexMesh/Renderers/ClearViewRenderer_FacesUnified.hpp"
+#include "Mesh/HexMesh/Renderers/ClearViewRenderer_Volume.hpp"
+#include "Mesh/HexMesh/Renderers/ClearViewRenderer_Volume2.hpp"
+#include "Mesh/HexMesh/Renderers/DepthComplexityRenderer.hpp"
+#include "Mesh/HexMesh/Renderers/SingularityRenderer.hpp"
+#include "Mesh/HexMesh/Renderers/BaseComplexLineRenderer.hpp"
+#include "Mesh/HexMesh/Renderers/BaseComplexSurfaceRenderer.hpp"
+#include "Mesh/HexMesh/Renderers/PartitionLineRenderer.hpp"
+#include "Mesh/HexMesh/Renderers/LodLineRendererPerFragment.hpp"
+#include "Mesh/HexMesh/Renderers/LodLineRenderer.hpp"
+#include "Mesh/HexMesh/Renderers/LodLinePreviewRenderer.hpp"
+#include "Mesh/HexMesh/Renderers/LodLinePreviewRenderer_Sheets.hpp"
+#include "Mesh/HexMesh/Renderers/LodLinePreviewRenderer_SheetsFaces.hpp"
+#include "Mesh/HexMesh/Renderers/SingularityTypeCounterRenderer.hpp"
+#include "Mesh/HexMesh/Renderers/LineDensityControlRenderer.hpp"
+#include "Mesh/HexMesh/Renderers/HexSheetRenderer.hpp"
 #ifdef USE_EMBREE
-#include "Renderers/Intersection/RayMeshIntersection_Embree.hpp"
+#include "Mesh/HexMesh/Renderers/Intersection/RayMeshIntersection_Embree.hpp"
 #endif
 #include "MainApp.hpp"
 
@@ -1066,7 +1066,7 @@ void MainApp::prepareVisualizationPipeline() {
         // changed).
         for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
             if (meshRenderer->isDirty() || isPreviousNodeDirty) {
-                meshRenderer->generateVisualizationMapping(filteredMesh, newMeshLoaded);
+                meshRenderer->uploadVisualizationMapping(filteredMesh, newMeshLoaded);
             }
         }
     }

@@ -47,7 +47,7 @@ SurfaceRenderer::SurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &t
     sgl::ShaderManager->removePreprocessorDefine("DIRECT_BLIT_GATHER");
 }
 
-void SurfaceRenderer::generateVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
+void SurfaceRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     std::vector<uint32_t> triangleIndices;
     std::vector<glm::vec3> vertexPositions;
     std::vector<glm::vec3> vertexNormals;

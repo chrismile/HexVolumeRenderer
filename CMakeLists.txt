@@ -25,7 +25,7 @@ if(USE_EMBREE)
 	include_directories(${EMBREE_INCLUDE_DIRS})
 	add_definitions(-DUSE_EMBREE)
 else()
-	list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Renderers/Intersection/RayMeshIntersection_Embree.cpp)
+	list(REMOVE_ITEM SOURCES src/Mesh/HexMesh/Renderers/Intersection/RayMeshIntersection_Embree.cpp)
 endif()
 
 if(USE_LEMON)
@@ -38,7 +38,7 @@ if(USE_LEMON)
 	include_directories(${LEMON_INCLUDES})
 	add_definitions(-DUSE_LEMON)
 else()
-	list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Renderers/LOD/SheetComponentMatching.cpp)
+	list(REMOVE_ITEM SOURCES src/Mesh/HexMesh/Renderers/LOD/SheetComponentMatching.cpp)
 endif()
 
 #make VERBOSE=1
