@@ -5,7 +5,7 @@
 
 
 // Swap two Frags in color and depth Array => Avoid bacause expensive
-void swapFrags(uint i, uint j) {
+void swapFragments(uint i, uint j) {
     uint cTemp = colorList[i];
     colorList[i] = colorList[j];
     colorList[j] = cTemp;
@@ -36,7 +36,7 @@ vec4 bubbleSort(uint fragsCount) {
             // Go through all
             if(depthList[i] > depthList[i+1]) {
                 // Order not correct => Swap
-                swapFrags(i, i+1);
+                swapFragments(i, i+1);
                 changed = true; // Something has changed
             }
         }
@@ -122,7 +122,7 @@ void maxHeapSink(uint x, uint fragsCount) {
             // Does it have to sink
             return;
         } else {
-            swapFrags(x, c);
+            swapFragments(x, c);
             x = c; // Swap and sink again
         }
     }
@@ -136,7 +136,7 @@ vec4 heapSort(uint fragsCount) {
     }
     // Heap => Sorted List
     for (i=1;i<fragsCount;++i) {
-        swapFrags(0, fragsCount-i); // Swap max to List End
+        swapFragments(0, fragsCount-i); // Swap max to List End
         maxHeapSink(0, fragsCount-i); // Sink the max to obtain correct heap
     }
 
@@ -167,7 +167,7 @@ void minHeapSink4(uint x, uint fragsCount) {
         if (depthList[x] <= depthList[c]) {
             return;
         } else {
-            swapFrags(x, c);
+            swapFragments(x, c);
             x = c;
         }
     }

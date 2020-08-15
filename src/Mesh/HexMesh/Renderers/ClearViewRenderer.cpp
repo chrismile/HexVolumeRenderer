@@ -42,11 +42,6 @@
 #include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "ClearViewRenderer.hpp"
 
-const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap"};
-
-// Choice of sorting algorithm
-static int sortingAlgorithmMode = 0;
-
 // When rendering spheres using instancing.
 struct SphereInstancingData {
     glm::vec3 position;
@@ -287,16 +282,27 @@ void ClearViewRenderer::loadFocusRepresentation() {
 }
 
 void ClearViewRenderer::setSortingAlgorithmDefine() {
-    if (sortingAlgorithmMode == 0) {
+    if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_PRIORITY_QUEUE) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "frontToBackPQ");
-    } else if (sortingAlgorithmMode == 1) {
+    } else if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_BUBBLE_SORT) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "bubbleSort");
-    } else if (sortingAlgorithmMode == 2) {
+    } else if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_INSERTION_SORT) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "insertionSort");
-    } else if (sortingAlgorithmMode == 3) {
+    } else if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_SHELL_SORT) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "shellSort");
-    } else if (sortingAlgorithmMode == 4) {
+    } else if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_MAX_HEAP) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "heapSort");
+    } else if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_QUICKSORT) {
+        sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "quicksort");
+    } else if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_QUICKSORT_HYBRID) {
+        sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "quicksortHybrid");
+    }
+
+    if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_QUICKSORT
+            || sortingAlgorithmMode == SORTING_ALGORITHM_MODE_QUICKSORT_HYBRID) {
+        sgl::ShaderManager->addPreprocessorDefine("USE_QUICKSORT", "");
+    } else {
+        sgl::ShaderManager->removePreprocessorDefine("USE_QUICKSORT");
     }
 }
 

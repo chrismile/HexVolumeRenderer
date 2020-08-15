@@ -128,6 +128,8 @@ uniform float maxLodValue;
 uniform float selectedLodValueFocus;
 uniform float selectedLodValueContext;
 uniform float importantLineBoostFactor;
+uniform vec3 backgroundColor = vec3(0.0);
+uniform vec3 foregroundColor = vec3(1.0);
 
 #include "ClearView.glsl"
 
@@ -240,8 +242,8 @@ void main()
     vec4 lineBaseColor = vec4(fragmentColor.rgb, 1.0);
     #endif
 
-    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.3);
-    vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
+    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, backgroundColor, 0.3);
+    vec3 lineBaseColorContext = mix(fragmentColor.rgb, foregroundColor, 0.3);
     lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
 
     float lineCoordinates = max(minDistance / lineRadius, 0.0);
@@ -301,7 +303,7 @@ void main()
         vec4 lineBaseColorAll = vec4(fragmentColor.rgb, 1.0);
         #endif
 
-        vec3 lineColor = mix(lineBaseColorAll.rgb, vec3(1.0), 0.1);
+        vec3 lineColor = mix(lineBaseColorAll.rgb, foregroundColor, 0.1);
         blendedColor.rgb = mix(volumeColor.rgb, lineColor.rgb, clamp(0.6 - fragmentDistance, 0.0, 0.3));
         blendedColor.a = clamp(blendedColor.a * 1.5, 0.0, 1.0);
     #endif
@@ -340,6 +342,8 @@ uniform float maxLodValue;
 uniform float selectedLodValueFocus;
 uniform float selectedLodValueContext;
 uniform float importantLineBoostFactor;
+uniform vec3 backgroundColor = vec3(0.0);
+uniform vec3 foregroundColor = vec3(1.0);
 
 // Camera data
 uniform vec3 cameraPosition;
@@ -451,8 +455,8 @@ void main()
     vec4 lineBaseColor = vec4(fragmentColor.rgb, 1.0);
     #endif
 
-    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, vec3(0.0), 0.3);
-    vec3 lineBaseColorContext = mix(fragmentColor.rgb, vec3(1.0), 0.3);
+    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, backgroundColor, 0.3);
+    vec3 lineBaseColorContext = mix(fragmentColor.rgb, foregroundColor, 0.3);
     lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
 
     float lineCoordinates = max(minDistance / lineRadius, 0.0);
@@ -511,7 +515,7 @@ void main()
         vec4 lineBaseColorAll = vec4(fragmentColor.rgb, 1.0);
         #endif
 
-        vec3 lineColor = mix(lineBaseColorAll.rgb, vec3(1.0), 0.1);
+        vec3 lineColor = mix(lineBaseColorAll.rgb, foregroundColor, 0.1);
         blendedColor.rgb = mix(volumeColor.rgb, lineColor.rgb, clamp(0.6 - fragmentDistance, 0.0, 0.3));
         blendedColor.a = clamp(blendedColor.a * 1.5, 0.0, 1.0);
     #endif

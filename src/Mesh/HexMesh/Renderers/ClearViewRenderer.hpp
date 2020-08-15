@@ -66,6 +66,22 @@ protected:
     virtual void childClassRenderGuiBegin() {}
     virtual void childClassRenderGuiEnd() {}
 
+    // Sorting algorithm for PPLL.
+    const char* const SORTING_MODE_NAMES[7] = {
+            "Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap", "Quicksort", "Quicksort Hybrid"
+    };
+    const int NUM_SORTING_MODES = ((int)(sizeof(SORTING_MODE_NAMES) / sizeof(*SORTING_MODE_NAMES)));
+    enum SortingAlgorithmMode {
+        SORTING_ALGORITHM_MODE_PRIORITY_QUEUE,
+        SORTING_ALGORITHM_MODE_BUBBLE_SORT,
+        SORTING_ALGORITHM_MODE_INSERTION_SORT,
+        SORTING_ALGORITHM_MODE_SHELL_SORT,
+        SORTING_ALGORITHM_MODE_MAX_HEAP,
+        SORTING_ALGORITHM_MODE_QUICKSORT,
+        SORTING_ALGORITHM_MODE_QUICKSORT_HYBRID
+    };
+    SortingAlgorithmMode sortingAlgorithmMode = SORTING_ALGORITHM_MODE_QUICKSORT_HYBRID;
+
 #ifdef USE_CSG
 #else
 #endif

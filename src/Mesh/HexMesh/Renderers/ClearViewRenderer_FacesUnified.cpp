@@ -268,6 +268,15 @@ void ClearViewRenderer_FacesUnified::createWeightTextureLoG() {
 void ClearViewRenderer_FacesUnified::reloadResolveShader() {
     sgl::ShaderManager->invalidateShaderCache();
     sgl::ShaderManager->addPreprocessorDefine("MAX_NUM_FRAGS", sgl::toString(expectedMaxDepthComplexity));
+
+    if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_QUICKSORT
+            || sortingAlgorithmMode == SORTING_ALGORITHM_MODE_QUICKSORT_HYBRID) {
+        int stackSize = std::ceil(std::log2(expectedMaxDepthComplexity)) * 2 + 4;
+        //std::cout << "List size: " << expectedMaxDepthComplexity << std::endl;
+        //std::cout << "Stack size: " << stackSize << std::endl;
+        sgl::ShaderManager->addPreprocessorDefine("STACK_SIZE", sgl::toString(stackSize));
+    }
+
     resolveShader = sgl::ShaderManager->getShaderProgram(
             {"LinkedListResolve.Vertex", "LinkedListResolve.Fragment"});
     if (blitRenderData) {
@@ -533,6 +542,12 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     if (gatherShader->hasUniform("importantLineBoostFactor")) {
         gatherShader->setUniform("importantLineBoostFactor", float(importantLineBoostFactor));
     }
+    if (gatherShader->hasUniform("backgroundColor")) {
+        glm::vec3 backgroundColor = sceneData.clearColor.getFloatColorRGB();
+        glm::vec3 foregroundColor = glm::vec3(1.0f) - backgroundColor;
+        gatherShader->setUniform("backgroundColor", backgroundColor);
+        gatherShader->setUniform("foregroundColor", foregroundColor);
+    }
 
     if (useScreenSpaceLens) {
         gatherShader->setUniform("viewportSize", glm::ivec2(windowWidth, windowHeight));
@@ -766,6 +781,12 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
             reloadTexturesLoG();
             reloadModelLoG();
         }
+        reRender = true;
+    }
+    if (ImGui::Combo(
+            "Sorting Mode", (int*)&sortingAlgorithmMode, SORTING_MODE_NAMES, NUM_SORTING_MODES)) {
+        setSortingAlgorithmDefine();
+        reloadResolveShader();
         reRender = true;
     }
     if (ImGui::Button("Reload Shader")) {

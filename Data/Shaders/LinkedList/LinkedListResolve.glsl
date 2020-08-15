@@ -20,6 +20,10 @@ float depthList[MAX_NUM_FRAGS];
 
 #include "LinkedListSort.glsl"
 
+#ifdef USE_QUICKSORT
+#include "LinkedListQuicksort.glsl"
+#endif
+
 out vec4 fragColor;
 
 void main() {
