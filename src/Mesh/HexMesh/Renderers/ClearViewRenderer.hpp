@@ -80,7 +80,7 @@ protected:
         SORTING_ALGORITHM_MODE_QUICKSORT,
         SORTING_ALGORITHM_MODE_QUICKSORT_HYBRID
     };
-    SortingAlgorithmMode sortingAlgorithmMode = SORTING_ALGORITHM_MODE_QUICKSORT_HYBRID;
+    SortingAlgorithmMode sortingAlgorithmMode = SORTING_ALGORITHM_MODE_PRIORITY_QUEUE;
 
 #ifdef USE_CSG
 #else

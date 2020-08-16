@@ -890,27 +890,73 @@ void HexMesh::getVolumeData_Faces(
         std::vector<glm::vec3>& vertexPositions,
         std::vector<glm::vec3>& vertexNormals,
         std::vector<float>& vertexAttributes) {
-    // TODO
-    /*rebuildInternalRepresentationIfNecessary();
-    hexaLabApp->get_volume_geometry_faces();
-    triangleIndices.clear();
-    triangleIndices.reserve(hexaLabApp->get_visible_model()->mesh_ibuffer.size());
-    for (HexaLab::Index& idx : hexaLabApp->get_visible_model()->mesh_ibuffer) {
-        triangleIndices.push_back(idx);
-    }
-    vertexPositions = hexaLabApp->get_visible_model()->mesh_vert_pos;
-    vertexNormals = hexaLabApp->get_visible_model()->mesh_vert_norm;
-    vertexAttributes = hexaLabApp->get_visible_model()->mesh_vert_attribute;
+    rebuildInternalRepresentationIfNecessary();
 
-    // Add all hexahedral mesh vertices to the triangle mesh vertex data.
-    vertices.reserve(mesh->Vs.size());
-    for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
-        glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
-        vertices.push_back(vertexPosition);
-    }
+    std::vector<glm::vec3> quadBuffer;
+    for (Hybrid_F& f : mesh->Fs) {
+        if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+            return isCellMarked(h_id);
+        })) {
+            continue;
+        }
 
-    // Add all triangle indices.
-    triangleIndices.reserve(mesh->Fs.size() * 12);
+        bool neighborIsMarked = std::any_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+            return isCellMarked(h_id);
+        });
+
+        assert(f.vs.size() == 4);
+
+        for (uint32_t v_id : f.vs) {
+            glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+            quadBuffer.push_back(vertexPosition);
+        }
+        glm::vec3 v0 = quadBuffer.at(1) - quadBuffer.at(0);
+        glm::vec3 v1 = quadBuffer.at(2) - quadBuffer.at(0);
+        glm::vec3 vertexNormal = glm::normalize(glm::cross(v0, v1));
+        quadBuffer.clear();
+
+        if (!isCellMarked(f.neighbor_hs.at(0))) {
+            size_t idxStart = vertexPositions.size();
+            for (uint32_t v_id : f.vs) {
+                float vertexAttribute = getCellAttribute(f.neighbor_hs.at(0));
+                vertexAttributes.push_back(vertexAttribute);
+                glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+                vertexPositions.push_back(vertexPosition);
+                vertexNormals.push_back(vertexNormal);
+            }
+
+            triangleIndices.push_back(idxStart+2);
+            triangleIndices.push_back(idxStart+1);
+            triangleIndices.push_back(idxStart+0);
+            triangleIndices.push_back(idxStart+3);
+            triangleIndices.push_back(idxStart+2);
+            triangleIndices.push_back(idxStart+0);
+        }
+
+        if (!isCellMarked(f.neighbor_hs.at(0)) || (!f.boundary && isCellMarked(f.neighbor_hs.at(1)))) {
+            size_t idxStart = vertexPositions.size();
+            for (uint32_t v_id : f.vs) {
+                float vertexAttribute = getCellAttribute(f.neighbor_hs.at(f.boundary ? 0 : 1));
+                vertexAttributes.push_back(vertexAttribute);
+                glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+                vertexPositions.push_back(vertexPosition);
+                vertexNormals.push_back(-vertexNormal);
+            }
+
+            triangleIndices.push_back(idxStart+0);
+            triangleIndices.push_back(idxStart+1);
+            triangleIndices.push_back(idxStart+2);
+            triangleIndices.push_back(idxStart+0);
+            triangleIndices.push_back(idxStart+2);
+            triangleIndices.push_back(idxStart+3);
+        }
+    }
+}
+
+void HexMesh::getVolumeData_Volume(
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<glm::vec3>& vertexPositions,
+        std::vector<float>& vertexAttributes) {
     for (Hybrid_F& f : mesh->Fs) {
         if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
             return isCellMarked(h_id);
@@ -919,37 +965,41 @@ void HexMesh::getVolumeData_Faces(
         }
 
         assert(f.vs.size() == 4);
-        triangleIndices.push_back(f.vs[2]);
-        triangleIndices.push_back(f.vs[1]);
-        triangleIndices.push_back(f.vs[0]);
-        triangleIndices.push_back(f.vs[3]);
-        triangleIndices.push_back(f.vs[2]);
-        triangleIndices.push_back(f.vs[0]);
 
-        triangleIndices.push_back(f.vs[0]);
-        triangleIndices.push_back(f.vs[1]);
-        triangleIndices.push_back(f.vs[2]);
-        triangleIndices.push_back(f.vs[0]);
-        triangleIndices.push_back(f.vs[2]);
-        triangleIndices.push_back(f.vs[3]);
-    }*/
+        if (!isCellMarked(f.neighbor_hs.at(0))) {
+            size_t idxStart = vertexPositions.size();
+            for (uint32_t v_id : f.vs) {
+                float vertexAttribute = getCellAttribute(f.neighbor_hs.at(0));
+                vertexAttributes.push_back(vertexAttribute);
+                glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+                vertexPositions.push_back(vertexPosition);
+            }
 
-}
+            triangleIndices.push_back(idxStart+2);
+            triangleIndices.push_back(idxStart+1);
+            triangleIndices.push_back(idxStart+0);
+            triangleIndices.push_back(idxStart+3);
+            triangleIndices.push_back(idxStart+2);
+            triangleIndices.push_back(idxStart+0);
+        }
 
-void HexMesh::getVolumeData_Volume(
-        std::vector<uint32_t>& triangleIndices,
-        std::vector<glm::vec3>& vertexPositions,
-        std::vector<float>& vertexAttributes) {
-    // TODO
-    /*rebuildInternalRepresentationIfNecessary();
-    hexaLabApp->get_volume_geometry_volume();
-    triangleIndices.clear();
-    triangleIndices.reserve(hexaLabApp->get_visible_model()->mesh_ibuffer.size());
-    for (HexaLab::Index& idx : hexaLabApp->get_visible_model()->mesh_ibuffer) {
-        triangleIndices.push_back(idx);
+        if (!f.boundary && !isCellMarked(f.neighbor_hs.at(1))) {
+            size_t idxStart = vertexPositions.size();
+            for (uint32_t v_id : f.vs) {
+                float vertexAttribute = getCellAttribute(f.neighbor_hs.at(1));
+                vertexAttributes.push_back(vertexAttribute);
+                glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+                vertexPositions.push_back(vertexPosition);
+            }
+
+            triangleIndices.push_back(idxStart+0);
+            triangleIndices.push_back(idxStart+1);
+            triangleIndices.push_back(idxStart+2);
+            triangleIndices.push_back(idxStart+0);
+            triangleIndices.push_back(idxStart+2);
+            triangleIndices.push_back(idxStart+3);
+        }
     }
-    vertexPositions = hexaLabApp->get_visible_model()->mesh_vert_pos;
-    vertexAttributes = hexaLabApp->get_visible_model()->mesh_vert_attribute;*/
 }
 
 void HexMesh::getVolumeData_FacesShared(

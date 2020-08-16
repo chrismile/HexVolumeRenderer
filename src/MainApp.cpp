@@ -109,6 +109,10 @@ MainApp::MainApp()
                   sceneFramebuffer, sceneTexture, sceneDepthRBO, camera, clearColor, performanceMeasurer,
                   recording, useCameraFlight, *rayMeshIntersection),
           checkpointWindow(sceneData), videoWriter(NULL) {
+#ifdef USE_STEAMWORKS
+    steamworks.initialize();
+#endif
+
     // https://www.khronos.org/registry/OpenGL/extensions/NVX/NVX_gpu_memory_info.txt
     GLint freeMemKilobytes = 0;
     if (usePerformanceMeasurementMode
@@ -229,6 +233,10 @@ MainApp::~MainApp() {
         delete videoWriter;
     }
     delete rayMeshIntersection;
+
+#ifdef USE_STEAMWORKS
+    steamworks.shutdown();
+#endif
 }
 
 void MainApp::setNewState(const InternalState &newState) {

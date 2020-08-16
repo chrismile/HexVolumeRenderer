@@ -48,6 +48,10 @@
 #include "Utils/CameraPath.hpp"
 #include "Utils/AutomaticPerformanceMeasurer.hpp"
 
+#ifdef USE_STEAMWORKS
+#include "Utils/Steamworks.hpp"
+#endif
+
 class MainApp : public sgl::AppLogic {
 public:
     MainApp();
@@ -73,6 +77,10 @@ private:
     /// Override screenshot function to exclude GUI (if wanted by the user)
     void saveScreenshot(const std::string &filename);
     void makeScreenshot() {}
+
+#ifdef USE_STEAMWORKS
+    Steamworks steamworks;
+#endif
 
     /// Scene data (e.g., camera, main framebuffer, ...).
     sgl::CameraPtr camera;

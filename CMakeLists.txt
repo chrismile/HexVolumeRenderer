@@ -19,13 +19,14 @@ include_directories(src)
 option(USE_EMBREE "Build with Embree as Ray-Mesh Intersection Library" OFF)
 option(USE_CORK "Build with Cork as CSG Library" OFF)
 option(USE_LEMON "Build with matching code and LEMON graph library" OFF)
+option(USE_STEAMWORKS "Build with Steamworks SDK" OFF)
 
 if(USE_EMBREE)
 	find_package(embree 3.0 REQUIRED)
 	include_directories(${EMBREE_INCLUDE_DIRS})
 	add_definitions(-DUSE_EMBREE)
 else()
-	list(REMOVE_ITEM SOURCES src/Mesh/HexMesh/Renderers/Intersection/RayMeshIntersection_Embree.cpp)
+	list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Mesh/HexMesh/Renderers/Intersection/RayMeshIntersection_Embree.cpp)
 endif()
 
 if(USE_LEMON)
@@ -38,7 +39,16 @@ if(USE_LEMON)
 	include_directories(${LEMON_INCLUDES})
 	add_definitions(-DUSE_LEMON)
 else()
-	list(REMOVE_ITEM SOURCES src/Mesh/HexMesh/Renderers/LOD/SheetComponentMatching.cpp)
+	list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Mesh/HexMesh/Renderers/LOD/SheetComponentMatching.cpp)
+endif()
+
+if(USE_STEAMWORKS)
+	# TODO: Dirty hack for now for remote testing via Steam. Make this more general.
+	include_directories("/home/christoph/build/steamworks-sdk/public/steam/")
+	link_directories("/home/christoph/build/steamworks-sdk/redistributable_bin/linux64/")
+	add_definitions(-DUSE_STEAMWORKS)
+else()
+	list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Utils/Steamworks.cpp)
 endif()
 
 #make VERBOSE=1
@@ -61,6 +71,10 @@ endif()
 
 if(USE_EMBREE)
 	target_link_libraries(HexVolumeRenderer ${EMBREE_LIBRARIES})
+endif()
+
+if(USE_STEAMWORKS)
+	target_link_libraries(HexVolumeRenderer steam_api)
 endif()
 
 IF(WIN32)

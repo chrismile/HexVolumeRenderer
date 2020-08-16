@@ -29,6 +29,7 @@
 #include <Utils/File/FileUtils.hpp>
 #include <Utils/AppSettings.hpp>
 #include <Utils/AppLogic.hpp>
+#include <SDL/HiDPI.hpp>
 #include <Graphics/Window.hpp>
 
 #include "MainApp.hpp"
@@ -50,8 +51,12 @@ int main(int argc, char *argv[]) {
     builder.AddChar(L'\u03BB'); // lambda
     builder.AddChar(L'\u2113'); // ell / SCRIPT SMALL L
     builder.BuildRanges(&fontRanges);
+#ifdef USE_STEAMWORKS
+    sgl::overwriteHighDPIScaleFactor(1.2f);
+    sgl::AppSettings::get()->setLoadGUI(fontRanges.Data, true, false, 1.0f);
+#else
     sgl::AppSettings::get()->setLoadGUI(fontRanges.Data);
-
+#endif
     sgl::Window *window = sgl::AppSettings::get()->createWindow();
     sgl::AppSettings::get()->initializeSubsystems();
 
