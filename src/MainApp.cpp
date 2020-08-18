@@ -66,6 +66,7 @@
 #include "Mesh/HexMesh/Loaders/MeshLoader.hpp"
 #include "Mesh/HexMesh/Loaders/HexaLabDatasets.hpp"
 #include "Mesh/Filters/PlaneFilter.hpp"
+#include "Mesh/Filters/PeelingFilter.hpp"
 #include "Mesh/Filters/QualityFilter.hpp"
 #include "Mesh/HexMesh/Renderers/SurfaceRenderer.hpp"
 #include "Mesh/HexMesh/Renderers/WireframeRenderer.hpp"
@@ -170,6 +171,7 @@ MainApp::MainApp()
     meshLoaderMap.insert(std::make_pair("vtk", new VtkLoader));
     meshLoaderMap.insert(std::make_pair("mesh", new MeshLoader));
     meshFilters.push_back(new PlaneFilter);
+    meshFilters.push_back(new PeelingFilter);
     meshFilters.push_back(new QualityFilter);
 
     if (usePerformanceMeasurementMode) {
@@ -1017,8 +1019,9 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
     hexMeshVertices.clear();
     hexMeshCellIndices.clear();
     hexMeshDeformations.clear();
+    hexMeshAnistropyMetricList.clear();
     bool loadingSuccessful = it->second->loadHexahedralMeshFromFile(
-            fileName, hexMeshVertices, hexMeshCellIndices, hexMeshDeformations);
+            fileName, hexMeshVertices, hexMeshCellIndices, hexMeshDeformations, hexMeshAnistropyMetricList);
     if (loadingSuccessful) {
         newMeshLoaded = true;
         checkpointWindow.onLoadMesh(fileName);
@@ -1038,7 +1041,15 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
 
         inputData = HexMeshPtr(new HexMesh(transferFunctionWindow, *rayMeshIntersection));
         inputData->setHexMeshData(vertices, hexMeshCellIndices);
-        inputData->setQualityMeasure(selectedQualityMeasure);
+        if (hexMeshAnistropyMetricList.empty()) {
+            inputData->setQualityMeasure(selectedQualityMeasure);
+        } else {
+            inputData->setManualVertexAttributes(hexMeshAnistropyMetricList);
+        }
+
+        for (HexahedralMeshFilter* meshFilter : meshFilters) {
+            meshFilter->onMeshLoaded(inputData);
+        }
 
         if (true) { // useCameraFlight
             std::string cameraPathFilename =

@@ -26,42 +26,24 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FILTERS_HEXAHEDRALMESHFILTER_HPP
-#define FILTERS_HEXAHEDRALMESHFILTER_HPP
+#ifndef HEXVOLUMERENDERER_PEELINGFILTER_HPP
+#define HEXVOLUMERENDERER_PEELINGFILTER_HPP
 
-#include "Mesh/HexMesh/HexMesh.hpp"
+#include <glm/vec3.hpp>
+#include "HexahedralMeshFilter.hpp"
 
-struct InternalState;
-class SettingsMap;
-
-class HexahedralMeshFilter {
+class PeelingFilter : public HexahedralMeshFilter {
 public:
-    virtual ~HexahedralMeshFilter() {}
-
-    // Returns if the filter is active and should be applied on the input data.
-    inline bool isEnabled() { return enabled; }
-    // Returns if the visualization mapping needs to be re-generated.
-    inline bool isDirty() { return dirty; }
-
-    // Called when a new mesh is loaded from a file.
-    virtual void onMeshLoaded(HexMeshPtr meshIn) {}
-
-    // Gets a copy of mesh from parent if parent has multiple children, i.e., operations must use different meshes.
-    virtual void filterMesh(HexMeshPtr meshIn)=0;
-    inline HexMeshPtr getOutput() { return output; }
+    virtual void onMeshLoaded(HexMeshPtr meshIn) override;
+    virtual void filterMesh(HexMeshPtr meshIn) override;
 
     // Renders the GUI. The "dirty" flag might be set depending on the user's actions.
-    virtual void renderGui()=0;
-
-    /// For changing performance measurement modes.
-    virtual void setNewState(const InternalState& newState) {}
-    virtual void setNewSettings(const SettingsMap& settings) {}
+    virtual void renderGui() override;
 
 protected:
-    HexMeshPtr output;
-    bool enabled = true;
-    bool dirty = true;
-    bool showFilterWindow = true;
+    int peelingDepth = 0;
+    int maxPeelingDepth = 0;
+    std::vector<int> cellDepths;
 };
 
-#endif // FILTERS_HEXAHEDRALMESHFILTER_HPP
+#endif //HEXVOLUMERENDERER_PEELINGFILTER_HPP

@@ -205,6 +205,7 @@ private:
     std::vector<glm::vec3> hexMeshVertices;
     std::vector<uint32_t> hexMeshCellIndices;
     std::vector<glm::vec3> hexMeshDeformations;
+    std::vector<float> hexMeshAnistropyMetricList;
 
     /// A list of filters that are applied sequentially on the data.
     std::vector<HexahedralMeshFilter*> meshFilters;

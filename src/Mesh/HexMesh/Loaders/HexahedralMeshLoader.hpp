@@ -39,9 +39,21 @@
 
 class HexahedralMeshLoader {
 public:
+    // Reads the mesh from the specified file
+    /**
+     * Reads the mesh from the specified file. The vertices and the cell indices are required.
+     * All other attributes are optional.
+     * @param filename
+     * @param vertices
+     * @param cellIndices
+     * @param deformations
+     * @param anisotropyMetricList
+     * @return
+     */
     virtual bool loadHexahedralMeshFromFile(
             const std::string& filename,
-            std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices, std::vector<glm::vec3>& deformations)=0;
+            std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices,
+            std::vector<glm::vec3>& deformations, std::vector<float>& anisotropyMetricList)=0;
 };
 
 /**

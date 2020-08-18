@@ -41,7 +41,8 @@
 
 bool VtkLoader::loadHexahedralMeshFromFile(
         const std::string& filename,
-        std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices, std::vector<glm::vec3>& deformations) {
+        std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices,
+        std::vector<glm::vec3>& deformations, std::vector<float>& anisotropyMetricList) {
     HexMeshPtr loadedMesh;
 
     bool foundVersionHeader = false;
@@ -63,6 +64,8 @@ bool VtkLoader::loadHexahedralMeshFromFile(
     int numPointDataLinesLeft = 0;
     bool isDeformationDataReadMode = false;
     int numDeformationDataLinesLeft = 0;
+    bool isAnisotropyMetricReadMode = false;
+    int numAnisotropyMetricLinesLeft = 0;
 
     bool loadingSuccessful = readFileLineByLine(
             filename, [&](const std::string& lineString, const std::vector<std::string>& tokens) {
@@ -142,7 +145,20 @@ bool VtkLoader::loadHexahedralMeshFromFile(
             return true;
         }
 
-        // The version header must the first non-empty line!
+        if (isAnisotropyMetricReadMode) {
+            if (tokens.size() != 1) {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Data is not scalar!");
+                return false;
+            }
+            anisotropyMetricList.push_back(sgl::fromString<float>(tokens.at(0)));
+            numAnisotropyMetricLinesLeft--;
+            if (numAnisotropyMetricLinesLeft <= 0) {
+                isAnisotropyMetricReadMode = false;
+            }
+            return true;
+        }
+
+                // The version header must the first non-empty line!
         if (!foundVersionHeader) {
             if (boost::starts_with(lineString, "# vtk DataFile Version")) {
                 foundVersionHeader = true;
@@ -258,6 +274,16 @@ bool VtkLoader::loadHexahedralMeshFromFile(
             return true;
         }
 
+        // Read anisotropy metric data
+        if (tokens.at(0) == "AnisotropyMetric") {
+            if (tokens.size() != 2) {
+                sgl::Logfile::get()->writeError("Error in VtkLoader: Malformed AnisotropyMetric declaration!");
+                return false;
+            }
+            numAnisotropyMetricLinesLeft = sgl::fromString<size_t>(tokens.at(1));
+            isAnisotropyMetricReadMode = true;
+            return true;
+        }
 
         // Something unexpected happened.
         return false;

@@ -36,7 +36,8 @@ class VtkLoader : public HexahedralMeshLoader {
 public:
     virtual bool loadHexahedralMeshFromFile(
             const std::string& filename,
-            std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices, std::vector<glm::vec3>& deformations);
+            std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices,
+            std::vector<glm::vec3>& deformations, std::vector<float>& anisotropyMetricList);
 };
 
 #endif // LOADERS_VTKLOADER_HPP

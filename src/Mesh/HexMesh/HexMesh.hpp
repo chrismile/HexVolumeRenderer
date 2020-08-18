@@ -145,6 +145,7 @@ public:
         : transferFunctionWindow(transferFunctionWindow), rayMeshIntersection(rayMeshIntersection) {}
     ~HexMesh();
     void setHexMeshData(const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices);
+    void setManualVertexAttributes(const std::vector<float>& vertexAttributes);
     void setQualityMeasure(QualityMeasure qualityMeasure);
     void onTransferFunctionMapRebuilt();
     bool isDirty() { return dirty; }
@@ -672,6 +673,7 @@ private:
     std::unordered_set<uint32_t> singularEdgeIds;
     std::vector<float> cellVolumes;
     std::vector<float> faceAreas;
+    std::vector<float> manualVertexAttributes; ///< optional. @see setManualVertexAttributes
 };
 
 #endif //GENERALMAP_GENERALMAP_HPP

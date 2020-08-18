@@ -154,6 +154,24 @@ void HexMesh::setHexMeshData(
     dirty = true;
 }
 
+void HexMesh::setManualVertexAttributes(const std::vector<float>& vertexAttributes) {
+    float minAttribute = FLT_MAX;
+    float maxAttribute = -FLT_MAX;
+    #pragma omp parallel for default(none) reduction(min: minAttribute) reduction(max: maxAttribute) shared(vertexAttributes)
+    for (size_t i = 0; i < vertexAttributes.size(); i++) {
+        minAttribute = std::min(minAttribute, vertexAttributes.at(i));
+        maxAttribute = std::max(maxAttribute, vertexAttributes.at(i));
+    }
+
+    manualVertexAttributes.resize(vertexAttributes.size());
+    #pragma omp parallel for default(none) shared(manualVertexAttributes, vertexAttributes, minAttribute, maxAttribute)
+    for (size_t i = 0; i < vertexAttributes.size(); i++) {
+        manualVertexAttributes.at(i) = (vertexAttributes.at(i) - minAttribute) / (maxAttribute - minAttribute);
+    }
+    
+    recomputeHistogram();
+}
+
 /**
  * Vertex and edge IDs:
  *
@@ -403,7 +421,11 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
 }
 
 void HexMesh::recomputeHistogram() {
-    transferFunctionWindow.computeHistogram(cellQualityMeasureList, qualityMinNormalized, qualityMaxNormalized);
+    if (manualVertexAttributes.empty()) {
+        transferFunctionWindow.computeHistogram(cellQualityMeasureList, qualityMinNormalized, qualityMaxNormalized);
+    } else {
+        transferFunctionWindow.computeHistogram(manualVertexAttributes, 0.0f, 1.0f);
+    }
 }
 
 float HexMesh::getCellAttribute(uint32_t h_id) {
@@ -411,17 +433,14 @@ float HexMesh::getCellAttribute(uint32_t h_id) {
 }
 
 Mesh& HexMesh::getBaseComplexMesh(){
-    rebuildInternalRepresentationIfNecessary();
     return *mesh;
 }
 
 Singularity& HexMesh::getBaseComplexMeshSingularity(){
-    rebuildInternalRepresentationIfNecessary();
     return *si;
 }
 
 Frame& HexMesh::getBaseComplexMeshFrame(){
-    rebuildInternalRepresentationIfNecessary();
     if (!frame) computeBaseComplexMeshFrame();
     return *frame;
 }
@@ -719,17 +738,16 @@ void HexMesh::getSurfaceData(
     for (size_t i = 0; i < mesh->Hs.size(); i++) {
         Hybrid& h = mesh->Hs.at(i);
         float cellAttribute = getCellAttribute(h.id);
+        if (removeFilteredCells && isCellMarked(h.id)) {
+            continue;
+        }
+
         for (size_t j = 0; j < h.fs.size(); j++) {
             Hybrid_F& f = mesh->Fs.at(h.fs.at(j));
             if ((!removeFilteredCells && !f.boundary) || (removeFilteredCells
                     && !f.boundary && !std::any_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
                 return isCellMarked(h_id);
             }))) {
-                continue;
-            }
-            if (removeFilteredCells && std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
-                return isCellMarked(h_id);
-            })) {
                 continue;
             }
 
@@ -742,7 +760,12 @@ void HexMesh::getSurfaceData(
                 glm::vec4 vertexPosition(
                         mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
                 vertexPositions.push_back(vertexPosition);
-                vertexAttributes.push_back(cellAttribute);
+                if (this->manualVertexAttributes.empty()) {
+                    vertexAttributes.push_back(cellAttribute);
+                } else {
+                    // Use manually specified attributes.
+                    vertexAttributes.push_back(manualVertexAttributes.at(v_id));
+                }
             }
 
             size_t oldTriangleIndicesSize = triangleIndices.size();
@@ -2507,23 +2530,34 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         computeAllCellVolumes();
     }
 
-    // Compute all vertex attributes.
+    // Compute attribute data.
     std::vector<float> vertexAttributes(mesh->Vs.size());
-    for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
-        float vertexAttribute;
-        if (useVolumeWeighting) {
-            vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
-        } else {
-            vertexAttribute = maximumCellAttributePerVertex(v_id);
-        }
-        vertexAttributes.at(v_id) = vertexAttribute;
-    }
-
-    // Compute all edge attributes.
     std::vector<float> edgeAttributes(mesh->Es.size());
-    for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
-        float edgeAttribute = maximumCellAttributePerEdge(e_id);
-        edgeAttributes.at(e_id) = edgeAttribute;
+    if (this->manualVertexAttributes.empty()) {
+        // Compute all vertex attributes.
+        for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
+            float vertexAttribute;
+            if (useVolumeWeighting) {
+                vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
+            } else {
+                vertexAttribute = maximumCellAttributePerVertex(v_id);
+            }
+            vertexAttributes.at(v_id) = vertexAttribute;
+        }
+
+        // Compute all edge attributes.
+        for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
+            float edgeAttribute = maximumCellAttributePerEdge(e_id);
+            edgeAttributes.at(e_id) = edgeAttribute;
+        }
+    } else {
+        // Use manually specified attributes.
+        vertexAttributes = this->manualVertexAttributes;
+        for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
+            Hybrid_E& e = mesh->Es.at(e_id);
+            float edgeAttribute = (vertexAttributes.at(e.vs.at(0)) + vertexAttributes.at(e.vs.at(1))) * 0.5f;
+            edgeAttributes.at(e_id) = edgeAttribute;
+        }
     }
 
     size_t indexOffset = 0;
