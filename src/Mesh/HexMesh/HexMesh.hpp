@@ -168,6 +168,7 @@ public:
 
     // Access to cell attributes.
     float getCellAttribute(uint32_t h_id);
+    float getCellAttributeManualVertexAttributes(uint32_t h_id);
 
     // For tube generation
     Mesh& getBaseComplexMesh();

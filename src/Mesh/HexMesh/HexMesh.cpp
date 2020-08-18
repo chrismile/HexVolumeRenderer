@@ -432,6 +432,16 @@ float HexMesh::getCellAttribute(uint32_t h_id) {
     return cellQualityMeasureList.at(h_id);
 }
 
+float HexMesh::getCellAttributeManualVertexAttributes(uint32_t h_id) {
+    float cellAttribute = 0.0f;
+    Hybrid& h = mesh->Hs.at(h_id);
+    for (uint32_t v_id : h.vs) {
+        cellAttribute += manualVertexAttributes.at(v_id);
+    }
+    cellAttribute /= h.vs.size();
+    return cellAttribute;
+}
+
 Mesh& HexMesh::getBaseComplexMesh(){
     return *mesh;
 }
@@ -940,8 +950,14 @@ void HexMesh::getVolumeData_Faces(
 
         if (!isCellMarked(f.neighbor_hs.at(0))) {
             size_t idxStart = vertexPositions.size();
+            float vertexAttribute;
+            // Compute attribute data.
+            if (this->manualVertexAttributes.empty()) {
+                vertexAttribute = getCellAttribute(f.neighbor_hs.at(0));
+            } else {
+                vertexAttribute = getCellAttributeManualVertexAttributes(f.neighbor_hs.at(0));
+            }
             for (uint32_t v_id : f.vs) {
-                float vertexAttribute = getCellAttribute(f.neighbor_hs.at(0));
                 vertexAttributes.push_back(vertexAttribute);
                 glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
                 vertexPositions.push_back(vertexPosition);
@@ -958,8 +974,14 @@ void HexMesh::getVolumeData_Faces(
 
         if (!isCellMarked(f.neighbor_hs.at(0)) || (!f.boundary && isCellMarked(f.neighbor_hs.at(1)))) {
             size_t idxStart = vertexPositions.size();
+            float vertexAttribute;
+            // Compute attribute data.
+            if (this->manualVertexAttributes.empty()) {
+                vertexAttribute = getCellAttribute(f.neighbor_hs.at(f.boundary ? 0 : 1));
+            } else {
+                vertexAttribute = getCellAttributeManualVertexAttributes(f.neighbor_hs.at(f.boundary ? 0 : 1));
+            }
             for (uint32_t v_id : f.vs) {
-                float vertexAttribute = getCellAttribute(f.neighbor_hs.at(f.boundary ? 0 : 1));
                 vertexAttributes.push_back(vertexAttribute);
                 glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
                 vertexPositions.push_back(vertexPosition);
@@ -991,8 +1013,14 @@ void HexMesh::getVolumeData_Volume(
 
         if (!isCellMarked(f.neighbor_hs.at(0))) {
             size_t idxStart = vertexPositions.size();
+            float vertexAttribute;
+            // Compute attribute data.
+            if (this->manualVertexAttributes.empty()) {
+                vertexAttribute = getCellAttribute(f.neighbor_hs.at(0));
+            } else {
+                vertexAttribute = getCellAttributeManualVertexAttributes(f.neighbor_hs.at(0));
+            }
             for (uint32_t v_id : f.vs) {
-                float vertexAttribute = getCellAttribute(f.neighbor_hs.at(0));
                 vertexAttributes.push_back(vertexAttribute);
                 glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
                 vertexPositions.push_back(vertexPosition);
@@ -1008,8 +1036,14 @@ void HexMesh::getVolumeData_Volume(
 
         if (!f.boundary && !isCellMarked(f.neighbor_hs.at(1))) {
             size_t idxStart = vertexPositions.size();
+            float vertexAttribute;
+            // Compute attribute data.
+            if (this->manualVertexAttributes.empty()) {
+                vertexAttribute = getCellAttribute(f.neighbor_hs.at(1));
+            } else {
+                vertexAttribute = getCellAttributeManualVertexAttributes(f.neighbor_hs.at(1));
+            }
             for (uint32_t v_id : f.vs) {
-                float vertexAttribute = getCellAttribute(f.neighbor_hs.at(1));
                 vertexAttributes.push_back(vertexAttribute);
                 glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
                 vertexPositions.push_back(vertexPosition);
@@ -1038,7 +1072,12 @@ void HexMesh::getVolumeData_FacesShared(
 
     // Add all hexahedral mesh vertices to the triangle mesh vertex data.
     for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
-        float vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
+        float vertexAttribute;
+        if (this->manualVertexAttributes.empty()) {
+            vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
+        } else {
+            vertexAttribute = this->manualVertexAttributes.at(v_id);
+        }
         vertexAttributes.push_back(vertexAttribute);
         glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
         vertexPositions.push_back(vertexPosition);
@@ -1083,7 +1122,12 @@ void HexMesh::getVolumeData_VolumeShared(
 
     // Add all hexahedral mesh vertices to the triangle mesh vertex data.
     for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
-        float vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
+        float vertexAttribute;
+        if (this->manualVertexAttributes.empty()) {
+            vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
+        } else {
+            vertexAttribute = this->manualVertexAttributes.at(v_id);
+        }
         vertexAttributes.push_back(vertexAttribute);
         glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
         vertexPositions.push_back(vertexPosition);
