@@ -544,8 +544,11 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     }
     if (gatherShader->hasUniform("backgroundColor")) {
         glm::vec3 backgroundColor = sceneData.clearColor.getFloatColorRGB();
-        glm::vec3 foregroundColor = glm::vec3(1.0f) - backgroundColor;
         gatherShader->setUniform("backgroundColor", backgroundColor);
+    }
+    if (gatherShader->hasUniform("foregroundColor")) {
+        glm::vec3 backgroundColor = sceneData.clearColor.getFloatColorRGB();
+        glm::vec3 foregroundColor = glm::vec3(1.0f) - backgroundColor;
         gatherShader->setUniform("foregroundColor", foregroundColor);
     }
 

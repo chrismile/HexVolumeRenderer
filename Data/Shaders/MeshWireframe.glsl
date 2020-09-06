@@ -388,6 +388,8 @@ void main()
 
     // Volume color.
     vec4 volumeColor = fragmentColor;
+    // TEST: Show all lines.
+    //volumeColor.rgb = mix(volumeColor.rgb, vec3(0.0), clamp((fragmentDistance - 0.35)*1.8, 0.0, 1.0));
     volumeColor.a *= contextFactor;
     vec4 blendedColor = volumeColor;
 
@@ -455,7 +457,13 @@ void main()
     vec4 lineBaseColor = vec4(fragmentColor.rgb, 1.0);
     #endif
 
-    vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, backgroundColor, 0.3);
+    vec3 lineBaseColorFocus;
+    if (foregroundColor.x < 0.5) {
+        // Bright background
+        lineBaseColorFocus = mix(lineBaseColor.rgb, foregroundColor, 0.1);
+    } else {
+        lineBaseColorFocus = mix(lineBaseColor.rgb, backgroundColor, 0.3);
+    }
     vec3 lineBaseColorContext = mix(fragmentColor.rgb, foregroundColor, 0.3);
     lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
 
@@ -490,6 +498,9 @@ void main()
         //vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
         //        smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
 
+        // TEST: Show all lines.
+        //lineColor.rgb = mix(volumeColor.rgb, vec3(0.0), 0.7);
+
         if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
             fragmentDistance += 0.005;
         }
@@ -515,6 +526,10 @@ void main()
         vec4 lineBaseColorAll = vec4(fragmentColor.rgb, 1.0);
         #endif
 
+        // TEST: Show all lines.
+        //vec3 lineColor = mix(volumeColor.rgb, foregroundColor, 0.15);
+        //blendedColor.rgb = mix(volumeColor.rgb, lineColor.rgb, 1.0);
+        //blendedColor.a = clamp(blendedColor.a * 1.5, 0.0, 1.0);
         vec3 lineColor = mix(lineBaseColorAll.rgb, foregroundColor, 0.1);
         blendedColor.rgb = mix(volumeColor.rgb, lineColor.rgb, clamp(0.6 - fragmentDistance, 0.0, 0.3));
         blendedColor.a = clamp(blendedColor.a * 1.5, 0.0, 1.0);
