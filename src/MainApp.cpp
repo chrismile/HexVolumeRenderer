@@ -535,10 +535,10 @@ void MainApp::renderGUI() {
 
     if (transferFunctionWindow.renderGUI()) {
         reRender = true;
-        if (inputData) {
-            inputData->onTransferFunctionMapRebuilt();
-        }
         if (transferFunctionWindow.getTransferFunctionMapRebuilt()) {
+            if (inputData) {
+                inputData->onTransferFunctionMapRebuilt();
+            }
             for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
                 meshRenderer->onTransferFunctionMapRebuilt();
             }
