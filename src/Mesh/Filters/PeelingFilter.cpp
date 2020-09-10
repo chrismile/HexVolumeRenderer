@@ -27,9 +27,9 @@
  */
 
 #include <unordered_set>
+#include <Utils/CircularQueue.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
-#include "Utils/CircularQueue.hpp"
 #include "Mesh/BaseComplex/global_types.h"
 #include "PeelingFilter.hpp"
 
