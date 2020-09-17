@@ -362,19 +362,20 @@ void ClearViewRenderer::renderGui() {
             reRender = true;
         }
         if (LET_USER_SELECT_LOD_STYLE) {
-            if (ImGui::SliderFloat("LOD Merge Factor", &lodMergeFactor, 0.999f, 4.0f, "%.3f")) {
+            if (ImGui::SliderFloat(
+                    "LOD Merge Factor", &lodSettings.lodMergeFactor, 0.999f, 4.0f, "%.3f")) {
                 if (mesh) {
                     uploadVisualizationMapping(mesh, false);
                     reRender = true;
                 }
             }
-            if (ImGui::Checkbox("Use Volume and Area Measures", &useVolumeAndAreaMeasures)) {
+            if (ImGui::Checkbox("Use Volume and Area Measures", &lodSettings.useVolumeAndAreaMeasures)) {
                 if (mesh) {
                     uploadVisualizationMapping(mesh, false);
                     reRender = true;
                 }
             }
-            if (ImGui::Checkbox("Use Weights for Merging", &useWeightsForMerging)) {
+            if (ImGui::Checkbox("Use Weights for Merging", &lodSettings.useWeightsForMerging)) {
                 if (mesh) {
                     uploadVisualizationMapping(mesh, false);
                     reRender = true;

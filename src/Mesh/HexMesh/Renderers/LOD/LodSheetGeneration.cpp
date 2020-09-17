@@ -61,10 +61,10 @@ void set_union(const std::unordered_set<T>& set0, const std::unordered_set<T>& s
 void generateSheetLevelOfDetailEdgeStructure(
         HexMesh* hexMesh,
         std::vector<float> &edgeLodValues,
-        int* maxValueIntPtr,
-        float lodMergeFactor,
-        bool useVolumeAndAreaMeasures,
-        bool useWeightsForMerging) {
+        int* maxValueIntPtr, LodSettings lodSettings) {
+    float lodMergeFactor = lodSettings.lodMergeFactor;
+    bool useVolumeAndAreaMeasures = lodSettings.useVolumeAndAreaMeasures;
+    bool useWeightsForMerging = lodSettings.useWeightsForMerging;
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     Singularity& si = hexMesh->getBaseComplexMeshSingularity();
 
@@ -403,12 +403,11 @@ void generateSheetLevelOfDetailEdgeStructure(
 void generateSheetLevelOfDetailLineStructureAndVertexData(
         HexMesh* hexMesh,
         std::vector<glm::vec3> &lineVertices, std::vector<glm::vec4> &lineColors, std::vector<float> &lineLodValues,
-        int* maxValueIntPtr, float lodMergeFactor, bool useVolumeAndAreaMeasures, bool useWeightsForMerging) {
+        int* maxValueIntPtr, LodSettings lodSettings) {
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     std::vector<float> edgeLodValues;
     int maxValueInt = 0;
-    generateSheetLevelOfDetailEdgeStructure(
-            hexMesh, edgeLodValues, &maxValueInt, lodMergeFactor, useVolumeAndAreaMeasures, useWeightsForMerging);
+    generateSheetLevelOfDetailEdgeStructure(hexMesh, edgeLodValues, &maxValueInt, lodSettings);
     float maxValue = float(maxValueInt);
     if (maxValueIntPtr != nullptr) {
         *maxValueIntPtr = maxValueInt;
@@ -455,12 +454,11 @@ void generateSheetLevelOfDetailLineStructureAndVertexData(
 void generateSheetLevelOfDetailLineStructureAndVertexData(
         HexMesh* hexMesh,
         std::vector<uint32_t>& triangleIndices, std::vector<LodHexahedralCellFace>& hexahedralCellFaces,
-        int* maxValueIntPtr, float lodMergeFactor, bool useVolumeAndAreaMeasures, bool useWeightsForMerging) {
+        int* maxValueIntPtr, LodSettings lodSettings) {
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     std::vector<float> edgeLodValues;
     int maxValueInt = 0;
-    generateSheetLevelOfDetailEdgeStructure(
-            hexMesh, edgeLodValues, &maxValueInt, lodMergeFactor, useVolumeAndAreaMeasures, useWeightsForMerging);
+    generateSheetLevelOfDetailEdgeStructure(hexMesh, edgeLodValues, &maxValueInt, lodSettings);
     float maxValue = float(maxValueInt);
     if (maxValueIntPtr != nullptr) {
         *maxValueIntPtr = maxValueInt;
@@ -579,12 +577,11 @@ void generateSheetLevelOfDetailLineStructureAndVertexData(
 void generateSheetPreviewLevelOfDetailLineStructureAndVertexData(
         HexMesh* hexMesh,
         std::vector<uint32_t>& triangleIndices, std::vector<LodPreviewHexahedralCellFace>& hexahedralCellFaces,
-        int* maxValueIntPtr, float lodMergeFactor, bool useVolumeAndAreaMeasures, bool useWeightsForMerging) {
+        int* maxValueIntPtr, LodSettings lodSettings) {
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     std::vector<float> edgeLodValues;
     int maxValueInt = 0;
-    generateSheetLevelOfDetailEdgeStructure(
-            hexMesh, edgeLodValues, &maxValueInt, lodMergeFactor, useVolumeAndAreaMeasures, useWeightsForMerging);
+    generateSheetLevelOfDetailEdgeStructure(hexMesh, edgeLodValues, &maxValueInt, lodSettings);
     float maxValue = float(maxValueInt);
     if (maxValueIntPtr != nullptr) {
         *maxValueIntPtr = maxValueInt;

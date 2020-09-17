@@ -37,6 +37,18 @@
 class HexMesh;
 typedef std::shared_ptr<HexMesh> HexMeshPtr;
 
+struct LodSettings {
+    /**
+     * By what factor (multiplicative) the merging criterion must increase such that a new LOD is started.
+     * In case "useWeightsForMerging" is true, the inverse factor is used.
+     */
+    float lodMergeFactor = 2.0f;
+    /// Whether to use volumes and areas or cell counts and face counts as measures.
+    bool useVolumeAndAreaMeasures = false;
+    /// useWeightsForMerging Whether to use weights for merging instead of the measures defined above.
+    bool useWeightsForMerging = false;
+};
+
 /**
  * Uses hexahedral mesh sheets to compute a level of detail structure of the grid lines.
  * This function returns the LOD levels for all mesh edges.
@@ -65,20 +77,15 @@ typedef std::shared_ptr<HexMesh> HexMeshPtr;
  * @param hexMesh The hexahedral mesh.
  * @param edgeLodValues The LOD values of all edges (between 0 and 1). Zero means always visible, one means visible
  * only at the most detailed LOD.
- * @param lodMergeFactor By what factor (multiplicative) the merging criterion must increase such that a new LOD is
- * started. In case "useWeightsForMerging" is true, the inverse factor is used.
- * @param useVolumeAndAreaMeasures Whether to use volumes and areas or cell counts and face counts as measures.
- * @param useWeightsForMerging Whether to use weights for merging instead of the measures defined above.
- * @param maxValueInt Can optionally store the highest discrete LOD value (between 0 and MAX_LOD).
+ * @param maxValueIntPtr Can optionally store the highest discrete LOD value (between 0 and MAX_LOD).
  * Can be used to scale the values in edgeLodValues.
+ * @param lodSettings Settings for the algorithm.
  */
 void generateSheetLevelOfDetailEdgeStructure(
         HexMesh* hexMesh,
         std::vector<float> &edgeLodValues,
         int* maxValueIntPtr = nullptr,
-        float lodMergeFactor = 2.0f,
-        bool useVolumeAndAreaMeasures = false,
-        bool useWeightsForMerging = false);
+        LodSettings lodSettings = LodSettings());
 
 /**
  * Uses hexahedral mesh sheets to compute a level of detail structure of the grid lines.
@@ -109,10 +116,9 @@ void generateSheetLevelOfDetailEdgeStructure(
  * @param lineVertices The list of line vertex positions.
  * @param lineColors The list of line vertex colors.
  * @param lineLodValues The list of line indices.
- * @param lodMergeFactor By what factor (multiplicative) the merging criterion must increase such that a new LOD is
- * started. In case "useWeightsForMerging" is true, the inverse factor is used.
- * @param useVolumeAndAreaMeasures Whether to use volumes and areas or cell counts and face counts as measures.
- * @param useWeightsForMerging Whether to use weights for merging instead of the measures defined above.
+ * @param maxValueIntPtr Can optionally store the highest discrete LOD value (between 0 and MAX_LOD).
+ * Can be used to scale the values in edgeLodValues.
+ * @param lodSettings Settings for the algorithm.
  */
 void generateSheetLevelOfDetailLineStructureAndVertexData(
         HexMesh* hexMesh,
@@ -120,9 +126,7 @@ void generateSheetLevelOfDetailLineStructureAndVertexData(
         std::vector<glm::vec4> &lineColors,
         std::vector<float> &lineLodValues,
         int* maxValueIntPtr = nullptr,
-        float lodMergeFactor = 2.0f,
-        bool useVolumeAndAreaMeasures = false,
-        bool useWeightsForMerging = false);
+        LodSettings lodSettings = LodSettings());
 
 
 struct LodHexahedralCellFace {
@@ -139,9 +143,7 @@ void generateSheetLevelOfDetailLineStructureAndVertexData(
         std::vector<uint32_t>& triangleIndices,
         std::vector<LodHexahedralCellFace>& hexahedralCellFaces,
         int* maxValueIntPtr = nullptr,
-        float lodMergeFactor = 2.0f,
-        bool useVolumeAndAreaMeasures = false,
-        bool useWeightsForMerging = false);
+        LodSettings lodSettings = LodSettings());
 
 
 struct LodPreviewHexahedralCellFace {
@@ -157,8 +159,6 @@ void generateSheetPreviewLevelOfDetailLineStructureAndVertexData(
         std::vector<uint32_t>& triangleIndices,
         std::vector<LodPreviewHexahedralCellFace>& hexahedralCellFaces,
         int* maxValueIntPtr = nullptr,
-        float lodMergeFactor = 2.0f,
-        bool useVolumeAndAreaMeasures = false,
-        bool useWeightsForMerging = false);
+        LodSettings lodSettings = LodSettings());
 
 #endif //HEXVOLUMERENDERER_LODSHEETGENERATION_HPP

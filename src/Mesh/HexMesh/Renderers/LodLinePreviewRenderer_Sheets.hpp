@@ -64,9 +64,7 @@ protected:
     bool showRendererWindow = true;
     float maxLod = 0.1f;
     float lineWidth = 0.0015f;
-    float lodMergeFactor = 2.0f;
-    bool useVolumeAndAreaMeasures = false;
-    bool useWeightsForMerging = false;
+    LodSettings lodSettings;
 };
 
 #endif //HEXVOLUMERENDERER_LODLINEPREVIEWRENDERER_SHEETS_HPP

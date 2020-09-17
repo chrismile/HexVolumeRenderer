@@ -139,10 +139,8 @@ protected:
     sgl::ShaderProgramPtr shaderProgramSurface; //< Focus sphere (surface)
 
     // LOD data.
-    const bool LET_USER_SELECT_LOD_STYLE = true;
-    float lodMergeFactor = 2.0f;
-    bool useVolumeAndAreaMeasures = false;
-    bool useWeightsForMerging = false;
+    const bool LET_USER_SELECT_LOD_STYLE = false;
+    LodSettings lodSettings;
 
     // GUI data
     bool showRendererWindow = true;

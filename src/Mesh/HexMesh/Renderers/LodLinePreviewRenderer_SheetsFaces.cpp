@@ -52,8 +52,7 @@ void LodLinePreviewRenderer_SheetsFaces::uploadVisualizationMapping(HexMeshPtr m
     std::vector<uint32_t> indices;
     std::vector<LodPreviewHexahedralCellFace> hexahedralCellFaces;
     generateSheetPreviewLevelOfDetailLineStructureAndVertexData(
-            meshIn.get(), indices, hexahedralCellFaces, &maxLodValue, lodMergeFactor,
-            useVolumeAndAreaMeasures, useWeightsForMerging);
+            meshIn.get(), indices, hexahedralCellFaces, &maxLodValue, lodSettings);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(gatherShader);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -127,19 +126,20 @@ void LodLinePreviewRenderer_SheetsFaces::renderGui() {
         if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             reRender = true;
         }
-        if (ImGui::SliderFloat("LOD Merge Factor", &lodMergeFactor, 0.999f, 4.0f, "%.3f")) {
+        if (ImGui::SliderFloat(
+                "LOD Merge Factor", &lodSettings.lodMergeFactor, 0.999f, 4.0f, "%.3f")) {
             if (mesh) {
                 uploadVisualizationMapping(mesh, false);
                 reRender = true;
             }
         }
-        if (ImGui::Checkbox("Use Volume and Area Measures", &useVolumeAndAreaMeasures)) {
+        if (ImGui::Checkbox("Use Volume and Area Measures", &lodSettings.useVolumeAndAreaMeasures)) {
             if (mesh) {
                 uploadVisualizationMapping(mesh, false);
                 reRender = true;
             }
         }
-        if (ImGui::Checkbox("Use Weights for Merging", &useWeightsForMerging)) {
+        if (ImGui::Checkbox("Use Weights for Merging", &lodSettings.useWeightsForMerging)) {
             if (mesh) {
                 uploadVisualizationMapping(mesh, false);
                 reRender = true;

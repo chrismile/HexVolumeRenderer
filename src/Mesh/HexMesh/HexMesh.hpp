@@ -70,6 +70,7 @@
 #include "QualityMeasure/QualityMeasure.hpp"
 #include "Renderers/Widgets/TransferFunctionWindow.hpp"
 #include "Renderers/Intersection/RayMeshIntersection.hpp"
+#include "Renderers/LOD/LodSheetGeneration.hpp"
 
 class Mesh;
 class Singularity;
@@ -481,9 +482,7 @@ public:
             std::vector<uint32_t>& triangleIndices,
             std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
             int& maxLodValue,
-            float lodMergeFactor = 2.0f,
-            bool useVolumeAndAreaMeasures = false,
-            bool useWeightsForMerging = false);
+            LodSettings lodSettings = LodSettings());
 
     /**
      * Get all surface faces including the colors of their edges.
@@ -504,9 +503,7 @@ public:
             std::vector<uint32_t>& triangleIndices,
             std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
             int& maxLodValue, bool useVolumeWeighting = false,
-            float lodMergeFactor = 2.0f,
-            bool useVolumeAndAreaMeasures = false,
-            bool useWeightsForMerging = false);
+            LodSettings lodSettings = LodSettings());
 
     /**
      * Get all surface faces including the colors of their edges.
