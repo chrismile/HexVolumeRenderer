@@ -480,7 +480,10 @@ public:
     void getSurfaceDataWireframeFacesUnified_AttributePerCell(
             std::vector<uint32_t>& triangleIndices,
             std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
-            int& maxLodValue);
+            int& maxLodValue,
+            float lodMergeFactor = 2.0f,
+            bool useVolumeAndAreaMeasures = false,
+            bool useWeightsForMerging = false);
 
     /**
      * Get all surface faces including the colors of their edges.
@@ -500,7 +503,10 @@ public:
     void getSurfaceDataWireframeFacesUnified_AttributePerVertex(
             std::vector<uint32_t>& triangleIndices,
             std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
-            int& maxLodValue, bool useVolumeWeighting = false);
+            int& maxLodValue, bool useVolumeWeighting = false,
+            float lodMergeFactor = 2.0f,
+            bool useVolumeAndAreaMeasures = false,
+            bool useWeightsForMerging = false);
 
     /**
      * Get all surface faces including the colors of their edges.

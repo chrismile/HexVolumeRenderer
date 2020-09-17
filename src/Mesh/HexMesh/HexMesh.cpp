@@ -2472,12 +2472,16 @@ uint32_t HexMesh::packEdgeSingularityInformation(uint32_t e_id) {
 void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
         std::vector<uint32_t>& triangleIndices,
         std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
-        int& maxLodValue) {
+        int& maxLodValue,
+        float lodMergeFactor,
+        bool useVolumeAndAreaMeasures,
+        bool useWeightsForMerging) {
     rebuildInternalRepresentationIfNecessary();
 
     // Compute the per-edge LOD values between 0 and 1.
     std::vector<float> edgeLodValues;
-    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue);
+    generateSheetLevelOfDetailEdgeStructure(
+            this, edgeLodValues, &maxLodValue, lodMergeFactor, useVolumeAndAreaMeasures, useWeightsForMerging);
 
     // Compute all cell volumes.
     if (cellVolumes.empty()) {
@@ -2562,12 +2566,16 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
 void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         std::vector<uint32_t>& triangleIndices,
         std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
-        int& maxLodValue, bool useVolumeWeighting) {
+        int& maxLodValue, bool useVolumeWeighting,
+        float lodMergeFactor,
+        bool useVolumeAndAreaMeasures,
+        bool useWeightsForMerging) {
     rebuildInternalRepresentationIfNecessary();
 
     // Compute the per-edge LOD values between 0 and 1.
     std::vector<float> edgeLodValues;
-    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue);
+    generateSheetLevelOfDetailEdgeStructure(
+            this, edgeLodValues, &maxLodValue, lodMergeFactor, useVolumeAndAreaMeasures, useWeightsForMerging);
 
     // Compute all cell volumes.
     if (useVolumeWeighting && cellVolumes.empty()) {

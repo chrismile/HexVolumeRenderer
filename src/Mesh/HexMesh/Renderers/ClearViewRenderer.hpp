@@ -138,6 +138,12 @@ protected:
     sgl::ShaderProgramPtr gatherShaderFocusSpheres; //< Focus (surface/spheres)
     sgl::ShaderProgramPtr shaderProgramSurface; //< Focus sphere (surface)
 
+    // LOD data.
+    const bool LET_USER_SELECT_LOD_STYLE = true;
+    float lodMergeFactor = 2.0f;
+    bool useVolumeAndAreaMeasures = false;
+    bool useWeightsForMerging = false;
+
     // GUI data
     bool showRendererWindow = true;
     bool useScreenSpaceLens = false;

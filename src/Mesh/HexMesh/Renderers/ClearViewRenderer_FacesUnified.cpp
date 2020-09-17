@@ -419,10 +419,12 @@ void ClearViewRenderer_FacesUnified::uploadVisualizationMapping(HexMeshPtr meshI
     std::vector<HexahedralCellFaceUnified> hexahedralCellFaces;
     if (useWeightedVertexAttributes) {
         mesh->getSurfaceDataWireframeFacesUnified_AttributePerVertex(
-                indices, hexahedralCellFaces, maxLodValue, useVolumeWeighting);
+                indices, hexahedralCellFaces, maxLodValue, useVolumeWeighting,
+                lodMergeFactor, useVolumeAndAreaMeasures, useWeightsForMerging);
     } else {
         mesh->getSurfaceDataWireframeFacesUnified_AttributePerCell(
-                indices, hexahedralCellFaces, maxLodValue);
+                indices, hexahedralCellFaces, maxLodValue,
+                lodMergeFactor, useVolumeAndAreaMeasures, useWeightsForMerging);
     }
 
     size_t modelBufferSizeBytes = indices.size() * sizeof(uint32_t)
