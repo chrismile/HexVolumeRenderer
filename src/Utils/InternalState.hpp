@@ -69,6 +69,7 @@ public:
     inline void addKeyValue(const std::string &key, const std::string &value) { settings[key] = value; }
     template<typename T> inline void addKeyValue(const std::string &key, const T &value) { settings[key] = toString(value); }
     inline void clear() { settings.clear(); }
+    inline bool hasValue(const char *key) const { auto it = settings.find(key); return it != settings.end(); }
 
     bool getValueOpt(const char *key, std::string &toset) const {
         auto it = settings.find(key);

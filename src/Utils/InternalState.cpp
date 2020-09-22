@@ -26,6 +26,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "Mesh/HexMesh/Renderers/ClearViewRenderer.hpp"
 #include "InternalState.hpp"
 
 void getTestModesDepthComplexity(std::vector<InternalState> &states, InternalState state) {
@@ -50,9 +51,30 @@ void getTestModesClearViewUnified(std::vector<InternalState> &states, InternalSt
     //states.push_back(state);
 }
 
+void getTestModesClearViewUnifiedSorting(std::vector<InternalState> &states, InternalState state) {
+    state.renderingMode = RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED;
+    std::map<std::string, std::string> settings = {
+            { "perVertexAttributes", "true" },
+            { "lineWidthBoostFactor", "2.0" },
+            { "focusRadiusBoostFactor", "1.0" }
+    };
+
+    for (int i = 0; i < NUM_SORTING_MODES; i++) {
+        state.name = std::string() + "ClearView (" + SORTING_MODE_NAMES[i] + ")";
+        settings["sortingAlgorithmMode"] = std::to_string(i);
+        state.rendererSettings = { SettingsMap(settings) };
+        states.push_back(state);
+    }
+}
+
 void getTestModesPaperForMesh(std::vector<InternalState> &states, InternalState state) {
     getTestModesDepthComplexity(states, state);
     getTestModesClearViewUnified(states, state);
+}
+
+void getTestModesSortingForMesh(std::vector<InternalState> &states, InternalState state) {
+    getTestModesDepthComplexity(states, state);
+    getTestModesClearViewUnifiedSorting(states, state);
 }
 
 std::vector<InternalState> getTestModesPaper()
@@ -105,7 +127,8 @@ std::vector<InternalState> getTestModesPaper()
             if (transferFunctionNames.size() > 0) {
                 state.transferFunctionName = transferFunctionNames.at(i);
             }
-            getTestModesPaperForMesh(states, state);
+            //getTestModesPaperForMesh(states, state);
+            getTestModesSortingForMesh(states, state);
         }
     }
 

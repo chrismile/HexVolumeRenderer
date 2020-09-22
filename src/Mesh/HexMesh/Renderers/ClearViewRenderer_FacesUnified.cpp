@@ -360,6 +360,12 @@ void ClearViewRenderer_FacesUnified::setNewSettings(const SettingsMap& settings)
     settings.getValueOpt("lineWidthBoostFactor", lineWidthBoostFactor);
     settings.getValueOpt("focusRadiusBoostFactor", focusRadiusBoostFactor);
 
+    if (settings.hasValue("sortingAlgorithmMode")) {
+        sortingAlgorithmMode = (SortingAlgorithmMode)settings.getIntValue("sortingAlgorithmMode");
+        setSortingAlgorithmDefine();
+        reloadResolveShader();
+    }
+
     if (mesh) {
         const float avgCellVolumeCbrt = std::cbrt(mesh->getAverageCellVolume());
         lineWidth = lineWidthBoostFactor * glm::clamp(
