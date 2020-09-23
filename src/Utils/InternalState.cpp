@@ -127,7 +127,50 @@ std::vector<InternalState> getTestModesPaper()
             if (transferFunctionNames.size() > 0) {
                 state.transferFunctionName = transferFunctionNames.at(i);
             }
-            //getTestModesPaperForMesh(states, state);
+            getTestModesPaperForMesh(states, state);
+        }
+    }
+
+    // Append model name to state name if more than one model is loaded
+    if (meshDescriptors.size() >= 1 || windowResolutions.size() > 1) {
+        for (InternalState &state : states) {
+            state.name =
+                    sgl::toString(state.windowResolution.x) + "x" + sgl::toString(state.windowResolution.y)
+                    + " " + state.meshDescriptor.meshName + " " + state.name;
+        }
+    }
+
+    return states;
+}
+
+std::vector<InternalState> getTestModesSorting()
+{
+    std::vector<InternalState> states;
+    //std::vector<glm::ivec2> windowResolutions = {
+    //        glm::ivec2(1280, 720), glm::ivec2(1920, 1080), glm::ivec2(2560, 1440) };
+    std::vector<glm::ivec2> windowResolutions = { glm::ivec2(2560, 1440) };
+    std::vector<MeshDescriptor> meshDescriptors = {
+            MeshDescriptor(
+                    "2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation",
+                    "anc101_a1", "mesh"),
+            MeshDescriptor(
+                    "2020 - LoopyCuts - Practical Feature-Preserving Block Decomposition for Strongly Hex-Dominant Meshing",
+                    "cube_carved", "mesh"),
+    };
+    std::vector<std::string> transferFunctionNames = {
+            "Standard_PerVertex.xml",
+            "Standard_PerVertex.xml",
+            "Standard_PerVertex.xml"
+    };
+    InternalState state;
+
+    for (size_t i = 0; i < meshDescriptors.size(); i++) {
+        state.meshDescriptor = meshDescriptors.at(i);
+        for (size_t j = 0; j < windowResolutions.size(); j++) {
+            state.windowResolution = windowResolutions.at(j);
+            if (transferFunctionNames.size() > 0) {
+                state.transferFunctionName = transferFunctionNames.at(i);
+            }
             getTestModesSortingForMesh(states, state);
         }
     }

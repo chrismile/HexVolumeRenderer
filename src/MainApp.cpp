@@ -205,9 +205,15 @@ MainApp::MainApp()
     usesNewState = true;
     if (usePerformanceMeasurementMode) {
         sgl::FileUtils::get()->ensureDirectoryExists("images");
-        performanceMeasurer = new AutomaticPerformanceMeasurer(
-                getTestModesPaper(), "performance.csv", "depth_complexity.csv",
-                [this](const InternalState &newState) { this->setNewState(newState); });
+        if (testSortingPerformance) {
+            performanceMeasurer = new AutomaticPerformanceMeasurer(
+                    getTestModesSorting(), "performance.csv", "depth_complexity.csv",
+                    [this](const InternalState &newState) { this->setNewState(newState); });
+        } else {
+            performanceMeasurer = new AutomaticPerformanceMeasurer(
+                    getTestModesPaper(), "performance.csv", "depth_complexity.csv",
+                    [this](const InternalState &newState) { this->setNewState(newState); });
+        }
         performanceMeasurer->setInitialFreeMemKilobytes(freeMemKilobytes);
     }
 }

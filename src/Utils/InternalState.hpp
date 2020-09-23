@@ -175,5 +175,6 @@ struct InternalState {
 };
 
 std::vector<InternalState> getTestModesPaper();
+std::vector<InternalState> getTestModesSorting();
 
 #endif //HEXVOLUMERENDERER_INTERNALSTATE_HPP

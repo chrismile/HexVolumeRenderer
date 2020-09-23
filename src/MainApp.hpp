@@ -167,6 +167,7 @@ private:
 
     // For making performance measurements.
     bool usePerformanceMeasurementMode = false;
+    bool testSortingPerformance = true;
     AutomaticPerformanceMeasurer *performanceMeasurer = nullptr;
     InternalState lastState;
     bool firstState = true;
