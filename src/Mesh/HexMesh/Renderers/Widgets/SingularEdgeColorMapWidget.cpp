@@ -72,6 +72,7 @@ void SingularEdgeColorMapWidget::updateSingularEdgeColorLookupTexture() {
 
 void SingularEdgeColorMapWidget::generateSingularityStructureInformation(HexMeshPtr meshIn) {
     // Get the information about the singularity structure.
+    singularEdgeMap.clear();
     Mesh& baseComplexMesh = meshIn->getBaseComplexMesh();
     Singularity& si = meshIn->getBaseComplexMeshSingularity();
     std::unordered_set<uint32_t> singularEdgeIds = meshIn->getSingularEdgeIds();

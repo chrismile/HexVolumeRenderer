@@ -111,6 +111,7 @@ private:
     int videoNumber = 0;
     float MOVE_SPEED = 0.2f;
     float MOUSE_ROT_SPEED = 0.05f;
+    float fovDegree = 90.0f;
     glm::vec3 modelRotationAxis = glm::vec3(1.0f, 0.0f, 0.0f);
     int rotateModelBy90DegreeTurns = 0;
     glm::ivec2 windowResolution;

@@ -137,6 +137,7 @@ MainApp::MainApp()
     camera->setFarClipDistance(100.0f);
     camera->setOrientation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
     float fovy = atanf(1.0f / 2.0f) * 2.0f;
+    fovDegree = fovy / sgl::PI * 180.0f;
     camera->setFOVy(fovy);
     camera->setPosition(glm::vec3(0.0f, 0.0f, 0.8f));
 
@@ -711,6 +712,10 @@ void MainApp::renderSceneSettingsGUI() {
 
     ImGui::SliderFloat("Move Speed", &MOVE_SPEED, 0.02f, 0.5f);
     ImGui::SliderFloat("Mouse Speed", &MOUSE_ROT_SPEED, 0.01f, 0.10f);
+    if (ImGui::SliderFloat("FoV (y)", &fovDegree, 10.0f, 120.0f)) {
+        camera->setFOVy(fovDegree / 180.0f * sgl::PI);
+        reRender = true;
+    }
     if (ImGui::SliderFloat3("Rotation Axis", &modelRotationAxis.x, 0.0f, 1.0f)) {
         if (rotateModelBy90DegreeTurns != 0) {
             loadHexahedralMesh(getSelectedMeshFilename());

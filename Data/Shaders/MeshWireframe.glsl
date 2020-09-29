@@ -464,7 +464,11 @@ void main()
     } else {
         lineBaseColorFocus = mix(lineBaseColor.rgb, backgroundColor, 0.3);
     }
+    #ifndef USE_SINGULAR_EDGE_COLOR_MAP
     vec3 lineBaseColorContext = mix(fragmentColor.rgb, foregroundColor, 0.3);
+    #else
+    vec3 lineBaseColorContext = mix(lineBaseColor.rgb, foregroundColor, 0.3);
+    #endif
     lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
 
     float lineCoordinates = max(minDistance / lineRadius, 0.0);
