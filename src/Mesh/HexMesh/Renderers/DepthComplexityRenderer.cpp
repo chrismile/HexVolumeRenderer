@@ -230,7 +230,7 @@ void DepthComplexityRenderer::renderGui() {
             sgl::Color newColor = sgl::colorFromFloat(colorSelection.x, colorSelection.y, colorSelection.z, 1.0f);
             renderColor = newColor;
             intensity = 0.0001f + 3*colorSelection.w;
-            numFragmentsMaxColor = std::max(maxComplexity, 4ul)/intensity;
+            numFragmentsMaxColor = std::max(maxComplexity, uint64_t(4ull))/intensity;
             reRender = true;
         }
     }
@@ -284,7 +284,7 @@ void DepthComplexityRenderer::computeStatistics(bool isReRender) {
         if (!isReRender) {
             firstFrame = false;
         }
-        numFragmentsMaxColor = std::max(maxComplexity, 4ul)/intensity;
+        numFragmentsMaxColor = std::max(maxComplexity, uint64_t(4ull))/intensity;
     }
 
     if (performanceMeasureMode) {
