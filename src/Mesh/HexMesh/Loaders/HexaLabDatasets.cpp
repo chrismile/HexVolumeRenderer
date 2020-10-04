@@ -31,7 +31,12 @@
 
 #include <boost/algorithm/string/replace.hpp>
 #include <curl/curl.h>
+
+#ifdef __MINGW32__
+#include <json/json.h>
+#else
 #include <jsoncpp/json/json.h>
+#endif
 
 #include <Utils/File/FileUtils.hpp>
 #include <Utils/File/Logfile.hpp>
