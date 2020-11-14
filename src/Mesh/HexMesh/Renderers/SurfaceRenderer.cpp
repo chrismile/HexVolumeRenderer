@@ -33,9 +33,9 @@
 #include "SurfaceRenderer.hpp"
 
 const glm::vec4 hullColor = glm::vec4(
-        TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(0.5, 0.5, 0.5f)), 0.3f);
+        sgl::TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(0.5, 0.5, 0.5f)), 0.3f);
 
-SurfaceRenderer::SurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+SurfaceRenderer::SurfaceRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     sgl::ShaderManager->addPreprocessorDefine("DIRECT_BLIT_GATHER", "");

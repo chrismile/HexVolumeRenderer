@@ -45,7 +45,7 @@
  */
 class ClearViewRenderer_Faces : public ClearViewRenderer {
 public:
-    ClearViewRenderer_Faces(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    ClearViewRenderer_Faces(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~ClearViewRenderer_Faces() {}
 
     /**

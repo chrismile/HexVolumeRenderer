@@ -62,7 +62,7 @@ struct LinkedListFragmentNode {
     uint next;
 };
 
-VolumeRenderer_Faces::VolumeRenderer_Faces(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+VolumeRenderer_Faces::VolumeRenderer_Faces(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();

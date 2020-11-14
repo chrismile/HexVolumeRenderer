@@ -33,7 +33,7 @@
 #include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "SingularityRenderer.hpp"
 
-SingularityRenderer::SingularityRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+SingularityRenderer::SingularityRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     shaderProgram = sgl::ShaderManager->getShaderProgram(

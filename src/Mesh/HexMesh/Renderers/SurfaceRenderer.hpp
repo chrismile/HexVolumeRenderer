@@ -38,7 +38,7 @@
  */
 class SurfaceRenderer : public HexahedralMeshRenderer {
 public:
-    SurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    SurfaceRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~SurfaceRenderer() {}
 
     /**

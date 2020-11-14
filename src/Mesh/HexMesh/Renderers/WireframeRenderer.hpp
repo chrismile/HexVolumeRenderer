@@ -38,7 +38,7 @@
  */
 class WireframeRenderer : public HexahedralMeshRenderer {
 public:
-    WireframeRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    WireframeRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~WireframeRenderer() {}
 
     /**

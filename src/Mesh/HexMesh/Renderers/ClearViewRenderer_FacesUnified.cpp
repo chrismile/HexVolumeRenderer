@@ -62,7 +62,7 @@ struct LinkedListFragmentNode {
     uint32_t next;
 };
 
-ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : ClearViewRenderer(sceneData, transferFunctionWindow) {
     windowName = "ClearView Renderer (Unified)";
     clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED;

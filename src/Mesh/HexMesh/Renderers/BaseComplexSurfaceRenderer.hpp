@@ -38,7 +38,7 @@
  */
 class BaseComplexSurfaceRenderer : public HexahedralMeshRenderer {
 public:
-    BaseComplexSurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    BaseComplexSurfaceRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~BaseComplexSurfaceRenderer() {}
 
     /**

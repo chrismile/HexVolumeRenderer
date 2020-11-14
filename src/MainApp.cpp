@@ -109,7 +109,7 @@ MainApp::MainApp()
           sceneData(
                   sceneFramebuffer, sceneTexture, sceneDepthRBO, camera, clearColor, performanceMeasurer,
                   recording, useCameraFlight, *rayMeshIntersection),
-          checkpointWindow(sceneData), videoWriter(NULL) {
+          checkpointWindow(camera), videoWriter(NULL) {
 #ifdef USE_STEAMWORKS
     steamworks.initialize();
 #endif
@@ -1035,7 +1035,7 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
             fileName, hexMeshVertices, hexMeshCellIndices, hexMeshDeformations, hexMeshAnistropyMetricList);
     if (loadingSuccessful) {
         newMeshLoaded = true;
-        checkpointWindow.onLoadMesh(fileName);
+        checkpointWindow.onLoadDataSet(fileName);
 
         // A copy of the mesh data is stored for allowing the user to alter the deformation factor also after loading.
         std::vector<glm::vec3> vertices;

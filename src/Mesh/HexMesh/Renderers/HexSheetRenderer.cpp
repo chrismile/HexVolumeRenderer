@@ -35,7 +35,7 @@
 
 #include "HexSheetRenderer.hpp"
 
-HexSheetRenderer::HexSheetRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+HexSheetRenderer::HexSheetRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     sgl::ShaderManager->addPreprocessorDefine("DIRECT_BLIT_GATHER", "");

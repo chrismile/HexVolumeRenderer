@@ -49,7 +49,7 @@ struct SphereInstancingData {
     glm::vec4 color;
 };
 
-ClearViewRenderer::ClearViewRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+ClearViewRenderer::ClearViewRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
 }
 

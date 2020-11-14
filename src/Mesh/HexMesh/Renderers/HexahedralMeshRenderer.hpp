@@ -32,7 +32,9 @@
 #include "Mesh/HexMesh/HexMesh.hpp"
 #include "SceneData.hpp"
 
-class TransferFunctionWindow;
+namespace sgl {
+    class TransferFunctionWindow;
+}
 struct InternalState;
 class SettingsMap;
 
@@ -41,7 +43,7 @@ class SettingsMap;
  */
 class HexahedralMeshRenderer {
 public:
-    HexahedralMeshRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+    HexahedralMeshRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : sceneData(sceneData), transferFunctionWindow(transferFunctionWindow) {}
     virtual ~HexahedralMeshRenderer() {}
 
@@ -84,7 +86,7 @@ public:
 
 protected:
     SceneData &sceneData;
-    TransferFunctionWindow &transferFunctionWindow;
+    sgl::TransferFunctionWindow &transferFunctionWindow;
     bool dirty = true;
     bool reRender = true;
 };

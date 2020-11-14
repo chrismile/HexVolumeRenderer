@@ -42,7 +42,7 @@
  */
 class LineDensityControlRenderer : public HexahedralMeshRenderer {
 public:
-    LineDensityControlRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    LineDensityControlRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~LineDensityControlRenderer() {}
 
     /**

@@ -45,7 +45,7 @@
  */
 class LodLineRendererPerFragment : public HexahedralMeshRenderer, protected Pickable {
 public:
-    LodLineRendererPerFragment(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    LodLineRendererPerFragment(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~LodLineRendererPerFragment() {}
 
     /**

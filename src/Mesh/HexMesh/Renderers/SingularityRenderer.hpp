@@ -38,7 +38,7 @@
  */
 class SingularityRenderer : public HexahedralMeshRenderer {
 public:
-    SingularityRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    SingularityRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~SingularityRenderer() {}
 
     /**

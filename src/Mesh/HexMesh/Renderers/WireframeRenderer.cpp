@@ -33,7 +33,7 @@
 #include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "WireframeRenderer.hpp"
 
-WireframeRenderer::WireframeRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+WireframeRenderer::WireframeRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     shaderProgram = sgl::ShaderManager->getShaderProgram(

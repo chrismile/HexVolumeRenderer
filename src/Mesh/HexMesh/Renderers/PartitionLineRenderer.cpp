@@ -33,7 +33,7 @@
 #include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "PartitionLineRenderer.hpp"
 
-PartitionLineRenderer::PartitionLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+PartitionLineRenderer::PartitionLineRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     shaderProgram = sgl::ShaderManager->getShaderProgram(

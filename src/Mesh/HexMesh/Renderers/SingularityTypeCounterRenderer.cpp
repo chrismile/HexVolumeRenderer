@@ -30,7 +30,7 @@
 #include "Mesh/BaseComplex/global_types.h"
 
 SingularityTypeCounterRenderer::SingularityTypeCounterRenderer(
-        SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+        SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
 }
 

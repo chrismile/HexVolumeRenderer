@@ -52,7 +52,7 @@ struct LinkedListFragmentNodeAttributeTextures {
     uint next; ///< Next entry index in the per-pixel linked list (or -1 == 0xFFFFFFFFu).
 };
 
-LineDensityControlRenderer::LineDensityControlRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+LineDensityControlRenderer::LineDensityControlRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     sgl::ShaderManager->addPreprocessorDefine("DIRECT_BLIT_GATHER", "");

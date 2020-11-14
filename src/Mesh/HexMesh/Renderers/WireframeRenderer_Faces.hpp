@@ -48,7 +48,7 @@ public:
      * @param onlyBoundary Whether only to show the wireframe grid on the boundary surface of the mesh or all lines.
      */
     WireframeRenderer_Faces(
-            SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow, bool useOutline, bool onlyBoundary);
+            SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow, bool useOutline, bool onlyBoundary);
     virtual ~WireframeRenderer_Faces() {}
 
     /**

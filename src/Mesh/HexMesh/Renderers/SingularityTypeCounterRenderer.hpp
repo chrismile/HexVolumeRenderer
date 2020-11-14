@@ -47,7 +47,7 @@ public:
      * @param transferFunctionWindow The transfer function editor window.
      */
     SingularityTypeCounterRenderer(
-            SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+            SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~SingularityTypeCounterRenderer() {}
 
     /**

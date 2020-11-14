@@ -42,7 +42,7 @@
  */
 class LodLineRenderer : public HexahedralMeshRenderer, protected Pickable {
 public:
-    LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    LodLineRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~LodLineRenderer() {}
 
     /**

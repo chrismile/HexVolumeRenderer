@@ -38,7 +38,7 @@
  */
 class DepthComplexityRenderer : public HexahedralMeshRenderer {
 public:
-    DepthComplexityRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    DepthComplexityRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~DepthComplexityRenderer() {}
 
     /**

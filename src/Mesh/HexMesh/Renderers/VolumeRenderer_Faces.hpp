@@ -47,7 +47,7 @@
  */
 class VolumeRenderer_Faces : public HexahedralMeshRenderer {
 public:
-    VolumeRenderer_Faces(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    VolumeRenderer_Faces(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~VolumeRenderer_Faces() {}
 
     /**

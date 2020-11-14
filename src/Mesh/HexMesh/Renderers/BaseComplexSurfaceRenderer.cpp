@@ -31,7 +31,7 @@
 
 #include "BaseComplexSurfaceRenderer.hpp"
 
-BaseComplexSurfaceRenderer::BaseComplexSurfaceRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+BaseComplexSurfaceRenderer::BaseComplexSurfaceRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     sgl::ShaderManager->addPreprocessorDefine("DIRECT_BLIT_GATHER", "");

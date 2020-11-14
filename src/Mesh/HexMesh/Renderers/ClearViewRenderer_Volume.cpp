@@ -76,7 +76,7 @@ struct SphereInstancingData {
     glm::vec4 color;
 };
 
-ClearViewRenderer_Volume::ClearViewRenderer_Volume(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+ClearViewRenderer_Volume::ClearViewRenderer_Volume(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : ClearViewRenderer(sceneData, transferFunctionWindow) {
     windowName = "ClearView Renderer (Volume)";
     clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_VOLUME;

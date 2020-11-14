@@ -36,7 +36,7 @@
 
 class HexSheetRenderer : public HexahedralMeshRenderer {
 public:
-    HexSheetRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    HexSheetRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~HexSheetRenderer() {}
 
     /**
@@ -74,13 +74,13 @@ protected:
     //const glm::vec4 sheetIntersectionColor = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
     //const glm::vec4 hullColor = glm::vec4(0.537254902f, 0.803921569f, 1.0f, 0.1f);
     glm::vec4 sheet0Color = glm::vec4(
-            TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(1.0f, 0.0f, 0.0f)), 1.0f);
+            sgl::TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(1.0f, 0.0f, 0.0f)), 1.0f);
     glm::vec4 sheet1Color = glm::vec4(
-            TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(0.537254902f, 0.803921569f, 1.0f)), 1.0f);
+            sgl::TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(0.537254902f, 0.803921569f, 1.0f)), 1.0f);
     glm::vec4 sheetIntersectionColor = glm::vec4(
-            TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(1.0f, 1.0f, 0.0f)), 1.0f);
+            sgl::TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(1.0f, 1.0f, 0.0f)), 1.0f);
     glm::vec4 hullColor = glm::vec4(
-            TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(0.5, 0.5, 0.5f)), 0.3f);
+            sgl::TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(0.5, 0.5, 0.5f)), 0.3f);
 
     // GUI data
     bool showRendererWindow = true;

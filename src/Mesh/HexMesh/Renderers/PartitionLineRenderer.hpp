@@ -35,7 +35,7 @@
 
 class PartitionLineRenderer : public HexahedralMeshRenderer {
 public:
-    PartitionLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    PartitionLineRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~PartitionLineRenderer() {}
 
     /**

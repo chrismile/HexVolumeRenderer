@@ -65,10 +65,10 @@
 #include <glm/vec3.hpp>
 
 #include <Math/Geometry/AABB3.hpp>
+#include <ImGui/Widgets/TransferFunctionWindow.hpp>
 
 #include "QualityMeasure/hex_quality_color_maps.h"
 #include "QualityMeasure/QualityMeasure.hpp"
-#include "Renderers/Widgets/TransferFunctionWindow.hpp"
 #include "Renderers/Intersection/RayMeshIntersection.hpp"
 #include "Renderers/LOD/LodSheetGeneration.hpp"
 
@@ -142,7 +142,7 @@ struct HexahedralCellFaceLineDensityControl {
 
 class HexMesh {
 public:
-    HexMesh(TransferFunctionWindow &transferFunctionWindow, RayMeshIntersection& rayMeshIntersection)
+    HexMesh(sgl::TransferFunctionWindow &transferFunctionWindow, RayMeshIntersection& rayMeshIntersection)
         : transferFunctionWindow(transferFunctionWindow), rayMeshIntersection(rayMeshIntersection) {}
     ~HexMesh();
     void setHexMeshData(const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices);
@@ -651,7 +651,7 @@ private:
     // Cell deformation data.
     void recomputeHistogram();
     QualityMeasure qualityMeasure = QUALITY_MEASURE_SCALED_JACOBIAN;
-    TransferFunctionWindow &transferFunctionWindow;
+    sgl::TransferFunctionWindow &transferFunctionWindow;
     std::vector<float> cellQualityMeasureList;
     float qualityMin = FLT_MAX;
     float qualityMax = -FLT_MAX;

@@ -40,7 +40,7 @@
  */
 class LodLinePreviewRenderer : public HexahedralMeshRenderer {
 public:
-    LodLinePreviewRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    LodLinePreviewRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~LodLinePreviewRenderer() {}
 
     /**

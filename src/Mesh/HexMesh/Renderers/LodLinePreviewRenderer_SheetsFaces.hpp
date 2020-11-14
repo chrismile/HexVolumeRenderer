@@ -38,7 +38,7 @@
  */
 class LodLinePreviewRenderer_SheetsFaces : public PerPixelLinkedListRenderer {
 public:
-    LodLinePreviewRenderer_SheetsFaces(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    LodLinePreviewRenderer_SheetsFaces(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~LodLinePreviewRenderer_SheetsFaces() {}
 
     /**

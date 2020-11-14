@@ -60,7 +60,7 @@ const int NUM_SORTING_MODES = ((int)(sizeof(SORTING_MODE_NAMES) / sizeof(*SORTIN
  */
 class ClearViewRenderer : public HexahedralMeshRenderer, protected Pickable {
 public:
-    ClearViewRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    ClearViewRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
 
     // Renders the object to the scene framebuffer.
     virtual void render();

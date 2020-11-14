@@ -35,7 +35,7 @@
 #include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "LodLineRenderer.hpp"
 
-LodLineRenderer::LodLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+LodLineRenderer::LodLineRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     shaderProgram = sgl::ShaderManager->getShaderProgram(

@@ -36,7 +36,7 @@
 #include "Mesh/HexMesh/Renderers/LOD/LodSheetGeneration.hpp"
 #include "LodLinePreviewRenderer_SheetsFaces.hpp"
 
-LodLinePreviewRenderer_SheetsFaces::LodLinePreviewRenderer_SheetsFaces(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+LodLinePreviewRenderer_SheetsFaces::LodLinePreviewRenderer_SheetsFaces(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : PerPixelLinkedListRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->addPreprocessorDefine("LINE_RENDERING_STYLE_HALO", "");
     initShaders({"WireframeSurfacePreview.Vertex", "WireframeSurfacePreview.Fragment"});

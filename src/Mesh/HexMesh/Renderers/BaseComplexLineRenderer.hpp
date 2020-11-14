@@ -38,7 +38,7 @@
  */
 class BaseComplexLineRenderer : public HexahedralMeshRenderer {
 public:
-    BaseComplexLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    BaseComplexLineRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~BaseComplexLineRenderer() {}
 
     /**

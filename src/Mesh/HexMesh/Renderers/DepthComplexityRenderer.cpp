@@ -41,7 +41,7 @@
 #include "Utils/AutomaticPerformanceMeasurer.hpp"
 #include "DepthComplexityRenderer.hpp"
 
-DepthComplexityRenderer::DepthComplexityRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+DepthComplexityRenderer::DepthComplexityRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     gatherShader = sgl::ShaderManager->getShaderProgram(

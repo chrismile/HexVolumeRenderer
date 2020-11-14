@@ -36,7 +36,7 @@
 class PerPixelLinkedListRenderer : public HexahedralMeshRenderer {
 public:
     PerPixelLinkedListRenderer(
-            SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+            SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~PerPixelLinkedListRenderer() {}
 
     // Renders the object to the scene framebuffer.

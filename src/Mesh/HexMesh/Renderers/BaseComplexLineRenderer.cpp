@@ -33,7 +33,7 @@
 #include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "BaseComplexLineRenderer.hpp"
 
-BaseComplexLineRenderer::BaseComplexLineRenderer(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow)
+BaseComplexLineRenderer::BaseComplexLineRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
     shaderProgram = sgl::ShaderManager->getShaderProgram(

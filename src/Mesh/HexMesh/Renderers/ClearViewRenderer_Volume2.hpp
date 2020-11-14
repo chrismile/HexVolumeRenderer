@@ -52,7 +52,7 @@
  */
 class ClearViewRenderer_Volume2 : public ClearViewRenderer {
 public:
-    ClearViewRenderer_Volume2(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    ClearViewRenderer_Volume2(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~ClearViewRenderer_Volume2() {}
 
     /**

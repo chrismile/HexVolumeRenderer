@@ -34,8 +34,11 @@
 #include <map>
 
 #include <Utils/AppLogic.hpp>
+#include <Utils/SciVis/CameraPath.hpp>
 #include <Graphics/Shader/Shader.hpp>
 #include <Graphics/Video/VideoWriter.hpp>
+#include <ImGui/Widgets/TransferFunctionWindow.hpp>
+#include <ImGui/Widgets/CheckpointWindow.hpp>
 
 #include "Mesh/HexMesh/QualityMeasure/QualityMeasure.hpp"
 #include "Mesh/HexMesh/Loaders/HexaLabDatasets.hpp"
@@ -43,9 +46,6 @@
 #include "Mesh/Filters/HexahedralMeshFilter.hpp"
 #include "Mesh/HexMesh/Renderers/SceneData.hpp"
 #include "Mesh/HexMesh/Renderers/HexahedralMeshRenderer.hpp"
-#include "Mesh/HexMesh/Renderers/Widgets/TransferFunctionWindow.hpp"
-#include "Mesh/HexMesh/Renderers/Widgets/CheckpointWindow.hpp"
-#include "Utils/CameraPath.hpp"
 #include "Utils/AutomaticPerformanceMeasurer.hpp"
 
 #ifdef USE_STEAMWORKS
@@ -139,10 +139,10 @@ private:
 
     // Coloring & filtering dependent on importance criteria.
     QualityMeasure selectedQualityMeasure;
-    TransferFunctionWindow transferFunctionWindow;
+    sgl::TransferFunctionWindow transferFunctionWindow;
 
     // For loading and saving camera checkpoints.
-    CheckpointWindow checkpointWindow;
+    sgl::CheckpointWindow checkpointWindow;
 
     // For downloading files in the background.
     LoaderThread loaderThread;

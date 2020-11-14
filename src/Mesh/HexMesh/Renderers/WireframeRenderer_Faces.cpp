@@ -34,7 +34,7 @@
 #include "WireframeRenderer_Faces.hpp"
 
 WireframeRenderer_Faces::WireframeRenderer_Faces(
-        SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow, bool useOutline, bool onlyBoundary)
+        SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow, bool useOutline, bool onlyBoundary)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow), onlyBoundary(onlyBoundary) {
     sgl::ShaderManager->invalidateShaderCache();
     sgl::ShaderManager->addPreprocessorDefine("DIRECT_BLIT_GATHER", "");

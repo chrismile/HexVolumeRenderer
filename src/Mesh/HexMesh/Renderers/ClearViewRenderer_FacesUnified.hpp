@@ -49,7 +49,7 @@
  */
 class ClearViewRenderer_FacesUnified : public ClearViewRenderer {
 public:
-    ClearViewRenderer_FacesUnified(SceneData &sceneData, TransferFunctionWindow &transferFunctionWindow);
+    ClearViewRenderer_FacesUnified(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~ClearViewRenderer_FacesUnified();
 
     /**
