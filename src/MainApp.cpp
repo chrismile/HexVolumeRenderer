@@ -405,6 +405,7 @@ void MainApp::renderGui() {
     }
 
     if (checkpointWindow.renderGui()) {
+        fovDegree = camera->getFOVy() / sgl::PI * 180.0f;
         reRender = true;
     }
 
