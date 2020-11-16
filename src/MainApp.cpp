@@ -392,7 +392,7 @@ void MainApp::renderGui() {
         ImGui::End();
     }
 
-    if (transferFunctionWindow.renderGUI()) {
+    if (transferFunctionWindow.renderGui()) {
         reRender = true;
         if (transferFunctionWindow.getTransferFunctionMapRebuilt()) {
             if (inputData) {
