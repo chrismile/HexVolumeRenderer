@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.11)
 project (HexVolumeRenderer)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 #MESSAGE(STATUS "CMAKE_MODULE_PATH: " ${CMAKE_MODULE_PATH})
@@ -87,23 +87,19 @@ ENDIF()
 
 cmake_policy(SET CMP0012 NEW)
 find_package(OpenMP REQUIRED)
-find_package(SGL REQUIRED)
+find_package(sgl REQUIRED)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
 find_package(GLEW REQUIRED)
+find_package(OpenGL REQUIRED)
 find_package(CURL REQUIRED)
 find_package(PkgConfig REQUIRED)
 find_package(Eigen3 REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp)
-IF(WIN32)
-	target_link_libraries(HexVolumeRenderer opengl32)
-ELSE()
-	target_link_libraries(HexVolumeRenderer GL)
-ENDIF()
 target_link_libraries(HexVolumeRenderer tinyxml2)
 target_link_libraries(HexVolumeRenderer Eigen3::Eigen)
-target_link_libraries(HexVolumeRenderer ${SGL_LIBRARIES} ${Boost_LIBRARIES} ${GLEW_LIBRARIES} ${NETCDF_LIBRARIES} ${CURL_LIBRARIES} ${JSONCPP_LIBRARIES}) # ${LEMON_LIBRARIES}
+target_link_libraries(HexVolumeRenderer sgl ${Boost_LIBRARIES} ${GLEW_LIBRARIES} ${NETCDF_LIBRARIES} ${CURL_LIBRARIES} ${JSONCPP_LIBRARIES}) # ${LEMON_LIBRARIES}
 
-include_directories(${Boost_INCLUDES} ${GLEW_INCLUDES} ${NETCDF_INCLUDES} ${CURL_INCLUDES} ${JSONCPP_INCLUDES})
+include_directories(${sgl_INCLUDES} ${Boost_INCLUDES} ${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDES} ${NETCDF_INCLUDES} ${CURL_INCLUDES} ${JSONCPP_INCLUDES})
 
 if(OPENMP_FOUND)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
