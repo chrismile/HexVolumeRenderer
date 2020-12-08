@@ -111,6 +111,7 @@ MainApp::MainApp()
     clearColorSelection = ImColor(clearColor.getColorRGBA());
     transferFunctionWindow.setClearColor(clearColor);
     transferFunctionWindow.setUseLinearRGB(useLinearRGB);
+    colorLegendWidget.setClearColor(clearColor);
 
     sgl::Renderer->setErrorCallback(&openglErrorCallback);
     sgl::Renderer->setDebugVerbosity(sgl::DEBUG_OUTPUT_CRITICAL_ONLY);
@@ -154,6 +155,9 @@ MainApp::MainApp()
     customMeshFileName = sgl::FileUtils::get()->getUserDirectory();
     hexaLabDataSetsDownloaded = sgl::FileUtils::get()->exists(meshDirectory + "index.json");
     loadAvailableDataSetSources();
+
+    colorLegendWidget.setTransferFunctionColorMap(
+            transferFunctionWindow.getTransferFunctionMap_sRGB());
 
     recordingTimeStampStart = sgl::Timer->getTicksMicroseconds();
     usesNewState = true;
@@ -219,6 +223,8 @@ void MainApp::setNewState(const InternalState &newState) {
     // 1.2. Load the new transfer function if necessary.
     if (!newState.transferFunctionName.empty() && newState.transferFunctionName != lastState.transferFunctionName) {
         transferFunctionWindow.loadFunctionFromFile("Data/TransferFunctions/" + newState.transferFunctionName);
+        colorLegendWidget.setTransferFunctionColorMap(
+                transferFunctionWindow.getTransferFunctionMap_sRGB());
     }
 
     // 2.1. Do we need to load new renderers?
@@ -395,6 +401,8 @@ void MainApp::renderGui() {
     if (transferFunctionWindow.renderGui()) {
         reRender = true;
         if (transferFunctionWindow.getTransferFunctionMapRebuilt()) {
+            colorLegendWidget.setTransferFunctionColorMap(
+                    transferFunctionWindow.getTransferFunctionMap_sRGB());
             if (inputData) {
                 inputData->onTransferFunctionMapRebuilt();
             }
@@ -402,6 +410,12 @@ void MainApp::renderGui() {
                 meshRenderer->onTransferFunctionMapRebuilt();
             }
         }
+    }
+
+    if (shallRenderColorLegendWidgets && inputData) {
+        colorLegendWidget.setAttributeMinValue(transferFunctionWindow.getSelectedRangeMin());
+        colorLegendWidget.setAttributeMaxValue(transferFunctionWindow.getSelectedRangeMax());
+        colorLegendWidget.renderGui();
     }
 
     if (checkpointWindow.renderGui()) {
@@ -515,11 +529,13 @@ void MainApp::renderSceneSettingsGui() {
         clearColor = sgl::colorFromFloat(
                 clearColorSelection.x, clearColorSelection.y, clearColorSelection.z, clearColorSelection.w);
         transferFunctionWindow.setClearColor(clearColor);
+        colorLegendWidget.setClearColor(clearColor);
         reRender = true;
     }
 
     SciVisApp::renderSceneSettingsGuiPre();
     ImGui::Checkbox("Show Transfer Function Window", &transferFunctionWindow.getShowTransferFunctionWindow());
+    ImGui::Checkbox("Render Color Legend", &shallRenderColorLegendWidgets);
 
     if (ImGui::Combo(
             "Rendering Mode", (int*)&renderingMode, RENDERING_MODE_NAMES,
@@ -768,4 +784,5 @@ void MainApp::changeQualityMeasureType() {
     if (inputData) {
         inputData->setQualityMeasure(selectedQualityMeasure);
     }
+    colorLegendWidget.setAttributeDisplayName(QUALITY_MEASURE_NAMES[int(selectedQualityMeasure)]);
 }

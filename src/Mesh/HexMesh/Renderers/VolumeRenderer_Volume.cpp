@@ -236,7 +236,15 @@ void VolumeRenderer_Volume::setUniformData() {
     gatherShaderVolumeBackFaces->setUniform(
             "linkedListVolumeBackFacesCapacity", (unsigned int)fragmentBufferSizeVolume);
     gatherShaderVolumeFrontFaces->setUniform(
+            "minAttributeValue", transferFunctionWindow.getSelectedRangeMin());
+    gatherShaderVolumeFrontFaces->setUniform(
+            "maxAttributeValue", transferFunctionWindow.getSelectedRangeMax());
+    gatherShaderVolumeFrontFaces->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
+    gatherShaderVolumeBackFaces->setUniform(
+            "minAttributeValue", transferFunctionWindow.getSelectedRangeMin());
+    gatherShaderVolumeBackFaces->setUniform(
+            "maxAttributeValue", transferFunctionWindow.getSelectedRangeMax());
     gatherShaderVolumeBackFaces->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
     /*gatherShaderSurface->setUniform(

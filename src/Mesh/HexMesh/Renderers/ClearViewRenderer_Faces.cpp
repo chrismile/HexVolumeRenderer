@@ -210,6 +210,10 @@ void ClearViewRenderer_Faces::setUniformData() {
     gatherShaderContext->setUniform("sphereCenter", focusPoint);
     gatherShaderContext->setUniform("sphereRadius", focusRadius);
     gatherShaderContext->setUniform(
+            "minAttributeValue", transferFunctionWindow.getSelectedRangeMin());
+    gatherShaderContext->setUniform(
+            "maxAttributeValue", transferFunctionWindow.getSelectedRangeMax());
+    gatherShaderContext->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
 
     sgl::ShaderProgram* gatherShaderFocus = shaderAttributesFocus->getShaderProgram();

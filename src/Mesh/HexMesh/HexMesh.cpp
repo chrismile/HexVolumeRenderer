@@ -1,7 +1,7 @@
 /*
- * This file is the interface between HexVolumeRenderer, HexaMesh classes and
+ * This file is the interface between HexVolumeRenderer, HexaLab classes and
  * the code from Robust Hexahedral Re-Meshing (see README).
- * Some functions from HexaMesh are used here, which are covered by the MIT license.
+ * Some functions from HexaLab are used here, which are covered by the MIT license.
  * The changes for the interoperability are covered by the BSD 2-Clause license.
  *
  *
@@ -422,7 +422,8 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
 
 void HexMesh::recomputeHistogram() {
     if (manualVertexAttributes.empty()) {
-        transferFunctionWindow.computeHistogram(cellQualityMeasureList, qualityMinNormalized, qualityMaxNormalized);
+        //transferFunctionWindow.computeHistogram(cellQualityMeasureList, qualityMinNormalized, qualityMaxNormalized);
+        transferFunctionWindow.computeHistogram(cellQualityMeasureList, 0.0f, 1.0f);
     } else {
         transferFunctionWindow.computeHistogram(manualVertexAttributes, 0.0f, 1.0f);
     }

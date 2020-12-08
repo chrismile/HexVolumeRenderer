@@ -120,6 +120,10 @@ void SurfaceRenderer::render() {
     shaderProgramSurface->setUniform("useShading", int(useShading));
     shaderProgramSurface->setUniform("cameraPosition", sceneData.camera->getPosition());
     shaderProgramSurface->setUniform(
+            "minAttributeValue", transferFunctionWindow.getSelectedRangeMin());
+    shaderProgramSurface->setUniform(
+            "maxAttributeValue", transferFunctionWindow.getSelectedRangeMax());
+    shaderProgramSurface->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
     sgl::Renderer->render(shaderAttributesSurface);
 

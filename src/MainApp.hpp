@@ -38,6 +38,7 @@
 #include <Graphics/Shader/Shader.hpp>
 #include <Graphics/Video/VideoWriter.hpp>
 #include <ImGui/Widgets/TransferFunctionWindow.hpp>
+#include <ImGui/Widgets/ColorLegendWidget.hpp>
 #include <ImGui/Widgets/CheckpointWindow.hpp>
 
 #include "Mesh/HexMesh/QualityMeasure/QualityMeasure.hpp"
@@ -105,6 +106,10 @@ private:
     // Coloring & filtering dependent on importance criteria.
     QualityMeasure selectedQualityMeasure;
     sgl::TransferFunctionWindow transferFunctionWindow;
+
+    // Color legend widgets for different attributes.
+    bool shallRenderColorLegendWidgets = true;
+    sgl::ColorLegendWidget colorLegendWidget;
 
     // For downloading files in the background.
     LoaderThread loaderThread;

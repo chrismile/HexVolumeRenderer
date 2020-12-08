@@ -192,6 +192,10 @@ void VolumeRenderer_Faces::setUniformData() {
     gatherShader->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
     gatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
     gatherShader->setUniform(
+            "minAttributeValue", transferFunctionWindow.getSelectedRangeMin());
+    gatherShader->setUniform(
+            "maxAttributeValue", transferFunctionWindow.getSelectedRangeMax());
+    gatherShader->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
 
     resolveShader->setUniform("viewportW", width);

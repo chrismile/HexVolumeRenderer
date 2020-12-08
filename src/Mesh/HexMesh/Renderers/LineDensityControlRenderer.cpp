@@ -232,6 +232,10 @@ void LineDensityControlRenderer::setUniformData() {
     lineDensityControlShader->setUniform("factor_v", factor_v);
     lineDensityControlShader->setUniform("factor_d", factor_d);
     lineDensityControlShader->setUniform(
+            "minAttributeValue", transferFunctionWindow.getSelectedRangeMin());
+    lineDensityControlShader->setUniform(
+            "maxAttributeValue", transferFunctionWindow.getSelectedRangeMax());
+    lineDensityControlShader->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
     lineDensityControlShader->setUniform(
             "singularEdgeColorLookupTexture",

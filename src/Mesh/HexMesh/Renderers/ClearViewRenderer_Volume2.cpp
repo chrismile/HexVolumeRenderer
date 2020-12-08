@@ -462,6 +462,10 @@ void ClearViewRenderer_Volume2::setUniformData() {
         gatherShader->setUniform("lookingDirection", lookingDirection);
     }
     gatherShader->setUniform(
+            "minAttributeValue", transferFunctionWindow.getSelectedRangeMin());
+    gatherShader->setUniform(
+            "maxAttributeValue", transferFunctionWindow.getSelectedRangeMax());
+    gatherShader->setUniform(
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
     if (gatherShader->hasUniform("singularEdgeColorLookupTexture")) {
         gatherShader->setUniform(
