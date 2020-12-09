@@ -145,6 +145,12 @@ void LodLinePreviewRenderer_SheetsFaces::renderGui() {
                 reRender = true;
             }
         }
+        if (ImGui::Checkbox("Use #Cells/Volume", &lodSettings.useNumCellsOrVolume)) {
+            if (mesh) {
+                uploadVisualizationMapping(mesh, false);
+                reRender = true;
+            }
+        }
     }
     ImGui::End();
 }

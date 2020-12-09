@@ -84,8 +84,10 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
             {"MeshShader.Vertex.Plain", "MeshShader.Fragment.Plain"});
     reloadSphereRenderData();
 
-    reloadGatherShader();
+    reloadGatherShader(false);
     reloadResolveShader();
+    reloadFocusOutlineGatherShader();
+    createFocusOutlineRenderingData();
     clearShader = sgl::ShaderManager->getShaderProgram(
             {"LinkedListClear.Vertex", "LinkedListClear.Fragment"});
     shaderFullScreenBlitLoG = sgl::ShaderManager->getShaderProgram(
@@ -284,7 +286,7 @@ void ClearViewRenderer_FacesUnified::reloadResolveShader() {
     }
 }
 
-void ClearViewRenderer_FacesUnified::reloadGatherShader() {
+void ClearViewRenderer_FacesUnified::reloadGatherShader(bool copyShaderAttributes) {
     sgl::ShaderManager->invalidateShaderCache();
     std::string lineRenderingStyleDefineName = "LINE_RENDERING_STYLE_HALO";
     sgl::ShaderManager->addPreprocessorDefine(lineRenderingStyleDefineName, "");
@@ -309,6 +311,9 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     if (accentuateAllEdges) {
         sgl::ShaderManager->addPreprocessorDefine("ACCENTUATE_ALL_EDGES", "");
     }
+    //if (useFocusOutline) {
+    //    sgl::ShaderManager->addPreprocessorDefine("USE_FOCUS_OUTLINE", "");
+    //}
 
     if (useScreenSpaceLens) {
         gatherShader = sgl::ShaderManager->getShaderProgram(
@@ -340,11 +345,21 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader() {
     if (accentuateAllEdges) {
         sgl::ShaderManager->removePreprocessorDefine("ACCENTUATE_ALL_EDGES");
     }
+    //if (useFocusOutline) {
+    //    sgl::ShaderManager->removePreprocessorDefine("USE_FOCUS_OUTLINE");
+    //}
+
+    if (copyShaderAttributes && shaderAttributes) {
+        shaderAttributes = shaderAttributes->copy(gatherShader);
+    }
 }
 
 void ClearViewRenderer_FacesUnified::setNewState(const InternalState& newState) {
     currentStateName = newState.name;
     timerDataIsWritten = false;
+    if (sceneData.performanceMeasurer) {
+        useFocusOutline = false;
+    }
     if (sceneData.performanceMeasurer && !timerDataIsWritten) {
         if (timer) {
             delete timer;
@@ -410,7 +425,7 @@ void ClearViewRenderer_FacesUnified::uploadVisualizationMapping(HexMeshPtr meshI
     bool tooMuchSingularEdgeModeNewMesh = meshIn->getNumberOfSingularEdges(true, 1) > 10000u;
     if (tooMuchSingularEdgeModeNewMesh != tooMuchSingularEdgeMode) {
         tooMuchSingularEdgeMode = tooMuchSingularEdgeModeNewMesh;
-        reloadGatherShader();
+        reloadGatherShader(false);
     }
 
     // Get the information about the singularity structure.
@@ -563,6 +578,10 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
         gatherShader->setUniform("foregroundColor", foregroundColor);
     }
 
+    //if (useFocusOutline) {
+    //    gatherShader->setUniform("focusOutlineColor", focusOutlineColor);
+    //}
+
     if (useScreenSpaceLens) {
         gatherShader->setUniform("viewportSize", glm::ivec2(windowWidth, windowHeight));
         gatherShader->setUniform("sphereCenterScreen", focusPointScreen);
@@ -651,6 +670,17 @@ void ClearViewRenderer_FacesUnified::gather() {
     if (useWeightedVertexAttributes) {
         glEnable(GL_CULL_FACE);
     }
+    if (useFocusOutline) {
+        if (useStencilBuffer) {
+            glStencilFunc(GL_EQUAL, 1, 0xFF);
+            glStencilMask(0x00);
+        }
+        renderFocusOutline(fragmentBufferSize);
+        if (useStencilBuffer) {
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);
+            glStencilMask(0xFF);
+        }
+    }
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     // Render the focus point.
@@ -728,10 +758,7 @@ void ClearViewRenderer_FacesUnified::renderGui() {
 
 void ClearViewRenderer_FacesUnified::childClassRenderGuiBegin() {
     if (ImGui::Checkbox("Use Screen Space Lens", &useScreenSpaceLens)) {
-        reloadGatherShader();
-        if (shaderAttributes) {
-            shaderAttributes = shaderAttributes->copy(gatherShader);
-        }
+        reloadGatherShader(true);
         reRender = true;
     }
     if (useScreenSpaceLens && ImGui::SliderFloat(
@@ -757,31 +784,19 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
         reRender = true;
     }
     if (ImGui::Checkbox("Accentuate Edges", &accentuateAllEdges)) {
-        reloadGatherShader();
-        if (shaderAttributes) {
-            shaderAttributes = shaderAttributes->copy(gatherShader);
-        }
+        reloadGatherShader(true);
         reRender = true;
     }
     if (ImGui::Checkbox("Per Line Attributes", &usePerLineAttributes)) {
-        reloadGatherShader();
-        if (shaderAttributes) {
-            shaderAttributes = shaderAttributes->copy(gatherShader);
-        }
+        reloadGatherShader(true);
         reRender = true;
     }
     if (ImGui::Checkbox("Use Singular Edge Color Map", &useSingularEdgeColorMap)) {
-        reloadGatherShader();
-        if (shaderAttributes) {
-            shaderAttributes = shaderAttributes->copy(gatherShader);
-        }
+        reloadGatherShader(true);
         reRender = true;
     }
     if (ImGui::Checkbox("Highlight Edges", &highlightEdges)) {
-        reloadGatherShader();
-        if (shaderAttributes) {
-            shaderAttributes = shaderAttributes->copy(gatherShader);
-        }
+        reloadGatherShader(true);
         reRender = true;
     }
     if (ImGui::Combo(
@@ -804,10 +819,7 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
         reRender = true;
     }
     if (ImGui::Button("Reload Shader")) {
-        reloadGatherShader();
-        if (shaderAttributes) {
-            shaderAttributes = shaderAttributes->copy(gatherShader);
-        }
+        reloadGatherShader(true);
         reRender = true;
     }
 }

@@ -1251,7 +1251,8 @@ void HexMesh::getBaseComplexDataSurface(
         bool cullInterior) {
     rebuildInternalRepresentationIfNecessary();
     if (!frame) computeBaseComplexMeshFrame();
-    sgl::XorshiftRandomGenerator random(10203);
+    //sgl::XorshiftRandomGenerator random(10203);
+    sgl::XorshiftRandomGenerator random(time(nullptr));
 
     const int vertexIndices[12] = {
             0, 1, 2, 0, 2, 3,

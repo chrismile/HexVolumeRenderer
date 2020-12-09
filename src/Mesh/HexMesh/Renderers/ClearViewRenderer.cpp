@@ -281,6 +281,61 @@ void ClearViewRenderer::loadFocusRepresentation() {
     reRender = true;
 }
 
+void ClearViewRenderer::createFocusOutlineRenderingData() {
+    std::vector<uint16_t> indices;
+    const size_t numCircleSubdivisions = 1024;
+    const size_t numVertices = numCircleSubdivisions * 2;
+    indices.reserve(numVertices);
+    for (size_t i = 0; i < numCircleSubdivisions + 1; i++) {
+        indices.push_back((2 * i + 0) % numVertices);
+        indices.push_back((2 * i + 1) % numVertices);
+    }
+
+    focusOutlineShaderAttributes = sgl::ShaderManager->createShaderAttributes(shaderProgramFocusOutline);
+    sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
+            indices.size() * sizeof(uint16_t), indices.data(), sgl::INDEX_BUFFER);
+    focusOutlineShaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_SHORT);
+    focusOutlineShaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLE_STRIP);
+}
+
+void ClearViewRenderer::reloadFocusOutlineGatherShader() {
+    shaderProgramFocusOutline = sgl::ShaderManager->getShaderProgram(
+            {"FocusOutlineShader.Vertex", "FocusOutlineShader.Fragment"});
+}
+
+void ClearViewRenderer::renderFocusOutline(size_t fragmentBufferSize) {
+    if (useScreenSpaceLens) {
+        shaderProgramFocusOutline->setUniform("circleScreenPosition", focusPointScreen);
+        shaderProgramFocusOutline->setUniform("circleScreenRadius", screenSpaceLensPixelRadius);
+        shaderProgramFocusOutline->setUniform("circleDepth", 0.0f);
+        shaderProgramFocusOutline->setUniform("circlePixelThickness", 3.0f);
+    } else {
+        const glm::mat4& viewMatrix = sceneData.camera->getViewMatrix();
+        const glm::mat4& vpMatrix = sceneData.camera->getViewProjMatrix();
+        glm::vec3 viewPosition = sgl::transformPoint(viewMatrix, focusPoint);
+        glm::vec3 ndcPosition = sgl::transformPoint(vpMatrix, focusPoint);
+        glm::vec2 screenPosition =
+                (glm::vec2(ndcPosition.x, ndcPosition.y) * glm::vec2(0.5)
+                + glm::vec2(0.5)) * glm::vec2(windowWidth, windowHeight);
+        float viewportDist = windowHeight * 0.5f / std::tan(sceneData.camera->getFOVy() * 0.5f);
+        float screenRadius = -viewportDist * focusRadius / viewPosition.z;
+        shaderProgramFocusOutline->setUniform("circleScreenPosition", screenPosition);
+        shaderProgramFocusOutline->setUniform("circleScreenRadius", screenRadius);
+        shaderProgramFocusOutline->setUniform("circleDepth", -viewPosition.z);
+        float thickness = -viewportDist * 0.001f / viewPosition.z;
+        shaderProgramFocusOutline->setUniform("circlePixelThickness", thickness);
+    }
+    shaderProgramFocusOutline->setUniform("viewportSize", glm::ivec2(windowWidth, windowHeight));
+    shaderProgramFocusOutline->setUniform("focusOutlineColor", focusOutlineColor);
+    shaderProgramFocusOutline->setUniform("viewportW", windowWidth);
+    shaderProgramFocusOutline->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
+
+    sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
+    sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
+    sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
+    sgl::Renderer->render(focusOutlineShaderAttributes);
+}
+
 void ClearViewRenderer::setSortingAlgorithmDefine() {
     if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_PRIORITY_QUEUE) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "frontToBackPQ");
@@ -325,7 +380,17 @@ void ClearViewRenderer::renderGui() {
             hasHitInformation = false;
             reRender = true;
         }
-        if (!useScreenSpaceLens && ImGui::ColorEdit4("Focus Point Color", &focusPointColor.x)) {
+        if (!useScreenSpaceLens && clearViewRendererType != CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED
+                && ImGui::ColorEdit4("Focus Point Color", &focusPointColor.x)) {
+            reRender = true;
+        }
+        if (clearViewRendererType == CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED
+                && ImGui::Checkbox("Use Focus Outline", &useFocusOutline)) {
+            reloadGatherShader(true);
+            reRender = true;
+        }
+        if (useFocusOutline && clearViewRendererType == CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED
+                && ImGui::ColorEdit4("Focus Outline Color", &focusOutlineColor.x)) {
             reRender = true;
         }
         if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
@@ -376,6 +441,12 @@ void ClearViewRenderer::renderGui() {
                 }
             }
             if (ImGui::Checkbox("Use Weights for Merging", &lodSettings.useWeightsForMerging)) {
+                if (mesh) {
+                    uploadVisualizationMapping(mesh, false);
+                    reRender = true;
+                }
+            }
+            if (ImGui::Checkbox("Use #Cells/Volume", &lodSettings.useNumCellsOrVolume)) {
                 if (mesh) {
                     uploadVisualizationMapping(mesh, false);
                     reRender = true;

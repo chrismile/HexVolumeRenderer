@@ -153,12 +153,15 @@ void setHexahedralSheetBoundaryFaceIds(
  * @param component0 The first hexahedral sheet component.
  * @param component1 The second hexahedral sheet component.
  * @param useVolumeAndAreaMeasures Whether to use volumes and areas or cell counts and face counts as measures.
+ * @param useNumCellsOrVolume Whether to use the number of cells (!useVolumeAndAreaMeasures) / the cell volume
+ * (useVolumeAndAreaMeasures).
  * @param matchingWeight The weight the neighborship relation should have when merging/matching components.
  * @param componentConnectionType Whether the components are adjacent, intersecting or hybrid.
  * @return Whether the two passed hexahedral mesh sheets are neighbors.
  */
 bool computeHexahedralSheetComponentNeighborship(
-        HexMesh* hexMesh, SheetComponent& component0, SheetComponent& component1, bool useVolumeAndAreaMeasures,
+        HexMesh* hexMesh, SheetComponent& component0, SheetComponent& component1,
+        bool useVolumeAndAreaMeasures, bool useNumCellsOrVolume,
         float& matchingWeight, ComponentConnectionType& componentConnectionType);
 
 /**
@@ -166,11 +169,14 @@ bool computeHexahedralSheetComponentNeighborship(
  * @param hexMesh The hexahedral mesh.
  * @param components The hexahedral mesh sheet components.
  * @param useVolumeAndAreaMeasures Whether to use volumes and areas or cell counts and face counts as measures.
+ * @param useNumCellsOrVolume Whether to use the number of cells (!useVolumeAndAreaMeasures) / the cell volume
+ * (useVolumeAndAreaMeasures).
  * @param connectionDataList The connection data of the components.
  * @param excludeIntersecting Whether to allow matching of intersecting or hybrid sheets or not.
  */
 void computeHexahedralSheetComponentConnectionData(
-        HexMesh* hexMesh, std::vector<SheetComponent*>& components, bool useVolumeAndAreaMeasures,
+        HexMesh* hexMesh, std::vector<SheetComponent*>& components,
+        bool useVolumeAndAreaMeasures, bool useNumCellsOrVolume,
         std::vector<ComponentConnectionData>& connectionDataList);
 
 #endif //HEXVOLUMERENDERER_HEXAHEDRALSHEET_HPP

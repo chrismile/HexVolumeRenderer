@@ -65,6 +65,7 @@ void generateSheetLevelOfDetailEdgeStructure(
     float lodMergeFactor = lodSettings.lodMergeFactor;
     bool useVolumeAndAreaMeasures = lodSettings.useVolumeAndAreaMeasures;
     bool useWeightsForMerging = lodSettings.useWeightsForMerging;
+    bool useNumCellsOrVolume = lodSettings.useNumCellsOrVolume;
     Mesh& mesh = hexMesh->getBaseComplexMesh();
     Singularity& si = hexMesh->getBaseComplexMeshSingularity();
 
@@ -97,7 +98,8 @@ void generateSheetLevelOfDetailEdgeStructure(
 
     // Compute the neighborhood relation of all components and the edge weight of edges between components.
     std::vector<ComponentConnectionData> connectionDataList;
-    computeHexahedralSheetComponentConnectionData(hexMesh, components, useVolumeAndAreaMeasures, connectionDataList);
+    computeHexahedralSheetComponentConnectionData(
+            hexMesh, components, useVolumeAndAreaMeasures, useNumCellsOrVolume, connectionDataList);
     std::set<ComponentConnectionData> connectionDataSet; // Use similarly to a priority queue
     for (ComponentConnectionData& componentConnectionData : connectionDataList) {
         connectionDataSet.insert(componentConnectionData);
@@ -300,7 +302,7 @@ void generateSheetLevelOfDetailEdgeStructure(
                             hexMesh,
                             *mergedComponents.at(mergedConnectionData.firstIdx),
                             *mergedComponents.at(mergedConnectionData.secondIdx),
-                            useVolumeAndAreaMeasures, weight, componentConnectionType);
+                            useVolumeAndAreaMeasures, useNumCellsOrVolume, weight, componentConnectionType);
                     mergedConnectionData.weight = weight;
                     mergedConnectionData.componentConnectionType = componentConnectionType;
                     mergedComponents.at(mergedConnectionData.firstIdx)->neighborIndices.insert(

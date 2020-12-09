@@ -143,7 +143,8 @@ void extractAllHexahedralSheets(HexMesh* hexMesh, std::vector<HexahedralSheet>& 
 }
 
 bool computeHexahedralSheetComponentNeighborship(
-        HexMesh* hexMesh, SheetComponent& component0, SheetComponent& component1, bool useVolumeAndAreaMeasures,
+        HexMesh* hexMesh, SheetComponent& component0, SheetComponent& component1,
+        bool useVolumeAndAreaMeasures, bool useNumCellsOrVolume,
         float& matchingWeight, ComponentConnectionType& componentConnectionType) {
     SheetComponent mergedComponent;
     std::set_intersection(
@@ -184,13 +185,22 @@ bool computeHexahedralSheetComponentNeighborship(
         float component1BoundaryFaceAreaSum = hexMesh->getFaceIdsAreaSum(component1.boundaryFaceIds);
         float component0CellVolume = hexMesh->getCellIdsVolumeSum(component0.cellIds);
         float component1CellVolume = hexMesh->getCellIdsVolumeSum(component1.cellIds);
-        float percentageOfAdjacency = boundaryFaceNoLongerBoundaryAfterMergingAreaSum
-                                      / (component0BoundaryFaceAreaSum + component1BoundaryFaceAreaSum);
-        matchingWeight = percentageOfAdjacency / (component0CellVolume + component1CellVolume);
+        float percentageOfAdjacency =
+                boundaryFaceNoLongerBoundaryAfterMergingAreaSum
+                / (component0BoundaryFaceAreaSum + component1BoundaryFaceAreaSum);
+        if (useNumCellsOrVolume) {
+            matchingWeight = percentageOfAdjacency / (component0CellVolume + component1CellVolume);
+        } else {
+            matchingWeight = percentageOfAdjacency;
+        }
     } else {
         float percentageOfAdjacency = float(boundaryFaceIdsNoLongerBoundaryAfterMerging.size())
                                       / float(component0.boundaryFaceIds.size() + component1.boundaryFaceIds.size());
-        matchingWeight = percentageOfAdjacency / float(component0.cellIds.size() + component1.cellIds.size());
+        if (useNumCellsOrVolume) {
+            matchingWeight = percentageOfAdjacency / float(component0.cellIds.size() + component1.cellIds.size());
+        } else {
+            matchingWeight = percentageOfAdjacency;
+        }
     }
 
     if (isIntersecting) {
@@ -211,7 +221,8 @@ bool computeHexahedralSheetComponentNeighborship(
 }
 
 void computeHexahedralSheetComponentConnectionData(
-        HexMesh* hexMesh, std::vector<SheetComponent*>& components, bool useVolumeAndAreaMeasures,
+        HexMesh* hexMesh, std::vector<SheetComponent*>& components,
+        bool useVolumeAndAreaMeasures, bool useNumCellsOrVolume,
         std::vector<ComponentConnectionData>& connectionDataList) {
     for (size_t i = 0; i < components.size(); i++) {
         for (size_t j = i + 1; j < components.size(); j++) {
@@ -220,7 +231,8 @@ void computeHexahedralSheetComponentConnectionData(
             ComponentConnectionType componentConnectionType;
             float edgeWeight = 1.0f;
             bool componentsAreNeighbors = computeHexahedralSheetComponentNeighborship(
-                    hexMesh, component0, component1, useVolumeAndAreaMeasures, edgeWeight, componentConnectionType);
+                    hexMesh, component0, component1, useVolumeAndAreaMeasures, useNumCellsOrVolume,
+                    edgeWeight, componentConnectionType);
             if (!componentsAreNeighbors) {
                 continue;
             }

@@ -86,7 +86,7 @@ protected:
     void childClassRenderGuiEnd();
 
     // Don't highlight singular edges when we have far too many of them.
-    void reloadGatherShader();
+    void reloadGatherShader(bool copyShaderAttributes);
     void reloadResolveShader();
     bool tooMuchSingularEdgeMode = false;
     int maxLodValue;
@@ -135,11 +135,6 @@ protected:
     sgl::TexturePtr weightTextureLoG;
     glm::ivec2 weightTextureSize = glm::ivec2(5, 5);
     const float rhoLoG = 1.0f;
-
-    // Window data.
-    const float screenSpaceLensPixelRadiusWindowFactor = 0.25f;
-    int windowWidth = 0;
-    int windowHeight = 0;
 
     // Data for performance measurements.
     int frameCounter = 0;

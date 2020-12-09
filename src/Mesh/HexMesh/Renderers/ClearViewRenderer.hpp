@@ -73,6 +73,7 @@ protected:
     void loadClearViewBaseData();
     void reloadSphereRenderData();
     void reloadFocusShaders();
+    virtual void reloadGatherShader(bool copyShaderAttributes) {}
     void setSortingAlgorithmDefine();
     virtual void setUniformData()=0;
     virtual void clear()=0;
@@ -80,6 +81,11 @@ protected:
     virtual void resolve()=0;
     virtual void childClassRenderGuiBegin() {}
     virtual void childClassRenderGuiEnd() {}
+
+    // Focus outline rendering.
+    void createFocusOutlineRenderingData();
+    void reloadFocusOutlineGatherShader();
+    void renderFocusOutline(size_t fragmentBufferSize);
 
     // Sorting algorithm for PPLL.
     SortingAlgorithmMode sortingAlgorithmMode = SORTING_ALGORITHM_MODE_PRIORITY_QUEUE;
@@ -128,6 +134,7 @@ protected:
     sgl::ShaderAttributesPtr shaderAttributesFocus;
     sgl::ShaderAttributesPtr shaderAttributesFocusPoints;
     sgl::ShaderAttributesPtr focusPointShaderAttributes;
+    sgl::ShaderAttributesPtr focusOutlineShaderAttributes;
 
     // SSBOs.
     sgl::GeometryBufferPtr pointLocationsBuffer; ///< For gatherShaderFocusSpheres/shaderAttributesFocus.
@@ -139,10 +146,16 @@ protected:
     sgl::ShaderProgramPtr gatherShaderFocusTubes; //< Focus (surface/tubes)
     sgl::ShaderProgramPtr gatherShaderFocusSpheres; //< Focus (surface/spheres)
     sgl::ShaderProgramPtr shaderProgramSurface; //< Focus sphere (surface)
+    sgl::ShaderProgramPtr shaderProgramFocusOutline; //< Focus outline
 
     // LOD data.
-    const bool LET_USER_SELECT_LOD_STYLE = false;
+    const bool LET_USER_SELECT_LOD_STYLE = true;
     LodSettings lodSettings;
+
+    // Window data.
+    const float screenSpaceLensPixelRadiusWindowFactor = 0.25f;
+    int windowWidth = 0;
+    int windowHeight = 0;
 
     // GUI data
     bool showRendererWindow = true;
@@ -151,6 +164,8 @@ protected:
     glm::vec2 focusPointScreen = glm::vec2(0.0, 0.0f);
     float focusRadius = 0.05f;
     float lineWidth = 0.0015f;
+    bool useFocusOutline = true;
+    glm::vec4 focusOutlineColor = glm::vec4(0.792f, 0.824f, 0.894f, 1.0f);
     bool useShading = false;
     bool useWeightedVertexAttributes = true;
     bool useVolumeWeighting = false;

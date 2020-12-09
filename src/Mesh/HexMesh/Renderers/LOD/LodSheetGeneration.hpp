@@ -47,6 +47,8 @@ struct LodSettings {
     bool useVolumeAndAreaMeasures = false;
     /// useWeightsForMerging Whether to use weights for merging instead of the measures defined above.
     bool useWeightsForMerging = false;
+    /// Whether to use the number of cells (!useVolumeAndAreaMeasures) / the cell volume (useVolumeAndAreaMeasures).
+    bool useNumCellsOrVolume = true;
 };
 
 /**

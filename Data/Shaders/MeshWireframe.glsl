@@ -131,6 +131,10 @@ uniform float importantLineBoostFactor;
 uniform vec3 backgroundColor = vec3(0.0);
 uniform vec3 foregroundColor = vec3(1.0);
 
+#ifdef USE_FOCUS_OUTLINE
+uniform vec4 focusOutlineColor;
+#endif
+
 #include "ClearView.glsl"
 
 #if !defined(DIRECT_BLIT_GATHER)
@@ -161,10 +165,10 @@ void main()
     }
 
     // Intersect view ray with plane parallel to camera looking direction containing the sphere center.
-    vec3 negativeLookingDirection = -lookingDirection; // Assuming right-handed coordinate system.
-    vec3 projectedPoint;
-    rayPlaneIntersection(cameraPosition, normalize(fragmentPositionWorld - cameraPosition), sphereCenter, negativeLookingDirection, projectedPoint);
-    float screenSpaceSphereDistanceNormalized = length(projectedPoint - sphereCenter) / sphereRadius;
+    //vec3 negativeLookingDirection = -lookingDirection; // Assuming right-handed coordinate system.
+    //vec3 projectedPoint;
+    //rayPlaneIntersection(cameraPosition, normalize(fragmentPositionWorld - cameraPosition), sphereCenter, negativeLookingDirection, projectedPoint);
+    //float screenSpaceSphereDistanceNormalized = length(projectedPoint - sphereCenter) / sphereRadius;
 
     float lineWidthPrime = lineWidth * (-distanceToFocusPointNormalized * 0.4 + 1.0);
     float lineRadius = lineWidthPrime / 2.0f;
@@ -310,6 +314,30 @@ void main()
     }
     #endif
 
+    // Render outline similar to what ClearView does.
+    #ifdef USE_FOCUS_OUTLINE
+    const float FOCUS_OUTLINE_WIDTH = 2.0;
+    //float dist = 1.0 - clamp(abs(length(fragmentPositionWorld - sphereCenter) / sphereRadius) / FOCUS_OUTLINE_WIDTH, 0.0, 1.0);
+    //float dist = 1.0 - clamp(abs(length(fragmentPositionWorld - sphereCenter) / sphereRadius) / FOCUS_OUTLINE_WIDTH, 0.0, 1.0);
+    //float dist = 1.0 - clamp(abs(length(projectedPoint - sphereCenter) / sphereRadius) / FOCUS_OUTLINE_WIDTH, 0.0, 1.0);
+    //float zdiff = (1.0 - abs(fragmentPositionWorld.z - cameraPosition.z)) * 0.1;
+    //float dist = 1.0 - clamp(abs(length(fragmentPositionWorld - sphereCenter) / sphereRadius) / FOCUS_OUTLINE_WIDTH, 0.0, 1.0);
+    //float dist = 1.0 - clamp(abs(length(fragmentPositionWorld - sphereCenter) / sphereRadius) / FOCUS_OUTLINE_WIDTH, 0.0, 1.0);
+
+    vec3 dir = normalize(cameraPosition - fragmentPositionWorld);
+    vec3 sphereNormal = normalize(fragmentPositionWorld - sphereCenter);
+    //float dist = 1.0 - clamp(abs(length(fragmentPositionWorld - sphereCenter) / sphereRadius) / FOCUS_OUTLINE_WIDTH, 0.0, 1.0);
+    float dist = abs(1.0 - length(fragmentPositionWorld - sphereCenter) / sphereRadius);
+    dist = clamp(1.0 - dist * 20.0, 0.0, 1.0);
+    //dist = 1.0;
+    //float abc = pow(1.0 - abs(dot(dir, sphereNormal)), 10.0);
+    float abc = pow(1.0 - abs(dot(dir, sphereNormal)), 2.0);
+    abc = clamp(abc, 0.0, 1.0);
+
+    vec4 outlineColor = vec4(focusOutlineColor.rgb, abc * dist);
+    blendedColor = mix(blendedColor, outlineColor, outlineColor.a);
+    #endif
+
     gatherFragmentCustomDepth(blendedColor, fragmentDistance);
 }
 
@@ -352,6 +380,10 @@ uniform vec3 lookingDirection;
 // Focus region data
 uniform vec2 sphereCenterScreen;
 uniform float sphereRadiusPixels;
+
+#ifdef USE_FOCUS_OUTLINE
+uniform vec4 focusOutlineColor;
+#endif
 
 #if !defined(DIRECT_BLIT_GATHER)
 #define GATHER_NO_DISCARD // as we gather two fragments in one shader
@@ -539,6 +571,14 @@ void main()
         blendedColor.a = clamp(blendedColor.a * 1.5, 0.0, 1.0);
     #endif
     }
+    #endif
+
+    // Render outline similar to what ClearView does.
+    #ifdef USE_FOCUS_OUTLINE
+    const float FOCUS_OUTLINE_WIDTH = 2.0;
+    float dist = 1.0 - clamp(abs(length(fragmentWindowPosition - sphereCenterScreen) - sphereRadiusPixels) / FOCUS_OUTLINE_WIDTH, 0.0, 1.0);
+    vec4 outlineColor = vec4(focusOutlineColor.rgb, dist);
+    blendedColor = mix(blendedColor, outlineColor, outlineColor.a);
     #endif
 
     gatherFragmentCustomDepth(blendedColor, fragmentDistance);
