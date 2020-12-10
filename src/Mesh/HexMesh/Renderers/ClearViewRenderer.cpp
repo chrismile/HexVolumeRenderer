@@ -405,6 +405,7 @@ void ClearViewRenderer::renderGui() {
             reRender = true;
         }
         if (clearViewRendererType != CLEAR_VIEW_RENDERER_TYPE_VOLUME
+                && clearViewRendererType != CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED
                 && ImGui::Checkbox("Use Weighted Vertex Attributes", &useWeightedVertexAttributes)) {
             useShading = false;
             if (this->mesh) uploadVisualizationMapping(mesh, false);
@@ -462,7 +463,7 @@ void ClearViewRenderer::update(float dt) {
     if (!useScreenSpaceLens) {
         if (sgl::Keyboard->getModifier() & KMOD_SHIFT) {
             if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
-                float scrollAmount = sgl::Mouse->getScrollWheel() * dt * 2.0;
+                float scrollAmount = sgl::Mouse->getScrollWheel() * dt * 0.5;
                 focusRadius += scrollAmount;
                 focusRadius = glm::clamp(focusRadius, 0.001f, 0.4f);
                 reRender = true;

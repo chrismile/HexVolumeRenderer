@@ -38,8 +38,9 @@
 
 enum RenderingMode {
     RENDERING_MODE_SURFACE, RENDERING_MODE_WIREFRAME, RENDERING_MODE_DEPTH_COMPLEXITY,
+    RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED, RENDERING_MODE_PSEUDO_VOLUME,
     RENDERING_MODE_VOLUME, RENDERING_MODE_CLEAR_VIEW,
-    RENDERING_MODE_VOLUME_FACES, RENDERING_MODE_CLEAR_VIEW_FACES, RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED,
+    RENDERING_MODE_VOLUME_FACES, RENDERING_MODE_CLEAR_VIEW_FACES,
     RENDERING_MODE_SINGULARITY, RENDERING_MODE_BASE_COMPLEX_LINES, RENDERING_MODE_BASE_COMPLEX_SURFACE,
     RENDERING_MODE_PARTITION_LINES, RENDERING_MODE_LOD_LINES, RENDERING_MODE_LOD_LINES_PER_FRAGMENT,
     RENDERING_MODE_LOD_LINES_PREVIEW, RENDERING_MODE_LOD_LINES_PREVIEW_SHEETS,
@@ -48,8 +49,9 @@ enum RenderingMode {
 };
 const char *const RENDERING_MODE_NAMES[] = {
         "Surface", "Wireframe", "Depth Complexity",
+        "ClearView (Unified)", "Pseudo Volume",
         "Volume", "ClearView (Volume)",
-        "Volume (Faces)", "ClearView (Faces)", "ClearView (Unified)",
+        "Volume (Faces)", "ClearView (Faces)",
         "Singularity", "Base Complex (Lines)", "Base Complex (Surface)",
         "Partition Lines", "LOD Lines", "LOD Lines (Per Frag.)",
         "LOD Lines (Preview)", "LOD Lines (Preview, Sheets)",

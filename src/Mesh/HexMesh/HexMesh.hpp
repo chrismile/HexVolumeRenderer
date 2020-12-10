@@ -77,6 +77,17 @@ class Singularity;
 class Hybrid_E;
 class Frame;
 
+/**
+ * Slim data representation for very large meshes.
+ * Use only functions/renderers containing "Slim" functions in this case!
+ */
+struct FaceSlim {
+    uint32_t vs[4]; ///< vertex indices
+};
+struct VertexSlim {
+    std::vector<uint32_t> hs; ///< cell indices
+};
+
 namespace HexaLab {
     class App;
     class Mesh;
@@ -96,17 +107,32 @@ struct HexahedralCellFace {
 
 // For @see HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell and
 // @see HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex.
-struct HexahedralCellFaceUnified {
-    glm::vec4 vertexPositions[4];
-    float vertexAttributes[4];
-    float edgeAttributes[4];
-    float edgeLodValues[4];
+//struct HexahedralCellFaceUnified {
+    //glm::vec4 vertexPositions[4];
+    //float vertexAttributes[4];
+    //float edgeAttributes[4];
+    //float edgeLodValues[4];
     /**
      * Bit 0: 1 if the edge is singular.
      * Bit 1: 1 if the edge belongs to the boundary.
      * Bit 2-31: The valence of the edge (i.e., the number of incident cells).
      */
-    uint32_t edgeSingularityInformationList[4];
+    //uint32_t edgeSingularityInformationList[4];
+//};
+struct HexahedralCellFaceUnified {
+    uint vertexIdx[4];
+    uint edgeIdx[4];
+};
+struct HexahedralCellVertexUnified {
+    glm::vec3 vertexPosition;
+    float vertexAttribute;
+};
+struct HexahedralCellEdgeUnified {
+    float edgeAttribute;
+    float edgeLodValue;
+};
+struct HexahedralCellUnified {
+    float cellAttribute;
 };
 
 // For @see HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell and
@@ -145,7 +171,16 @@ public:
     HexMesh(sgl::TransferFunctionWindow &transferFunctionWindow, RayMeshIntersection& rayMeshIntersection)
         : transferFunctionWindow(transferFunctionWindow), rayMeshIntersection(rayMeshIntersection) {}
     ~HexMesh();
-    void setHexMeshData(const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices);
+    /**
+     *
+     * @param vertices The hex-mesh vertices
+     * @param cellIndices The hex-mesh cell vertex indices.
+     * @param loadMeshRepresentation Whether to load the (relatively large) mesh representation right away.
+     * There are some rendering modes that can cope with smaller representations, so that might not always be necessary.
+     */
+    void setHexMeshData(
+            const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices,
+            bool loadMeshRepresentation = true);
     void setManualVertexAttributes(const std::vector<float>& vertexAttributes);
     void setQualityMeasure(QualityMeasure qualityMeasure);
     void onTransferFunctionMapRebuilt();
@@ -172,6 +207,7 @@ public:
     float getCellAttributeManualVertexAttributes(uint32_t h_id);
 
     // For tube generation
+    bool isBaseComplexMeshLoaded();
     Mesh& getBaseComplexMesh();
     Singularity& getBaseComplexMeshSingularity();
     Frame& getBaseComplexMeshFrame();
@@ -272,6 +308,10 @@ public:
             std::vector<uint32_t>& triangleIndices,
             std::vector<glm::vec3>& vertexPositions,
             bool removeFilteredCells = true);
+    void getSurfaceData_Slim(
+            std::vector<uint32_t>& triangleIndices,
+            std::vector<glm::vec3>& vertexPositions,
+            bool removeFilteredCells = true);
     /**
      * Get the wireframe data of the boundary surface of the hexahedral mesh.
      */
@@ -302,7 +342,18 @@ public:
     void getVolumeData_FacesShared(
             std::vector<uint32_t>& triangleIndices,
             std::vector<glm::vec3>& vertexPositions,
-            std::vector<float>& vertexAttributes);
+            std::vector<float>& vertexAttributes,
+            bool useVolumeWeighting = false);
+    /**
+     * Same as @see getVolumeData_FacesShared, but is optimized for meshes that can't use the internal represantation
+     * "mesh" due to memory problems.
+     */
+    void getVolumeData_FacesShared_Slim(
+            std::vector<uint32_t>& triangleIndices,
+            std::vector<glm::vec3>& vertexPositions,
+            std::vector<float>& vertexAttributes,
+            bool useVolumeWeighting = false);
+
     /**
      * Get the surface data of all front faces of every cell of the hexahedral mesh. The vertices between hexahedral
      * cells are shared and the cell attributes are weighted by the volume of the cells to get the vertex attributes as
@@ -465,7 +516,7 @@ public:
 
     /**
      * Get all surface faces including the colors of their edges.
-     * For rendering, the shader "MeshWireframe.glsl" can be used.
+     * For rendering, the shader "HexMeshUnified.glsl" can be used.
      * Backface culling needs to be enabled.
      *
      * vertex 1     edge 1    vertex 2
@@ -478,15 +529,15 @@ public:
      *          | - - - - - |
      * vertex 0     edge 3    vertex 3
      */
-    void getSurfaceDataWireframeFacesUnified_AttributePerCell(
+    /*void getSurfaceDataWireframeFacesUnified_AttributePerCell(
             std::vector<uint32_t>& triangleIndices,
             std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
             int& maxLodValue,
-            LodSettings lodSettings = LodSettings());
+            LodSettings lodSettings = LodSettings());*/
 
     /**
      * Get all surface faces including the colors of their edges.
-     * For rendering, the shader "MeshWireframe.glsl" can be used.
+     * For rendering, the shader "HexMeshUnified.glsl" can be used.
      * Backface culling needs to be disabled.
      *
      * vertex 1     edge 1    vertex 2
@@ -502,12 +553,15 @@ public:
     void getSurfaceDataWireframeFacesUnified_AttributePerVertex(
             std::vector<uint32_t>& triangleIndices,
             std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
+            std::vector<HexahedralCellVertexUnified>& hexahedralCellVertices,
+            std::vector<HexahedralCellEdgeUnified>& hexahedralCellEdges,
+            std::vector<HexahedralCellUnified>& hexahedralCells,
             int& maxLodValue, bool useVolumeWeighting = false,
             LodSettings lodSettings = LodSettings());
 
     /**
      * Get all surface faces including the colors of their edges.
-     * For rendering, the shader "MeshWireframe.glsl" can be used.
+     * For rendering, the shader "HexMeshUnified.glsl" can be used.
      * Backface culling needs to be enabled.
      *
      * vertex 1     edge 1    vertex 2
@@ -527,7 +581,7 @@ public:
 
     /**
      * Get all surface faces including the colors of their edges.
-     * For rendering, the shader "MeshWireframe.glsl" can be used.
+     * For rendering, the shader "HexMeshUnified.glsl" can be used.
      * Backface culling needs to be enabled.
      *
      * vertex 1     edge 1    vertex 2
@@ -648,6 +702,15 @@ private:
     uint32_t packEdgeSingularityInformation(uint32_t e_id);
 
 
+    /**
+     * Slim internal representation.
+     */
+    void rebuildInternalRepresentationIfNecessary_Slim();
+    void updateMeshTriangleIntersectionDataStructure_Slim();
+    std::vector<VertexSlim> verticesSlim;
+    std::vector<FaceSlim> facesSlim;
+    std::vector<bool> facesBoundarySlim;
+
     // Cell deformation data.
     void recomputeHistogram();
     QualityMeasure qualityMeasure = QUALITY_MEASURE_SCALED_JACOBIAN;
@@ -664,6 +727,8 @@ private:
     // Mesh informaton.
     size_t meshNumCells = 0;
     size_t meshNumVertices = 0;
+    std::vector<glm::vec3> vertices;
+    std::vector<uint32_t> cellIndices;
 
     // Base-complex data
     Mesh* mesh = nullptr;

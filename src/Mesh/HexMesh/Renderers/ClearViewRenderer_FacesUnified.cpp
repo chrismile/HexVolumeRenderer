@@ -33,7 +33,6 @@
 #include <Graphics/Window.hpp>
 #include <Graphics/Renderer.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
-#include <Graphics/Texture/TextureManager.hpp>
 #include <Graphics/OpenGL/GeometryBuffer.hpp>
 #include <Graphics/OpenGL/Shader.hpp>
 #include <Utils/File/FileUtils.hpp>
@@ -62,8 +61,9 @@ struct LinkedListFragmentNode {
     uint32_t next;
 };
 
-ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
-        : ClearViewRenderer(sceneData, transferFunctionWindow) {
+ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(
+        SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
+        : ClearViewRenderer(sceneData, transferFunctionWindow), LaplacianOfGaussianRenderer(sceneData) {
     windowName = "ClearView Renderer (Unified)";
     clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED;
     useScreenSpaceLens = true;
@@ -90,14 +90,6 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
     createFocusOutlineRenderingData();
     clearShader = sgl::ShaderManager->getShaderProgram(
             {"LinkedListClear.Vertex", "LinkedListClear.Fragment"});
-    shaderFullScreenBlitLoG = sgl::ShaderManager->getShaderProgram(
-            {"Mesh.Vertex.Plain", "Mesh.Fragment.Plain"});
-    colorTextureShaderLoG = sgl::ShaderManager->getShaderProgram(
-            {"LaplacianOfGaussian.Vertex", "LaplacianOfGaussian.Fragment.ColorTexture"});
-    depthTextureShaderLoG = sgl::ShaderManager->getShaderProgram(
-            {"LaplacianOfGaussian.Vertex", "LaplacianOfGaussian.Fragment.DepthTexture"});
-    meshShaderLoG = sgl::ShaderManager->getShaderProgram(
-            {"Mesh.Vertex.Plain", "Mesh.Fragment.Plain"});
 
     // Create blitting data (fullscreen rectangle in normalized device coordinates).
     blitRenderData = sgl::ShaderManager->createShaderAttributes(resolveShader);
@@ -114,19 +106,7 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(SceneData &sceneD
     clearRenderData->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
-    shaderAttributesFullScreenBlitLoG = sgl::ShaderManager->createShaderAttributes(shaderFullScreenBlitLoG);
-    shaderAttributesFullScreenBlitLoG->addGeometryBuffer(
-            geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
-
-    if (outlineMode == OUTLINE_MODE_DEPTH) {
-        shaderAttributesLoG = sgl::ShaderManager->createShaderAttributes(depthTextureShaderLoG);
-    } else if (outlineMode == OUTLINE_MODE_STENCIL) {
-        shaderAttributesLoG = sgl::ShaderManager->createShaderAttributes(colorTextureShaderLoG);
-    }
-    shaderAttributesLoG->addGeometryBuffer(
-            geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
-
-    createWeightTextureLoG();
+    initializeLoG();
     onResolutionChanged();
 }
 
@@ -157,116 +137,6 @@ void ClearViewRenderer_FacesUnified::render() {
     frameCounter++;
 }
 
-void ClearViewRenderer_FacesUnified::reloadTexturesLoG() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
-
-    // Create the data for the LoG convolution.
-    if (outlineMode == OUTLINE_MODE_DEPTH) {
-        framebufferLoG = sgl::Renderer->createFBO();
-        sgl::TextureSettings textureSettings;
-        /*if (useLinearRGB) {
-            textureSettings.internalFormat = GL_RGBA16;
-        } else {*/
-        textureSettings.internalFormat = GL_RGBA8;
-        //}
-        textureSettings.pixelType = GL_UNSIGNED_BYTE;
-        textureSettings.pixelFormat = GL_RGB;
-        imageTextureLoG = sgl::TextureManager->createEmptyTexture(width, height, textureSettings);
-        framebufferLoG->bindTexture(sceneData.sceneTexture);
-
-        depthStencilTextureLoG = sgl::TextureManager->createDepthStencilTexture(width, height, sgl::DEPTH24_STENCIL8);
-        depthStencilTextureLoG->setDepthStencilComponentMode(sgl::DEPTH_STENCIL_TEXTURE_MODE_DEPTH_COMPONENT);
-        framebufferLoG->bindTexture(depthStencilTextureLoG, sgl::DEPTH_STENCIL_ATTACHMENT);
-    } else if (outlineMode == OUTLINE_MODE_STENCIL) {
-        framebufferLoG = sgl::Renderer->createFBO();
-        sgl::TextureSettings textureSettings;
-        /*if (useLinearRGB) {
-            textureSettings.internalFormat = GL_RGBA16;
-        } else {*/
-        textureSettings.internalFormat = GL_RGBA8;
-        //}
-        textureSettings.pixelType = GL_UNSIGNED_BYTE;
-        textureSettings.pixelFormat = GL_RGB;
-        imageTextureLoG = sgl::TextureManager->createEmptyTexture(width, height, textureSettings);
-        framebufferLoG->bindTexture(imageTextureLoG);
-        framebufferLoG->bindRenderbuffer(sceneData.sceneDepthRBO, sgl::DEPTH_STENCIL_ATTACHMENT);
-    }
-}
-
-void ClearViewRenderer_FacesUnified::reloadModelLoG() {
-    if (!mesh) {
-        return;
-    }
-
-    std::vector<uint32_t> triangleIndices;
-    std::vector<glm::vec3> vertexPositions;
-    mesh->getSurfaceData(triangleIndices, vertexPositions);
-
-    meshShaderAttributesLoG = sgl::ShaderManager->createShaderAttributes(meshShaderLoG);
-    meshShaderAttributesLoG->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
-
-    // Add the index buffer.
-    sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
-    meshShaderAttributesLoG->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
-
-    // Add the position buffer.
-    sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
-    meshShaderAttributesLoG->addGeometryBuffer(
-            positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
-}
-
-void ClearViewRenderer_FacesUnified::createWeightTextureLoG() {
-    float* textureData = new float[weightTextureSize.x * weightTextureSize.y];
-    const float FACTOR_1 = -1.0f / (sgl::PI * std::pow(rhoLoG, 4.0f));
-    const float FACTOR_2 = -1.0f / (2.0f * rhoLoG * rhoLoG);
-    // Compute the LoG kernel weights.
-    for (int iy = 0; iy < weightTextureSize.y; iy++) {
-        for (int ix = 0; ix < weightTextureSize.x; ix++) {
-            int x = ix - weightTextureSize.x / 2;
-            int y = iy - weightTextureSize.y / 2;
-            // https://homepages.inf.ed.ac.uk/rbf/HIPR2/log.htm
-            float term3 = (x*x + y*y) * FACTOR_2;
-            textureData[ix + iy*weightTextureSize.x] = FACTOR_1 * (1.0f + term3) * std::exp(term3);
-        }
-    }
-    // Normalize the kernel weights.
-    const int numEntries = weightTextureSize.x * weightTextureSize.y;
-    float positiveEntriesAbsoluteSum = 0.0f, negativeEntriesAbsoluteSum = 0.0f;
-    for (int i = 0; i < numEntries; i++) {
-        float entry = textureData[i];
-        if (entry >= 0.0f) {
-            positiveEntriesAbsoluteSum += entry;
-        } else {
-            negativeEntriesAbsoluteSum += -entry;
-        }
-    }
-    for (int i = 0; i < numEntries; i++) {
-        float entry = textureData[i];
-        if (entry >= 0.0f) {
-            textureData[i] /= positiveEntriesAbsoluteSum;
-        } else {
-            textureData[i] /= negativeEntriesAbsoluteSum;
-        }
-    }
-    for (int iy = 0; iy < weightTextureSize.y; iy++) {
-        for (int ix = 0; ix < weightTextureSize.x; ix++) {
-            std::cout << textureData[ix + iy*weightTextureSize.x] << "\t";
-        }
-        std::cout << std::endl;
-    }
-    sgl::TextureSettings textureSettings;
-    textureSettings.pixelType = GL_FLOAT;
-    textureSettings.pixelFormat = GL_RED;
-    textureSettings.internalFormat = GL_R32F;
-    weightTextureLoG = sgl::TextureManager->createTexture(
-            textureData, weightTextureSize.x, weightTextureSize.y, textureSettings);
-    delete[] textureData;
-}
-
 void ClearViewRenderer_FacesUnified::reloadResolveShader() {
     sgl::ShaderManager->invalidateShaderCache();
     sgl::ShaderManager->addPreprocessorDefine("MAX_NUM_FRAGS", sgl::toString(expectedMaxDepthComplexity));
@@ -274,8 +144,6 @@ void ClearViewRenderer_FacesUnified::reloadResolveShader() {
     if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_QUICKSORT
             || sortingAlgorithmMode == SORTING_ALGORITHM_MODE_QUICKSORT_HYBRID) {
         int stackSize = std::ceil(std::log2(expectedMaxDepthComplexity)) * 2 + 4;
-        //std::cout << "List size: " << expectedMaxDepthComplexity << std::endl;
-        //std::cout << "Stack size: " << stackSize << std::endl;
         sgl::ShaderManager->addPreprocessorDefine("STACK_SIZE", sgl::toString(stackSize));
     }
 
@@ -317,10 +185,10 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader(bool copyShaderAttribute
 
     if (useScreenSpaceLens) {
         gatherShader = sgl::ShaderManager->getShaderProgram(
-                {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_ScreenSpace"});
+                {"HexMeshUnified.Vertex", "HexMeshUnified.Fragment.ClearView_ScreenSpace"});
     } else {
         gatherShader = sgl::ShaderManager->getShaderProgram(
-                {"MeshWireframe.Vertex", "MeshWireframe.Fragment.ClearView_ObjectSpace"});
+                {"HexMeshUnified.Vertex", "HexMeshUnified.Fragment.ClearView_ObjectSpace"});
     }
 
     sgl::ShaderManager->removePreprocessorDefine(lineRenderingStyleDefineName);
@@ -434,20 +302,26 @@ void ClearViewRenderer_FacesUnified::uploadVisualizationMapping(HexMeshPtr meshI
     // Unload old data.
     shaderAttributes = sgl::ShaderAttributesPtr();
     hexahedralCellFacesBuffer = sgl::GeometryBufferPtr();
+    hexahedralCellVerticesBuffer = sgl::GeometryBufferPtr();
+    hexahedralCellEdgesBuffer = sgl::GeometryBufferPtr();
+    hexahedralCellsBuffer = sgl::GeometryBufferPtr();
 
     // Load the unified data for the focus and context region.
     std::vector<uint32_t> indices;
     std::vector<HexahedralCellFaceUnified> hexahedralCellFaces;
-    if (useWeightedVertexAttributes) {
-        mesh->getSurfaceDataWireframeFacesUnified_AttributePerVertex(
-                indices, hexahedralCellFaces, maxLodValue, useVolumeWeighting, lodSettings);
-    } else {
-        mesh->getSurfaceDataWireframeFacesUnified_AttributePerCell(
-                indices, hexahedralCellFaces, maxLodValue, lodSettings);
-    }
+    std::vector<HexahedralCellVertexUnified> hexahedralCellVertices;
+    std::vector<HexahedralCellEdgeUnified> hexahedralCellEdges;
+    std::vector<HexahedralCellUnified> hexahedralCells;
+    mesh->getSurfaceDataWireframeFacesUnified_AttributePerVertex(
+            indices, hexahedralCellFaces, hexahedralCellVertices, hexahedralCellEdges, hexahedralCells,
+            maxLodValue, useVolumeWeighting, lodSettings);
 
-    size_t modelBufferSizeBytes = indices.size() * sizeof(uint32_t)
-            + hexahedralCellFaces.size() * sizeof(HexahedralCellFaceUnified);
+    size_t modelBufferSizeBytes =
+            indices.size() * sizeof(uint32_t)
+            + hexahedralCellFaces.size() * sizeof(HexahedralCellFaceUnified)
+            + hexahedralCellVertices.size() * sizeof(HexahedralCellVertexUnified)
+            + hexahedralCellEdges.size() * sizeof(HexahedralCellEdgeUnified)
+            + hexahedralCells.size() * sizeof(HexahedralCellUnified);
     sgl::Logfile::get()->writeInfo(
             std::string() + "GPU model buffer size MiB: "
             + std::to_string(modelBufferSizeBytes / 1024.0 / 1024.0));
@@ -460,12 +334,21 @@ void ClearViewRenderer_FacesUnified::uploadVisualizationMapping(HexMeshPtr meshI
             sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
     shaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
-    // Create an SSBO for the hexahedral cell faces.
+    // Create an SSBO for the hexahedral cell data.
     hexahedralCellFacesBuffer = sgl::Renderer->createGeometryBuffer(
             hexahedralCellFaces.size()*sizeof(HexahedralCellFaceUnified), (void*)&hexahedralCellFaces.front(),
             sgl::SHADER_STORAGE_BUFFER);
+    hexahedralCellVerticesBuffer = sgl::Renderer->createGeometryBuffer(
+            hexahedralCellVertices.size()*sizeof(HexahedralCellVertexUnified), (void*)&hexahedralCellVertices.front(),
+            sgl::SHADER_STORAGE_BUFFER);
+    hexahedralCellEdgesBuffer = sgl::Renderer->createGeometryBuffer(
+            hexahedralCellEdges.size()*sizeof(HexahedralCellEdgeUnified), (void*)&hexahedralCellEdges.front(),
+            sgl::SHADER_STORAGE_BUFFER);
+    hexahedralCellsBuffer = sgl::Renderer->createGeometryBuffer(
+            hexahedralCells.size()*sizeof(HexahedralCellUnified), (void*)&hexahedralCells.front(),
+            sgl::SHADER_STORAGE_BUFFER);
 
-    reloadModelLoG();
+    reloadModelLoG(mesh);
 
     dirty = false;
     reRender = true;
@@ -525,7 +408,6 @@ void ClearViewRenderer_FacesUnified::onResolutionChanged() {
 void ClearViewRenderer_FacesUnified::setUniformData() {
     sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     int width = window->getWidth();
-    int height = window->getHeight();
 
     glm::mat4 inverseViewMatrix = glm::inverse(sceneData.camera->getViewMatrix());
     glm::vec3 lookingDirection(-inverseViewMatrix[2].x, -inverseViewMatrix[2].y, -inverseViewMatrix[2].z);
@@ -599,22 +481,7 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     resolveShader->setUniform("viewportW", width);
     clearShader->setUniform("viewportW", width);
 
-    shaderFullScreenBlitLoG->setUniform("color", sgl::Color(255, 255, 255));
-    shaderAttributesLoG->getShaderProgram()->setUniform("clearColor", sceneData.clearColor);
-    if (shaderAttributesLoG->getShaderProgram()->hasUniform("weightTexture")) {
-        shaderAttributesLoG->getShaderProgram()->setUniform("weightTexture", weightTextureLoG, 3);
-    }
-    shaderAttributesLoG->getShaderProgram()->setUniform(
-            "weightTextureSize", glm::ivec2(weightTextureSize.x, weightTextureSize.y));
-    if (outlineMode == OUTLINE_MODE_DEPTH) {
-        depthTextureShaderLoG->setUniform("depthTexture", depthStencilTextureLoG, 2);
-        depthTextureShaderLoG->setUniform("depthTextureSize", glm::ivec2(width, height));
-        depthTextureShaderLoG->setUniform("zNear", sceneData.camera->getNearClipDistance());
-        depthTextureShaderLoG->setUniform("zFar", sceneData.camera->getFarClipDistance());
-    } else if (outlineMode == OUTLINE_MODE_STENCIL) {
-        colorTextureShaderLoG->setUniform("imageTexture", imageTextureLoG, 2);
-        colorTextureShaderLoG->setUniform("imageTextureSize", glm::ivec2(width, height));
-    }
+    setUniformDataLoG();
 }
 
 void ClearViewRenderer_FacesUnified::clear() {
@@ -663,6 +530,9 @@ void ClearViewRenderer_FacesUnified::gather() {
 
     // Now, the final gather step.
     sgl::ShaderManager->bindShaderStorageBuffer(6, hexahedralCellFacesBuffer);
+    sgl::ShaderManager->bindShaderStorageBuffer(7, hexahedralCellVerticesBuffer);
+    sgl::ShaderManager->bindShaderStorageBuffer(8, hexahedralCellEdgesBuffer);
+    sgl::ShaderManager->bindShaderStorageBuffer(9, hexahedralCellsBuffer);
     if (useWeightedVertexAttributes) {
         glDisable(GL_CULL_FACE);
     }
@@ -692,40 +562,6 @@ void ClearViewRenderer_FacesUnified::gather() {
     }
 }
 
-void ClearViewRenderer_FacesUnified::renderLaplacianOfGaussianContours() {
-    if (outlineMode == OUTLINE_MODE_DEPTH) {
-        sgl::Renderer->setProjectionMatrix(sceneData.camera->getProjectionMatrix());
-        sgl::Renderer->setViewMatrix(sceneData.camera->getViewMatrix());
-        sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
-        sgl::Renderer->bindFBO(framebufferLoG);
-        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-        glDisable(GL_STENCIL_TEST);
-        glDepthMask(GL_TRUE);
-        glEnable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
-        sgl::Renderer->clearFramebuffer(GL_DEPTH_BUFFER_BIT);
-        sgl::Renderer->render(meshShaderAttributesLoG);
-
-        sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
-        sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
-        sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glEnable(GL_CULL_FACE);
-        sgl::Renderer->bindFBO(sceneData.framebuffer);
-        sgl::Renderer->render(shaderAttributesLoG);
-        glDisable(GL_DEPTH_TEST);
-    } else if (outlineMode == OUTLINE_MODE_STENCIL) {
-        sgl::Renderer->bindFBO(framebufferLoG);
-        sgl::Renderer->clearFramebuffer(GL_COLOR_BUFFER_BIT, sgl::Color(0, 0, 0));
-        sgl::Renderer->render(shaderAttributesFullScreenBlitLoG);
-
-        glDisable(GL_STENCIL_TEST);
-        sgl::Renderer->bindFBO(sceneData.framebuffer);
-        sgl::Renderer->render(shaderAttributesLoG);
-        glEnable(GL_STENCIL_TEST);
-    }
-}
-
 void ClearViewRenderer_FacesUnified::resolve() {
     sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
     sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
@@ -742,7 +578,7 @@ void ClearViewRenderer_FacesUnified::resolve() {
     sgl::Renderer->render(blitRenderData);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    renderLaplacianOfGaussianContours();
+    renderLoGContours();
 
     glDisable(GL_STENCIL_TEST);
     glDepthMask(GL_TRUE);
@@ -799,19 +635,7 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
         reloadGatherShader(true);
         reRender = true;
     }
-    if (ImGui::Combo(
-            "Outline Mode", (int*)&outlineMode, OUTLINE_MODE_NAMES, NUM_OUTLINE_MODES)) {
-        if (outlineMode != OUTLINE_MODE_NONE) {
-            if (outlineMode == OUTLINE_MODE_DEPTH) {
-                shaderAttributesLoG = shaderAttributesLoG->copy(depthTextureShaderLoG);
-            } else if (outlineMode == OUTLINE_MODE_STENCIL) {
-                shaderAttributesLoG = shaderAttributesLoG->copy(colorTextureShaderLoG);
-            }
-            reloadTexturesLoG();
-            reloadModelLoG();
-        }
-        reRender = true;
-    }
+    reRender = renderGuiLoG() || reRender;
     if (ImGui::Combo(
             "Sorting Mode", (int*)&sortingAlgorithmMode, SORTING_MODE_NAMES, NUM_SORTING_MODES)) {
         setSortingAlgorithmDefine();

@@ -67,6 +67,7 @@
 #include "Mesh/HexMesh/Renderers/WireframeRenderer.hpp"
 #include "Mesh/HexMesh/Renderers/WireframeRenderer_Faces.hpp"
 #include "Mesh/HexMesh/Renderers/VolumeRenderer_Faces.hpp"
+#include "Mesh/HexMesh/Renderers/VolumeRenderer_FacesSlim.hpp"
 #include "Mesh/HexMesh/Renderers/VolumeRenderer_Volume.hpp"
 #include "Mesh/HexMesh/Renderers/ClearViewRenderer_Faces.hpp"
 #include "Mesh/HexMesh/Renderers/ClearViewRenderer_FacesUnified.hpp"
@@ -284,6 +285,10 @@ void MainApp::setRenderers() {
                 sceneData, transferFunctionWindow, true, false));
     } else if (renderingMode == RENDERING_MODE_DEPTH_COMPLEXITY) {
         meshRenderers.push_back(new DepthComplexityRenderer(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED) {
+        meshRenderers.push_back(new ClearViewRenderer_FacesUnified(sceneData, transferFunctionWindow));
+    } else if (renderingMode == RENDERING_MODE_PSEUDO_VOLUME) {
+        meshRenderers.push_back(new VolumeRenderer_FacesSlim(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_VOLUME) {
         meshRenderers.push_back(new VolumeRenderer_Volume(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_CLEAR_VIEW) {
@@ -292,8 +297,6 @@ void MainApp::setRenderers() {
         meshRenderers.push_back(new VolumeRenderer_Faces(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_CLEAR_VIEW_FACES) {
         meshRenderers.push_back(new ClearViewRenderer_Faces(sceneData, transferFunctionWindow));
-    } else if (renderingMode == RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED) {
-        meshRenderers.push_back(new ClearViewRenderer_FacesUnified(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_SINGULARITY) {
         meshRenderers.push_back(new SingularityRenderer(sceneData, transferFunctionWindow));
     } else if (renderingMode == RENDERING_MODE_BASE_COMPLEX_LINES) {
@@ -695,7 +698,7 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         modelBoundingBox = computeAABB3(vertices);
 
         inputData = HexMeshPtr(new HexMesh(transferFunctionWindow, *rayMeshIntersection));
-        inputData->setHexMeshData(vertices, hexMeshCellIndices);
+        inputData->setHexMeshData(vertices, hexMeshCellIndices, false);
         if (hexMeshAnistropyMetricList.empty()) {
             inputData->setQualityMeasure(selectedQualityMeasure);
         } else {
@@ -739,7 +742,12 @@ void MainApp::onDeformationFactorChanged() {
 void MainApp::prepareVisualizationPipeline() {
     if (inputData != nullptr) {
         bool isPreviousNodeDirty = inputData->isDirty();
-        HexMeshPtr filteredMesh = getFilteredMesh(isPreviousNodeDirty);
+        HexMeshPtr filteredMesh;
+        if (inputData->isBaseComplexMeshLoaded()) {
+            filteredMesh = getFilteredMesh(isPreviousNodeDirty);
+        } else {
+            filteredMesh = inputData;
+        }
         // Generate the visualization mapping for all renderers that have the dirty flag set (or if the filtered data
         // changed).
         for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {

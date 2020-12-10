@@ -51,6 +51,8 @@ public:
     inline bool isDirty() { return dirty; }
     /// Returns if the data needs to be re-rendered, but the visualization mapping is valid.
     virtual bool needsReRender() { bool tmp = reRender; reRender = false; return tmp; }
+    /// Is the slim internal representation used?
+    virtual bool getUsesSlimRepresentation() { return false; }
 
     /**
      * Re-generates the visualization mapping. Must not call any OpenGL functions, as it may be called from a different
@@ -85,7 +87,7 @@ public:
     virtual void setNewSettings(const SettingsMap& settings) {}
 
 protected:
-    SceneData &sceneData;
+    SceneData& sceneData;
     sgl::TransferFunctionWindow &transferFunctionWindow;
     bool dirty = true;
     bool reRender = true;

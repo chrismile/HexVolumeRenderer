@@ -115,7 +115,7 @@ HexMesh::~HexMesh() {
 }
 
 void HexMesh::setHexMeshData(
-        const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices) {
+        const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices, bool loadMeshRepresentation) {
     if (mesh != nullptr) {
         delete mesh;
         mesh = nullptr;
@@ -129,27 +129,29 @@ void HexMesh::setHexMeshData(
         frame = nullptr;
     }
 
+    this->vertices = vertices;
+    this->cellIndices = cellIndices;
     meshNumCells = cellIndices.size() / 8ull;
     meshNumVertices = vertices.size();
     cellFilteringList.resize(meshNumCells);
     cellQualityMeasureList.resize(meshNumCells);
 
-    mesh = new Mesh;
-    si = new Singularity;
-    computeBaseComplexMesh(vertices, cellIndices);
-
-    singularEdgeIds.clear();
-    for (Singular_E& se : si->SEs) {
-        for (uint32_t e_id : se.es_link) {
-            singularEdgeIds.insert(e_id);
-        }
+    if (loadMeshRepresentation) {
+        computeBaseComplexMesh(vertices, cellIndices);
     }
 
     cellVolumes.clear();
     faceAreas.clear();
 
-    sgl::Logfile::get()->writeInfo(std::string() + "Number of mesh vertices: " + std::to_string(vertices.size()));
-    sgl::Logfile::get()->writeInfo(std::string() + "Number of mesh cells: " + std::to_string(cellIndices.size()/8ull));
+    if (mesh) {
+        sgl::Logfile::get()->writeInfo(std::string() + "Number of mesh vertices: " + std::to_string(mesh->Vs.size()));
+        sgl::Logfile::get()->writeInfo(std::string() + "Number of mesh edges: " + std::to_string(mesh->Es.size()));
+        sgl::Logfile::get()->writeInfo(std::string() + "Number of mesh faces: " + std::to_string(mesh->Fs.size()));
+        sgl::Logfile::get()->writeInfo(std::string() + "Number of mesh cells: " + std::to_string(mesh->Hs.size()));
+    } else {
+        sgl::Logfile::get()->writeInfo(std::string() + "Number of mesh vertices: " + std::to_string(vertices.size()));
+        sgl::Logfile::get()->writeInfo(std::string() + "Number of mesh cells: " + std::to_string(cellIndices.size()/8ull));
+    }
 
     dirty = true;
 }
@@ -222,6 +224,9 @@ void HexMesh::computeBaseComplexMesh(
     const uint32_t numVertices = vertices.size();
     const uint32_t numCells = cellIndices.size() / 8;
 
+    mesh = new Mesh;
+    si = new Singularity;
+
     mesh->type = Mesh_type::Hex;
     mesh->V.resize(3, numVertices);
     mesh->V.setZero();
@@ -256,6 +261,13 @@ void HexMesh::computeBaseComplexMesh(
     buildCellEdgeList(*mesh);
     base_complex bc;
     bc.singularity_structure(*si, *mesh);
+
+    singularEdgeIds.clear();
+    for (Singular_E& se : si->SEs) {
+        for (uint32_t e_id : se.es_link) {
+            singularEdgeIds.insert(e_id);
+        }
+    }
 }
 
 void HexMesh::computeBaseComplexMeshFrame() {
@@ -392,29 +404,55 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
     qualityMinNormalized = FLT_MAX;
     qualityMaxNormalized = -FLT_MAX;
     glm::vec3 v[8];
-    #pragma omp parallel for reduction(min: qualityMin) reduction(max: qualityMax) private(v)
-    for (size_t i = 0; i < meshNumCells; i++) {
-        Hybrid& h = mesh->Hs.at(i);
-        assert(h.vs.size() == 8);
-        for (size_t j = 0; j < h.vs.size(); j++) {
-            uint32_t v_id = h.vs.at(j);
-            v[j] = glm::vec3(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+
+    if (mesh) {
+        #pragma omp parallel for reduction(min: qualityMin) reduction(max: qualityMax) private(v) \
+                shared(cellQualityList, qualityFunctor, arg) default(none)
+        for (size_t i = 0; i < meshNumCells; i++) {
+            Hybrid& h = mesh->Hs.at(i);
+            assert(h.vs.size() == 8);
+            for (size_t j = 0; j < h.vs.size(); j++) {
+                uint32_t v_id = h.vs.at(j);
+                v[j] = glm::vec3(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+            }
+            float quality = qualityFunctor(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], arg);
+            qualityMin = std::min(qualityMin, quality);
+            qualityMax = std::max(qualityMax, quality);
+            cellQualityList.at(i) = quality;
         }
-        float quality = qualityFunctor(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], arg);
-        qualityMin = std::min(qualityMin, quality);
-        qualityMax = std::max(qualityMax, quality);
-        cellQualityList.at(i) = quality;
+        #pragma omp parallel for reduction(min: qualityMinNormalized) reduction(max: qualityMaxNormalized) \
+                shared(cellQualityList, hexaLabQualityMeasure) default(none)
+        for (size_t i = 0; i < meshNumCells; i++) {
+            cellQualityMeasureList.at(i) = 1.0f - HexaLab::normalize_quality_measure(
+                    hexaLabQualityMeasure, cellQualityList.at(i), qualityMin, qualityMax);
+            qualityMinNormalized = std::min(qualityMinNormalized, cellQualityMeasureList.at(i));
+            qualityMaxNormalized = std::max(qualityMaxNormalized, cellQualityMeasureList.at(i));
+        }
+    } else {
+        #pragma omp parallel for reduction(min: qualityMin) reduction(max: qualityMax) private(v) \
+                shared(cellQualityList, qualityFunctor, arg) default(none)
+        for (size_t i = 0; i < meshNumCells; i++) {
+            for (size_t j = 0; j < 8; j++) {
+                uint32_t v_id = cellIndices.at(i * 8 + j);
+                v[j] = glm::vec3(vertices.at(v_id));
+            }
+            float quality = qualityFunctor(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], arg);
+            qualityMin = std::min(qualityMin, quality);
+            qualityMax = std::max(qualityMax, quality);
+            cellQualityList.at(i) = quality;
+        }
+        #pragma omp parallel for reduction(min: qualityMinNormalized) reduction(max: qualityMaxNormalized) \
+                shared(cellQualityList, hexaLabQualityMeasure) default(none)
+        for (size_t i = 0; i < meshNumCells; i++) {
+            cellQualityMeasureList.at(i) = 1.0f - HexaLab::normalize_quality_measure(
+                    hexaLabQualityMeasure, cellQualityList.at(i), qualityMin, qualityMax);
+            qualityMinNormalized = std::min(qualityMinNormalized, cellQualityMeasureList.at(i));
+            qualityMaxNormalized = std::max(qualityMaxNormalized, cellQualityMeasureList.at(i));
+        }
     }
-    #pragma omp parallel for reduction(min: qualityMinNormalized) reduction(max: qualityMaxNormalized)
-    for (size_t i = 0; i < meshNumCells; i++) {
-        cellQualityMeasureList.at(i) = 1.0f - HexaLab::normalize_quality_measure(
-                hexaLabQualityMeasure, cellQualityList.at(i), qualityMin, qualityMax);
-        qualityMinNormalized = std::min(qualityMinNormalized, cellQualityMeasureList.at(i));
-        qualityMaxNormalized = std::max(qualityMaxNormalized, cellQualityMeasureList.at(i));
-    }
-    std::cout << "Quality: " << HexaLab::get_quality_name(hexaLabQualityMeasure) << ", range: [" << qualityMin << ", "
-            << qualityMax << "], normalized range: " << qualityMinNormalized << ", " << qualityMaxNormalized << "]"
-            << std::endl;
+    std::cout << "Quality: " << HexaLab::get_quality_name(hexaLabQualityMeasure)
+            << ", range: [" << qualityMin << ", " << qualityMax << "], normalized range: "
+            << qualityMinNormalized << ", " << qualityMaxNormalized << "]" << std::endl;
 
     recomputeHistogram();
     dirty = true;
@@ -443,7 +481,11 @@ float HexMesh::getCellAttributeManualVertexAttributes(uint32_t h_id) {
     return cellAttribute;
 }
 
-Mesh& HexMesh::getBaseComplexMesh(){
+bool HexMesh::isBaseComplexMeshLoaded() {
+    return mesh != nullptr;
+}
+
+Mesh& HexMesh::getBaseComplexMesh() {
     return *mesh;
 }
 
@@ -457,6 +499,10 @@ Frame& HexMesh::getBaseComplexMeshFrame(){
 }
 
 void HexMesh::rebuildInternalRepresentationIfNecessary() {
+    if (!mesh) {
+        computeBaseComplexMesh(vertices, cellIndices);
+    }
+
     if (dirty) {
         updateMeshTriangleIntersectionDataStructure();
         dirty = false;
@@ -657,8 +703,7 @@ float HexMesh::maximumCellAttributePerVertex(uint32_t v_id) {
 
     float maximumCellAttributeValue = 0.0f;
     for (uint32_t h_id : v.neighbor_hs) {
-        maximumCellAttributeValue = std::max(
-                maximumCellAttributeValue, getCellAttribute(h_id));
+        maximumCellAttributeValue = std::max(maximumCellAttributeValue, getCellAttribute(h_id));
     }
     return maximumCellAttributeValue;
 }
@@ -1063,25 +1108,35 @@ void HexMesh::getVolumeData_Volume(
 void HexMesh::getVolumeData_FacesShared(
         std::vector<uint32_t>& triangleIndices,
         std::vector<glm::vec3>& vertexPositions,
-        std::vector<float>& vertexAttributes) {
+        std::vector<float>& vertexAttributes,
+        bool useVolumeWeighting) {
     rebuildInternalRepresentationIfNecessary();
 
     // Compute all cell volumes.
-    if (cellVolumes.empty()) {
+    if (useVolumeWeighting && cellVolumes.empty()) {
         computeAllCellVolumes();
     }
 
     // Add all hexahedral mesh vertices to the triangle mesh vertex data.
     for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
-        float vertexAttribute;
-        if (this->manualVertexAttributes.empty()) {
-            vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
-        } else {
-            vertexAttribute = this->manualVertexAttributes.at(v_id);
-        }
-        vertexAttributes.push_back(vertexAttribute);
         glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
         vertexPositions.push_back(vertexPosition);
+    }
+    if (this->manualVertexAttributes.empty()) {
+        if (useVolumeWeighting) {
+            for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
+                vertexAttributes.push_back(interpolateCellAttributePerVertex(v_id, cellVolumes));
+            }
+        } else {
+            for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
+                vertexAttributes.push_back(maximumCellAttributePerVertex(v_id));
+            }
+        }
+    } else {
+        // Use manually specified attributes.
+        for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
+            vertexAttributes.push_back(this->manualVertexAttributes.at(v_id));
+        }
     }
 
     // Add all triangle indices.
@@ -2471,7 +2526,7 @@ uint32_t HexMesh::packEdgeSingularityInformation(uint32_t e_id) {
     return isSingular | (isBoundary << 1) | (edgeValence << 2);
 }
 
-void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
+/*void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
         std::vector<uint32_t>& triangleIndices,
         std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
         int& maxLodValue, LodSettings lodSettings) {
@@ -2530,7 +2585,7 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
                  *          |         \ |
                  *          | - - - - - |
                  * vertex 0     edge 3    vertex 3
-                 */
+                 /
                 triangleIndices.push_back(indexOffset + 0);
                 triangleIndices.push_back(indexOffset + 3);
                 triangleIndices.push_back(indexOffset + 1);
@@ -2553,17 +2608,20 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell(
                 Hybrid_E& e = mesh->Es.at(e_id);
                 hexahedralCellFace.edgeAttributes[j] = edgeAttributes.at(e_id);
                 hexahedralCellFace.edgeLodValues[j] = edgeLodValues.at(e_id);
-                hexahedralCellFace.edgeSingularityInformationList[j] = packEdgeSingularityInformation(e_id);
+                //hexahedralCellFace.edgeSingularityInformationList[j] = packEdgeSingularityInformation(e_id);
             }
 
             indexOffset += 4;
         }
     }
-}
+}*/
 
 void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         std::vector<uint32_t>& triangleIndices,
         std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
+        std::vector<HexahedralCellVertexUnified>& hexahedralCellVertices,
+        std::vector<HexahedralCellEdgeUnified>& hexahedralCellEdges,
+        std::vector<HexahedralCellUnified>& hexahedralCells,
         int& maxLodValue, bool useVolumeWeighting, LodSettings lodSettings) {
     rebuildInternalRepresentationIfNecessary();
 
@@ -2576,39 +2634,76 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         computeAllCellVolumes();
     }
 
-    // Compute attribute data.
-    std::vector<float> vertexAttributes(mesh->Vs.size());
-    std::vector<float> edgeAttributes(mesh->Es.size());
-    if (this->manualVertexAttributes.empty()) {
-        // Compute all vertex attributes.
-        for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
-            float vertexAttribute;
-            if (useVolumeWeighting) {
-                vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
-            } else {
-                vertexAttribute = maximumCellAttributePerVertex(v_id);
-            }
-            vertexAttributes.at(v_id) = vertexAttribute;
-        }
 
-        // Compute all edge attributes.
-        for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
-            float edgeAttribute = maximumCellAttributePerEdge(e_id);
-            edgeAttributes.at(e_id) = edgeAttribute;
+    // 1. Get vertex data (first: position).
+    hexahedralCellVertices.reserve(mesh->Vs.size());
+    for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
+        hexahedralCellVertices.push_back(HexahedralCellVertexUnified());
+        HexahedralCellVertexUnified& hexahedralCellVertex = hexahedralCellVertices.back();
+        hexahedralCellVertex.vertexPosition = glm::vec3(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+    }
+
+    // 1.2 Get vertex attributes.
+    if (this->manualVertexAttributes.empty()) {
+        if (useVolumeWeighting) {
+            for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
+                HexahedralCellVertexUnified& hexahedralCellVertex = hexahedralCellVertices.at(v_id);
+                hexahedralCellVertex.vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
+            }
+        } else {
+            for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
+                HexahedralCellVertexUnified& hexahedralCellVertex = hexahedralCellVertices.at(v_id);
+                hexahedralCellVertex.vertexAttribute = maximumCellAttributePerVertex(v_id);
+            }
         }
     } else {
         // Use manually specified attributes.
-        vertexAttributes = this->manualVertexAttributes;
-        for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
-            Hybrid_E& e = mesh->Es.at(e_id);
-            float edgeAttribute = (vertexAttributes.at(e.vs.at(0)) + vertexAttributes.at(e.vs.at(1))) * 0.5f;
-            edgeAttributes.at(e_id) = edgeAttribute;
+        for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
+            HexahedralCellVertexUnified& hexahedralCellVertex = hexahedralCellVertices.at(v_id);
+            hexahedralCellVertex.vertexAttribute = this->manualVertexAttributes.at(v_id);
         }
     }
 
+
+    // 2. Edge data.
+    hexahedralCellEdges.reserve(mesh->Es.size());
+    if (this->manualVertexAttributes.empty()) {
+        // Compute all edge attributes.
+        for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
+            hexahedralCellEdges.push_back(HexahedralCellEdgeUnified());
+            HexahedralCellEdgeUnified& hexahedralCellEdge = hexahedralCellEdges.back();
+            hexahedralCellEdge.edgeAttribute = maximumCellAttributePerEdge(e_id);
+            hexahedralCellEdge.edgeLodValue = edgeLodValues.at(e_id);
+        }
+    } else {
+        // Use manually specified attributes.
+        for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
+            Hybrid_E& e = mesh->Es.at(e_id);
+            hexahedralCellEdges.push_back(HexahedralCellEdgeUnified());
+            HexahedralCellEdgeUnified& hexahedralCellEdge = hexahedralCellEdges.back();
+            hexahedralCellEdge.edgeAttribute =
+                    (this->manualVertexAttributes.at(e.vs.at(0))
+                     + this->manualVertexAttributes.at(e.vs.at(1))) * 0.5f;
+            hexahedralCellEdge.edgeLodValue = edgeLodValues.at(e_id);
+            //hexahedralCellEdge.edgeSingularityInformation = packEdgeSingularityInformation(e_id);
+        }
+    }
+
+
+    // 3. Cell data.
+    hexahedralCells.reserve(mesh->Hs.size());
+    for (uint32_t h_id = 0; h_id < mesh->Hs.size(); h_id++) {
+        hexahedralCells.push_back(HexahedralCellUnified());
+        HexahedralCellUnified& hexahedralCell = hexahedralCells.back();
+        hexahedralCell.cellAttribute = getCellAttribute(h_id);
+    }
+
+
+    // 4. Face data.
     size_t indexOffset = 0;
-    for (size_t i = 0; i < mesh->Fs.size(); i++) {
-        Hybrid_F& f = mesh->Fs.at(i);
+    hexahedralCellFaces.reserve(mesh->Fs.size());
+    for (size_t f_id = 0; f_id < mesh->Fs.size(); f_id++) {
+        Hybrid_F& f = mesh->Fs.at(f_id);
         if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
             return isCellMarked(h_id);
         })) {
@@ -2617,14 +2712,17 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
 
         hexahedralCellFaces.push_back(HexahedralCellFaceUnified());
         HexahedralCellFaceUnified& hexahedralCellFace = hexahedralCellFaces.back();
+        hexahedralCellFace.vertexIdx[0];
+        hexahedralCellFace.edgeIdx[0];
 
         assert(f.vs.size() == 4);
+        for (size_t i = 0; i < 4; i++) {
+            hexahedralCellFace.vertexIdx[i] = f.vs.at(i);
+        }
+
+        assert(f.es.size() == 4);
         for (size_t j = 0; j < 4; j++) {
-            uint32_t v_id = f.vs.at(j);
-            glm::vec4 vertexPosition(
-                    mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
-            hexahedralCellFace.vertexPositions[j] = vertexPosition;
-            hexahedralCellFace.vertexAttributes[j] = vertexAttributes.at(v_id);
+            hexahedralCellFace.edgeIdx[j] = f.es.at(j);
         }
 
         /**
@@ -2644,15 +2742,6 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         triangleIndices.push_back(indexOffset + 2);
         triangleIndices.push_back(indexOffset + 1);
         triangleIndices.push_back(indexOffset + 3);
-
-        assert(f.es.size() == 4);
-        for (size_t j = 0; j < 4; j++) {
-            uint32_t e_id = f.es.at(j);
-            Hybrid_E& e = mesh->Es.at(e_id);
-            hexahedralCellFace.edgeAttributes[j] = edgeAttributes.at(e_id);
-            hexahedralCellFace.edgeLodValues[j] = edgeLodValues.at(e_id);
-            hexahedralCellFace.edgeSingularityInformationList[j] = packEdgeSingularityInformation(e_id);
-        }
 
         indexOffset += 4;
     }

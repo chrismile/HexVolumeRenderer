@@ -13,16 +13,46 @@
  *          | - - - - - |
  * vertex 0     edge 3    vertex 3
 */
-struct HexahedralCellFaceUnified {
+/*struct HexahedralCellFaceUnified {
     vec4 vertexPositions[4];
     float vertexAttributes[4];
     float edgeAttributes[4];
     float edgeLodValues[4];
     uint edgeSingularityInformationList[4];
 };
+struct HexahedralCellFaceUnified {
+    vec4 vertexPositions[4];
+    float vertexAttributes[4];
+    float edgeAttributes[4];
+    float edgeLodValues[4];
+    //uint edgeSingularityInformationList[4];
+};*/
 
-layout (std430, binding = 6) readonly buffer HexahedralCellFaces {
+struct HexahedralCellFaceUnified {
+    uint vertexIdx[4];
+    uint edgeIdx[4];
+};
+
+struct HexahedralCellVertexUnified {
+    vec3 vertexPosition;
+    float vertexAttribute;
+};
+
+struct HexahedralCellEdgeUnified {
+    float edgeAttribute;
+    float edgeLodValue;
+};
+
+layout (std430, binding = 6) readonly buffer FaceBuffer {
     HexahedralCellFaceUnified hexahedralCellFaces[];
+};
+
+layout (std430, binding = 7) readonly buffer VertexBuffer {
+    HexahedralCellVertexUnified hexahedralCellVertices[];
+};
+
+layout (std430, binding = 8) readonly buffer EdgeBuffer {
+    HexahedralCellEdgeUnified hexahedralCellEdges[];
 };
 
 out vec3 fragmentPositionWorld;
@@ -57,46 +87,56 @@ void main()
     int vertexId = globalId % 4;
 
     HexahedralCellFaceUnified hexahedralCellFace = hexahedralCellFaces[faceId];
+    vec4 vertexPosition;
+    float vertexAttribute;
 
-    // Copy the edge data.
+    // Copy the vertex and edge data.
     for (int i = 0; i < 4; i++) {
-        vec4 lineColor;
-        #ifdef USE_SINGULAR_EDGE_COLOR_MAP
-        uint edgeSingularityInformation = hexahedralCellFace.edgeSingularityInformationList[i];
-        if ((edgeSingularityInformation & 1u) == 1u) {
-            // Singular edge.
-            lineColor = lookupSingularEdgeColor(edgeSingularityInformation);
-            lineAttributes[i] = 1.0;
-        } else {
-        #endif
-            // Regular edge.
-            lineColor = vec4(transferFunction(hexahedralCellFace.edgeAttributes[i]).rgb, 1.0);
-            lineAttributes[i] = hexahedralCellFace.edgeAttributes[i];
-        #ifdef USE_SINGULAR_EDGE_COLOR_MAP
+        HexahedralCellVertexUnified hexahedralCellVertex = hexahedralCellVertices[hexahedralCellFace.vertexIdx[i]];
+        HexahedralCellEdgeUnified hexahedralCellEdge = hexahedralCellEdges[hexahedralCellFace.edgeIdx[i]];
+        vertexPositions[i] = hexahedralCellVertex.vertexPosition;
+
+        if (i == vertexId) {
+            vertexPosition = vec4(hexahedralCellVertex.vertexPosition, 1.0);
+            vertexAttribute = hexahedralCellVertex.vertexAttribute;
         }
-        #endif
+
+        vec4 lineColor;
+        //#ifdef USE_SINGULAR_EDGE_COLOR_MAP
+        //uint edgeSingularityInformation = hexahedralCellFace.edgeSingularityInformationList[i];
+        //if ((edgeSingularityInformation & 1u) == 1u) {
+        //    // Singular edge.
+        //    lineColor = lookupSingularEdgeColor(edgeSingularityInformation);
+        //    lineAttributes[i] = 1.0;
+        //} else {
+        //#endif
+            // Regular edge.
+            lineColor = vec4(transferFunction(hexahedralCellEdge.edgeAttribute).rgb, 1.0);
+            lineAttributes[i] = hexahedralCellEdge.edgeAttribute;
+        //#ifdef USE_SINGULAR_EDGE_COLOR_MAP
+        //}
+        //#endif
 
         #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
         lineColors[i] = lineColor;
         #endif
 
-        edgeLodValues[i] = hexahedralCellFace.edgeLodValues[i];
+        edgeLodValues[i] = hexahedralCellEdge.edgeLodValue;
         //edgeSingularityInformationList[i] = edgeSingularityInformation;
     }
 
     // Copy the face data.
-    for (int i = 0; i < 4; i++) {
-        vertexPositions[i] = hexahedralCellFace.vertexPositions[i].xyz;
+    //for (int i = 0; i < 4; i++) {
+        //vertexPositions[i] = hexahedralCellVertex.vertexPosition.xyz;
 
         /*#if !(defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP))
         vertexColors[i] = transferFunction(hexahedralCellFace.vertexAttributes[i]);
         #endif*/
-    }
+    //}
 
-    vec4 vertexPosition = hexahedralCellFace.vertexPositions[vertexId];
     fragmentPositionWorld = (mMatrix * vertexPosition).xyz;
-    fragmentColor = transferFunction(hexahedralCellFace.vertexAttributes[vertexId]);
-    fragmentAttribute = hexahedralCellFace.vertexAttributes[vertexId];
+    fragmentColor = transferFunction(vertexAttribute);
+    fragmentAttribute = vertexAttribute;
     fragmentPositionClip = mvpMatrix * vertexPosition;
     gl_Position = fragmentPositionClip;
 }
@@ -170,7 +210,7 @@ void main()
     //rayPlaneIntersection(cameraPosition, normalize(fragmentPositionWorld - cameraPosition), sphereCenter, negativeLookingDirection, projectedPoint);
     //float screenSpaceSphereDistanceNormalized = length(projectedPoint - sphereCenter) / sphereRadius;
 
-    float lineWidthPrime = lineWidth * (-distanceToFocusPointNormalized * 0.4 + 1.0);
+    float lineWidthPrime = lineWidth * (-distanceToFocusPointNormalized * 0.3 + 1.0);
     float lineRadius = lineWidthPrime / 2.0f;
 
     // Volume color.
@@ -415,7 +455,7 @@ void main()
     float contextFactor = pow(screenSpaceSphereDistanceNormalized, 4.0);
     //float contextFactor = 1.0 - focusFactor;
 
-    float lineWidthPrime = lineWidth * (-screenSpaceSphereDistanceNormalized * 0.4 + 1.0);
+    float lineWidthPrime = lineWidth * (-screenSpaceSphereDistanceNormalized * 0.3 + 1.0);
     float lineRadius = lineWidthPrime / 2.0f;
 
     // Volume color.

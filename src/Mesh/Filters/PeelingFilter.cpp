@@ -34,6 +34,10 @@
 #include "PeelingFilter.hpp"
 
 void PeelingFilter::onMeshLoaded(HexMeshPtr meshIn) {
+    if (!meshIn->isBaseComplexMeshLoaded()) {
+        return;
+    }
+
     cellDepths.clear();
     peelingDepth = 0;
     maxPeelingDepth = 0;
@@ -73,6 +77,10 @@ void PeelingFilter::onMeshLoaded(HexMeshPtr meshIn) {
 }
 
 void PeelingFilter::filterMesh(HexMeshPtr meshIn) {
+    if (cellDepths.empty()) {
+        onMeshLoaded(meshIn);
+    }
+
     output = meshIn;
     Mesh& mesh = meshIn->getBaseComplexMesh();
     for (Hybrid& h : mesh.Hs) {

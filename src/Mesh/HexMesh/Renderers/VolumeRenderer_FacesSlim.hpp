@@ -26,32 +26,33 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_CLEARVIEWRENDERER_FACESUNIFIED_HPP
-#define HEXVOLUMERENDERER_CLEARVIEWRENDERER_FACESUNIFIED_HPP
+#ifndef HEXVOLUMERENDERER_VOLUMERENDERER_FACESSLIM_H
+#define HEXVOLUMERENDERER_VOLUMERENDERER_FACESSLIM_H
 
 #include <Graphics/Shader/ShaderAttributes.hpp>
 #include <Graphics/OpenGL/TimerGL.hpp>
 
-#include "Mesh/HexMesh/Renderers/Widgets/SingularEdgeColorMapWidget.hpp"
+#include "PPLL/PerPixelLinkedList.hpp"
+#include "HexahedralMeshRenderer.hpp"
 #include "LoG/LaplacianOfGaussianRenderer.hpp"
-#include "ClearViewRenderer.hpp"
 
 /**
- * Renders the hexahedral mesh using an approach similar to ClearView (see below).
- * The focus region of the mesh is rendered using colored lines with white outlines that are faded out at the boundary.
- * The context region is rendered using face-based volume rendering (@see VolumeRenderer_Faces), but instead of
- * rendering the faces with a flat color, the wireframe data (@see WireframeRenderer_Faces) is used to accentuate edges.
- * Thus, the same rendering data can be used for the context and focus region (i.e., a unified face-based approach).
+ * Renders all faces with transparency values determined by the transfer function set by the user.
+ * For this, the order-independent transparency (OIT) technique per-pixel linked lists are used.
+ * For more details see: Yang, J. C., Hensley, J., Grün, H. and Thibieroz, N., "Real-Time Concurrent
+ * Linked List Construction on the GPU", Computer Graphics Forum, 29, 2010.
  *
- * For more details on ClearView see: "ClearView: An Interactive Context Preserving Hotspot Visualization Technique",
- * Jens Krüger, Jens Schneider, Rüdiger Westermann (2006)
- * Computer Graphics and Visualization Group, Technical University Munich, Germany
- * https://www.in.tum.de/cg/research/publications/2006/clearview-an-interactive-context-preserving-hotspot-visualization-technique/
+ * For a comparison of different OIT algorithms see:
+ * M. Kern, C. Neuhauser, T. Maack, M. Han, W. Usher and R. Westermann, "A Comparison of Rendering Techniques for 3D
+ * Line Sets with Transparency," in IEEE Transactions on Visualization and Computer Graphics, 2020.
+ * doi: 10.1109/TVCG.2020.2975795
+ * URL: http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9007507&isnumber=4359476
  */
-class ClearViewRenderer_FacesUnified : public ClearViewRenderer, protected LaplacianOfGaussianRenderer {
+class VolumeRenderer_FacesSlim : public HexahedralMeshRenderer, protected LaplacianOfGaussianRenderer {
 public:
-    ClearViewRenderer_FacesUnified(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
-    virtual ~ClearViewRenderer_FacesUnified();
+    VolumeRenderer_FacesSlim(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
+    virtual ~VolumeRenderer_FacesSlim() {}
+    virtual bool getUsesSlimRepresentation() override { return true; }
 
     /**
      * Re-generates the visualization mapping.
@@ -60,13 +61,13 @@ public:
      */
     virtual void uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
 
-    /// Called when the resolution of the application window has changed.
-    virtual void onResolutionChanged();
-
     // Renders the object to the scene framebuffer.
     virtual void render();
-    /// Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
+    // Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
     virtual void renderGui();
+
+    // Called when the resolution of the application window has changed.
+    virtual void onResolutionChanged();
 
     /// For changing performance measurement modes.
     virtual void setNewState(const InternalState& newState);
@@ -75,18 +76,17 @@ public:
 protected:
     void updateLargeMeshMode();
     void reallocateFragmentBuffer();
+    void reloadResolveShader();
+    void setSortingAlgorithmDefine();
     void setUniformData();
     void clear();
     void gather();
     void resolve();
-    void childClassRenderGuiBegin();
-    void childClassRenderGuiEnd();
 
-    // Don't highlight singular edges when we have far too many of them.
-    void reloadGatherShader(bool copyShaderAttributes);
-    void reloadResolveShader();
-    bool tooMuchSingularEdgeMode = false;
-    int maxLodValue;
+    HexMeshPtr mesh;
+
+    // Sorting algorithm for PPLL.
+    SortingAlgorithmMode sortingAlgorithmMode = SORTING_ALGORITHM_MODE_PRIORITY_QUEUE;
 
     // The rendering data for the volume object.
     sgl::ShaderAttributesPtr shaderAttributes;
@@ -107,7 +107,7 @@ protected:
     sgl::ShaderProgramPtr gatherShader;
     sgl::ShaderProgramPtr resolveShader;
 
-    // Blit data (ignores model-view-projection matrix and uses normalized device coordinates).
+    // Blit data (ignores model-view-projection matrix and uses normalized device coordinates)
     sgl::ShaderAttributesPtr blitRenderData;
     sgl::ShaderAttributesPtr clearRenderData;
 
@@ -117,21 +117,12 @@ protected:
     bool timerDataIsWritten = true;
     sgl::TimerGL* timer = nullptr;
 
-    // Settings for changing internal state.
-    float lineWidthBoostFactor = 1.0f;
-    float focusRadiusBoostFactor = 1.0f;
+    // Window data.
+    int windowWidth = 0;
+    int windowHeight = 0;
 
-    // GUI data.
-    SingularEdgeColorMapWidget singularEdgeColorMapWidget;
-    float selectedLodValueFocus = 0.3f;
-    float selectedLodValueContext = 0.16f;
-    float importantLineBoostFactor = 0.5f;
-    bool accentuateAllEdges = true;
-    bool useSingularEdgeColorMap = false;
-    bool usePerLineAttributes = false;
-    bool highlightEdges = true;
-    bool highlightLowLodEdges = true;
-    bool highlightSingularEdges = true;
+    // GUI data
+    bool showRendererWindow = true;
 };
 
-#endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_FACESUNIFIED_HPP
+#endif //HEXVOLUMERENDERER_VOLUMERENDERER_FACESSLIM_H

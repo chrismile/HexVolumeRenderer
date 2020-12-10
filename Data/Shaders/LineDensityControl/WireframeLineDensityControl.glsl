@@ -257,7 +257,7 @@ void main()
         }
     }
 
-    // TODO: Don't render arrow shapes => Move into for-loop (compare MeshWireframe.glsl).
+    // TODO: Don't render arrow shapes => Move into for-loop (compare HexMeshUnified.glsl).
     float lineFadeOutFactor = lineFadeOutFactorsInterpolated[minDistanceIndex];
     float lineWidthPrime = lineWidth * lineFadeOutFactor;
     float lineRadius = lineWidthPrime / 2.0;

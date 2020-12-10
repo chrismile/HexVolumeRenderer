@@ -31,23 +31,9 @@
 
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
+#include "PPLL/PerPixelLinkedList.hpp"
 #include "HexahedralMeshRenderer.hpp"
 #include "Mesh/HexMesh/Renderers/Intersection/Pickable.hpp"
-
-// Sorting algorithm for PPLL.
-enum SortingAlgorithmMode {
-    SORTING_ALGORITHM_MODE_PRIORITY_QUEUE,
-    SORTING_ALGORITHM_MODE_BUBBLE_SORT,
-    SORTING_ALGORITHM_MODE_INSERTION_SORT,
-    SORTING_ALGORITHM_MODE_SHELL_SORT,
-    SORTING_ALGORITHM_MODE_MAX_HEAP,
-    SORTING_ALGORITHM_MODE_QUICKSORT,
-    SORTING_ALGORITHM_MODE_QUICKSORT_HYBRID
-};
-const char* const SORTING_MODE_NAMES[7] = {
-        "Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap", "Quicksort", "Quicksort Hybrid"
-};
-const int NUM_SORTING_MODES = ((int)(sizeof(SORTING_MODE_NAMES) / sizeof(*SORTING_MODE_NAMES)));
 
 /**
  * Renders the hexahedral mesh using an approach similar to ClearView (see below).
@@ -90,9 +76,6 @@ protected:
     // Sorting algorithm for PPLL.
     SortingAlgorithmMode sortingAlgorithmMode = SORTING_ALGORITHM_MODE_PRIORITY_QUEUE;
 
-#ifdef USE_CSG
-#else
-#endif
     enum LineRenderingMode {
         LINE_RENDERING_MODE_WIREFRAME_FACES,
         LINE_RENDERING_MODE_BILLBOARD_LINES,
@@ -136,9 +119,12 @@ protected:
     sgl::ShaderAttributesPtr focusPointShaderAttributes;
     sgl::ShaderAttributesPtr focusOutlineShaderAttributes;
 
-    // SSBOs.
-    sgl::GeometryBufferPtr pointLocationsBuffer; ///< For gatherShaderFocusSpheres/shaderAttributesFocus.
-    sgl::GeometryBufferPtr hexahedralCellFacesBuffer; ///< For gatherShaderFocusWireframeFaces/shaderAttributesFocus.
+    // SSBOs - for gatherShaderFocusSpheres/shaderAttributesFocus.
+    sgl::GeometryBufferPtr pointLocationsBuffer;
+    sgl::GeometryBufferPtr hexahedralCellFacesBuffer;
+    sgl::GeometryBufferPtr hexahedralCellVerticesBuffer;
+    sgl::GeometryBufferPtr hexahedralCellEdgesBuffer;
+    sgl::GeometryBufferPtr hexahedralCellsBuffer;
 
     // The shaders for rendering.
     sgl::ShaderProgramPtr gatherShaderFocusWireframeFaces; //< Focus (surface/faces)
