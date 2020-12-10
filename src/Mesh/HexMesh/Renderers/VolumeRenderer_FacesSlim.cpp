@@ -63,7 +63,7 @@ struct LinkedListFragmentNode {
 VolumeRenderer_FacesSlim::VolumeRenderer_FacesSlim(
         SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow),
-        LaplacianOfGaussianRenderer(sceneData, true) {
+          EdgeDetectionRenderer(sceneData, true) {
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
     sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "\"LinkedListGather.glsl\"");
@@ -90,7 +90,7 @@ VolumeRenderer_FacesSlim::VolumeRenderer_FacesSlim(
             sizeof(glm::vec3)*fullscreenQuad.size(), (void*)&fullscreenQuad.front());
     clearRenderData->addGeometryBuffer(geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
-    initializeLoG();
+    initializeEdgeDetection();
     onResolutionChanged();
 }
 
@@ -131,7 +131,7 @@ void VolumeRenderer_FacesSlim::uploadVisualizationMapping(HexMeshPtr meshIn, boo
     shaderAttributes->addGeometryBuffer(
             attributeBuffer, "vertexAttribute", sgl::ATTRIB_FLOAT, 1);
 
-    reloadModelLoG(mesh);
+    reloadModelEdgeDetection(mesh);
 
     dirty = false;
     reRender = true;
@@ -248,7 +248,7 @@ void VolumeRenderer_FacesSlim::onResolutionChanged() {
     atomicCounterBuffer = sgl::Renderer->createGeometryBuffer(
             sizeof(uint32_t), NULL, sgl::ATOMIC_COUNTER_BUFFER);
 
-    reloadTexturesLoG();
+    reloadTexturesEdgeDetection();
 }
 
 void VolumeRenderer_FacesSlim::setUniformData() {
@@ -276,7 +276,7 @@ void VolumeRenderer_FacesSlim::setUniformData() {
     clearShader->setUniform("viewportW", width);
     clearShader->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
 
-    setUniformDataLoG();
+    setUniformDataEdgeDetection();
 }
 
 void VolumeRenderer_FacesSlim::clear() {
@@ -341,7 +341,7 @@ void VolumeRenderer_FacesSlim::resolve() {
     sgl::Renderer->render(blitRenderData);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    renderLoGContours();
+    renderEdgeDetectionContours();
 
     glDisable(GL_STENCIL_TEST);
     glDepthMask(GL_TRUE);
@@ -362,7 +362,7 @@ void VolumeRenderer_FacesSlim::renderGui() {
             reloadResolveShader();
             reRender = true;
         }
-        reRender = renderGuiLoG() || reRender;
+        reRender = renderGuiEdgeDetection() || reRender;
     }
     ImGui::End();
 }

@@ -33,7 +33,7 @@
 #include <Graphics/OpenGL/TimerGL.hpp>
 
 #include "Mesh/HexMesh/Renderers/Widgets/SingularEdgeColorMapWidget.hpp"
-#include "LoG/LaplacianOfGaussianRenderer.hpp"
+#include "EdgeDetection/EdgeDetectionRenderer.hpp"
 #include "ClearViewRenderer.hpp"
 
 /**
@@ -48,7 +48,7 @@
  * Computer Graphics and Visualization Group, Technical University Munich, Germany
  * https://www.in.tum.de/cg/research/publications/2006/clearview-an-interactive-context-preserving-hotspot-visualization-technique/
  */
-class ClearViewRenderer_FacesUnified : public ClearViewRenderer, protected LaplacianOfGaussianRenderer {
+class ClearViewRenderer_FacesUnified : public ClearViewRenderer, protected EdgeDetectionRenderer {
 public:
     ClearViewRenderer_FacesUnified(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~ClearViewRenderer_FacesUnified();

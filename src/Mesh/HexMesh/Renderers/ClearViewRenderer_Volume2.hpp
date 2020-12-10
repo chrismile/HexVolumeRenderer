@@ -31,11 +31,8 @@
 
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
-#include "ClearViewRenderer.hpp"
-
-#include <Graphics/Shader/ShaderAttributes.hpp>
-
 #include "Mesh/HexMesh/Renderers/Widgets/SingularEdgeColorMapWidget.hpp"
+#include "EdgeDetection/EdgeDetectionRenderer.hpp"
 #include "ClearViewRenderer.hpp"
 
 /**
@@ -50,7 +47,7 @@
  * Computer Graphics and Visualization Group, Technical University Munich, Germany
  * https://www.in.tum.de/cg/research/publications/2006/clearview-an-interactive-context-preserving-hotspot-visualization-technique/
  */
-class ClearViewRenderer_Volume2 : public ClearViewRenderer {
+class ClearViewRenderer_Volume2 : public ClearViewRenderer, protected EdgeDetectionRenderer {
 public:
     ClearViewRenderer_Volume2(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~ClearViewRenderer_Volume2() {}
@@ -72,14 +69,10 @@ public:
     virtual void setNewSettings(const SettingsMap& settings);
 
 protected:
-    void createWeightTextureLoG();
-    void reloadTexturesLoG();
-    void reloadModelLoG();
     void setUniformData();
     void clear();
     void gather();
     void resolve();
-    void renderLaplacianOfGaussianContours();
     void childClassRenderGuiBegin();
     void childClassRenderGuiEnd();
 
@@ -107,21 +100,6 @@ protected:
     sgl::ShaderAttributesPtr blitRenderData;
     sgl::ShaderAttributesPtr clearRenderData;
 
-    // Rendering data for the LoG (Laplacian of Gaussian).
-    sgl::ShaderProgramPtr shaderFullScreenBlitLoG;
-    sgl::ShaderProgramPtr colorTextureShaderLoG;
-    sgl::ShaderProgramPtr depthTextureShaderLoG;
-    sgl::ShaderProgramPtr meshShaderLoG;
-    sgl::ShaderAttributesPtr meshShaderAttributesLoG;
-    sgl::ShaderAttributesPtr shaderAttributesFullScreenBlitLoG;
-    sgl::ShaderAttributesPtr shaderAttributesLoG;
-    sgl::FramebufferObjectPtr framebufferLoG;
-    sgl::TexturePtr imageTextureLoG;
-    sgl::TexturePtr depthStencilTextureLoG;
-    sgl::TexturePtr weightTextureLoG;
-    glm::ivec2 weightTextureSize = glm::ivec2(5, 5);
-    const float rhoLoG = 1.0f;
-
     // Window data.
     const float screenSpaceLensPixelRadiusWindowFactor = 0.25f;
     int windowWidth = 0;
@@ -141,17 +119,9 @@ protected:
     bool accentuateAllEdges = true;
     bool useSingularEdgeColorMap = false;
     bool usePerLineAttributes = true;
-    enum OutlineMode {
-        OUTLINE_MODE_NONE, OUTLINE_MODE_DEPTH, OUTLINE_MODE_STENCIL
-    };
-    const char *const OUTLINE_MODE_NAMES[3] = {
-            "None", "Depth", "Stencil"
-    };
-    const int NUM_OUTLINE_MODES = ((int)(sizeof(OUTLINE_MODE_NAMES) / sizeof(*OUTLINE_MODE_NAMES)));
     bool highlightEdges = true;
     bool highlightLowLodEdges = true;
     bool highlightSingularEdges = true;
-    OutlineMode outlineMode = OUTLINE_MODE_DEPTH;
 };
 
 #endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_VOLUME2_HPP

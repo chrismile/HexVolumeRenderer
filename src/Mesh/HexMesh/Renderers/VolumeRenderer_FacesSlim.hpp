@@ -34,7 +34,7 @@
 
 #include "PPLL/PerPixelLinkedList.hpp"
 #include "HexahedralMeshRenderer.hpp"
-#include "LoG/LaplacianOfGaussianRenderer.hpp"
+#include "EdgeDetection/EdgeDetectionRenderer.hpp"
 
 /**
  * Renders all faces with transparency values determined by the transfer function set by the user.
@@ -48,7 +48,7 @@
  * doi: 10.1109/TVCG.2020.2975795
  * URL: http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9007507&isnumber=4359476
  */
-class VolumeRenderer_FacesSlim : public HexahedralMeshRenderer, protected LaplacianOfGaussianRenderer {
+class VolumeRenderer_FacesSlim : public HexahedralMeshRenderer, protected EdgeDetectionRenderer {
 public:
     VolumeRenderer_FacesSlim(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~VolumeRenderer_FacesSlim() {}

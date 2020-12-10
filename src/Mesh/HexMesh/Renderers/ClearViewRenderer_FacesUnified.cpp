@@ -63,7 +63,7 @@ struct LinkedListFragmentNode {
 
 ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(
         SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
-        : ClearViewRenderer(sceneData, transferFunctionWindow), LaplacianOfGaussianRenderer(sceneData) {
+        : ClearViewRenderer(sceneData, transferFunctionWindow), EdgeDetectionRenderer(sceneData) {
     windowName = "ClearView Renderer (Unified)";
     clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED;
     useScreenSpaceLens = true;
@@ -106,7 +106,7 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(
     clearRenderData->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
-    initializeLoG();
+    initializeEdgeDetection();
     onResolutionChanged();
 }
 
@@ -348,7 +348,7 @@ void ClearViewRenderer_FacesUnified::uploadVisualizationMapping(HexMeshPtr meshI
             hexahedralCells.size()*sizeof(HexahedralCellUnified), (void*)&hexahedralCells.front(),
             sgl::SHADER_STORAGE_BUFFER);
 
-    reloadModelLoG(mesh);
+    reloadModelEdgeDetection(mesh);
 
     dirty = false;
     reRender = true;
@@ -402,7 +402,7 @@ void ClearViewRenderer_FacesUnified::onResolutionChanged() {
     atomicCounterBuffer = sgl::Renderer->createGeometryBuffer(
             sizeof(uint32_t), NULL, sgl::ATOMIC_COUNTER_BUFFER);
 
-    reloadTexturesLoG();
+    reloadTexturesEdgeDetection();
 }
 
 void ClearViewRenderer_FacesUnified::setUniformData() {
@@ -481,7 +481,7 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     resolveShader->setUniform("viewportW", width);
     clearShader->setUniform("viewportW", width);
 
-    setUniformDataLoG();
+    setUniformDataEdgeDetection();
 }
 
 void ClearViewRenderer_FacesUnified::clear() {
@@ -578,7 +578,7 @@ void ClearViewRenderer_FacesUnified::resolve() {
     sgl::Renderer->render(blitRenderData);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    renderLoGContours();
+    renderEdgeDetectionContours();
 
     glDisable(GL_STENCIL_TEST);
     glDepthMask(GL_TRUE);
@@ -635,7 +635,7 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
         reloadGatherShader(true);
         reRender = true;
     }
-    reRender = renderGuiLoG() || reRender;
+    reRender = renderGuiEdgeDetection() || reRender;
     if (ImGui::Combo(
             "Sorting Mode", (int*)&sortingAlgorithmMode, SORTING_MODE_NAMES, NUM_SORTING_MODES)) {
         setSortingAlgorithmDefine();

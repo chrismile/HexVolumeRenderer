@@ -76,7 +76,7 @@ void main() {
             accumulatedDepth += weight * linearDepth;
         }
     }
-    fragColor = vec4(vec3(1.0) - clearColor.rgb, smoothstep(0.005, 0.006, accumulatedDepth) * 0.5);
+    fragColor = vec4(vec3(1.0) - clearColor.rgb, smoothstep(0.005, 0.006, abs(accumulatedDepth)) * 0.5);
     if (fragColor.a < 1e-4) {
         discard;
     }
@@ -162,7 +162,7 @@ void main() {
             accumulatedNormal += weight * normal;
         }
     }
-    float depthFactor = smoothstep(0.005, 0.006, accumulatedDepth);
+    float depthFactor = smoothstep(0.005, 0.006, abs(accumulatedDepth));
     float accumulatedNormalLength = length(accumulatedNormal);
     float normalFactor = smoothstep(0.18, 0.19, accumulatedNormalLength);
     fragColor = vec4(vec3(1.0) - clearColor.rgb, max(depthFactor, normalFactor) * 0.5);

@@ -26,8 +26,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_LAPLACIANOFGAUSSIANRENDERER_HPP
-#define HEXVOLUMERENDERER_LAPLACIANOFGAUSSIANRENDERER_HPP
+#ifndef HEXVOLUMERENDERER_EDGEDETECTIONRENDERER_HPP
+#define HEXVOLUMERENDERER_EDGEDETECTIONRENDERER_HPP
 
 #include <Graphics/Texture/Texture.hpp>
 #include <Graphics/Buffers/FBO.hpp>
@@ -36,45 +36,47 @@
 #include "Mesh/HexMesh/HexMesh.hpp"
 #include "../SceneData.hpp"
 
-class LaplacianOfGaussianRenderer {
+class EdgeDetectionRenderer {
 protected:
-    LaplacianOfGaussianRenderer(SceneData &sceneData, bool useSlimMeshData = false)
-            : sceneDataLoG(sceneData), useSlimMeshData(useSlimMeshData) {}
+    EdgeDetectionRenderer(SceneData &sceneData, bool useSlimMeshData = false)
+            : sceneDataEdgeDetection(sceneData), useSlimMeshData(useSlimMeshData) {}
 
     // Initialization & loading.
-    void initializeLoG();
-    void createWeightTextureLoG();
-    void reloadTexturesLoG();
-    void reloadModelLoG(HexMeshPtr& mesh);
+    void initializeEdgeDetection();
+    void createWeightTextureEdgeDetection();
+    void reloadTexturesEdgeDetection();
+    void reloadModelEdgeDetection(HexMeshPtr& mesh);
 
     // Rendering.
-    void setUniformDataLoG();
-    void renderLoGContours();
-    bool renderGuiLoG();
+    void setUniformDataEdgeDetection();
+    void renderEdgeDetectionContours();
+    bool renderGuiEdgeDetection();
 
-    SceneData& sceneDataLoG;
-    HexMeshPtr meshLoG;
+    SceneData& sceneDataEdgeDetection;
+    HexMeshPtr meshEdgeDetection;
     bool useSlimMeshData;
 
-    // Rendering data for the LoG (Laplacian of Gaussian).
-    sgl::ShaderProgramPtr shaderFullScreenBlitLoG;
-    sgl::ShaderProgramPtr colorTextureShaderLoG;
-    sgl::ShaderProgramPtr depthTextureShaderLoG;
-    sgl::ShaderProgramPtr normalTextureShaderLoG;
-    sgl::ShaderProgramPtr depthNormalTextureShaderLoG;
-    sgl::ShaderProgramPtr meshShaderLoG;
-    sgl::ShaderProgramPtr meshShaderNormalLoG;
-    sgl::ShaderAttributesPtr meshShaderAttributesLoG;
-    sgl::ShaderAttributesPtr meshShaderNormalAttributesLoG;
-    sgl::ShaderAttributesPtr shaderAttributesFullScreenBlitLoG;
-    sgl::ShaderAttributesPtr shaderAttributesLoG;
-    sgl::FramebufferObjectPtr framebufferLoG;
-    sgl::TexturePtr imageTextureLoG;
-    sgl::TexturePtr normalTextureLoG;
-    sgl::TexturePtr depthStencilTextureLoG;
-    sgl::TexturePtr weightTextureLoG;
-    glm::ivec2 weightTextureSize = glm::ivec2(5, 5);
-    const float rhoLoG = 1.0f;
+    // Rendering data for the EdgeDetection (Laplacian of Gaussian).
+    sgl::ShaderProgramPtr shaderFullScreenBlitEdgeDetection;
+    sgl::ShaderProgramPtr colorTextureShaderEdgeDetection;
+    sgl::ShaderProgramPtr depthTextureShaderEdgeDetection;
+    sgl::ShaderProgramPtr normalTextureShaderEdgeDetection;
+    sgl::ShaderProgramPtr depthNormalTextureShaderEdgeDetection;
+    sgl::ShaderProgramPtr meshShaderEdgeDetection;
+    sgl::ShaderProgramPtr meshShaderNormalEdgeDetection;
+    sgl::ShaderAttributesPtr meshShaderAttributesEdgeDetection;
+    sgl::ShaderAttributesPtr meshShaderNormalAttributesEdgeDetection;
+    sgl::ShaderAttributesPtr shaderAttributesFullScreenBlitEdgeDetection;
+    sgl::ShaderAttributesPtr shaderAttributesEdgeDetection;
+    sgl::FramebufferObjectPtr framebufferEdgeDetection;
+    sgl::TexturePtr imageTextureEdgeDetection;
+    sgl::TexturePtr normalTextureEdgeDetection;
+    sgl::TexturePtr depthStencilTextureEdgeDetection;
+    sgl::TexturePtr weightTextureEdgeDetection;
+    bool useLoG;
+    glm::ivec2 weightTextureSize = glm::ivec2(3, 3);
+    //glm::ivec2 weightTextureSize = glm::ivec2(5, 5);
+    const float rhoEdgeDetection = 1.0f;
 
     // GUI data.
     enum OutlineMode {
@@ -88,4 +90,4 @@ protected:
 };
 
 
-#endif //HEXVOLUMERENDERER_LAPLACIANOFGAUSSIANRENDERER_HPP
+#endif //HEXVOLUMERENDERER_EDGEDETECTIONRENDERER_HPP
