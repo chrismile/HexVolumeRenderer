@@ -60,12 +60,17 @@ protected:
     sgl::ShaderProgramPtr shaderFullScreenBlitLoG;
     sgl::ShaderProgramPtr colorTextureShaderLoG;
     sgl::ShaderProgramPtr depthTextureShaderLoG;
+    sgl::ShaderProgramPtr normalTextureShaderLoG;
+    sgl::ShaderProgramPtr depthNormalTextureShaderLoG;
     sgl::ShaderProgramPtr meshShaderLoG;
+    sgl::ShaderProgramPtr meshShaderNormalLoG;
     sgl::ShaderAttributesPtr meshShaderAttributesLoG;
+    sgl::ShaderAttributesPtr meshShaderNormalAttributesLoG;
     sgl::ShaderAttributesPtr shaderAttributesFullScreenBlitLoG;
     sgl::ShaderAttributesPtr shaderAttributesLoG;
     sgl::FramebufferObjectPtr framebufferLoG;
     sgl::TexturePtr imageTextureLoG;
+    sgl::TexturePtr normalTextureLoG;
     sgl::TexturePtr depthStencilTextureLoG;
     sgl::TexturePtr weightTextureLoG;
     glm::ivec2 weightTextureSize = glm::ivec2(5, 5);
@@ -73,10 +78,10 @@ protected:
 
     // GUI data.
     enum OutlineMode {
-        OUTLINE_MODE_NONE, OUTLINE_MODE_DEPTH, OUTLINE_MODE_STENCIL
+        OUTLINE_MODE_NONE, OUTLINE_MODE_DEPTH, OUTLINE_MODE_NORMAL, OUTLINE_MODE_DEPTH_NORMAL, OUTLINE_MODE_STENCIL
     };
-    const char *const OUTLINE_MODE_NAMES[3] = {
-            "None", "Depth", "Stencil"
+    const char* const OUTLINE_MODE_NAMES[5] = {
+            "None", "Depth", "Normal", "Depth + Normal", "Stencil"
     };
     const int NUM_OUTLINE_MODES = ((int)(sizeof(OUTLINE_MODE_NAMES) / sizeof(*OUTLINE_MODE_NAMES)));
     OutlineMode outlineMode = OUTLINE_MODE_DEPTH;

@@ -4,7 +4,7 @@
 out vec4 fragColor;
 
 void gatherFragment(vec4 color) {
-    if (color.a < 0.001) {
+    if (color.a < 1e-4) {
 #ifndef GATHER_NO_DISCARD
         discard;
 #else
@@ -31,7 +31,7 @@ void gatherFragment(vec4 color) {
 }
 
 void gatherFragmentCustomDepth(vec4 color, float depth) {
-    if (color.a < 0.001) {
+    if (color.a < 1e-4) {
 #ifndef GATHER_NO_DISCARD
         discard;
 #else

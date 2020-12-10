@@ -45,8 +45,14 @@ void LaplacianOfGaussianRenderer::initializeLoG() {
             {"LaplacianOfGaussian.Vertex", "LaplacianOfGaussian.Fragment.ColorTexture"});
     depthTextureShaderLoG = sgl::ShaderManager->getShaderProgram(
             {"LaplacianOfGaussian.Vertex", "LaplacianOfGaussian.Fragment.DepthTexture"});
+    normalTextureShaderLoG = sgl::ShaderManager->getShaderProgram(
+            {"LaplacianOfGaussian.Vertex", "LaplacianOfGaussian.Fragment.NormalTexture"});
+    depthNormalTextureShaderLoG = sgl::ShaderManager->getShaderProgram(
+            {"LaplacianOfGaussian.Vertex", "LaplacianOfGaussian.Fragment.DepthNormalTexture"});
     meshShaderLoG = sgl::ShaderManager->getShaderProgram(
-            {"Mesh.Vertex.Plain", "Mesh.Fragment.Plain"});
+            {"MeshLoG.Vertex.Plain", "MeshLoG.Fragment.Plain"});
+    meshShaderNormalLoG = sgl::ShaderManager->getShaderProgram(
+            {"MeshLoG.Vertex.PlainNormal", "MeshLoG.Fragment.PlainNormal"});
 
     std::vector<glm::vec3> fullscreenQuad{
             glm::vec3(1,1,0), glm::vec3(-1,-1,0), glm::vec3(1,-1,0),
@@ -60,6 +66,10 @@ void LaplacianOfGaussianRenderer::initializeLoG() {
 
     if (outlineMode == OUTLINE_MODE_DEPTH) {
         shaderAttributesLoG = sgl::ShaderManager->createShaderAttributes(depthTextureShaderLoG);
+    } else if (outlineMode == OUTLINE_MODE_DEPTH) {
+        shaderAttributesLoG = sgl::ShaderManager->createShaderAttributes(normalTextureShaderLoG);
+    } else if (outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
+        shaderAttributesLoG = sgl::ShaderManager->createShaderAttributes(depthNormalTextureShaderLoG);
     } else if (outlineMode == OUTLINE_MODE_STENCIL) {
         shaderAttributesLoG = sgl::ShaderManager->createShaderAttributes(colorTextureShaderLoG);
     }
@@ -74,31 +84,30 @@ void LaplacianOfGaussianRenderer::reloadTexturesLoG() {
     int width = window->getWidth();
     int height = window->getHeight();
 
-    // Create the data for the LoG convolution.
-    if (outlineMode == OUTLINE_MODE_DEPTH) {
-        framebufferLoG = sgl::Renderer->createFBO();
-        sgl::TextureSettings textureSettings;
-        /*if (useLinearRGB) {
-            textureSettings.internalFormat = GL_RGBA16;
-        } else {*/
-        textureSettings.internalFormat = GL_RGBA8;
-        //}
-        textureSettings.pixelType = GL_UNSIGNED_BYTE;
-        textureSettings.pixelFormat = GL_RGB;
-        imageTextureLoG = sgl::TextureManager->createEmptyTexture(width, height, textureSettings);
-        framebufferLoG->bindTexture(sceneDataLoG.sceneTexture);
+    imageTextureLoG = sgl::TexturePtr();
+    normalTextureLoG = sgl::TexturePtr();
+    depthStencilTextureLoG = sgl::TexturePtr();
 
+    framebufferLoG = sgl::Renderer->createFBO();
+    if (outlineMode == OUTLINE_MODE_DEPTH || outlineMode == OUTLINE_MODE_NORMAL
+            || outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
         depthStencilTextureLoG = sgl::TextureManager->createDepthStencilTexture(width, height, sgl::DEPTH24_STENCIL8);
         depthStencilTextureLoG->setDepthStencilComponentMode(sgl::DEPTH_STENCIL_TEXTURE_MODE_DEPTH_COMPONENT);
         framebufferLoG->bindTexture(depthStencilTextureLoG, sgl::DEPTH_STENCIL_ATTACHMENT);
-    } else if (outlineMode == OUTLINE_MODE_STENCIL) {
-        framebufferLoG = sgl::Renderer->createFBO();
+    }
+
+    if (outlineMode == OUTLINE_MODE_NORMAL || outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
+        sgl::TextureSettings textureSettingsNormal;
+        textureSettingsNormal.internalFormat = GL_RGB32F; // TODO: Compress.
+        textureSettingsNormal.pixelType = GL_FLOAT;
+        textureSettingsNormal.pixelFormat = GL_RGB;
+        normalTextureLoG = sgl::TextureManager->createEmptyTexture(width, height, textureSettingsNormal);
+        framebufferLoG->bindTexture(normalTextureLoG, sgl::COLOR_ATTACHMENT0);
+    }
+
+    if (outlineMode == OUTLINE_MODE_STENCIL) {
         sgl::TextureSettings textureSettings;
-        /*if (useLinearRGB) {
-            textureSettings.internalFormat = GL_RGBA16;
-        } else {*/
         textureSettings.internalFormat = GL_RGBA8;
-        //}
         textureSettings.pixelType = GL_UNSIGNED_BYTE;
         textureSettings.pixelFormat = GL_RGB;
         imageTextureLoG = sgl::TextureManager->createEmptyTexture(width, height, textureSettings);
@@ -121,18 +130,24 @@ void LaplacianOfGaussianRenderer::reloadModelLoG(HexMeshPtr& mesh) {
         mesh->getSurfaceData_Slim(triangleIndices, vertexPositions);
     }
 
-    meshShaderAttributesLoG = sgl::ShaderManager->createShaderAttributes(meshShaderLoG);
-    meshShaderAttributesLoG->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
-
-    // Add the index buffer.
+    // Create the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
             sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
-    meshShaderAttributesLoG->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
-    // Add the position buffer.
+    // Create the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
             vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
+
+    meshShaderAttributesLoG = sgl::ShaderManager->createShaderAttributes(meshShaderLoG);
+    meshShaderAttributesLoG->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
+    meshShaderAttributesLoG->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
     meshShaderAttributesLoG->addGeometryBuffer(
+            positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+
+    meshShaderNormalAttributesLoG = sgl::ShaderManager->createShaderAttributes(meshShaderNormalLoG);
+    meshShaderNormalAttributesLoG->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
+    meshShaderNormalAttributesLoG->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
+    meshShaderNormalAttributesLoG->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 }
 
@@ -189,43 +204,67 @@ void LaplacianOfGaussianRenderer::setUniformDataLoG() {
     int width = window->getWidth();
     int height = window->getHeight();
 
+    sgl::ShaderProgram* shaderProgramLoG = shaderAttributesLoG->getShaderProgram();
+
     shaderFullScreenBlitLoG->setUniform("color", sgl::Color(255, 255, 255));
-    shaderAttributesLoG->getShaderProgram()->setUniform("clearColor", sceneDataLoG.clearColor);
-    if (shaderAttributesLoG->getShaderProgram()->hasUniform("weightTexture")) {
-        shaderAttributesLoG->getShaderProgram()->setUniform("weightTexture", weightTextureLoG, 3);
+    shaderProgramLoG->setUniform("clearColor", sceneDataLoG.clearColor);
+    if (shaderProgramLoG->hasUniform("weightTexture")) {
+        shaderProgramLoG->setUniform("weightTexture", weightTextureLoG, 2);
     }
-    shaderAttributesLoG->getShaderProgram()->setUniform(
-            "weightTextureSize", glm::ivec2(weightTextureSize.x, weightTextureSize.y));
-    if (outlineMode == OUTLINE_MODE_DEPTH) {
-        depthTextureShaderLoG->setUniform("depthTexture", depthStencilTextureLoG, 2);
-        depthTextureShaderLoG->setUniform("depthTextureSize", glm::ivec2(width, height));
-        depthTextureShaderLoG->setUniform("zNear", sceneDataLoG.camera->getNearClipDistance());
-        depthTextureShaderLoG->setUniform("zFar", sceneDataLoG.camera->getFarClipDistance());
-    } else if (outlineMode == OUTLINE_MODE_STENCIL) {
-        colorTextureShaderLoG->setUniform("imageTexture", imageTextureLoG, 2);
-        colorTextureShaderLoG->setUniform("imageTextureSize", glm::ivec2(width, height));
+    shaderProgramLoG->setUniform("weightTextureSize", glm::ivec2(weightTextureSize.x, weightTextureSize.y));
+    if (outlineMode == OUTLINE_MODE_DEPTH || outlineMode == OUTLINE_MODE_NORMAL
+            || outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
+        shaderProgramLoG->setUniform("viewportSize", glm::ivec2(width, height));
+    }
+    if (outlineMode == OUTLINE_MODE_DEPTH || outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
+        shaderProgramLoG->setUniform("depthTexture", depthStencilTextureLoG, 3);
+        shaderProgramLoG->setUniform("zNear", sceneDataLoG.camera->getNearClipDistance());
+        shaderProgramLoG->setUniform("zFar", sceneDataLoG.camera->getFarClipDistance());
+    }
+    if (outlineMode == OUTLINE_MODE_NORMAL || outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
+        shaderProgramLoG->setUniform("normalTexture", normalTextureLoG, 4);
+    }
+    if (outlineMode == OUTLINE_MODE_STENCIL) {
+        shaderProgramLoG->setUniform("imageTexture", imageTextureLoG, 3);
+        shaderProgramLoG->setUniform("imageTextureSize", glm::ivec2(width, height));
     }
 }
 
 void LaplacianOfGaussianRenderer::renderLoGContours() {
-    if (outlineMode == OUTLINE_MODE_DEPTH) {
+    if (outlineMode == OUTLINE_MODE_DEPTH || outlineMode == OUTLINE_MODE_NORMAL
+            || outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
         sgl::Renderer->setProjectionMatrix(sceneDataLoG.camera->getProjectionMatrix());
         sgl::Renderer->setViewMatrix(sceneDataLoG.camera->getViewMatrix());
         sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
         sgl::Renderer->bindFBO(framebufferLoG);
-        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        if (outlineMode != OUTLINE_MODE_NORMAL && outlineMode != OUTLINE_MODE_DEPTH_NORMAL) {
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        }
         glDisable(GL_STENCIL_TEST);
         glDepthMask(GL_TRUE);
         glEnable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
-        sgl::Renderer->clearFramebuffer(GL_DEPTH_BUFFER_BIT);
-        sgl::Renderer->render(meshShaderAttributesLoG);
+        //glDisable(GL_CULL_FACE);
+        unsigned int bits = GL_DEPTH_BUFFER_BIT;
+        if (outlineMode == OUTLINE_MODE_NORMAL || outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
+            // TODO
+            bits = bits | GL_COLOR_BUFFER_BIT;
+        }
+        sgl::Renderer->clearFramebuffer(bits, sgl::Color(255, 255, 255));
+        glDisable(GL_BLEND);
+        if (outlineMode == OUTLINE_MODE_NORMAL || outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
+            sgl::Renderer->render(meshShaderNormalAttributesLoG);
+        } else {
+            sgl::Renderer->render(meshShaderAttributesLoG);
+        }
+        glEnable(GL_BLEND);
 
         sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
         sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
         sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glEnable(GL_CULL_FACE);
+        if (outlineMode != OUTLINE_MODE_NORMAL && outlineMode != OUTLINE_MODE_DEPTH_NORMAL) {
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        }
+        //glEnable(GL_CULL_FACE);
         sgl::Renderer->bindFBO(sceneDataLoG.framebuffer);
         sgl::Renderer->render(shaderAttributesLoG);
         glDisable(GL_DEPTH_TEST);
@@ -248,6 +287,10 @@ bool LaplacianOfGaussianRenderer::renderGuiLoG() {
         if (outlineMode != OUTLINE_MODE_NONE) {
             if (outlineMode == OUTLINE_MODE_DEPTH) {
                 shaderAttributesLoG = shaderAttributesLoG->copy(depthTextureShaderLoG);
+            } else if (outlineMode == OUTLINE_MODE_NORMAL) {
+                shaderAttributesLoG = shaderAttributesLoG->copy(normalTextureShaderLoG);
+            } else if (outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
+                shaderAttributesLoG = shaderAttributesLoG->copy(depthNormalTextureShaderLoG);
             } else if (outlineMode == OUTLINE_MODE_STENCIL) {
                 shaderAttributesLoG = shaderAttributesLoG->copy(colorTextureShaderLoG);
             }

@@ -22,7 +22,6 @@ void main()
 }
 
 
-
 -- Vertex.Textured
 
 #version 430 core
