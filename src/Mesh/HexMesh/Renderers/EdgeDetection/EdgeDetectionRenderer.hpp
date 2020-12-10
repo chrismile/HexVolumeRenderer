@@ -73,9 +73,8 @@ protected:
     sgl::TexturePtr normalTextureEdgeDetection;
     sgl::TexturePtr depthStencilTextureEdgeDetection;
     sgl::TexturePtr weightTextureEdgeDetection;
-    bool useLoG;
-    glm::ivec2 weightTextureSize = glm::ivec2(3, 3);
-    //glm::ivec2 weightTextureSize = glm::ivec2(5, 5);
+    bool useLoG = false;
+    glm::ivec2 weightTextureSize;
     const float rhoEdgeDetection = 1.0f;
 
     // GUI data.

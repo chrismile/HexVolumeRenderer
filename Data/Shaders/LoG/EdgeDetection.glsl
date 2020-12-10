@@ -112,12 +112,7 @@ void main() {
         }
     }
     float accumulatedNormalLength = length(accumulatedNormal);
-    //float accumulatedNormalLength = abs(accumulatedNormal.x) + abs(accumulatedNormal.y) + abs(accumulatedNormal.z);
-    //float accumulatedNormalLength = accumulatedNormal.x + accumulatedNormal.y + accumulatedNormal.z;
-    //float accumulatedNormalLength = abs(accumulatedNormal.x + accumulatedNormal.y + accumulatedNormal.z);
-    //fragColor = vec4(vec3(1.0) - clearColor.rgb, smoothstep(0.25, 0.3, accumulatedNormalLength) * 0.5);
-    fragColor = vec4(vec3(1.0) - clearColor.rgb, smoothstep(0.18, 0.19, accumulatedNormalLength) * 0.5);
-    //fragColor = vec4(vec3(abs(accumulatedNormalLength)), 1.0);
+    fragColor = vec4(vec3(1.0) - clearColor.rgb, smoothstep(0.2, 0.35, accumulatedNormalLength) * 0.5);
     if (fragColor.a < 1e-4) {
         discard;
     }
@@ -164,7 +159,7 @@ void main() {
     }
     float depthFactor = smoothstep(0.005, 0.006, abs(accumulatedDepth));
     float accumulatedNormalLength = length(accumulatedNormal);
-    float normalFactor = smoothstep(0.18, 0.19, accumulatedNormalLength);
+    float normalFactor = smoothstep(0.2, 0.35, accumulatedNormalLength);
     fragColor = vec4(vec3(1.0) - clearColor.rgb, max(depthFactor, normalFactor) * 0.5);
     if (fragColor.a < 1e-4) {
         discard;
