@@ -73,7 +73,7 @@ protected:
     sgl::TexturePtr normalTextureEdgeDetection;
     sgl::TexturePtr depthStencilTextureEdgeDetection;
     sgl::TexturePtr weightTextureEdgeDetection;
-    bool useLoG = false;
+    bool useLoG = false; ///< Use Laplacian of Gaussian (LoG) or isotropic Laplacian filter?
     glm::ivec2 weightTextureSize;
     const float rhoEdgeDetection = 1.0f;
 

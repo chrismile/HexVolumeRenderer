@@ -183,6 +183,8 @@ void EdgeDetectionRenderer::createWeightTextureEdgeDetection() {
             }
         }
     } else {
+        // Pre-defined isotropic Laplacian filter.
+        // Cf. http://sepwww.stanford.edu/public/docs/sep95/sergey2/paper_html/node12.html
         float textureDataLaplacian[] = {
                 0.25, 0.5, 0.25,
                 0.25, -1., 0.25,
