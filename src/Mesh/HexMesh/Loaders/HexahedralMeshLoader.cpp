@@ -32,6 +32,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include <Utils/File/Logfile.hpp>
+#include <Utils/File/FileLoader.hpp>
 #include <Utils/Convert.hpp>
 
 /**
@@ -73,29 +74,14 @@ void splitStringByWhitespaceChars(const std::string& inputString, std::vector<st
 bool readFileLineByLine(
         const std::string& filename,
         std::function<bool(const std::string&, const std::vector<std::string>&)> readLineCallback) {
-    FILE* file = fopen64(filename.c_str(), "r");
-    if (!file) {
-        sgl::Logfile::get()->writeError(
-                std::string() + "Error in readFileLineByLine: File \"" + filename + "\" does not exist.");
+    uint8_t* buffer = nullptr;
+    size_t length = 0;
+    bool loaded = sgl::loadFileFromSource(filename, buffer, length, false);
+    if (!loaded) {
         return false;
     }
-#if defined(_WIN32) && !defined(__MINGW32__)
-    _fseeki64(file, 0, SEEK_END);
-    size_t length = _ftelli64(file);
-    _fseeki64(file, 0, SEEK_SET);
-#else
-    fseeko(file, 0, SEEK_END);
-    size_t length = ftello(file);
-    fseeko(file, 0, SEEK_SET);
-#endif
+    char* fileBuffer = reinterpret_cast<char*>(buffer);
 
-    /**
-     * Read the whole file at once. It might be a good improvement to use memory-mapped files or buffered reading, so
-     * files don't need to fit into memory at once.
-     */
-    char* fileBuffer = new char[length];
-    bool readSuccessful = fread(fileBuffer, 1, length, file);
-    fclose(file);
     std::string lineBuffer;
     std::string numberString;
     std::vector<std::string> lineWords;
@@ -133,7 +119,8 @@ bool readFileLineByLine(
         lineWords.clear();
     }
 
-    delete[] fileBuffer;
+    delete[] buffer;
+    buffer = nullptr;
 
     return true;
 }

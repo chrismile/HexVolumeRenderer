@@ -291,13 +291,19 @@ void HexMesh::computeBaseComplexMeshFrame() {
 
 
 void HexMesh::updateVertexPositions(const std::vector<glm::vec3>& vertices) {
-    // Update the base-complex mesh.
-    for (size_t i = 0; i < vertices.size(); i++) {
-        Hybrid_V& v = mesh->Vs.at(i);
-        const glm::vec3& vertPos = vertices.at(i);
-        for (int j = 0; j < 3; j++) {
-            mesh->V(j, v.id) = vertPos[j];
+    if (mesh) {
+        // Update the base-complex mesh.
+        for (size_t i = 0; i < vertices.size(); i++) {
+            Hybrid_V& v = mesh->Vs.at(i);
+            const glm::vec3& vertPos = vertices.at(i);
+            for (int j = 0; j < 3; j++) {
+                mesh->V(j, v.id) = vertPos[j];
+            }
         }
+    }
+
+    for (size_t i = 0; i < vertices.size(); i++) {
+        this->vertices.at(i) = vertices.at(i);
     }
 
     setQualityMeasure(qualityMeasure);

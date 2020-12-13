@@ -39,26 +39,19 @@
 #include "EdgeDetectionRenderer.hpp"
 
 void EdgeDetectionRenderer::initializeEdgeDetection() {
-    if (useLoG) {
-        weightTextureSize = glm::ivec2(5, 5);
-    } else {
-        weightTextureSize = glm::ivec2(3, 3);
-    }
+    weightTextureSize = glm::ivec2(5, 5);
+
+    noiseReduction.initialize(true);
 
     shaderFullScreenBlitEdgeDetection = sgl::ShaderManager->getShaderProgram(
             {"Mesh.Vertex.Plain", "Mesh.Fragment.Plain"});
-    colorTextureShaderEdgeDetection = sgl::ShaderManager->getShaderProgram(
-            {"EdgeDetection.Vertex", "EdgeDetection.Fragment.ColorTexture"});
-    depthTextureShaderEdgeDetection = sgl::ShaderManager->getShaderProgram(
-            {"EdgeDetection.Vertex", "EdgeDetection.Fragment.DepthTexture"});
-    normalTextureShaderEdgeDetection = sgl::ShaderManager->getShaderProgram(
-            {"EdgeDetection.Vertex", "EdgeDetection.Fragment.NormalTexture"});
-    depthNormalTextureShaderEdgeDetection = sgl::ShaderManager->getShaderProgram(
-            {"EdgeDetection.Vertex", "EdgeDetection.Fragment.DepthNormalTexture"});
     meshShaderEdgeDetection = sgl::ShaderManager->getShaderProgram(
             {"MeshEdgeDetection.Vertex.Plain", "MeshEdgeDetection.Fragment.Plain"});
     meshShaderNormalEdgeDetection = sgl::ShaderManager->getShaderProgram(
             {"MeshEdgeDetection.Vertex.PlainNormal", "MeshEdgeDetection.Fragment.PlainNormal"});
+    directBlitShader = sgl::ShaderManager->getShaderProgram(
+            {"BlitEdgeDetection.Vertex", "BlitEdgeDetection.Fragment"});
+    reloadModelEdgeDetectionShader();
 
     std::vector<glm::vec3> fullscreenQuad{
             glm::vec3(1,1,0), glm::vec3(-1,-1,0), glm::vec3(1,-1,0),
@@ -71,23 +64,64 @@ void EdgeDetectionRenderer::initializeEdgeDetection() {
     shaderAttributesFullScreenBlitEdgeDetection->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
-    if (outlineMode == OUTLINE_MODE_DEPTH) {
-        shaderAttributesEdgeDetection = sgl::ShaderManager->createShaderAttributes(
-                depthTextureShaderEdgeDetection);
-    } else if (outlineMode == OUTLINE_MODE_DEPTH) {
-        shaderAttributesEdgeDetection = sgl::ShaderManager->createShaderAttributes(
-                normalTextureShaderEdgeDetection);
-    } else if (outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
-        shaderAttributesEdgeDetection = sgl::ShaderManager->createShaderAttributes(
-                depthNormalTextureShaderEdgeDetection);
-    } else if (outlineMode == OUTLINE_MODE_STENCIL) {
-        shaderAttributesEdgeDetection = sgl::ShaderManager->createShaderAttributes(
-                colorTextureShaderEdgeDetection);
-    }
+    directBlitShaderAttributes = sgl::ShaderManager->createShaderAttributes(directBlitShader);
+    directBlitShaderAttributes->addGeometryBuffer(
+            geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+
     shaderAttributesEdgeDetection->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     createWeightTextureEdgeDetection();
+}
+
+void EdgeDetectionRenderer::reloadModelEdgeDetectionShader() {
+    if (useNoiseReduction) {
+        sgl::ShaderManager->addPreprocessorDefine("DIRECT_BLIT_OUTPUT", "");
+    }
+
+    sgl::ShaderManager->invalidateShaderCache();
+    colorTextureShaderEdgeDetection = sgl::ShaderManager->getShaderProgram(
+            {"EdgeDetection.Vertex", "EdgeDetection.Fragment.ColorTexture"});
+    depthTextureShaderEdgeDetection = sgl::ShaderManager->getShaderProgram(
+            {"EdgeDetection.Vertex", "EdgeDetection.Fragment.DepthTexture"});
+    normalTextureShaderEdgeDetection = sgl::ShaderManager->getShaderProgram(
+            {"EdgeDetection.Vertex", "EdgeDetection.Fragment.NormalTexture"});
+    depthNormalTextureShaderEdgeDetection = sgl::ShaderManager->getShaderProgram(
+            {"EdgeDetection.Vertex", "EdgeDetection.Fragment.DepthNormalTexture"});
+
+    if (useNoiseReduction) {
+        sgl::ShaderManager->removePreprocessorDefine("DIRECT_BLIT_OUTPUT");
+    }
+
+    if (shaderAttributesEdgeDetection) {
+        if (outlineMode == OUTLINE_MODE_DEPTH) {
+            shaderAttributesEdgeDetection = shaderAttributesEdgeDetection->copy(
+                    depthTextureShaderEdgeDetection);
+        } else if (outlineMode == OUTLINE_MODE_NORMAL) {
+            shaderAttributesEdgeDetection = shaderAttributesEdgeDetection->copy(
+                    normalTextureShaderEdgeDetection);
+        } else if (outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
+            shaderAttributesEdgeDetection = shaderAttributesEdgeDetection->copy(
+                    depthNormalTextureShaderEdgeDetection);
+        } else if (outlineMode == OUTLINE_MODE_STENCIL) {
+            shaderAttributesEdgeDetection = shaderAttributesEdgeDetection->copy(
+                    colorTextureShaderEdgeDetection);
+        }
+    } else {
+        if (outlineMode == OUTLINE_MODE_DEPTH) {
+            shaderAttributesEdgeDetection = sgl::ShaderManager->createShaderAttributes(
+                    depthTextureShaderEdgeDetection);
+        } else if (outlineMode == OUTLINE_MODE_DEPTH) {
+            shaderAttributesEdgeDetection = sgl::ShaderManager->createShaderAttributes(
+                    normalTextureShaderEdgeDetection);
+        } else if (outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
+            shaderAttributesEdgeDetection = sgl::ShaderManager->createShaderAttributes(
+                    depthNormalTextureShaderEdgeDetection);
+        } else if (outlineMode == OUTLINE_MODE_STENCIL) {
+            shaderAttributesEdgeDetection = sgl::ShaderManager->createShaderAttributes(
+                    colorTextureShaderEdgeDetection);
+        }
+    }
 }
 
 void EdgeDetectionRenderer::reloadTexturesEdgeDetection() {
@@ -187,10 +221,11 @@ void EdgeDetectionRenderer::createWeightTextureEdgeDetection() {
         // Cf. http://sepwww.stanford.edu/public/docs/sep95/sergey2/paper_html/node12.html
         float textureDataLaplacian[] = {
                 0.25, 0.5, 0.25,
-                0.25, -1., 0.25,
+                0.5, -1., 0.5,
                 0.25, 0.5, 0.25,
         };
         memcpy(textureData, textureDataLaplacian, sizeof(float) * 9);
+        weightTextureSize = glm::ivec2(3, 3);
     }
     // Normalize the kernel weights.
     const int numEntries = weightTextureSize.x * weightTextureSize.y;
@@ -234,7 +269,7 @@ void EdgeDetectionRenderer::setUniformDataEdgeDetection() {
     sgl::ShaderProgram* shaderProgramEdgeDetection = shaderAttributesEdgeDetection->getShaderProgram();
 
     shaderFullScreenBlitEdgeDetection->setUniform("color", sgl::Color(255, 255, 255));
-    shaderProgramEdgeDetection->setUniform("clearColor", sceneDataEdgeDetection.clearColor);
+    shaderProgramEdgeDetection->setUniformOptional("clearColor", sceneDataEdgeDetection.clearColor);
     if (shaderProgramEdgeDetection->hasUniform("weightTexture")) {
         shaderProgramEdgeDetection->setUniform("weightTexture", weightTextureEdgeDetection, 2);
     }
@@ -291,7 +326,6 @@ void EdgeDetectionRenderer::renderEdgeDetectionContours() {
         } else {
             sgl::Renderer->render(meshShaderAttributesEdgeDetection);
         }
-        glEnable(GL_BLEND);
 
         sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
         sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
@@ -300,9 +334,30 @@ void EdgeDetectionRenderer::renderEdgeDetectionContours() {
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         }
         //glEnable(GL_CULL_FACE);
-        sgl::Renderer->bindFBO(sceneDataEdgeDetection.framebuffer);
-        sgl::Renderer->render(shaderAttributesEdgeDetection);
-        glDisable(GL_DEPTH_TEST);
+
+        if (useNoiseReduction) {
+            sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+            int width = window->getWidth();
+            int height = window->getHeight();
+
+            glDisable(GL_DEPTH_TEST);
+            noiseReduction.bindFramebufferForRendering();
+            sgl::Renderer->render(shaderAttributesEdgeDetection);
+            noiseReduction.denoiseTexture();
+
+            glEnable(GL_BLEND);
+            sgl::Renderer->bindFBO(sceneDataEdgeDetection.framebuffer);
+            noiseReduction.getDenoisedTexture();
+            directBlitShader->setUniform("clearColor", sceneDataEdgeDetection.clearColor);
+            directBlitShader->setUniform("viewportSize", glm::ivec2(width, height));
+            directBlitShader->setUniform("textureIn", noiseReduction.getDenoisedTexture(), 0);
+            sgl::Renderer->render(directBlitShaderAttributes);
+        } else {
+            glEnable(GL_BLEND);
+            sgl::Renderer->bindFBO(sceneDataEdgeDetection.framebuffer);
+            sgl::Renderer->render(shaderAttributesEdgeDetection);
+            glDisable(GL_DEPTH_TEST);
+        }
     } else if (outlineMode == OUTLINE_MODE_STENCIL) {
         sgl::Renderer->bindFBO(framebufferEdgeDetection);
         sgl::Renderer->clearFramebuffer(GL_COLOR_BUFFER_BIT, sgl::Color(0, 0, 0));
@@ -336,6 +391,22 @@ bool EdgeDetectionRenderer::renderGuiEdgeDetection() {
             reloadTexturesEdgeDetection();
             reloadModelEdgeDetection(meshEdgeDetection);
         }
+        reRender = true;
+    }
+    if (ImGui::Checkbox("Use Laplacian of Gaussian (LoG)", &useLoG)) {
+        createWeightTextureEdgeDetection();
+        reRender = true;
+    }
+    if (useLoG && ImGui::SliderInt("Filter Size", &weightTextureSize.x, 1, 7)) {
+        weightTextureSize.y = weightTextureSize.x;
+        createWeightTextureEdgeDetection();
+        reRender = true;
+    }
+    if (outlineMode != OUTLINE_MODE_STENCIL && ImGui::Checkbox("Use Noise Reduction", &useNoiseReduction)) {
+        reloadModelEdgeDetectionShader();
+        reRender = true;
+    }
+    if (useNoiseReduction && noiseReduction.renderGui()) {
         reRender = true;
     }
     return reRender;

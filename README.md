@@ -9,13 +9,13 @@ The LOD structure discussed can be viewed with the renderer "LOD Lines (Preview,
 ## Building and running the programm
 
 The program requires the library sgl (https://github.com/chrismile/sgl).
-On Ubuntu 18.04 for example, you can install all other necessary dependencies with this command (additionally to the prerequisites required by sgl):
+On Ubuntu 20.04 for example, you can install all other necessary dependencies with this command (additionally to the prerequisites required by sgl):
 
 ```
-sudo apt-get install libjsoncpp-dev libcurl-dev libeigen3-dev liblemon-dev
+sudo apt-get install libjsoncpp-dev libcurl-dev libeigen3-dev liblemon-dev libgegl-dev
 ```
 
-After installing sgl (see above) execute in the repository directory:
+Lemon and GEGL are optional dependencies. After installing sgl (see above) execute in the repository directory:
 
 ```
 mkdir build
@@ -29,7 +29,7 @@ ln -s ../Data .
 The build process was also tested on Windows 10 64-bit using MSYS2 and Mingw-w64 (http://www.msys2.org/). Using MSYS2 and Pacman, the following packages need to be installed additionally to the prerequisites required by sgl.
 
 ```
-pacman -S mingw64/mingw-w64-x86_64-jsoncpp mingw64/mingw-w64-x86_64-curl mingw64/mingw-w64-x86_64-eigen3 mingw64/mingw-w64-x86_64-embree
+pacman -S mingw64/mingw-w64-x86_64-jsoncpp mingw64/mingw-w64-x86_64-curl mingw64/mingw-w64-x86_64-eigen3 mingw64/mingw-w64-x86_64-embree mingw64/mingw-w64-x86_64-gegl
 ```
 
 Furthermore, the graph library LEMON (http://lemon.cs.elte.hu/trac/lemon) needs to be built manually, as no msys2 package is available for it at the time of writing this README file.

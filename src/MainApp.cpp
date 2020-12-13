@@ -478,8 +478,8 @@ std::string MainApp::getSelectedMeshFilename() {
 }
 
 bool MainApp::getFileSourceContainsDeformationMeshes() {
-    return selectedFileSourceIndex == 2
-            && boost::ends_with(meshDataSetSources[selectedFileSourceIndex], "Deformation");
+    return boost::starts_with(meshDataSetSources[selectedFileSourceIndex], "00")
+            && meshDataSetSources[selectedFileSourceIndex].find("Deformation") != std::string::npos;
 }
 
 void MainApp::renderFileSelectionSettingsGui() {

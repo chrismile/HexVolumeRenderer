@@ -34,6 +34,7 @@
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
 #include "Mesh/HexMesh/HexMesh.hpp"
+#include "ImageFilters/NoiseReduction.hpp"
 #include "../SceneData.hpp"
 
 class EdgeDetectionRenderer {
@@ -52,9 +53,15 @@ protected:
     void renderEdgeDetectionContours();
     bool renderGuiEdgeDetection();
 
+private:
+    void reloadModelEdgeDetectionShader();
+
     SceneData& sceneDataEdgeDetection;
     HexMeshPtr meshEdgeDetection;
     bool useSlimMeshData;
+
+    // Noise reduction filter.
+    NoiseReduction noiseReduction;
 
     // Rendering data for the EdgeDetection (Laplacian of Gaussian).
     sgl::ShaderProgramPtr shaderFullScreenBlitEdgeDetection;
@@ -64,18 +71,21 @@ protected:
     sgl::ShaderProgramPtr depthNormalTextureShaderEdgeDetection;
     sgl::ShaderProgramPtr meshShaderEdgeDetection;
     sgl::ShaderProgramPtr meshShaderNormalEdgeDetection;
+    sgl::ShaderProgramPtr directBlitShader;
     sgl::ShaderAttributesPtr meshShaderAttributesEdgeDetection;
     sgl::ShaderAttributesPtr meshShaderNormalAttributesEdgeDetection;
     sgl::ShaderAttributesPtr shaderAttributesFullScreenBlitEdgeDetection;
     sgl::ShaderAttributesPtr shaderAttributesEdgeDetection;
+    sgl::ShaderAttributesPtr directBlitShaderAttributes;
     sgl::FramebufferObjectPtr framebufferEdgeDetection;
     sgl::TexturePtr imageTextureEdgeDetection;
     sgl::TexturePtr normalTextureEdgeDetection;
     sgl::TexturePtr depthStencilTextureEdgeDetection;
     sgl::TexturePtr weightTextureEdgeDetection;
-    bool useLoG = false; ///< Use Laplacian of Gaussian (LoG) or isotropic Laplacian filter?
     glm::ivec2 weightTextureSize;
     const float rhoEdgeDetection = 1.0f;
+    bool useLoG = false; ///< Use Laplacian of Gaussian (LoG) or isotropic Laplacian filter?
+    bool useNoiseReduction = true;
 
     // GUI data.
     enum OutlineMode {

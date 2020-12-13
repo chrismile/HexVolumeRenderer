@@ -35,7 +35,13 @@ void main() {
             color += weight * colorSample;
         }
     }
-    fragColor = vec4(vec3(1.0) - clearColor.rgb, smoothstep(0.01, 0.2, color.r) * 0.5);
+    float intensity = smoothstep(0.01, 0.2, color.r);
+
+#ifdef DIRECT_BLIT_OUTPUT
+    fragColor = vec4(intensity, intensity, intensity, 1.0);
+#else
+    fragColor = vec4(vec3(1.0) - clearColor.rgb, intensity * 0.5);
+#endif
     if (fragColor.a < 0.01) {
         discard;
     }
@@ -76,7 +82,13 @@ void main() {
             accumulatedDepth += weight * linearDepth;
         }
     }
-    fragColor = vec4(vec3(1.0) - clearColor.rgb, smoothstep(0.005, 0.006, abs(accumulatedDepth)) * 0.5);
+    float intensity = smoothstep(0.005, 0.006, abs(accumulatedDepth));
+
+#ifdef DIRECT_BLIT_OUTPUT
+    fragColor = vec4(intensity, intensity, intensity, 1.0);
+#else
+    fragColor = vec4(vec3(1.0) - clearColor.rgb, intensity * 0.5);
+#endif
     if (fragColor.a < 1e-4) {
         discard;
     }
@@ -112,7 +124,13 @@ void main() {
         }
     }
     float accumulatedNormalLength = length(accumulatedNormal);
-    fragColor = vec4(vec3(1.0) - clearColor.rgb, smoothstep(0.2, 0.35, accumulatedNormalLength) * 0.5);
+    float intensity = smoothstep(0.2, 0.35, accumulatedNormalLength);
+
+#ifdef DIRECT_BLIT_OUTPUT
+    fragColor = vec4(intensity, intensity, intensity, 1.0);
+#else
+    fragColor = vec4(vec3(1.0) - clearColor.rgb, intensity * 0.5);
+#endif
     if (fragColor.a < 1e-4) {
         discard;
     }
@@ -160,7 +178,13 @@ void main() {
     float depthFactor = smoothstep(0.005, 0.006, abs(accumulatedDepth));
     float accumulatedNormalLength = length(accumulatedNormal);
     float normalFactor = smoothstep(0.2, 0.35, accumulatedNormalLength);
-    fragColor = vec4(vec3(1.0) - clearColor.rgb, max(depthFactor, normalFactor) * 0.5);
+    float intensity = max(depthFactor, normalFactor);
+
+#ifdef DIRECT_BLIT_OUTPUT
+    fragColor = vec4(intensity, intensity, intensity, 1.0);
+#else
+    fragColor = vec4(vec3(1.0) - clearColor.rgb, intensity * 0.5);
+#endif
     if (fragColor.a < 1e-4) {
         discard;
     }
