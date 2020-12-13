@@ -67,6 +67,7 @@ VolumeRenderer_FacesSlim::VolumeRenderer_FacesSlim(
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
     sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "\"LinkedListGather.glsl\"");
+    sgl::ShaderManager->addPreprocessorDefine("DEPTH_TYPE_UINT", "");
 
     sgl::ShaderManager->invalidateShaderCache();
     gatherShader = sgl::ShaderManager->getShaderProgram(
@@ -94,8 +95,12 @@ VolumeRenderer_FacesSlim::VolumeRenderer_FacesSlim(
     onResolutionChanged();
 }
 
+VolumeRenderer_FacesSlim::~VolumeRenderer_FacesSlim() {
+    sgl::ShaderManager->removePreprocessorDefine("DEPTH_TYPE_UINT");
+}
+
 void VolumeRenderer_FacesSlim::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
-    this->mesh = meshIn;
+    this->hexMesh = meshIn;
     updateLargeMeshMode();
 
     std::vector<uint32_t> triangleIndices;
@@ -131,7 +136,7 @@ void VolumeRenderer_FacesSlim::uploadVisualizationMapping(HexMeshPtr meshIn, boo
     shaderAttributes->addGeometryBuffer(
             attributeBuffer, "vertexAttribute", sgl::ATTRIB_FLOAT, 1);
 
-    reloadModelEdgeDetection(mesh);
+    reloadModelEdgeDetection(hexMesh);
 
     dirty = false;
     reRender = true;
@@ -204,7 +209,7 @@ void VolumeRenderer_FacesSlim::setNewSettings(const SettingsMap& settings) {
 void VolumeRenderer_FacesSlim::updateLargeMeshMode() {
     // More than one million cells?
     LargeMeshMode newMeshLargeMeshMode = MESH_SIZE_MEDIUM;
-    if (mesh->getNumCells() > 1e6) { // > 1m elements
+    if (hexMesh->getNumCells() > 1e6) { // > 1m elements
         newMeshLargeMeshMode = MESH_SIZE_LARGE;
     }
     if (newMeshLargeMeshMode != largeMeshMode) {
@@ -261,7 +266,7 @@ void VolumeRenderer_FacesSlim::setUniformData() {
 
     gatherShader->setUniform("viewportW", width);
     gatherShader->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
-    gatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
+    gatherShader->setUniformOptional("cameraPosition", sceneData.camera->getPosition());
     gatherShader->setUniform(
             "minAttributeValue", transferFunctionWindow.getSelectedRangeMin());
     gatherShader->setUniform(

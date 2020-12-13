@@ -67,7 +67,6 @@ protected:
     void attributeTextureResolve();
     void attributeTextureBlur();
     void lineDensityControlRendering();
-    HexMeshPtr mesh;
 
     // Rendering data for both the attribute texture creation pass and the line rendering pass.
     sgl::GeometryBufferPtr hexahedralCellFacesBuffer;

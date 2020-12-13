@@ -128,7 +128,7 @@ void ClearViewRenderer_Volume::uploadVisualizationMapping(HexMeshPtr meshIn, boo
         Pickable::focusPoint = glm::vec3(0.0f);
     }
 
-    mesh = meshIn;
+    hexMesh = meshIn;
     const float avgCellVolumeCbrt = std::cbrt(meshIn->getAverageCellVolume());
     lineWidth = glm::clamp(
             avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);

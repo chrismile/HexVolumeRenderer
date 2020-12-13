@@ -55,6 +55,19 @@ layout (std430, binding = 8) readonly buffer EdgeBuffer {
     HexahedralCellEdgeUnified hexahedralCellEdges[];
 };
 
+#ifdef RENDER_FOCUS_FACES
+layout (std430, binding = 9) readonly buffer FaceCellLinkBuffer {
+    // Link to the two incident cells for a face. Second entry can be 0xFFFFFFFF if only one cell.
+    uvec2 hexahedralCellFacesCellLinks[];
+};
+layout (std430, binding = 10) readonly buffer CellBuffer {
+    float hexahedralCells[]; // Cell deformation measure.
+};
+uniform float importantCellFactor;
+out vec4 cellColor;
+#endif
+
+
 out vec3 fragmentPositionWorld;
 out vec4 fragmentPositionClip;
 out vec4 fragmentColor;
@@ -68,6 +81,10 @@ flat out vec4 lineColors[4];
 flat out float lineAttributes[4];
 flat out float edgeLodValues[4];
 //flat out uint edgeSingularityInformationList[4];
+
+#if defined (RENDER_FOCUS_FACES) && defined(USE_LIGHTING)
+out vec3 fragmentNormal;
+#endif
 
 #include "TransferFunction.glsl"
 
@@ -89,6 +106,16 @@ void main()
     HexahedralCellFaceUnified hexahedralCellFace = hexahedralCellFaces[faceId];
     vec4 vertexPosition;
     float vertexAttribute;
+
+#ifdef RENDER_FOCUS_FACES
+    uvec2 cellLinks = hexahedralCellFacesCellLinks[faceId];
+    float maxCellValue = hexahedralCells[cellLinks.x];
+    if (cellLinks.y != 0xFFFFFFFF) {
+        maxCellValue = max(maxCellValue, hexahedralCells[cellLinks.y]);
+    }
+    bool showFace = maxCellValue >= 1.0 - importantCellFactor;
+    cellColor = vec4(transferFunction(maxCellValue).rgb, showFace ? 1.0 : 0.0);
+#endif
 
     // Copy the vertex and edge data.
     for (int i = 0; i < 4; i++) {
@@ -134,6 +161,10 @@ void main()
         #endif*/
     //}
 
+#if defined (RENDER_FOCUS_FACES) && defined(USE_LIGHTING)
+    fragmentNormal = normalize(cross(normalize(vertexPositions[0] - vertexPositions[1]), normalize(vertexPositions[2] - vertexPositions[1])));
+#endif
+
     fragmentPositionWorld = (mMatrix * vertexPosition).xyz;
     fragmentColor = transferFunction(vertexAttribute);
     fragmentAttribute = vertexAttribute;
@@ -158,6 +189,10 @@ flat in vec4 lineColors[4];
 flat in float lineAttributes[4];
 flat in float edgeLodValues[4];
 //flat in uint edgeSingularityInformationList[4];
+
+#ifdef RENDER_FOCUS_FACES
+in vec4 cellColor;
+#endif
 
 #if defined(DIRECT_BLIT_GATHER)
 out vec4 fragColor;
@@ -185,6 +220,11 @@ uniform vec4 focusOutlineColor;
 #include "PointToLineDistance.glsl"
 #if !(defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP))
 #include "ClosestPointOnLine.glsl"
+#endif
+
+#if defined (RENDER_FOCUS_FACES) && defined(USE_LIGHTING)
+in vec3 fragmentNormal;
+#include "LightingFlat.glsl"
 #endif
 
 void main()
@@ -216,6 +256,21 @@ void main()
     // Volume color.
     vec4 volumeColor = fragmentColor;
     volumeColor.a *= pow(distanceToFocusPointNormalized, 4.0);//contextFactor;
+
+#ifdef RENDER_FOCUS_FACES
+    if (cellColor.a > 0.0 && focusFactor > 1e-6) {
+        vec4 colorSurface = vec4(cellColor.rgb, focusFactor);
+    #ifdef USE_LIGHTING
+        colorSurface = blinnPhongShading(colorSurface);
+    #endif
+        volumeColor.rgb = colorSurface.rgb * colorSurface.a + volumeColor.rgb * volumeColor.a * (1.0 - colorSurface.a);
+        volumeColor.a = colorSurface.a + volumeColor.a * (1.0 - colorSurface.a);
+        if (volumeColor.a > 1e-4) {
+            volumeColor.rgb /= volumeColor.a;
+        }
+    }
+#endif
+
     vec4 blendedColor = volumeColor;
 
     #ifdef HIGHLIGHT_EDGES
@@ -322,7 +377,11 @@ void main()
         //vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
         //        smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, lineCoordinates)), lineBaseColor.a);
 
-        if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
+        if (lineCoordinates >= WHITE_THRESHOLD - EPSILON
+#ifdef RENDER_FOCUS_FACES
+                && cellColor.a <= 0.0
+#endif
+        ) {
             fragmentDistance += 0.005;
         }
 
@@ -400,6 +459,10 @@ flat in float lineAttributes[4];
 flat in float edgeLodValues[4];
 //flat in uint edgeSingularityInformationList[4];
 
+#ifdef RENDER_FOCUS_FACES
+in vec4 cellColor;
+#endif
+
 #if defined(DIRECT_BLIT_GATHER)
 out vec4 fragColor;
 #endif
@@ -435,6 +498,11 @@ uniform vec4 focusOutlineColor;
 #include "ClosestPointOnLine.glsl"
 #endif
 
+#if defined (RENDER_FOCUS_FACES) && defined(USE_LIGHTING)
+in vec3 fragmentNormal;
+#include "LightingFlat.glsl"
+#endif
+
 void main()
 {
     vec3 fragmentPositionNdc = fragmentPositionClip.xyz / fragmentPositionClip.w;
@@ -463,6 +531,21 @@ void main()
     // TEST: Show all lines.
     //volumeColor.rgb = mix(volumeColor.rgb, vec3(0.0), clamp((fragmentDistance - 0.35)*1.8, 0.0, 1.0));
     volumeColor.a *= contextFactor;
+
+#ifdef RENDER_FOCUS_FACES
+    if (cellColor.a > 0.0 && focusFactor > 1e-6) {
+        vec4 colorSurface = vec4(cellColor.rgb, focusFactor);
+    #ifdef USE_LIGHTING
+        colorSurface = blinnPhongShading(colorSurface);
+    #endif
+        volumeColor.rgb = colorSurface.rgb * colorSurface.a + volumeColor.rgb * volumeColor.a * (1.0 - colorSurface.a);
+        volumeColor.a = colorSurface.a + volumeColor.a * (1.0 - colorSurface.a);
+        if (volumeColor.a > 1e-4) {
+            volumeColor.rgb /= volumeColor.a;
+        }
+    }
+#endif
+
     vec4 blendedColor = volumeColor;
 
     #ifdef HIGHLIGHT_EDGES
@@ -577,7 +660,11 @@ void main()
         // TEST: Show all lines.
         //lineColor.rgb = mix(volumeColor.rgb, vec3(0.0), 0.7);
 
-        if (lineCoordinates >= WHITE_THRESHOLD - EPSILON) {
+        if (lineCoordinates >= WHITE_THRESHOLD - EPSILON
+#ifdef RENDER_FOCUS_FACES
+                && cellColor.a <= 0.0
+#endif
+        ) {
             fragmentDistance += 0.005;
         }
 

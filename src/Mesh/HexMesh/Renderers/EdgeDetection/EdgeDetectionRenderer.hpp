@@ -48,6 +48,9 @@ protected:
     void reloadTexturesEdgeDetection();
     void reloadModelEdgeDetection(HexMeshPtr& mesh);
 
+    /// Removes the old mesh.
+    inline void removeOldMeshEdgeDetection() { meshEdgeDetection = HexMeshPtr(); }
+
     // Rendering.
     void setUniformDataEdgeDetection();
     void renderEdgeDetectionContours();

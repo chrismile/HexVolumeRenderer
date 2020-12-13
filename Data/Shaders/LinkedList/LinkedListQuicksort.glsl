@@ -53,7 +53,7 @@ bool stackEmpty() {
 }
 
 int partitionQuicksortLomuto(int low, int high) {
-    float pivotElement = depthList[high];
+    DEPTH_TYPE pivotElement = depthList[high];
     int i = low;
     for (int j = low; j <= high; j++) {
         if (depthList[j] < pivotElement) {
@@ -67,10 +67,10 @@ int partitionQuicksortLomuto(int low, int high) {
 
 int partitionQuicksortHoare(int low, int high) {
     // Take first, middle, and last element. Then, use the median as the pivot element.
-    float e0 = depthList[low];
-    float e1 = depthList[(low + high) / 2];
-    float e2 = depthList[high];
-    float pivotElement = e0 < e1 ? (e2 < e0 ? e0 : min(e1, e2)) : (e2 < e1 ? e1 : min(e0, e2));
+    DEPTH_TYPE e0 = depthList[low];
+    DEPTH_TYPE e1 = depthList[(low + high) / 2];
+    DEPTH_TYPE e2 = depthList[high];
+    DEPTH_TYPE pivotElement = e0 < e1 ? (e2 < e0 ? e0 : min(e1, e2)) : (e2 < e1 ? e1 : min(e0, e2));
 
     int i = low - 1;
     int j = high + 1;

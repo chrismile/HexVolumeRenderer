@@ -59,6 +59,12 @@ public:
      */
     virtual void uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
 
+    /// Removes the old mesh.
+    virtual void removeOldMesh() override {
+        HexahedralMeshRenderer::removeOldMesh();
+        removeOldMeshEdgeDetection();
+    }
+
     /// Called when the resolution of the application window has changed.
     virtual void onResolutionChanged();
 

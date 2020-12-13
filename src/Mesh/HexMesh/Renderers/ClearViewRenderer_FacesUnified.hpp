@@ -60,6 +60,12 @@ public:
      */
     virtual void uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
 
+    /// Removes the old mesh.
+    virtual void removeOldMesh() override {
+        HexahedralMeshRenderer::removeOldMesh();
+        removeOldMeshEdgeDetection();
+    }
+
     /// Called when the resolution of the application window has changed.
     virtual void onResolutionChanged();
 
@@ -125,13 +131,16 @@ protected:
     SingularEdgeColorMapWidget singularEdgeColorMapWidget;
     float selectedLodValueFocus = 0.3f;
     float selectedLodValueContext = 0.16f;
-    float importantLineBoostFactor = 0.5f;
+    float importantLineBoostFactor = 0.3f;
     bool accentuateAllEdges = true;
     bool useSingularEdgeColorMap = false;
     bool usePerLineAttributes = false;
     bool highlightEdges = true;
     bool highlightLowLodEdges = true;
     bool highlightSingularEdges = true;
+    bool showFocusFaces = true;
+    float importantCellFactor = 0.3f;
+    bool useLighting = true;
 };
 
 #endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_FACESUNIFIED_HPP

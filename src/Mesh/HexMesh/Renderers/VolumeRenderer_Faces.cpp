@@ -96,7 +96,7 @@ VolumeRenderer_Faces::VolumeRenderer_Faces(SceneData &sceneData, sgl::TransferFu
 }
 
 void VolumeRenderer_Faces::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
-    this->mesh = meshIn;
+    this->hexMesh = meshIn;
     
     std::vector<uint32_t> triangleIndices;
     std::vector<glm::vec3> vertexPositions;
@@ -284,7 +284,7 @@ void VolumeRenderer_Faces::renderGui() {
         }
         if (ImGui::Checkbox("Use Weighted Vertex Attributes", &useWeightedVertexAttributes)) {
             useShading = false;
-            if (this->mesh) uploadVisualizationMapping(mesh, false);
+            if (this->hexMesh) uploadVisualizationMapping(hexMesh, false);
         }
     }
     ImGui::End();

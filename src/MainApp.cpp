@@ -697,8 +697,18 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         normalizeVertexPositions(vertices);
         modelBoundingBox = computeAABB3(vertices);
 
+        // Delete old data to get more free RAM.
+        inputData = HexMeshPtr();
+        for (HexahedralMeshFilter* meshFilter : meshFilters) {
+            meshFilter->removeOldMesh();
+        }
+        for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
+            meshRenderer->removeOldMesh();
+        }
+
         inputData = HexMeshPtr(new HexMesh(transferFunctionWindow, *rayMeshIntersection));
-        inputData->setHexMeshData(vertices, hexMeshCellIndices, false);
+        bool loadMeshRepresentation = renderingMode != RENDERING_MODE_PSEUDO_VOLUME;
+        inputData->setHexMeshData(vertices, hexMeshCellIndices, loadMeshRepresentation);
         if (hexMeshAnistropyMetricList.empty()) {
             inputData->setQualityMeasure(selectedQualityMeasure);
         } else {
@@ -722,6 +732,8 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
             }
         }
     }
+
+    reRender = true;
 }
 
 void MainApp::reloadDataSet() {

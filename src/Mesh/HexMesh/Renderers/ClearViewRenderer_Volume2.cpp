@@ -194,8 +194,8 @@ void ClearViewRenderer_Volume2::setNewSettings(const SettingsMap& settings) {
     settings.getValueOpt("lineWidthBoostFactor", lineWidthBoostFactor);
     settings.getValueOpt("focusRadiusBoostFactor", focusRadiusBoostFactor);
 
-    if (mesh) {
-        const float avgCellVolumeCbrt = std::cbrt(mesh->getAverageCellVolume());
+    if (hexMesh) {
+        const float avgCellVolumeCbrt = std::cbrt(hexMesh->getAverageCellVolume());
         lineWidth = lineWidthBoostFactor * glm::clamp(
                 avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
         focusRadius = focusRadiusBoostFactor * glm::clamp(
@@ -208,7 +208,7 @@ void ClearViewRenderer_Volume2::uploadVisualizationMapping(HexMeshPtr meshIn, bo
         Pickable::focusPoint = glm::vec3(0.0f);
     }
 
-    mesh = meshIn;
+    hexMesh = meshIn;
     const float avgCellVolumeCbrt = std::cbrt(meshIn->getAverageCellVolume());
     // Higher radius for recording...
     lineWidth = lineWidthBoostFactor * glm::clamp(
@@ -225,7 +225,7 @@ void ClearViewRenderer_Volume2::uploadVisualizationMapping(HexMeshPtr meshIn, bo
     }
 
     // Get the information about the singularity structure.
-    singularEdgeColorMapWidget.generateSingularityStructureInformation(mesh);
+    singularEdgeColorMapWidget.generateSingularityStructureInformation(hexMesh);
 
     // Unload old data.
     shaderAttributes = sgl::ShaderAttributesPtr();
@@ -235,10 +235,10 @@ void ClearViewRenderer_Volume2::uploadVisualizationMapping(HexMeshPtr meshIn, bo
     std::vector<uint32_t> indices;
     std::vector<HexahedralCellFaceUnified_Volume2> hexahedralCellFaces;
     if (useWeightedVertexAttributes) {
-        mesh->getSurfaceDataWireframeFacesUnified_AttributePerVertex_Volume2(
+        hexMesh->getSurfaceDataWireframeFacesUnified_AttributePerVertex_Volume2(
                 indices, hexahedralCellFaces, maxLodValue);
     } else {
-        mesh->getSurfaceDataWireframeFacesUnified_AttributePerCell_Volume2(
+        hexMesh->getSurfaceDataWireframeFacesUnified_AttributePerCell_Volume2(
                 indices, hexahedralCellFaces, maxLodValue);
     }
 
@@ -261,7 +261,7 @@ void ClearViewRenderer_Volume2::uploadVisualizationMapping(HexMeshPtr meshIn, bo
             hexahedralCellFaces.size()*sizeof(HexahedralCellFaceUnified_Volume2),
             (void*)&hexahedralCellFaces.front(), sgl::SHADER_STORAGE_BUFFER);
 
-    reloadModelEdgeDetection(mesh);
+    reloadModelEdgeDetection(hexMesh);
 
     dirty = false;
     reRender = true;
@@ -409,7 +409,7 @@ void ClearViewRenderer_Volume2::clear() {
 void ClearViewRenderer_Volume2::gather() {
     // Recording mode.
     if (sceneData.recordingMode && sceneData.useCameraFlight) {
-        // TODO: Apapt focus radius depending on distance of camera to origin?
+        // TODO: Adapt focus radius depending on distance of camera to origin?
     }
 
     // Enable the depth test, but disable depth write for gathering.

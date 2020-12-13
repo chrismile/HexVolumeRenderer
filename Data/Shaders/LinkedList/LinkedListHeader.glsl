@@ -11,11 +11,18 @@ layout(pixel_center_integer) in vec4 gl_FragCoord;
 
 // A fragment node stores rendering information about one specific fragment
 struct LinkedListFragmentNode {
-    // RGBA color of the node
+#ifdef DEPTH_TYPE_UINT
+    // RGB color of the node (3x10 bit).
     uint color;
-    // Depth value of the fragment (in view space)
+    // Depth (22 bit) and alpha (10 bit).
+    uint depth;
+#else
+    // RGBA color of the node.
+    uint color;
+    // Depth value of the fragment (in view space).
     float depth;
-    // The index of the next node in "nodes" array
+#endif
+    // The index of the next node in "nodes" array.
     uint next;
 };
 

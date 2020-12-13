@@ -79,6 +79,7 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
     sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "\"LinkedListGather.glsl\"");
+    sgl::ShaderManager->addPreprocessorDefine("DEPTH_TYPE_UINT", "");
 
     shaderProgramSurface = sgl::ShaderManager->getShaderProgram(
             {"MeshShader.Vertex.Plain", "MeshShader.Fragment.Plain"});
@@ -115,6 +116,7 @@ ClearViewRenderer_FacesUnified::~ClearViewRenderer_FacesUnified() {
         delete timer;
         sceneData.performanceMeasurer->setClearViewTimer(nullptr);
     }
+    sgl::ShaderManager->removePreprocessorDefine("DEPTH_TYPE_UINT");
 }
 
 void ClearViewRenderer_FacesUnified::render() {
@@ -179,6 +181,12 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader(bool copyShaderAttribute
     if (accentuateAllEdges) {
         sgl::ShaderManager->addPreprocessorDefine("ACCENTUATE_ALL_EDGES", "");
     }
+    if (showFocusFaces) {
+        sgl::ShaderManager->addPreprocessorDefine("RENDER_FOCUS_FACES", "");
+    }
+    if (showFocusFaces && useLighting) {
+        sgl::ShaderManager->addPreprocessorDefine("USE_LIGHTING", "");
+    }
     //if (useFocusOutline) {
     //    sgl::ShaderManager->addPreprocessorDefine("USE_FOCUS_OUTLINE", "");
     //}
@@ -212,6 +220,12 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader(bool copyShaderAttribute
     }
     if (accentuateAllEdges) {
         sgl::ShaderManager->removePreprocessorDefine("ACCENTUATE_ALL_EDGES");
+    }
+    if (showFocusFaces) {
+        sgl::ShaderManager->removePreprocessorDefine("RENDER_FOCUS_FACES");
+    }
+    if (showFocusFaces && useLighting) {
+        sgl::ShaderManager->removePreprocessorDefine("USE_LIGHTING");
     }
     //if (useFocusOutline) {
     //    sgl::ShaderManager->removePreprocessorDefine("USE_FOCUS_OUTLINE");
@@ -249,8 +263,8 @@ void ClearViewRenderer_FacesUnified::setNewSettings(const SettingsMap& settings)
         reloadResolveShader();
     }
 
-    if (mesh) {
-        const float avgCellVolumeCbrt = std::cbrt(mesh->getAverageCellVolume());
+    if (hexMesh) {
+        const float avgCellVolumeCbrt = std::cbrt(hexMesh->getAverageCellVolume());
         lineWidth = lineWidthBoostFactor * glm::clamp(
                 avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
         focusRadius = focusRadiusBoostFactor * glm::clamp(
@@ -261,7 +275,7 @@ void ClearViewRenderer_FacesUnified::setNewSettings(const SettingsMap& settings)
 void ClearViewRenderer_FacesUnified::updateLargeMeshMode() {
     // More than one million cells?
     LargeMeshMode newMeshLargeMeshMode = MESH_SIZE_MEDIUM;
-    if (mesh->getNumCells() > 1e6) { // > 1m elements
+    if (hexMesh->getNumCells() > 1e6) { // > 1m elements
         newMeshLargeMeshMode = MESH_SIZE_LARGE;
     }
     if (newMeshLargeMeshMode != largeMeshMode) {
@@ -279,7 +293,7 @@ void ClearViewRenderer_FacesUnified::uploadVisualizationMapping(HexMeshPtr meshI
     }
     frameCounter = 0;
 
-    mesh = meshIn;
+    hexMesh = meshIn;
     updateLargeMeshMode();
     const float avgCellVolumeCbrt = std::cbrt(meshIn->getAverageCellVolume());
     // Higher radius for recording...
@@ -297,13 +311,14 @@ void ClearViewRenderer_FacesUnified::uploadVisualizationMapping(HexMeshPtr meshI
     }
 
     // Get the information about the singularity structure.
-    singularEdgeColorMapWidget.generateSingularityStructureInformation(mesh);
+    singularEdgeColorMapWidget.generateSingularityStructureInformation(hexMesh);
 
     // Unload old data.
     shaderAttributes = sgl::ShaderAttributesPtr();
     hexahedralCellFacesBuffer = sgl::GeometryBufferPtr();
     hexahedralCellVerticesBuffer = sgl::GeometryBufferPtr();
     hexahedralCellEdgesBuffer = sgl::GeometryBufferPtr();
+    hexahedralCellFacesCellLinksBuffer = sgl::GeometryBufferPtr();
     hexahedralCellsBuffer = sgl::GeometryBufferPtr();
 
     // Load the unified data for the focus and context region.
@@ -311,17 +326,29 @@ void ClearViewRenderer_FacesUnified::uploadVisualizationMapping(HexMeshPtr meshI
     std::vector<HexahedralCellFaceUnified> hexahedralCellFaces;
     std::vector<HexahedralCellVertexUnified> hexahedralCellVertices;
     std::vector<HexahedralCellEdgeUnified> hexahedralCellEdges;
-    std::vector<HexahedralCellUnified> hexahedralCells;
-    mesh->getSurfaceDataWireframeFacesUnified_AttributePerVertex(
-            indices, hexahedralCellFaces, hexahedralCellVertices, hexahedralCellEdges, hexahedralCells,
-            maxLodValue, useVolumeWeighting, lodSettings);
+    std::vector<glm::uvec2> hexahedralCellFacesCellLinks;
+    std::vector<float> hexahedralCells;
+    hexMesh->getSurfaceDataWireframeFacesUnified_AttributePerVertex(
+            indices, hexahedralCellFaces, hexahedralCellVertices, hexahedralCellEdges,
+            hexahedralCellFacesCellLinks, hexahedralCells,
+            showFocusFaces, maxLodValue, useVolumeWeighting, lodSettings);
+
+    size_t modelBufferSizeBytesNoCells =
+            indices.size() * sizeof(uint32_t)
+            + hexahedralCellFaces.size() * sizeof(HexahedralCellFaceUnified)
+            + hexahedralCellVertices.size() * sizeof(HexahedralCellVertexUnified)
+            + hexahedralCellEdges.size() * sizeof(HexahedralCellEdgeUnified);
+    sgl::Logfile::get()->writeInfo(
+            std::string() + "GPU model buffer size MiB (no solid face rendering): "
+            + std::to_string(modelBufferSizeBytesNoCells / 1024.0 / 1024.0));
 
     size_t modelBufferSizeBytes =
             indices.size() * sizeof(uint32_t)
             + hexahedralCellFaces.size() * sizeof(HexahedralCellFaceUnified)
             + hexahedralCellVertices.size() * sizeof(HexahedralCellVertexUnified)
             + hexahedralCellEdges.size() * sizeof(HexahedralCellEdgeUnified)
-            + hexahedralCells.size() * sizeof(HexahedralCellUnified);
+            + hexahedralCellFacesCellLinks.size() * sizeof(glm::uvec2)
+            + hexahedralCells.size() * sizeof(float);
     sgl::Logfile::get()->writeInfo(
             std::string() + "GPU model buffer size MiB: "
             + std::to_string(modelBufferSizeBytes / 1024.0 / 1024.0));
@@ -344,11 +371,16 @@ void ClearViewRenderer_FacesUnified::uploadVisualizationMapping(HexMeshPtr meshI
     hexahedralCellEdgesBuffer = sgl::Renderer->createGeometryBuffer(
             hexahedralCellEdges.size()*sizeof(HexahedralCellEdgeUnified), (void*)&hexahedralCellEdges.front(),
             sgl::SHADER_STORAGE_BUFFER);
-    hexahedralCellsBuffer = sgl::Renderer->createGeometryBuffer(
-            hexahedralCells.size()*sizeof(HexahedralCellUnified), (void*)&hexahedralCells.front(),
-            sgl::SHADER_STORAGE_BUFFER);
+    if (showFocusFaces) {
+        hexahedralCellFacesCellLinksBuffer = sgl::Renderer->createGeometryBuffer(
+                hexahedralCellFacesCellLinks.size()*sizeof(glm::uvec2), (void*)&hexahedralCellFacesCellLinks.front(),
+                sgl::SHADER_STORAGE_BUFFER);
+        hexahedralCellsBuffer = sgl::Renderer->createGeometryBuffer(
+                hexahedralCells.size()*sizeof(float), (void*)&hexahedralCells.front(),
+                sgl::SHADER_STORAGE_BUFFER);
+    }
 
-    reloadModelEdgeDetection(mesh);
+    reloadModelEdgeDetection(hexMesh);
 
     dirty = false;
     reRender = true;
@@ -473,6 +505,10 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
         gatherShader->setUniform("sphereRadius", focusRadius);
     }
 
+    if (showFocusFaces) {
+        gatherShader->setUniform("importantCellFactor", importantCellFactor);
+    }
+
     shaderProgramSurface->setUniform("viewportW", width);
     shaderProgramSurface->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
     shaderProgramSurface->setUniform("cameraPosition", sceneData.camera->getPosition());
@@ -532,7 +568,10 @@ void ClearViewRenderer_FacesUnified::gather() {
     sgl::ShaderManager->bindShaderStorageBuffer(6, hexahedralCellFacesBuffer);
     sgl::ShaderManager->bindShaderStorageBuffer(7, hexahedralCellVerticesBuffer);
     sgl::ShaderManager->bindShaderStorageBuffer(8, hexahedralCellEdgesBuffer);
-    sgl::ShaderManager->bindShaderStorageBuffer(9, hexahedralCellsBuffer);
+    if (showFocusFaces) {
+        sgl::ShaderManager->bindShaderStorageBuffer(9, hexahedralCellFacesCellLinksBuffer);
+        sgl::ShaderManager->bindShaderStorageBuffer(10, hexahedralCellsBuffer);
+    }
     if (useWeightedVertexAttributes) {
         glDisable(GL_CULL_FACE);
     }
@@ -598,7 +637,8 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiBegin() {
         reRender = true;
     }
     if (useScreenSpaceLens && ImGui::SliderFloat(
-            "Lens Pixel Radius", &screenSpaceLensPixelRadius, 0.0f, 2*std::max(windowWidth, windowHeight))) {
+            "Lens Pixel Radius", &screenSpaceLensPixelRadius,
+            0.0f, 2*std::max(windowWidth, windowHeight))) {
         reRender = true;
     }
 }
@@ -617,6 +657,21 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
         reRender = true;
     }
     if (ImGui::SliderFloat("Important Lines", &importantLineBoostFactor, 0.0f, 1.0f)) {
+        reRender = true;
+    }
+    if (ImGui::Checkbox("Show Focus Faces", &showFocusFaces)) {
+        if (hexMesh) {
+            uploadVisualizationMapping(hexMesh, false);
+        }
+        reloadGatherShader(true);
+        reRender = true;
+    }
+    if (showFocusFaces && ImGui::SliderFloat(
+            "Important Cells", &importantCellFactor, 0.0f, 1.0f)) {
+        reRender = true;
+    }
+    if (showFocusFaces && ImGui::Checkbox("Use Lighting", &useLighting)) {
+        reloadGatherShader(true);
         reRender = true;
     }
     if (ImGui::Checkbox("Accentuate Edges", &accentuateAllEdges)) {

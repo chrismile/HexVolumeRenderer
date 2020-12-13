@@ -16,7 +16,16 @@ void main() {
 #include "LinkedListHeader.glsl"
 
 uint colorList[MAX_NUM_FRAGS];
+#ifdef DEPTH_TYPE_UINT
+uint depthList[MAX_NUM_FRAGS];
+#else
 float depthList[MAX_NUM_FRAGS];
+#endif
+
+#ifdef DEPTH_TYPE_UINT
+#include "FloatPack.glsl"
+#include "ColorPack.glsl"
+#endif
 
 #include "LinkedListSort.glsl"
 

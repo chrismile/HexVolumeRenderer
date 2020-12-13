@@ -26,12 +26,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef DEPTH_TYPE_UINT
+#define DEPTH_TYPE uint
+#else
+#define DEPTH_TYPE float
+#endif
+
 // Swap two Frags in color and depth Array => Avoid bacause expensive
 void swapFragments(uint i, uint j) {
     uint cTemp = colorList[i];
     colorList[i] = colorList[j];
     colorList[j] = cTemp;
-    float dTemp = depthList[i];
+    DEPTH_TYPE dTemp = depthList[i];
     depthList[i] = depthList[j];
     depthList[j] = dTemp;
 }
@@ -41,10 +47,14 @@ vec4 blendFTB(uint fragsCount) {
     for (uint i = 0; i < fragsCount; i++) {
         // Front-to-Back (FTB) blending
         // Blend the accumulated color with the color of the fragment node
+#ifdef DEPTH_TYPE_UINT
+        vec4 colorSrc = unpackColor30bit(colorList[i]);
+        colorSrc.a = unpackFloat10(depthList[i]);
+#else
         vec4 colorSrc = unpackUnorm4x8(colorList[i]);
-        float alphaSrc = colorSrc.a;
-        color.rgb = color.rgb + (1.0 - color.a) * alphaSrc * colorSrc.rgb;
-        color.a = color.a + (1.0 - color.a) * alphaSrc;
+#endif
+        color.rgb = color.rgb + (1.0 - color.a) * colorSrc.a * colorSrc.rgb;
+        color.a = color.a + (1.0 - color.a) * colorSrc.a;
     }
     return vec4(color.rgb / color.a, color.a);
 }
@@ -71,7 +81,7 @@ vec4 bubbleSort(uint fragsCount) {
 vec4 insertionSort(uint fragsCount) {
     // Temporary fragment storage
     uint fragColor;
-    float fragDepth;
+    DEPTH_TYPE fragDepth;
 
     uint i, j;
     for (i = 1; i < fragsCount; ++i) {
@@ -99,7 +109,7 @@ vec4 insertionSort(uint fragsCount) {
 vec4 shellSort(uint fragsCount) {
     // Temporary fragment storage
     uint fragColor;
-    float fragDepth;
+    DEPTH_TYPE fragDepth;
 
     // Optimal gap sequence for 128 elements from [Ciu01, table 1]
     uint i, j, gap;
@@ -211,7 +221,13 @@ vec4 frontToBackPQ(uint fragsCount) {
     while (i < fragsCount && rayColor.a < 0.99) {
         // Max Steps = #frags Stop when color is saturated enough
         minHeapSink4(0, fragsCount - i++); // Sink it right + increment i
+#ifdef DEPTH_TYPE_UINT
+        vec4 colorSrc = unpackColor30bit(colorList[0]); // Heap first is min
+        colorSrc.a = unpackFloat10(depthList[0]);
+#else
         vec4 colorSrc = unpackUnorm4x8(colorList[0]); // Heap first is min
+#endif
+
         // FTB Blending
         rayColor.rgb = rayColor.rgb + (1.0 - rayColor.a) * colorSrc.a * colorSrc.rgb;
         rayColor.a = rayColor.a + (1.0 - rayColor.a) * colorSrc.a;
@@ -224,4 +240,3 @@ vec4 frontToBackPQ(uint fragsCount) {
     rayColor.rgb = rayColor.rgb / rayColor.a; // Correct rgb with alpha
     return rayColor;
 }
-

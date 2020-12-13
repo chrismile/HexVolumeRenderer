@@ -56,7 +56,6 @@ public:
     virtual void renderGui();
 
 protected:
-    HexMeshPtr mesh;
     sgl::ShaderProgramPtr shaderProgram;
     sgl::ShaderAttributesPtr shaderAttributes;
 

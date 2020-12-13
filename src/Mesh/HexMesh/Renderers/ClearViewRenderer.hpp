@@ -111,7 +111,6 @@ protected:
 
     // Load either tube or line representation depending on "useTubes".
     void loadFocusRepresentation();
-    HexMeshPtr mesh;
 
     // The rendering data for the focus region.
     sgl::ShaderAttributesPtr shaderAttributesFocus;
@@ -124,6 +123,7 @@ protected:
     sgl::GeometryBufferPtr hexahedralCellFacesBuffer;
     sgl::GeometryBufferPtr hexahedralCellVerticesBuffer;
     sgl::GeometryBufferPtr hexahedralCellEdgesBuffer;
+    sgl::GeometryBufferPtr hexahedralCellFacesCellLinksBuffer;
     sgl::GeometryBufferPtr hexahedralCellsBuffer;
 
     // The shaders for rendering.

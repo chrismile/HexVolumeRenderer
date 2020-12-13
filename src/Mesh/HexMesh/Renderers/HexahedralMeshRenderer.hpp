@@ -69,6 +69,9 @@ public:
      */
     virtual void uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {}
 
+    /// Removes the old mesh.
+    virtual void removeOldMesh() { hexMesh = HexMeshPtr(); }
+
     /// Renders the object to the scene framebuffer.
     virtual void render()=0;
     /// Renders the GUI. The "dirty" and "reRender" flags might be set depending on the user's actions.
@@ -89,6 +92,7 @@ public:
 protected:
     SceneData& sceneData;
     sgl::TransferFunctionWindow &transferFunctionWindow;
+    HexMeshPtr hexMesh;
     bool dirty = true;
     bool reRender = true;
 };

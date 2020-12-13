@@ -61,8 +61,6 @@ protected:
     sgl::ShaderAttributesPtr shaderAttributesWireframe;
     sgl::GeometryBufferPtr wireframeFacesBuffer;
 
-    HexMeshPtr hexMesh;
-
     std::vector<HexahedralSheet> hexahedralSheets;
     std::set<ComponentConnectionData> connectionDataSet;
     std::set<ComponentConnectionData> currentSheetConnectionDataSet;

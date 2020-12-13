@@ -110,7 +110,7 @@ void ClearViewRenderer::reloadFocusShaders() {
 }
 
 void ClearViewRenderer::loadFocusRepresentation() {
-    if (!mesh) {
+    if (!hexMesh) {
         return;
     }
 
@@ -122,7 +122,7 @@ void ClearViewRenderer::loadFocusRepresentation() {
     if (lineRenderingMode == LINE_RENDERING_MODE_WIREFRAME_FACES) {
         std::vector<uint32_t> indices;
         std::vector<HexahedralCellFace> hexahedralCellFaces;
-        mesh->getSurfaceDataWireframeFaces(
+        hexMesh->getSurfaceDataWireframeFaces(
                 indices, hexahedralCellFaces, false,
                 lineRenderingStyle == LINE_RENDERING_STYLE_TRON);
 
@@ -142,7 +142,7 @@ void ClearViewRenderer::loadFocusRepresentation() {
             || lineRenderingMode == LINE_RENDERING_MODE_TUBES_UNION) {
         std::vector<glm::vec3> lineVertices;
         std::vector<glm::vec4> lineColors;
-        mesh->getCompleteWireframeData(
+        hexMesh->getCompleteWireframeData(
                 lineVertices, lineColors,
                 lineRenderingStyle == LINE_RENDERING_STYLE_TRON);
 
@@ -162,7 +162,7 @@ void ClearViewRenderer::loadFocusRepresentation() {
 
         /*std::vector<std::vector<glm::vec3>> lineCentersList;
         std::vector<std::vector<glm::vec4>> lineColorsList;
-        mesh->getCompleteWireframeTubeData(lineCentersList, lineColorsList);*/
+        hexMesh->getCompleteWireframeTubeData(lineCentersList, lineColorsList);*/
 
         std::vector<uint32_t> triangleIndices;
         std::vector<glm::vec3> vertexPositions;
@@ -179,7 +179,7 @@ void ClearViewRenderer::loadFocusRepresentation() {
                     triangleIndices, vertexPositions, vertexNormals, vertexTangents, vertexColors);
         } else if (lineRenderingMode == LINE_RENDERING_MODE_TUBES_UNION) {
             createCappedTriangleTubesUnionRenderDataCPU(
-                    mesh, lineWidth * 0.5f, 8, triangleIndices, vertexPositions,
+                    hexMesh, lineWidth * 0.5f, 8, triangleIndices, vertexPositions,
                     vertexNormals, vertexTangents, vertexColors,
                     lineRenderingStyle == LINE_RENDERING_STYLE_TRON);
         }
@@ -219,7 +219,7 @@ void ClearViewRenderer::loadFocusRepresentation() {
         // Get points to fill holes and generate SSBOs with the point data to access when doing instancing.
         std::vector<glm::vec3> pointVertices;
         std::vector<glm::vec4> pointColors;
-        mesh->getVertexTubeData(
+        hexMesh->getVertexTubeData(
                 pointVertices, pointColors, lineRenderingStyle == LINE_RENDERING_STYLE_TRON);
 
         const size_t numInstancingPoints = pointVertices.size();
@@ -259,7 +259,7 @@ void ClearViewRenderer::loadFocusRepresentation() {
     } else if (lineRenderingMode == LINE_RENDERING_MODE_BILLBOARD_LINES) {
         std::vector<glm::vec3> lineVertices;
         std::vector<glm::vec4> lineColors;
-        mesh->getCompleteWireframeData(
+        hexMesh->getCompleteWireframeData(
                 lineVertices, lineColors, lineRenderingStyle == LINE_RENDERING_STYLE_TRON);
 
         shaderAttributesFocus = sgl::ShaderManager->createShaderAttributes(gatherShaderFocusLines);
@@ -408,10 +408,10 @@ void ClearViewRenderer::renderGui() {
                 && clearViewRendererType != CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED
                 && ImGui::Checkbox("Use Weighted Vertex Attributes", &useWeightedVertexAttributes)) {
             useShading = false;
-            if (this->mesh) uploadVisualizationMapping(mesh, false);
+            if (this->hexMesh) uploadVisualizationMapping(hexMesh, false);
         }
         if (useWeightedVertexAttributes && ImGui::Checkbox("Use Volume Weighting", &useVolumeWeighting)) {
-            if (this->mesh) uploadVisualizationMapping(mesh, false);
+            if (this->hexMesh) uploadVisualizationMapping(hexMesh, false);
             reRender = true;
         }
         if (clearViewRendererType != CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED && ImGui::Combo(
@@ -430,26 +430,26 @@ void ClearViewRenderer::renderGui() {
         if (LET_USER_SELECT_LOD_STYLE) {
             if (ImGui::SliderFloat(
                     "LOD Merge Factor", &lodSettings.lodMergeFactor, 0.999f, 4.0f, "%.3f")) {
-                if (mesh) {
-                    uploadVisualizationMapping(mesh, false);
+                if (hexMesh) {
+                    uploadVisualizationMapping(hexMesh, false);
                     reRender = true;
                 }
             }
             if (ImGui::Checkbox("Use Volume and Area Measures", &lodSettings.useVolumeAndAreaMeasures)) {
-                if (mesh) {
-                    uploadVisualizationMapping(mesh, false);
+                if (hexMesh) {
+                    uploadVisualizationMapping(hexMesh, false);
                     reRender = true;
                 }
             }
             if (ImGui::Checkbox("Use Weights for Merging", &lodSettings.useWeightsForMerging)) {
-                if (mesh) {
-                    uploadVisualizationMapping(mesh, false);
+                if (hexMesh) {
+                    uploadVisualizationMapping(hexMesh, false);
                     reRender = true;
                 }
             }
             if (ImGui::Checkbox("Use #Cells/Volume", &lodSettings.useNumCellsOrVolume)) {
-                if (mesh) {
-                    uploadVisualizationMapping(mesh, false);
+                if (hexMesh) {
+                    uploadVisualizationMapping(hexMesh, false);
                     reRender = true;
                 }
             }

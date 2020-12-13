@@ -44,7 +44,7 @@ LodLinePreviewRenderer_SheetsFaces::LodLinePreviewRenderer_SheetsFaces(SceneData
 }
 
 void LodLinePreviewRenderer_SheetsFaces::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
-    mesh = meshIn;
+    hexMesh = meshIn;
     lineWidth = glm::clamp(
             std::cbrt(meshIn->getAverageCellVolume()) * LINE_WIDTH_VOLUME_CBRT_FACTOR,
             MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
@@ -128,26 +128,26 @@ void LodLinePreviewRenderer_SheetsFaces::renderGui() {
         }
         if (ImGui::SliderFloat(
                 "LOD Merge Factor", &lodSettings.lodMergeFactor, 0.999f, 4.0f, "%.3f")) {
-            if (mesh) {
-                uploadVisualizationMapping(mesh, false);
+            if (hexMesh) {
+                uploadVisualizationMapping(hexMesh, false);
                 reRender = true;
             }
         }
         if (ImGui::Checkbox("Use Volume and Area Measures", &lodSettings.useVolumeAndAreaMeasures)) {
-            if (mesh) {
-                uploadVisualizationMapping(mesh, false);
+            if (hexMesh) {
+                uploadVisualizationMapping(hexMesh, false);
                 reRender = true;
             }
         }
         if (ImGui::Checkbox("Use Weights for Merging", &lodSettings.useWeightsForMerging)) {
-            if (mesh) {
-                uploadVisualizationMapping(mesh, false);
+            if (hexMesh) {
+                uploadVisualizationMapping(hexMesh, false);
                 reRender = true;
             }
         }
         if (ImGui::Checkbox("Use #Cells/Volume", &lodSettings.useNumCellsOrVolume)) {
-            if (mesh) {
-                uploadVisualizationMapping(mesh, false);
+            if (hexMesh) {
+                uploadVisualizationMapping(hexMesh, false);
                 reRender = true;
             }
         }

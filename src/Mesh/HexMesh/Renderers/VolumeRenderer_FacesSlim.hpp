@@ -51,7 +51,7 @@
 class VolumeRenderer_FacesSlim : public HexahedralMeshRenderer, protected EdgeDetectionRenderer {
 public:
     VolumeRenderer_FacesSlim(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
-    virtual ~VolumeRenderer_FacesSlim() {}
+    virtual ~VolumeRenderer_FacesSlim();
     virtual bool getUsesSlimRepresentation() override { return true; }
 
     /**
@@ -60,6 +60,12 @@ public:
      * @param isNewMesh Whether a new mesh is loaded or just a new renderer is used.
      */
     virtual void uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh);
+
+    /// Removes the old mesh.
+    virtual void removeOldMesh() override {
+        HexahedralMeshRenderer::removeOldMesh();
+        removeOldMeshEdgeDetection();
+    }
 
     // Renders the object to the scene framebuffer.
     virtual void render();
@@ -82,8 +88,6 @@ protected:
     void clear();
     void gather();
     void resolve();
-
-    HexMeshPtr mesh;
 
     // Sorting algorithm for PPLL.
     SortingAlgorithmMode sortingAlgorithmMode = SORTING_ALGORITHM_MODE_PRIORITY_QUEUE;

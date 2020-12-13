@@ -37,10 +37,10 @@ uniform vec3 cameraPosition; // in world space
 
 void main()
 {
-    #if defined(DIRECT_BLIT_GATHER)
+#if defined(DIRECT_BLIT_GATHER)
     // Direct rendering, no transparency.
     fragColor = vec4(fragmentColor.rgb, 1.0);
-    #else
+#else
     gatherFragment(fragmentColor);
-    #endif
+#endif
 }

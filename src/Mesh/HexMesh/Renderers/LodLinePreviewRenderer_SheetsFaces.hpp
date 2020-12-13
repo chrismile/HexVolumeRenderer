@@ -55,7 +55,6 @@ protected:
     void setUniformData();
     void gather();
 
-    HexMeshPtr mesh;
     sgl::GeometryBufferPtr hexahedralCellFacesBuffer;
     int maxLodValue = 0;
 

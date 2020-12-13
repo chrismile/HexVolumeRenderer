@@ -103,6 +103,10 @@ size_t getUsedSystemMemoryBytes()
 }
 #endif
 
+HexMesh::HexMesh(sgl::TransferFunctionWindow &transferFunctionWindow, RayMeshIntersection& rayMeshIntersection)
+        : transferFunctionWindow(transferFunctionWindow), rayMeshIntersection(rayMeshIntersection) {
+}
+
 HexMesh::~HexMesh() {
     if (mesh != nullptr) {
         delete mesh;
@@ -2539,8 +2543,12 @@ uint32_t HexMesh::packEdgeSingularityInformation(uint32_t e_id) {
     rebuildInternalRepresentationIfNecessary();
 
     // Compute the per-edge LOD values between 0 and 1.
-    std::vector<float> edgeLodValues;
-    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue, lodSettings);
+    if (edgeLodValues.empty() || this->lodSettings != lodSettings) {
+        edgeLodValues.clear();
+        maxLodValue = 0;
+        generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue, lodSettings);
+        this->lodSettings = lodSettings;
+    }
 
     // Compute all cell volumes.
     if (cellVolumes.empty()) {
@@ -2627,13 +2635,18 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
         std::vector<HexahedralCellVertexUnified>& hexahedralCellVertices,
         std::vector<HexahedralCellEdgeUnified>& hexahedralCellEdges,
-        std::vector<HexahedralCellUnified>& hexahedralCells,
-        int& maxLodValue, bool useVolumeWeighting, LodSettings lodSettings) {
+        std::vector<glm::uvec2>& hexahedralCellFacesCellLinks,
+        std::vector<float>& hexahedralCells,
+        bool showFocusFaces, int& maxLodValue, bool useVolumeWeighting, LodSettings lodSettings) {
     rebuildInternalRepresentationIfNecessary();
 
     // Compute the per-edge LOD values between 0 and 1.
-    std::vector<float> edgeLodValues;
-    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue, lodSettings);
+    if (edgeLodValues.empty() || this->lodSettings != lodSettings) {
+        edgeLodValues.clear();
+        maxLodValue = 0;
+        generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue, lodSettings);
+        this->lodSettings = lodSettings;
+    }
 
     // Compute all cell volumes.
     if (useVolumeWeighting && cellVolumes.empty()) {
@@ -2697,17 +2710,20 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
 
 
     // 3. Cell data.
-    hexahedralCells.reserve(mesh->Hs.size());
-    for (uint32_t h_id = 0; h_id < mesh->Hs.size(); h_id++) {
-        hexahedralCells.push_back(HexahedralCellUnified());
-        HexahedralCellUnified& hexahedralCell = hexahedralCells.back();
-        hexahedralCell.cellAttribute = getCellAttribute(h_id);
+    if (showFocusFaces) {
+        hexahedralCells.reserve(mesh->Hs.size());
+        for (uint32_t h_id = 0; h_id < mesh->Hs.size(); h_id++) {
+            hexahedralCells.push_back(getCellAttribute(h_id));
+        }
     }
 
 
     // 4. Face data.
     size_t indexOffset = 0;
     hexahedralCellFaces.reserve(mesh->Fs.size());
+    if (showFocusFaces) {
+        hexahedralCellFacesCellLinks.reserve(mesh->Fs.size());
+    }
     for (size_t f_id = 0; f_id < mesh->Fs.size(); f_id++) {
         Hybrid_F& f = mesh->Fs.at(f_id);
         if (std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
@@ -2720,6 +2736,16 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         HexahedralCellFaceUnified& hexahedralCellFace = hexahedralCellFaces.back();
         hexahedralCellFace.vertexIdx[0];
         hexahedralCellFace.edgeIdx[0];
+
+        if (showFocusFaces) {
+            glm::uvec2 cellLinks = glm::uvec2(0xFFFFFFFF, 0xFFFFFFFF);
+            assert(f.neighbor_hs.size() == 1 || f.neighbor_hs.size() == 2);
+            for (size_t i = 0; i < f.neighbor_hs.size(); i++) {
+                cellLinks[i] = f.neighbor_hs.at(i);
+            }
+            hexahedralCellFacesCellLinks.push_back(cellLinks);
+
+        }
 
         assert(f.vs.size() == 4);
         for (size_t i = 0; i < 4; i++) {
@@ -2760,8 +2786,13 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell_Volume2(
     rebuildInternalRepresentationIfNecessary();
 
     // Compute the per-edge LOD values between 0 and 1.
-    std::vector<float> edgeLodValues;
-    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue);
+    LodSettings lodSettings;
+    if (edgeLodValues.empty() || this->lodSettings != lodSettings) {
+        edgeLodValues.clear();
+        maxLodValue = 0;
+        generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue, lodSettings);
+        this->lodSettings = lodSettings;
+    }
 
     // Compute all cell volumes.
     if (cellVolumes.empty()) {
@@ -2880,8 +2911,13 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex_Volume2(
     rebuildInternalRepresentationIfNecessary();
 
     // Compute the per-edge LOD values between 0 and 1.
-    std::vector<float> edgeLodValues;
-    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue);
+    LodSettings lodSettings;
+    if (edgeLodValues.empty() || this->lodSettings != lodSettings) {
+        edgeLodValues.clear();
+        maxLodValue = 0;
+        generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue, lodSettings);
+        this->lodSettings = lodSettings;
+    }
 
     // Compute all cell volumes.
     if (cellVolumes.empty()) {
@@ -3034,8 +3070,13 @@ void HexMesh::getSurfaceDataWireframeFacesLineDensityControl(
     rebuildInternalRepresentationIfNecessary();
 
     // Compute the per-edge LOD values between 0 and 1.
-    std::vector<float> edgeLodValues;
-    generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue);
+    LodSettings lodSettings;
+    if (edgeLodValues.empty() || this->lodSettings != lodSettings) {
+        edgeLodValues.clear();
+        maxLodValue = 0;
+        generateSheetLevelOfDetailEdgeStructure(this, edgeLodValues, &maxLodValue, lodSettings);
+        this->lodSettings = lodSettings;
+    }
 
     // Compute all cell volumes.
     if (cellVolumes.empty()) {

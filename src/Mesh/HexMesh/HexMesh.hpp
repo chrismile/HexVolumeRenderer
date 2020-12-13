@@ -131,9 +131,6 @@ struct HexahedralCellEdgeUnified {
     float edgeAttribute;
     float edgeLodValue;
 };
-struct HexahedralCellUnified {
-    float cellAttribute;
-};
 
 // For @see HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerCell and
 // @see HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex.
@@ -168,8 +165,7 @@ struct HexahedralCellFaceLineDensityControl {
 
 class HexMesh {
 public:
-    HexMesh(sgl::TransferFunctionWindow &transferFunctionWindow, RayMeshIntersection& rayMeshIntersection)
-        : transferFunctionWindow(transferFunctionWindow), rayMeshIntersection(rayMeshIntersection) {}
+    HexMesh(sgl::TransferFunctionWindow &transferFunctionWindow, RayMeshIntersection& rayMeshIntersection);
     ~HexMesh();
     /**
      *
@@ -555,8 +551,9 @@ public:
             std::vector<HexahedralCellFaceUnified>& hexahedralCellFaces,
             std::vector<HexahedralCellVertexUnified>& hexahedralCellVertices,
             std::vector<HexahedralCellEdgeUnified>& hexahedralCellEdges,
-            std::vector<HexahedralCellUnified>& hexahedralCells,
-            int& maxLodValue, bool useVolumeWeighting = false,
+            std::vector<glm::uvec2>& hexahedralCellFacesCellLinks,
+            std::vector<float>& hexahedralCells,
+            bool showFocusFaces, int& maxLodValue, bool useVolumeWeighting = false,
             LodSettings lodSettings = LodSettings());
 
     /**
@@ -734,6 +731,11 @@ private:
     Mesh* mesh = nullptr;
     Singularity* si = nullptr;
     Frame* frame = nullptr;
+
+    // LoD edge data.
+    LodSettings lodSettings;
+    std::vector<float> edgeLodValues;
+    int maxLodValue = 0;
 
     // Cell filtering.
     std::vector<bool> cellFilteringList;

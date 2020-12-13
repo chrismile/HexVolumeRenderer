@@ -49,6 +49,7 @@ public:
     // Gets a copy of mesh from parent if parent has multiple children, i.e., operations must use different meshes.
     virtual void filterMesh(HexMeshPtr meshIn)=0;
     inline HexMeshPtr getOutput() { return output; }
+    inline void removeOldMesh() { output = HexMeshPtr(); }
 
     // Renders the GUI. The "dirty" flag might be set depending on the user's actions.
     virtual void renderGui()=0;

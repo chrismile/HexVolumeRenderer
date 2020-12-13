@@ -38,6 +38,19 @@ class HexMesh;
 typedef std::shared_ptr<HexMesh> HexMeshPtr;
 
 struct LodSettings {
+    bool operator==(const LodSettings& rhs) const {
+        return this->lodMergeFactor == rhs.lodMergeFactor
+                && this->useVolumeAndAreaMeasures == rhs.useVolumeAndAreaMeasures
+                && this->useWeightsForMerging == rhs.useWeightsForMerging
+                && this->useNumCellsOrVolume == rhs.useNumCellsOrVolume;
+    }
+    bool operator!=(const LodSettings& rhs) const {
+        return this->lodMergeFactor != rhs.lodMergeFactor
+                || this->useVolumeAndAreaMeasures != rhs.useVolumeAndAreaMeasures
+                || this->useWeightsForMerging != rhs.useWeightsForMerging
+                || this->useNumCellsOrVolume != rhs.useNumCellsOrVolume;
+    }
+
     /**
      * By what factor (multiplicative) the merging criterion must increase such that a new LOD is started.
      * In case "useWeightsForMerging" is true, the inverse factor is used.

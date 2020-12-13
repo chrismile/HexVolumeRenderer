@@ -72,8 +72,6 @@ protected:
     void gather();
     void resolve();
 
-    HexMeshPtr mesh;
-
     // The rendering data for the volume object.
     sgl::ShaderAttributesPtr shaderAttributes;
 

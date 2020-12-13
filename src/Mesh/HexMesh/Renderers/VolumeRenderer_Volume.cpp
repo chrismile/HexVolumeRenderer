@@ -104,7 +104,7 @@ VolumeRenderer_Volume::VolumeRenderer_Volume(SceneData &sceneData, sgl::Transfer
 }
 
 void VolumeRenderer_Volume::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
-    this->mesh = meshIn;
+    this->hexMesh = meshIn;
 
     std::vector<uint32_t> triangleIndices;
     std::vector<glm::vec3> vertexPositions;
@@ -339,7 +339,7 @@ void VolumeRenderer_Volume::render() {
 void VolumeRenderer_Volume::renderGui() {
     if (ImGui::Begin("Volume Renderer ( (Volume))", &showRendererWindow)) {
         if (ImGui::Checkbox("Use Weighted Vertex Attributes", &useWeightedVertexAttributes)) {
-            if (this->mesh) uploadVisualizationMapping(mesh, false);
+            if (this->hexMesh) uploadVisualizationMapping(hexMesh, false);
         }
     }
     ImGui::End();
