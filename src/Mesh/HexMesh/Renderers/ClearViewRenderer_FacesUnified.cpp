@@ -580,12 +580,12 @@ void ClearViewRenderer_FacesUnified::gather() {
         glEnable(GL_CULL_FACE);
     }
     if (useFocusOutline) {
-        if (useStencilBuffer) {
+        if (useStencilBuffer && clipFocusOutline) {
             glStencilFunc(GL_EQUAL, 1, 0xFF);
             glStencilMask(0x00);
         }
         renderFocusOutline(fragmentBufferSize);
-        if (useStencilBuffer) {
+        if (useStencilBuffer && clipFocusOutline) {
             glStencilFunc(GL_ALWAYS, 1, 0xFF);
             glStencilMask(0xFF);
         }

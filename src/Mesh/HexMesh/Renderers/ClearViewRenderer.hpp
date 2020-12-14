@@ -152,6 +152,8 @@ protected:
     float lineWidth = 0.0015f;
     bool useFocusOutline = true;
     glm::vec4 focusOutlineColor = glm::vec4(0.792f, 0.824f, 0.894f, 1.0f);
+    float focusOutlineWidth = 3.0f;
+    bool clipFocusOutline = true;
     bool useShading = false;
     bool useWeightedVertexAttributes = true;
     bool useVolumeWeighting = false;

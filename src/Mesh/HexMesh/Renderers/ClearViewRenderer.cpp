@@ -308,7 +308,7 @@ void ClearViewRenderer::renderFocusOutline(size_t fragmentBufferSize) {
         shaderProgramFocusOutline->setUniform("circleScreenPosition", focusPointScreen);
         shaderProgramFocusOutline->setUniform("circleScreenRadius", screenSpaceLensPixelRadius);
         shaderProgramFocusOutline->setUniform("circleDepth", 0.0f);
-        shaderProgramFocusOutline->setUniform("circlePixelThickness", 3.0f);
+        shaderProgramFocusOutline->setUniform("circlePixelThickness", focusOutlineWidth);
     } else {
         const glm::mat4& viewMatrix = sceneData.camera->getViewMatrix();
         const glm::mat4& vpMatrix = sceneData.camera->getViewProjMatrix();
@@ -322,7 +322,7 @@ void ClearViewRenderer::renderFocusOutline(size_t fragmentBufferSize) {
         shaderProgramFocusOutline->setUniform("circleScreenPosition", screenPosition);
         shaderProgramFocusOutline->setUniform("circleScreenRadius", screenRadius);
         shaderProgramFocusOutline->setUniform("circleDepth", -viewPosition.z);
-        float thickness = -viewportDist * 0.001f / viewPosition.z;
+        float thickness = -viewportDist * focusOutlineWidth * 0.0005f / viewPosition.z;
         shaderProgramFocusOutline->setUniform("circlePixelThickness", thickness);
     }
     shaderProgramFocusOutline->setUniform("viewportSize", glm::ivec2(windowWidth, windowHeight));
@@ -371,6 +371,13 @@ void ClearViewRenderer::render() {
 void ClearViewRenderer::renderGui() {
     if (ImGui::Begin(windowName.c_str(), &showRendererWindow)) {
         childClassRenderGuiBegin();
+        if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
+            if (lineRenderingMode == LINE_RENDERING_MODE_TUBES || lineRenderingMode == LINE_RENDERING_MODE_TUBES_CAPPED
+                || lineRenderingMode == LINE_RENDERING_MODE_TUBES_UNION) {
+                loadFocusRepresentation();
+            }
+            reRender = true;
+        }
         if (!useScreenSpaceLens
                 && ImGui::SliderFloat("Focus Radius", &focusRadius, MIN_FOCUS_RADIUS, MAX_FOCUS_RADIUS)) {
             reloadSphereRenderData();
@@ -393,11 +400,12 @@ void ClearViewRenderer::renderGui() {
                 && ImGui::ColorEdit4("Focus Outline Color", &focusOutlineColor.x)) {
             reRender = true;
         }
-        if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
-            if (lineRenderingMode == LINE_RENDERING_MODE_TUBES || lineRenderingMode == LINE_RENDERING_MODE_TUBES_CAPPED
-                    || lineRenderingMode == LINE_RENDERING_MODE_TUBES_UNION) {
-                loadFocusRepresentation();
-            }
+        if (useFocusOutline && clearViewRendererType == CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED
+                && ImGui::SliderFloat("Focus Outline Width", &focusOutlineWidth, 1.0f, 20.0f)) {
+            reRender = true;
+        }
+        if (useFocusOutline && clearViewRendererType == CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED
+                && ImGui::Checkbox("Clip Focus Outline", &clipFocusOutline)) {
             reRender = true;
         }
         if (clearViewRendererType == CLEAR_VIEW_RENDERER_TYPE_FACES
