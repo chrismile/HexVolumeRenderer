@@ -6,13 +6,15 @@ layout(location = 0) in vec3 vertexPosition;
 layout(location = 1) in float vertexAttribute;
 
 out vec3 fragmentPositionWorld;
-out vec4 fragmentColor;
+//out vec4 fragmentColor;
+out float fragmentAttribute;
 
-#include "TransferFunction.glsl"
+//#include "TransferFunction.glsl"
 
 void main()
 {
-    fragmentColor = transferFunction(vertexAttribute);
+    //fragmentColor = transferFunction(vertexAttribute);
+    fragmentAttribute = vertexAttribute;
     fragmentPositionWorld = (mMatrix * vec4(vertexPosition, 1.0)).xyz;
     gl_Position = mvpMatrix * vec4(vertexPosition, 1.0);
 }
@@ -23,7 +25,10 @@ void main()
 #version 430 core
 
 in vec3 fragmentPositionWorld;
-in vec4 fragmentColor;
+//in vec4 fragmentColor;
+in float fragmentAttribute;
+
+#include "TransferFunction.glsl"
 
 #if defined(DIRECT_BLIT_GATHER)
 out vec4 fragColor;
@@ -37,6 +42,7 @@ uniform vec3 cameraPosition; // in world space
 
 void main()
 {
+    vec4 fragmentColor = transferFunction(fragmentAttribute);
 #if defined(DIRECT_BLIT_GATHER)
     // Direct rendering, no transparency.
     fragColor = vec4(fragmentColor.rgb, 1.0);

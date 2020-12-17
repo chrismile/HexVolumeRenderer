@@ -304,36 +304,38 @@ void ClearViewRenderer::reloadFocusOutlineGatherShader() {
 }
 
 void ClearViewRenderer::renderFocusOutline(size_t fragmentBufferSize) {
-    if (useScreenSpaceLens) {
-        shaderProgramFocusOutline->setUniform("circleScreenPosition", focusPointScreen);
-        shaderProgramFocusOutline->setUniform("circleScreenRadius", screenSpaceLensPixelRadius);
-        shaderProgramFocusOutline->setUniform("circleDepth", 0.0f);
-        shaderProgramFocusOutline->setUniform("circlePixelThickness", focusOutlineWidth);
-    } else {
-        const glm::mat4& viewMatrix = sceneData.camera->getViewMatrix();
-        const glm::mat4& vpMatrix = sceneData.camera->getViewProjMatrix();
-        glm::vec3 viewPosition = sgl::transformPoint(viewMatrix, focusPoint);
-        glm::vec3 ndcPosition = sgl::transformPoint(vpMatrix, focusPoint);
-        glm::vec2 screenPosition =
-                (glm::vec2(ndcPosition.x, ndcPosition.y) * glm::vec2(0.5)
-                + glm::vec2(0.5)) * glm::vec2(windowWidth, windowHeight);
-        float viewportDist = windowHeight * 0.5f / std::tan(sceneData.camera->getFOVy() * 0.5f);
-        float screenRadius = -viewportDist * focusRadius / viewPosition.z;
-        shaderProgramFocusOutline->setUniform("circleScreenPosition", screenPosition);
-        shaderProgramFocusOutline->setUniform("circleScreenRadius", screenRadius);
-        shaderProgramFocusOutline->setUniform("circleDepth", -viewPosition.z);
-        float thickness = -viewportDist * focusOutlineWidth * 0.0005f / viewPosition.z;
-        shaderProgramFocusOutline->setUniform("circlePixelThickness", thickness);
-    }
-    shaderProgramFocusOutline->setUniform("viewportSize", glm::ivec2(windowWidth, windowHeight));
-    shaderProgramFocusOutline->setUniform("focusOutlineColor", focusOutlineColor);
-    shaderProgramFocusOutline->setUniform("viewportW", windowWidth);
-    shaderProgramFocusOutline->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
+    if ((useScreenSpaceLens && screenSpaceLensPixelRadius >= 0.0f) || (!useScreenSpaceLens && focusRadius >= 0.0f)) {
+        if (useScreenSpaceLens) {
+            shaderProgramFocusOutline->setUniform("circleScreenPosition", focusPointScreen);
+            shaderProgramFocusOutline->setUniform("circleScreenRadius", screenSpaceLensPixelRadius);
+            shaderProgramFocusOutline->setUniform("circleDepth", 0.0f);
+            shaderProgramFocusOutline->setUniform("circlePixelThickness", focusOutlineWidth);
+        } else {
+            const glm::mat4& viewMatrix = sceneData.camera->getViewMatrix();
+            const glm::mat4& vpMatrix = sceneData.camera->getViewProjMatrix();
+            glm::vec3 viewPosition = sgl::transformPoint(viewMatrix, focusPoint);
+            glm::vec3 ndcPosition = sgl::transformPoint(vpMatrix, focusPoint);
+            glm::vec2 screenPosition =
+                    (glm::vec2(ndcPosition.x, ndcPosition.y) * glm::vec2(0.5)
+                     + glm::vec2(0.5)) * glm::vec2(windowWidth, windowHeight);
+            float viewportDist = windowHeight * 0.5f / std::tan(sceneData.camera->getFOVy() * 0.5f);
+            float screenRadius = -viewportDist * focusRadius / viewPosition.z;
+            shaderProgramFocusOutline->setUniform("circleScreenPosition", screenPosition);
+            shaderProgramFocusOutline->setUniform("circleScreenRadius", screenRadius);
+            shaderProgramFocusOutline->setUniform("circleDepth", -viewPosition.z);
+            float thickness = -viewportDist * focusOutlineWidth * 0.0005f / viewPosition.z;
+            shaderProgramFocusOutline->setUniform("circlePixelThickness", thickness);
+        }
+        shaderProgramFocusOutline->setUniform("viewportSize", glm::ivec2(windowWidth, windowHeight));
+        shaderProgramFocusOutline->setUniform("focusOutlineColor", focusOutlineColor);
+        shaderProgramFocusOutline->setUniform("viewportW", windowWidth);
+        shaderProgramFocusOutline->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
 
-    sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
-    sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
-    sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
-    sgl::Renderer->render(focusOutlineShaderAttributes);
+        sgl::Renderer->setProjectionMatrix(sgl::matrixIdentity());
+        sgl::Renderer->setViewMatrix(sgl::matrixIdentity());
+        sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
+        sgl::Renderer->render(focusOutlineShaderAttributes);
+    }
 }
 
 void ClearViewRenderer::setSortingAlgorithmDefine() {
@@ -376,6 +378,11 @@ void ClearViewRenderer::renderGui() {
                 || lineRenderingMode == LINE_RENDERING_MODE_TUBES_UNION) {
                 loadFocusRepresentation();
             }
+            reRender = true;
+        }
+        if (clearViewRendererType == CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED
+                && ImGui::Checkbox("Modulate Line Thickness by Depth", &modulateLineThicknessByDepth)) {
+            reloadGatherShader(true);
             reRender = true;
         }
         if (!useScreenSpaceLens
@@ -488,6 +495,7 @@ void ClearViewRenderer::update(float dt) {
                 int width = window->getWidth();
                 int height = window->getHeight();
                 screenSpaceLensPixelRadius = glm::min(screenSpaceLensPixelRadius, float(std::max(width, height)));
+                screenSpaceLensPixelRadius = std::max(screenSpaceLensPixelRadius, 0.0f);
                 reRender = true;
             }
         }
@@ -498,6 +506,13 @@ void ClearViewRenderer::update(float dt) {
                 int mouseX = sgl::Mouse->getX();
                 int mouseY = sgl::Mouse->getY();
                 focusPointScreen = glm::vec2(mouseX, window->getHeight() - mouseY - 1);
+                glm::vec2 normalizedPosition = glm::vec2(
+                        focusPointScreen.x / windowHeight * 2.0f - 1.0f,
+                        focusPointScreen.y / windowHeight * 2.0f - 1.0f
+                );
+                if (sgl::Mouse->buttonPressed(1)) {
+                    std::cout << "(" << normalizedPosition.x << ", " << normalizedPosition.y << ")," << std::endl;
+                }
                 reRender = true;
             }
         }

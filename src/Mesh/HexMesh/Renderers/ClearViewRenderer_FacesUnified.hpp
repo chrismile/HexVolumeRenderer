@@ -126,6 +126,8 @@ protected:
     // Settings for changing internal state.
     float lineWidthBoostFactor = 1.0f;
     float focusRadiusBoostFactor = 1.0f;
+    bool manualLineWidthSet = false;
+    bool manualFocusRadiusSet = false;
 
     // GUI data.
     SingularEdgeColorMapWidget singularEdgeColorMapWidget;

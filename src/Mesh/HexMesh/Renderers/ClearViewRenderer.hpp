@@ -29,6 +29,8 @@
 #ifndef HEXVOLUMERENDERER_CLEARVIEWRENDERER_HPP
 #define HEXVOLUMERENDERER_CLEARVIEWRENDERER_HPP
 
+#include <chrono>
+
 #include <Graphics/Shader/ShaderAttributes.hpp>
 
 #include "PPLL/PerPixelLinkedList.hpp"
@@ -150,6 +152,7 @@ protected:
     glm::vec2 focusPointScreen = glm::vec2(0.0, 0.0f);
     float focusRadius = 0.05f;
     float lineWidth = 0.0015f;
+    bool modulateLineThicknessByDepth = false;
     bool useFocusOutline = true;
     glm::vec4 focusOutlineColor = glm::vec4(0.792f, 0.824f, 0.894f, 1.0f);
     float focusOutlineWidth = 3.0f;

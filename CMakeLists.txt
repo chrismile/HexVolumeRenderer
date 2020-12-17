@@ -16,9 +16,21 @@ include_directories(src)
 #	set(CMAKE_CXX_FLAGS "-Wall")
 #endif()
 
+option(USE_PYTHON "Build with Python 3 support for replay scripts" ON)
 option(USE_CORK "Build with Cork as CSG Library" OFF)
 option(USE_LEMON "Build with matching code and LEMON graph library" OFF)
 option(USE_STEAMWORKS "Build with Steamworks SDK" OFF)
+
+if (USE_PYTHON)
+	find_package(Python3 COMPONENTS Development QUIET)
+endif()
+
+if (Python3_FOUND AND USE_PYTHON)
+	MESSAGE(STATUS "Found Python 3. Enabling replay script support.")
+else()
+	list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Widgets/ReplayWidget.cpp)
+	MESSAGE(STATUS "Python 3 couldn't be found. Switching off replay script support.")
+endif()
 
 if(USE_LEMON)
 	if (UNIX AND NOT APPLE)
@@ -93,6 +105,12 @@ target_link_libraries(HexVolumeRenderer Eigen3::Eigen)
 target_link_libraries(HexVolumeRenderer sgl ${Boost_LIBRARIES} ${GLEW_LIBRARIES} ${NETCDF_LIBRARIES} ${CURL_LIBRARIES} ${JSONCPP_LIBRARIES}) # ${LEMON_LIBRARIES}
 
 include_directories(${sgl_INCLUDES} ${Boost_INCLUDES} ${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDES} ${NETCDF_INCLUDES} ${CURL_INCLUDES} ${JSONCPP_INCLUDES})
+
+if (Python3_FOUND AND USE_PYTHON)
+	add_definitions(-DUSE_PYTHON)
+	target_link_libraries(HexVolumeRenderer Python3::Python)
+	include_directories(${Python3_INCLUDE_DIRS})
+endif()
 
 if(${embree_FOUND})
 	add_definitions(-DUSE_EMBREE)

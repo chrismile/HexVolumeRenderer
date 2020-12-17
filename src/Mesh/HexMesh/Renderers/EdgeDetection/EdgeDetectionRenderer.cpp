@@ -163,6 +163,8 @@ void EdgeDetectionRenderer::reloadTexturesEdgeDetection() {
         framebufferEdgeDetection->bindRenderbuffer(
                 sceneDataEdgeDetection.sceneDepthRBO, sgl::DEPTH_STENCIL_ATTACHMENT);
     }
+
+    noiseReduction.onResolutionChanged();
 }
 
 void EdgeDetectionRenderer::reloadModelEdgeDetection(HexMeshPtr& mesh) {

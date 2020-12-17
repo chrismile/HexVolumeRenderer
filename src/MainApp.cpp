@@ -103,9 +103,41 @@ MainApp::MainApp()
 #endif
           sceneData(
                   sceneFramebuffer, sceneTexture, sceneDepthRBO, camera, clearColor, performanceMeasurer,
-                  recording, useCameraFlight, *rayMeshIntersection) {
+                  recording, useCameraFlight, *rayMeshIntersection)
+#ifdef USE_PYTHON
+        , replayWidget(sceneData, transferFunctionWindow, checkpointWindow)
+#endif
+{
 #ifdef USE_STEAMWORKS
     steamworks.initialize();
+#endif
+
+#ifdef USE_PYTHON
+    replayWidget.setLoadMeshCallback([this](const MeshDescriptor& meshDescriptor) {
+        std::string meshFilenameNew = meshDescriptor.getFilename();
+        if (loadedMeshFilename != meshFilenameNew) {
+            loadHexahedralMesh(meshFilenameNew);
+        }
+    });
+    replayWidget.setLoadRendererCallback([this](const std::string& rendererName) {
+        RenderingMode renderingModeNew = renderingMode;
+        int i;
+        for (i = 0; i < IM_ARRAYSIZE(RENDERING_MODE_NAMES); i++) {
+            if (RENDERING_MODE_NAMES[i] == rendererName) {
+                renderingModeNew = RenderingMode(i);
+                break;
+            }
+        }
+        if (i == IM_ARRAYSIZE(RENDERING_MODE_NAMES)) {
+            sgl::Logfile::get()->writeError(
+                    std::string() + "ERROR in replay widget load renderer callback: Unknown renderer name \""
+                    + rendererName + "\".");
+        }
+        if (renderingModeNew != renderingMode) {
+            renderingMode = renderingModeNew;
+            setRenderers();
+        }
+    });
 #endif
 
     clearColor = sgl::Color(0, 0, 0, 255);
@@ -426,6 +458,45 @@ void MainApp::renderGui() {
         reRender = true;
     }
 
+#ifdef USE_PYTHON
+    ReplayWidget::ReplayWidgetUpdateType replayWidgetUpdateType = replayWidget.renderGui();
+    if (replayWidgetUpdateType == ReplayWidget::REPLAY_WIDGET_UPDATE_LOAD) {
+        recordingTime = 0.0f;
+        //realTimeReplayUpdates = true;
+        realTimeReplayUpdates = false;
+    }
+    if (replayWidgetUpdateType == ReplayWidget::REPLAY_WIDGET_UPDATE_START_RECORDING) {
+        sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+        if (window->getWindowResolution() != recordingResolution) {
+            window->setWindowSize(recordingResolution.x, recordingResolution.y);
+        }
+
+        if (videoWriter) {
+            delete videoWriter;
+            videoWriter = nullptr;
+        }
+
+        recordingTime = 0.0f;
+        realTimeReplayUpdates = false;
+        recordingTimeStampStart = sgl::Timer->getTicksMicroseconds();
+
+        recording = true;
+        videoWriter = new sgl::VideoWriter(
+                saveDirectoryVideos + saveFilenameVideos
+                + "_" + sgl::toString(videoNumber++) + ".mp4", FRAME_RATE_VIDEOS);
+    }
+    if (replayWidgetUpdateType == ReplayWidget::REPLAY_WIDGET_UPDATE_STOP_RECORDING) {
+        recording = false;
+        if (videoWriter) {
+            delete videoWriter;
+            videoWriter = nullptr;
+        }
+    }
+    if (replayWidgetUpdateType != ReplayWidget::REPLAY_WIDGET_UPDATE_NONE) {
+        reRender = true;
+    }
+#endif
+
     for (HexahedralMeshFilter* meshFilter : meshFilters) {
         meshFilter->renderGui();
     }
@@ -570,6 +641,33 @@ void MainApp::update(float dt) {
 
     transferFunctionWindow.update(dt);
 
+#ifdef USE_PYTHON
+    bool stopRecording = false;
+    if (replayWidget.update(recordingTime, stopRecording)) {
+        camera->overwriteViewMatrix(replayWidget.getViewMatrix());
+        SettingsMap currentRendererSettings = replayWidget.getCurrentRendererSettings();
+        for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
+            meshRenderer->setNewSettings(currentRendererSettings);
+        }
+        reRender = true;
+
+        if (realTimeReplayUpdates) {
+            uint64_t currentTimeStamp = sgl::Timer->getTicksMicroseconds();
+            uint64_t timeElapsedMicroSec = currentTimeStamp - recordingTimeStampStart;
+            recordingTime = timeElapsedMicroSec * 1e-6;
+        } else {
+            recordingTime += FRAME_TIME_CAMERA_PATH;
+        }
+    }
+    if (stopRecording) {
+        recording = false;
+        if (videoWriter) {
+            delete videoWriter;
+            videoWriter = nullptr;
+        }
+    }
+#endif
+
     ImGuiIO &io = ImGui::GetIO();
     if (io.WantCaptureKeyboard && !recording) {
         // Ignore inputs below
@@ -674,6 +772,8 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         return;
     }
 
+    auto loadingStartTime = std::chrono::system_clock::now();
+
     hexMeshVertices.clear();
     hexMeshCellIndices.clear();
     hexMeshDeformations.clear();
@@ -682,7 +782,10 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
             fileName, hexMeshVertices, hexMeshCellIndices, hexMeshDeformations, hexMeshAnistropyMetricList);
     if (loadingSuccessful) {
         newMeshLoaded = true;
+        printLoadingTime = true;
+        loadingTimeSeconds = 0.0;
         checkpointWindow.onLoadDataSet(fileName);
+        loadedMeshFilename = fileName;
 
         // A copy of the mesh data is stored for allowing the user to alter the deformation factor also after loading.
         std::vector<glm::vec3> vertices;
@@ -707,7 +810,8 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         }
 
         inputData = HexMeshPtr(new HexMesh(transferFunctionWindow, *rayMeshIntersection));
-        bool loadMeshRepresentation = renderingMode != RENDERING_MODE_PSEUDO_VOLUME;
+        bool loadMeshRepresentation =
+                renderingMode != RENDERING_MODE_PSEUDO_VOLUME && renderingMode != RENDERING_MODE_DEPTH_COMPLEXITY;
         inputData->setHexMeshData(vertices, hexMeshCellIndices, loadMeshRepresentation);
         if (hexMeshAnistropyMetricList.empty()) {
             inputData->setQualityMeasure(selectedQualityMeasure);
@@ -732,6 +836,10 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
             }
         }
     }
+    auto loadingFinishedTime = std::chrono::system_clock::now();
+    auto elapsedTimeLoad = std::chrono::duration_cast<std::chrono::milliseconds>(
+            loadingFinishedTime - loadingStartTime);
+    loadingTimeSeconds += elapsedTimeLoad.count() * 1e-3;
 
     reRender = true;
 }
@@ -752,6 +860,11 @@ void MainApp::onDeformationFactorChanged() {
 }
 
 void MainApp::prepareVisualizationPipeline() {
+    std::chrono::time_point<std::chrono::system_clock> prepareVisPipelineTimeStart;
+    if (printLoadingTime) {
+        prepareVisPipelineTimeStart = std::chrono::system_clock::now();
+    }
+
     if (inputData != nullptr) {
         bool isPreviousNodeDirty = inputData->isDirty();
         HexMeshPtr filteredMesh;
@@ -768,6 +881,17 @@ void MainApp::prepareVisualizationPipeline() {
             }
         }
     }
+
+    if (printLoadingTime) {
+        printLoadingTime = false;
+        auto prepareVisPipelineTimeEnd = std::chrono::system_clock::now();
+        auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                prepareVisPipelineTimeEnd - prepareVisPipelineTimeStart);
+        loadingTimeSeconds += elapsedTime.count() * 1e-3;
+        sgl::Logfile::get()->writeInfo(
+                std::string() + "Total loading time until first frame: " + std::to_string(loadingTimeSeconds) + "s");
+    }
+
     newMeshLoaded = false;
 }
 

@@ -49,6 +49,10 @@
 #include "Mesh/HexMesh/Renderers/HexahedralMeshRenderer.hpp"
 #include "Utils/AutomaticPerformanceMeasurer.hpp"
 
+#ifdef USE_PYTHON
+#include "Widgets/ReplayWidget.hpp"
+#endif
+
 #ifdef USE_STEAMWORKS
 #include "Utils/Steamworks.hpp"
 #endif
@@ -100,6 +104,7 @@ private:
     int selectedMeshIndex = 0; //< Contains "None" at beginning, thus starts actually at 1.
     int currentlyLoadedFileSourceIndex = -1;
     int currentlySelectedMeshIndex = -1;
+    std::string loadedMeshFilename;
     std::string customMeshFileName;
     float deformationFactor = 0.0f;
 
@@ -120,6 +125,11 @@ private:
     InternalState lastState;
     bool firstState = true;
     bool usesNewState = true;
+
+#ifdef USE_PYTHON
+    ReplayWidget replayWidget;
+    bool realTimeReplayUpdates = false;
+#endif
 
 
     /// --- Visualization pipeline ---
@@ -151,6 +161,10 @@ private:
     /// The data loaded from the input file (or a wrapped nullptr).
     HexMeshPtr inputData;
     bool newMeshLoaded = true;
+
+    // Timer for measuring how long data loading & mesh processing takes.
+    bool printLoadingTime = false;
+    double loadingTimeSeconds = 0.0;
 
     /// A copy of the mesh data is stored for allowing the user to alter the deformation factor also after loading.
     std::vector<glm::vec3> hexMeshVertices;

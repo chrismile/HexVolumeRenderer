@@ -72,15 +72,9 @@ DepthComplexityRenderer::DepthComplexityRenderer(SceneData &sceneData, sgl::Tran
 void DepthComplexityRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMesh) {
     hexMesh = meshIn;
 
-    /*std::vector<uint32_t> triangleIndices;
-    std::vector<glm::vec3> vertexPositions;
-    std::vector<glm::vec3> vertexNormals;
-    std::vector<float> vertexAttributes;
-    meshIn->getVolumeData_Faces(triangleIndices, vertexPositions, vertexNormals, vertexAttributes);*/
-
     std::vector<uint32_t> triangleIndices;
     std::vector<glm::vec3> vertexPositions;
-    meshIn->getVolumeData_DepthComplexity(triangleIndices, vertexPositions);
+    meshIn->getVolumeData_DepthComplexity_Slim(triangleIndices, vertexPositions);
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(gatherShader);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);

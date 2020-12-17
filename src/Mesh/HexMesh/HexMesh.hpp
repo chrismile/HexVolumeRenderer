@@ -603,6 +603,9 @@ public:
     void getVolumeData_DepthComplexity(
             std::vector<uint32_t>& triangleIndices,
             std::vector<glm::vec3>& vertexPositions);
+    void getVolumeData_DepthComplexity_Slim(
+            std::vector<uint32_t>& triangleIndices,
+            std::vector<glm::vec3>& vertexPositions);
 
     /**
      * Get all surface faces including the colors of their edges.

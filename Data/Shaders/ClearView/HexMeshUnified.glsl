@@ -251,6 +251,9 @@ void main()
     //float screenSpaceSphereDistanceNormalized = length(projectedPoint - sphereCenter) / sphereRadius;
 
     float lineWidthPrime = lineWidth * (-distanceToFocusPointNormalized * 0.3 + 1.0);
+#ifdef MODULATE_LINE_THICKNESS_BY_DEPTH
+    lineWidthPrime = lineWidthPrime * fragmentDistance * 2.0;
+#endif
     float lineRadius = lineWidthPrime / 2.0f;
 
     // Volume color.
@@ -524,6 +527,9 @@ void main()
     //float contextFactor = 1.0 - focusFactor;
 
     float lineWidthPrime = lineWidth * (-screenSpaceSphereDistanceNormalized * 0.3 + 1.0);
+#ifdef MODULATE_LINE_THICKNESS_BY_DEPTH
+    lineWidthPrime = lineWidthPrime * fragmentDistance * 2.0;
+#endif
     float lineRadius = lineWidthPrime / 2.0f;
 
     // Volume color.

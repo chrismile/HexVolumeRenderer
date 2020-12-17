@@ -246,3 +246,23 @@ void HexMesh::getVolumeData_FacesShared_Slim(
         triangleIndices.push_back(f.vs[0]);
     }
 }
+
+void HexMesh::getVolumeData_DepthComplexity_Slim(
+        std::vector<uint32_t>& triangleIndices,
+        std::vector<glm::vec3>& vertexPositions) {
+    rebuildInternalRepresentationIfNecessary_Slim();
+
+    for (uint32_t v_id = 0; v_id < this->vertices.size(); v_id++) {
+        vertexPositions.push_back(this->vertices.at(v_id));
+    }
+
+    triangleIndices.reserve(facesSlim.size() * 6);
+    for (FaceSlim& f : facesSlim) {
+        triangleIndices.push_back(f.vs[2]);
+        triangleIndices.push_back(f.vs[1]);
+        triangleIndices.push_back(f.vs[0]);
+        triangleIndices.push_back(f.vs[3]);
+        triangleIndices.push_back(f.vs[2]);
+        triangleIndices.push_back(f.vs[0]);
+    }
+}

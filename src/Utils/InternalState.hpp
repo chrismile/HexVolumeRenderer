@@ -35,6 +35,7 @@
 #include <glm/glm.hpp>
 
 #include <Utils/Convert.hpp>
+#include "Utils/VecStringConversion.hpp"
 
 enum RenderingMode {
     RENDERING_MODE_SURFACE, RENDERING_MODE_WIREFRAME, RENDERING_MODE_DEPTH_COMPLEXITY,
@@ -68,12 +69,12 @@ public:
     inline int getIntValue(const char *key) const { return sgl::fromString<int>(getValue(key)); }
     inline float getFloatValue(const char *key) const { return sgl::fromString<float>(getValue(key)); }
     inline bool getBoolValue(const char *key) const { std::string val = getValue(key); if (val == "false" || val == "0") return false; return val.length() > 0; }
-    inline void addKeyValue(const std::string &key, const std::string &value) { settings[key] = value; }
-    template<typename T> inline void addKeyValue(const std::string &key, const T &value) { settings[key] = toString(value); }
+    inline void addKeyValue(const std::string& key, const std::string& value) { settings[key] = value; }
+    template<typename T> inline void addKeyValue(const std::string& key, const T& value) { settings[key] = toString(value); }
     inline void clear() { settings.clear(); }
     inline bool hasValue(const char *key) const { auto it = settings.find(key); return it != settings.end(); }
 
-    bool getValueOpt(const char *key, std::string &toset) const {
+    bool getValueOpt(const char *key, std::string& toset) const {
         auto it = settings.find(key);
         if (it != settings.end()) {
             toset = it->second;
@@ -81,7 +82,7 @@ public:
         }
         return false;
     }
-    bool getValueOpt(const char *key, bool &toset) const {
+    bool getValueOpt(const char *key, bool& toset) const {
         auto it = settings.find(key);
         if (it != settings.end()) {
             toset = (it->second == "true") || (it->second == "1");
@@ -89,7 +90,31 @@ public:
         }
         return false;
     }
-    template<typename T> bool getValueOpt(const char *key, T &toset) const {
+    bool getValueOpt(const char *key, glm::vec2& toset) const {
+        auto it = settings.find(key);
+        if (it != settings.end()) {
+            toset = stringToVec2(it->second);
+            return true;
+        }
+        return false;
+    }
+    bool getValueOpt(const char *key, glm::vec3& toset) const {
+        auto it = settings.find(key);
+        if (it != settings.end()) {
+            toset = stringToVec3(it->second);
+            return true;
+        }
+        return false;
+    }
+    bool getValueOpt(const char *key, glm::vec4& toset) const {
+        auto it = settings.find(key);
+        if (it != settings.end()) {
+            toset = stringToVec4(it->second);
+            return true;
+        }
+        return false;
+    }
+    template<typename T> bool getValueOpt(const char *key, T& toset) const {
         auto it = settings.find(key);
         if (it != settings.end()) {
             toset = sgl::fromString<T>(it->second);
@@ -102,7 +127,7 @@ public:
         settings = stringMap;
     }
 
-    const std::map<std::string, std::string> &getMap() const {
+    const std::map<std::string, std::string>& getMap() const {
         return settings;
     }
 
@@ -112,10 +137,6 @@ public:
     bool operator!=(const SettingsMap& rhs) const {
         return !(*this == rhs);
     }
-
-    //template<typename T>
-    //unsigned const T &operator[](const std::string &key) const { return getValue(key); }
-    //unsigned T &operator[](const std::string &key) { return getValue(key); }
 
 private:
     std::map<std::string, std::string> settings;
@@ -149,7 +170,7 @@ struct MeshDescriptor {
 };
 
 struct InternalState {
-    bool operator==(const InternalState &rhs) const {
+    bool operator==(const InternalState& rhs) const {
         return this->meshDescriptor == rhs.meshDescriptor && this->name == rhs.name
                 && this->renderingMode == rhs.renderingMode
                 && this->rendererSettings == rhs.rendererSettings
@@ -157,7 +178,7 @@ struct InternalState {
                 && this->tilingWidth == rhs.tilingWidth && this->tilingHeight == rhs.tilingHeight
                 && this->useMortonCodeForTiling == rhs.useMortonCodeForTiling
                 && this->transferFunctionName == rhs.transferFunctionName
-                && this->windowResolution == windowResolution;
+                && this->windowResolution == rhs.windowResolution;
     }
 
     bool operator!=(const InternalState& rhs) const {

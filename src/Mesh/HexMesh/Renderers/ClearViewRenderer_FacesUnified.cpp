@@ -160,6 +160,9 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader(bool copyShaderAttribute
     sgl::ShaderManager->invalidateShaderCache();
     std::string lineRenderingStyleDefineName = "LINE_RENDERING_STYLE_HALO";
     sgl::ShaderManager->addPreprocessorDefine(lineRenderingStyleDefineName, "");
+    if (modulateLineThicknessByDepth) {
+        sgl::ShaderManager->addPreprocessorDefine("MODULATE_LINE_THICKNESS_BY_DEPTH", "");
+    }
     if (tooMuchSingularEdgeMode) {
         sgl::ShaderManager->addPreprocessorDefine("TOO_MUCH_SINGULAR_EDGE_MODE", "");
     }
@@ -200,6 +203,9 @@ void ClearViewRenderer_FacesUnified::reloadGatherShader(bool copyShaderAttribute
     }
 
     sgl::ShaderManager->removePreprocessorDefine(lineRenderingStyleDefineName);
+    if (modulateLineThicknessByDepth) {
+        sgl::ShaderManager->removePreprocessorDefine("MODULATE_LINE_THICKNESS_BY_DEPTH");
+    }
     if (tooMuchSingularEdgeMode) {
         sgl::ShaderManager->removePreprocessorDefine("TOO_MUCH_SINGULAR_EDGE_MODE");
     }
@@ -254,8 +260,8 @@ void ClearViewRenderer_FacesUnified::setNewState(const InternalState& newState) 
 void ClearViewRenderer_FacesUnified::setNewSettings(const SettingsMap& settings) {
     lineWidthBoostFactor = 1.0f;
     focusRadiusBoostFactor = 1.0f;
-    settings.getValueOpt("lineWidthBoostFactor", lineWidthBoostFactor);
-    settings.getValueOpt("focusRadiusBoostFactor", focusRadiusBoostFactor);
+    bool reloadLineWidth = settings.getValueOpt("lineWidthBoostFactor", lineWidthBoostFactor);
+    bool reloadFocusRadius = settings.getValueOpt("focusRadiusBoostFactor", focusRadiusBoostFactor);
 
     if (settings.hasValue("sortingAlgorithmMode")) {
         sortingAlgorithmMode = (SortingAlgorithmMode)settings.getIntValue("sortingAlgorithmMode");
@@ -263,19 +269,58 @@ void ClearViewRenderer_FacesUnified::setNewSettings(const SettingsMap& settings)
         reloadResolveShader();
     }
 
-    if (hexMesh) {
+    if (hexMesh && (reloadLineWidth || reloadFocusRadius)) {
         const float avgCellVolumeCbrt = std::cbrt(hexMesh->getAverageCellVolume());
-        lineWidth = lineWidthBoostFactor * glm::clamp(
-                avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
-        focusRadius = focusRadiusBoostFactor * glm::clamp(
-                avgCellVolumeCbrt * FOCUS_RADIUS_VOLUME_CBRT_FACTOR, MIN_FOCUS_RADIUS_AUTO, MAX_FOCUS_RADIUS_AUTO);
+        if (reloadLineWidth) {
+            lineWidth = lineWidthBoostFactor * glm::clamp(
+                    avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
+        }
+        if (reloadFocusRadius) {
+            focusRadius = focusRadiusBoostFactor * glm::clamp(
+                    avgCellVolumeCbrt * FOCUS_RADIUS_VOLUME_CBRT_FACTOR, MIN_FOCUS_RADIUS_AUTO, MAX_FOCUS_RADIUS_AUTO);
+        }
+    }
+
+    // Replay script data.
+    bool shallReloadGatherShader = false;
+    if (settings.getValueOpt("line_width", lineWidth)) {
+        manualLineWidthSet = true;
+    }
+    settings.getValueOpt("lod_value_context", selectedLodValueContext);
+    settings.getValueOpt("lod_value_focus", selectedLodValueFocus);
+    if (settings.getValueOpt("use_screen_space_lens", useScreenSpaceLens)) {
+        shallReloadGatherShader = true;
+    }
+    settings.getValueOpt("screen_space_lens_radius", screenSpaceLensPixelRadius);
+    if (settings.getValueOpt("object_space_lens_radius", focusRadius)) {
+        manualFocusRadiusSet = true;
+    }
+    settings.getValueOpt("focus_outline_width", focusOutlineWidth);
+    settings.getValueOpt("clip_focus_outline", clipFocusOutline);
+    settings.getValueOpt("focus_outline_color", focusOutlineColor);
+    settings.getValueOpt("important_lines", importantLineBoostFactor);
+    settings.getValueOpt("important_cells", importantCellFactor);
+
+    glm::vec2 screenSpaceLensPositionRelative;
+    if (settings.getValueOpt("screen_space_lens_position", screenSpaceLensPositionRelative)) {
+        sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+        int height = window->getHeight();
+        focusPointScreen.x = height * (screenSpaceLensPositionRelative.x + 1.0f) / 2.0f;
+        focusPointScreen.y = height * (screenSpaceLensPositionRelative.y + 1.0f) / 2.0f;
+    }
+    settings.getValueOpt("object_space_lens_position", focusPoint);
+
+    if (shallReloadGatherShader) {
+        reloadGatherShader(true);
     }
 }
 
 void ClearViewRenderer_FacesUnified::updateLargeMeshMode() {
     // More than one million cells?
     LargeMeshMode newMeshLargeMeshMode = MESH_SIZE_MEDIUM;
-    if (hexMesh->getNumCells() > 1e6) { // > 1m elements
+    if (hexMesh->getNumCells() > 1e7) { // > 10m elements
+        newMeshLargeMeshMode = MESH_SIZE_VERY_LARGE;
+    } else if (hexMesh->getNumCells() > 1e6) { // > 1m elements
         newMeshLargeMeshMode = MESH_SIZE_LARGE;
     }
     if (newMeshLargeMeshMode != largeMeshMode) {
@@ -297,10 +342,18 @@ void ClearViewRenderer_FacesUnified::uploadVisualizationMapping(HexMeshPtr meshI
     updateLargeMeshMode();
     const float avgCellVolumeCbrt = std::cbrt(meshIn->getAverageCellVolume());
     // Higher radius for recording...
-    lineWidth = lineWidthBoostFactor * glm::clamp(
-            avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
-    focusRadius = focusRadiusBoostFactor * glm::clamp(
-            avgCellVolumeCbrt * FOCUS_RADIUS_VOLUME_CBRT_FACTOR, MIN_FOCUS_RADIUS_AUTO, MAX_FOCUS_RADIUS_AUTO);
+    if (!manualLineWidthSet) {
+        lineWidth = lineWidthBoostFactor * glm::clamp(
+                avgCellVolumeCbrt * LINE_WIDTH_VOLUME_CBRT_FACTOR, MIN_LINE_WIDTH_AUTO, MAX_LINE_WIDTH_AUTO);
+    } else {
+        manualLineWidthSet = false;
+    }
+    if (!manualFocusRadiusSet) {
+        focusRadius = focusRadiusBoostFactor * glm::clamp(
+                avgCellVolumeCbrt * FOCUS_RADIUS_VOLUME_CBRT_FACTOR, MIN_FOCUS_RADIUS_AUTO, MAX_FOCUS_RADIUS_AUTO);
+    } else {
+        manualFocusRadiusSet = false;
+    }
     reloadSphereRenderData();
 
     // Don't highlight singular edges when we have far too many of them.
@@ -499,10 +552,10 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     if (useScreenSpaceLens) {
         gatherShader->setUniform("viewportSize", glm::ivec2(windowWidth, windowHeight));
         gatherShader->setUniform("sphereCenterScreen", focusPointScreen);
-        gatherShader->setUniform("sphereRadiusPixels", screenSpaceLensPixelRadius);
+        gatherShader->setUniform("sphereRadiusPixels", std::max(screenSpaceLensPixelRadius, 0.0f));
     } else {
         gatherShader->setUniform("sphereCenter", focusPoint);
-        gatherShader->setUniform("sphereRadius", focusRadius);
+        gatherShader->setUniform("sphereRadius", std::max(focusRadius, 0.0f));
     }
 
     if (showFocusFaces) {

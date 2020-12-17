@@ -115,6 +115,7 @@ void VolumeRenderer_FacesSlim::uploadVisualizationMapping(HexMeshPtr meshIn, boo
     sgl::Logfile::get()->writeInfo(
             std::string() + "GPU model buffer size MiB: "
             + std::to_string(modelBufferSizeBytes / 1024.0 / 1024.0));
+    sgl::Logfile::get()->writeInfo("Number of triangles: " + std::to_string(triangleIndices.size() / 3));
 
     shaderAttributes = sgl::ShaderManager->createShaderAttributes(gatherShader);
     shaderAttributes->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -209,7 +210,9 @@ void VolumeRenderer_FacesSlim::setNewSettings(const SettingsMap& settings) {
 void VolumeRenderer_FacesSlim::updateLargeMeshMode() {
     // More than one million cells?
     LargeMeshMode newMeshLargeMeshMode = MESH_SIZE_MEDIUM;
-    if (hexMesh->getNumCells() > 1e6) { // > 1m elements
+    if (hexMesh->getNumCells() > 1e7) { // > 10m elements
+        newMeshLargeMeshMode = MESH_SIZE_VERY_LARGE;
+    } else if (hexMesh->getNumCells() > 1e6) { // > 1m elements
         newMeshLargeMeshMode = MESH_SIZE_LARGE;
     }
     if (newMeshLargeMeshMode != largeMeshMode) {

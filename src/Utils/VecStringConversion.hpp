@@ -26,31 +26,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_PERPIXELLINKEDLIST_HPP
-#define HEXVOLUMERENDERER_PERPIXELLINKEDLIST_HPP
+#ifndef HEXVOLUMERENDERER_VECSTRINGCONVERSION_HPP
+#define HEXVOLUMERENDERER_VECSTRINGCONVERSION_HPP
 
-// Sorting algorithm for PPLL.
-enum SortingAlgorithmMode {
-    SORTING_ALGORITHM_MODE_PRIORITY_QUEUE,
-    SORTING_ALGORITHM_MODE_BUBBLE_SORT,
-    SORTING_ALGORITHM_MODE_INSERTION_SORT,
-    SORTING_ALGORITHM_MODE_SHELL_SORT,
-    SORTING_ALGORITHM_MODE_MAX_HEAP,
-    SORTING_ALGORITHM_MODE_QUICKSORT,
-    SORTING_ALGORITHM_MODE_QUICKSORT_HYBRID
-};
-const char* const SORTING_MODE_NAMES[7] = {
-        "Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap", "Quicksort", "Quicksort Hybrid"
-};
-const int NUM_SORTING_MODES = ((int)(sizeof(SORTING_MODE_NAMES) / sizeof(*SORTING_MODE_NAMES)));
+#include <string>
+#include <glm/glm.hpp>
 
-enum LargeMeshMode {
-    MESH_SIZE_MEDIUM, MESH_SIZE_LARGE, MESH_SIZE_VERY_LARGE
-};
-const int MESH_MODE_DEPTH_COMPLEXITIES[4][2] = {
-        80, 256, // avg and max depth complexity medium
-        128, 380, // avg and max depth complexity large
-        256, 380 // avg and max depth complexity very large
-};
+std::string vec2ToString(const glm::vec2& v);
+std::string vec3ToString(const glm::vec3& v);
+std::string vec4ToString(const glm::vec4& v);
+std::string quatToString(const glm::quat& q);
 
-#endif //HEXVOLUMERENDERER_PERPIXELLINKEDLIST_HPP
+glm::vec2 stringToVec2(const std::string& s);
+glm::vec3 stringToVec3(const std::string& s);
+glm::vec4 stringToVec4(const std::string& s);
+glm::quat stringToQuat(const std::string& s);
+
+#endif //HEXVOLUMERENDERER_VECSTRINGCONVERSION_HPP
