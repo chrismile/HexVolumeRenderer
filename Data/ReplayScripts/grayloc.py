@@ -29,7 +29,7 @@ def distance_vec2(v0, v1):
     return length_vec2((v0[0] - v1[0], v0[1] - v1[1]))
 
 def move_lens_overview():
-    total_time = 16.0
+    total_time = 10.0
     lens_positions = [
         (1.28472, -0.401389),
         (1.03472, -0.579167),
@@ -45,7 +45,7 @@ def move_lens_overview():
     # Move lens to start position.
     g.set_duration(0)
     g.set_rendering_algorithm_settings({ "screen_space_lens_position": lens_positions[0] })
-    g.set_duration(2)
+    g.set_duration(1.5)
     g.set_rendering_algorithm_settings({ "screen_space_lens_radius": 360.0 })
     g.set_duration(2)
 

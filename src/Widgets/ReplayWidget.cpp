@@ -49,6 +49,7 @@
 
 static ReplayState currentReplayStateGlobal;
 static std::vector<ReplayState> replayStatesGlobal;
+static bool useCameraFlightGlobal = false;
 static bool isFirstState = true;
 
 static PyObject* py_set_duration(PyObject* self, PyObject* args) {
@@ -156,12 +157,17 @@ static PyObject* py_set_rendering_algorithm_settings(PyObject* self, PyObject* a
                             "ERROR in py_set_rendering_algorithm_settings: Invalid tuple.");
                     Py_RETURN_NONE;
                 }
-                if (!PyFloat_Check(tupleValues[i])) {
+                bool isFloat = PyFloat_Check(tupleValues[i]);
+                bool isLong = PyLong_Check(tupleValues[i]);
+                if (isFloat) {
+                    values[i] = PyFloat_AsDouble(tupleValues[i]);
+                } else if (isLong) {
+                    values[i] = PyLong_AsDouble(tupleValues[i]);
+                } else {
                     sgl::Logfile::get()->writeError(
-                            "ERROR in py_set_rendering_algorithm_settings: Tuple must contain float values.");
+                            "ERROR in py_set_rendering_algorithm_settings: Tuple must contain float or long values.");
                     Py_RETURN_NONE;
                 }
-                values[i] = PyFloat_AsDouble(tupleValues[i]);
             }
 
             if (tupleSize == 2) {
@@ -224,6 +230,16 @@ static PyObject* py_set_camera_checkpoint(PyObject* self, PyObject* args) {
     Py_RETURN_NONE;
 }
 
+static PyObject* py_set_use_camera_flight(PyObject* self, PyObject* args) {
+    int useCameraFlight = false;
+    if (!PyArg_ParseTuple(args, "p", &useCameraFlight)) {
+        return NULL;
+    }
+
+    useCameraFlightGlobal = useCameraFlight;
+    Py_RETURN_NONE;
+}
+
 static PyMethodDef REPLAY_METHODS[] = {
         {"set_duration", py_set_duration, METH_VARARGS,
                 "Sets the duration of the state. Needs to be called as the first function in each state!"},
@@ -241,6 +257,8 @@ static PyMethodDef REPLAY_METHODS[] = {
                 "Sets the camera orientation using a yaw and pitch value (in radians)."},
         {"set_camera_checkpoint", py_set_camera_checkpoint, METH_VARARGS,
                 "Sets the camera checkpoint corresponding to the passed string."},
+        {"set_use_camera_flight", py_set_use_camera_flight, METH_VARARGS,
+                "Whether to use the pre-defined camera flight for camera positions and orientations."},
         {NULL, NULL, 0, NULL}
 };
 
@@ -283,6 +301,7 @@ bool ReplayWidget::runScript(const std::string& filename) {
     replayStates.clear();
     currentStateIndex = 0;
     replayStatesGlobal.clear();
+    useCameraFlightGlobal = false;
     isFirstState = true;
     currentReplayStateGlobal = ReplayState();
 
@@ -333,6 +352,7 @@ bool ReplayWidget::runScript(const std::string& filename) {
     }
     replayStatesGlobal.clear();
     currentReplayStateGlobal = ReplayState();
+    useCameraFlight = useCameraFlightGlobal;
 
     cameraPositionLast = sceneData.camera->getPosition();
     cameraOrientationLast =
@@ -347,13 +367,17 @@ bool ReplayWidget::runScript(const std::string& filename) {
     return true;
 }
 
-bool ReplayWidget::update(float currentTime, bool& stopRecording) {
+bool ReplayWidget::update(float currentTime, bool& stopRecording, bool& stopCameraFlight) {
     directoryContentWatch.update([this] { this->updateAvailableReplayScripts(); });
 
     if (currentStateIndex >= int(replayStates.size())) {
         if (recording) {
             recording = false;
             stopRecording = true;
+        }
+        if (useCameraFlight) {
+            useCameraFlight = false;
+            stopCameraFlight = true;
         }
         return false;
     }
@@ -474,11 +498,8 @@ ReplayWidget::ReplayWidgetUpdateType ReplayWidget::renderFileDialog() {
     } ImVec2 cursorPosEnd = ImGui::GetCursorPos(); ImGui::SameLine();
 
     ImVec2 cursorPos = ImGui::GetCursorPos();
-    ImGui::Text("Available files"); ImGui::SameLine(); ImGui::SetCursorPos(cursorPos + ImVec2(0.0f, 42.0f));
-    if (ImGui::Button("Load file") && selectedFileIndex >= 0) {
-        runScript(scriptFileName);
-        updateType = ReplayWidget::REPLAY_WIDGET_UPDATE_LOAD;
-    } ImGui::SetCursorPos(cursorPosEnd);
+    ImGui::Text("Available files"); ImGui::SetCursorPos(cursorPos + ImVec2(0.0f, 42.0f));
+    ImGui::SetCursorPos(cursorPosEnd);
 
     if (!recording && currentStateIndex >= int(replayStates.size())) {
         ImGui::InputText("##savefilelabel", &scriptFileName); ImGui::SameLine();

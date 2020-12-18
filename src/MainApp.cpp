@@ -492,6 +492,18 @@ void MainApp::renderGui() {
             videoWriter = nullptr;
         }
     }
+    if (replayWidget.getUseCameraFlight()
+            && replayWidgetUpdateType != ReplayWidget::REPLAY_WIDGET_UPDATE_STOP_RECORDING) {
+        useCameraFlight = true;
+        startedCameraFlightPerUI = true;
+        realTimeCameraFlight = false;
+        cameraPath.resetTime();
+    }
+    if (replayWidget.getUseCameraFlight()
+            && replayWidgetUpdateType == ReplayWidget::REPLAY_WIDGET_UPDATE_STOP_RECORDING) {
+        useCameraFlight = false;
+        cameraPath.resetTime();
+    }
     if (replayWidgetUpdateType != ReplayWidget::REPLAY_WIDGET_UPDATE_NONE) {
         reRender = true;
     }
@@ -643,20 +655,25 @@ void MainApp::update(float dt) {
 
 #ifdef USE_PYTHON
     bool stopRecording = false;
-    if (replayWidget.update(recordingTime, stopRecording)) {
-        camera->overwriteViewMatrix(replayWidget.getViewMatrix());
+    bool stopCameraFlight = false;
+    if (replayWidget.update(recordingTime, stopRecording, stopCameraFlight)) {
+        if (!useCameraFlight) {
+            camera->overwriteViewMatrix(replayWidget.getViewMatrix());
+        }
         SettingsMap currentRendererSettings = replayWidget.getCurrentRendererSettings();
         for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
             meshRenderer->setNewSettings(currentRendererSettings);
         }
         reRender = true;
 
-        if (realTimeReplayUpdates) {
-            uint64_t currentTimeStamp = sgl::Timer->getTicksMicroseconds();
-            uint64_t timeElapsedMicroSec = currentTimeStamp - recordingTimeStampStart;
-            recordingTime = timeElapsedMicroSec * 1e-6;
-        } else {
-            recordingTime += FRAME_TIME_CAMERA_PATH;
+        if (!useCameraFlight) {
+            if (realTimeReplayUpdates) {
+                uint64_t currentTimeStamp = sgl::Timer->getTicksMicroseconds();
+                uint64_t timeElapsedMicroSec = currentTimeStamp - recordingTimeStampStart;
+                recordingTime = timeElapsedMicroSec * 1e-6;
+            } else {
+                recordingTime += FRAME_TIME_CAMERA_PATH;
+            }
         }
     }
     if (stopRecording) {
@@ -665,6 +682,14 @@ void MainApp::update(float dt) {
             delete videoWriter;
             videoWriter = nullptr;
         }
+        if (useCameraFlight) {
+            useCameraFlight = false;
+            cameraPath.resetTime();
+        }
+    }
+    if (stopCameraFlight) {
+        useCameraFlight = false;
+        cameraPath.resetTime();
     }
 #endif
 

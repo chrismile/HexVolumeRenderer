@@ -29,7 +29,7 @@ def distance_vec2(v0, v1):
     return length_vec2((v0[0] - v1[0], v0[1] - v1[1]))
 
 def move_lens_overview():
-    total_time = 20.0
+    total_time = 30.0
     lens_positions = [
         (2.01944, -0.458333),
         (0.463889, -0.458333),

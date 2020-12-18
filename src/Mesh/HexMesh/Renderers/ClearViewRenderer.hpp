@@ -145,6 +145,9 @@ protected:
     int windowWidth = 0;
     int windowHeight = 0;
 
+    // Test data.
+    float printCounter = 0;
+
     // GUI data
     bool showRendererWindow = true;
     bool useScreenSpaceLens = false;

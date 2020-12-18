@@ -192,7 +192,7 @@ public:
             SceneData& sceneData, sgl::TransferFunctionWindow& transferFunctionWindow,
             sgl::CheckpointWindow& checkpointWindow);
     ~ReplayWidget();
-    bool update(float currentTime, bool& stopRecording);
+    bool update(float currentTime, bool& stopRecording, bool& stopCameraFlight);
 
     enum ReplayWidgetUpdateType {
         REPLAY_WIDGET_UPDATE_NONE,
@@ -205,6 +205,7 @@ public:
 
     inline glm::mat4x4 getViewMatrix() { return currentCameraMatrix; }
     inline SettingsMap getCurrentRendererSettings() { return currentRendererSettings; }
+    inline bool getUseCameraFlight() { return useCameraFlight; }
 
     /// Callback functions when, e.g., a new renderer is requested.
     void setLoadMeshCallback(std::function<void(const MeshDescriptor& meshDescriptor)> loadMeshCallback);
@@ -236,6 +237,7 @@ private:
     glm::vec3 cameraPositionLast;
     glm::quat cameraOrientationLast;
     glm::mat4x4 currentCameraMatrix;
+    bool useCameraFlight = false;
 
     // Gui functions & data.
     ReplayWidgetUpdateType renderFileDialog();

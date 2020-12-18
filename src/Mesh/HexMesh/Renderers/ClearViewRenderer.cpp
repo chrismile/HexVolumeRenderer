@@ -119,6 +119,8 @@ void ClearViewRenderer::loadFocusRepresentation() {
     shaderAttributesFocusPoints = sgl::ShaderAttributesPtr();
     pointLocationsBuffer = sgl::GeometryBufferPtr();
 
+    printCounter = 0.5f;
+
     if (lineRenderingMode == LINE_RENDERING_MODE_WIREFRAME_FACES) {
         std::vector<uint32_t> indices;
         std::vector<HexahedralCellFace> hexahedralCellFaces;
@@ -510,11 +512,25 @@ void ClearViewRenderer::update(float dt) {
                         focusPointScreen.x / windowHeight * 2.0f - 1.0f,
                         focusPointScreen.y / windowHeight * 2.0f - 1.0f
                 );
-                if (sgl::Mouse->buttonPressed(1)) {
-                    std::cout << "(" << normalizedPosition.x << ", " << normalizedPosition.y << ")," << std::endl;
-                }
+                //if (sgl::Mouse->buttonPressed(1)) {
+                //    std::cout << "(" << normalizedPosition.x << ", " << normalizedPosition.y << ")," << std::endl;
+                //}
                 reRender = true;
             }
         }
+
+        /*printCounter += 1.0f / 30.0f;
+        if (printCounter >= 0.5f) {
+            sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+            int mouseX = sgl::Mouse->getX();
+            int mouseY = sgl::Mouse->getY();
+            focusPointScreen = glm::vec2(mouseX, window->getHeight() - mouseY - 1);
+            glm::vec2 normalizedPosition = glm::vec2(
+                    focusPointScreen.x / windowHeight * 2.0f - 1.0f,
+                    focusPointScreen.y / windowHeight * 2.0f - 1.0f
+            );
+            std::cout << "(" << normalizedPosition.x << ", " << normalizedPosition.y << ")," << std::endl;
+            printCounter -= 0.5f;
+        }*/
     }
 }
