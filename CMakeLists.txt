@@ -102,7 +102,7 @@ find_package(Eigen3 REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp)
 target_link_libraries(HexVolumeRenderer tinyxml2)
 target_link_libraries(HexVolumeRenderer Eigen3::Eigen)
-target_link_libraries(HexVolumeRenderer sgl ${Boost_LIBRARIES} ${GLEW_LIBRARIES} ${NETCDF_LIBRARIES} ${CURL_LIBRARIES} ${JSONCPP_LIBRARIES}) # ${LEMON_LIBRARIES}
+target_link_libraries(HexVolumeRenderer sgl ${Boost_LIBRARIES} GLEW::GLEW ${NETCDF_LIBRARIES} ${CURL_LIBRARIES} ${JSONCPP_LIBRARIES}) # ${LEMON_LIBRARIES}
 
 include_directories(${sgl_INCLUDES} ${Boost_INCLUDES} ${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDES} ${NETCDF_INCLUDES} ${CURL_INCLUDES} ${JSONCPP_INCLUDES})
 
