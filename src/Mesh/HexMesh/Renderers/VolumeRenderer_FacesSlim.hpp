@@ -82,6 +82,7 @@ public:
 protected:
     void updateLargeMeshMode();
     void reallocateFragmentBuffer();
+    void reloadGatherShader(bool copyShaderAttributes);
     void reloadResolveShader();
     void setSortingAlgorithmDefine();
     void setUniformData();
@@ -94,6 +95,12 @@ protected:
 
     // The rendering data for the volume object.
     sgl::ShaderAttributesPtr shaderAttributes;
+
+    // Multi-var information (optional mode if more than one vertex attribute available).
+    bool isMultiVarData = false;
+    bool useMultiVarData = true;
+    int multiVarAttrIdx = 0;
+    float multiVarOpacity = 0.015f;
 
     // Per-pixel linked list data.
     size_t fragmentBufferSize = 0;

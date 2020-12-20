@@ -54,6 +54,7 @@ struct MeshSourceDescription {
     MeshPaperDescription paper;
     std::string path, label;
     std::vector<std::string> data;
+    std::vector<std::vector<std::string>> dataAdditionalFiles;
 };
 
 class LoaderThread {

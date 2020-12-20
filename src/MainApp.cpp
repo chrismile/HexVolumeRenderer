@@ -40,6 +40,7 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <GL/glew.h>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
 
 #include <ImGui/ImGuiWrapper.hpp>
 #include <ImGui/imgui_internal.h>
@@ -59,6 +60,7 @@
 
 #include "Mesh/HexMesh/Loaders/VtkLoader.hpp"
 #include "Mesh/HexMesh/Loaders/MeshLoader.hpp"
+#include "Mesh/HexMesh/Loaders/DatLoader.hpp"
 #include "Mesh/HexMesh/Loaders/HexaLabDatasets.hpp"
 #include "Mesh/Filters/PlaneFilter.hpp"
 #include "Mesh/Filters/PeelingFilter.hpp"
@@ -802,9 +804,9 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
     hexMeshVertices.clear();
     hexMeshCellIndices.clear();
     hexMeshDeformations.clear();
-    hexMeshAnistropyMetricList.clear();
+    hexMeshAnisotropyMetricList.clear();
     bool loadingSuccessful = it->second->loadHexahedralMeshFromFile(
-            fileName, hexMeshVertices, hexMeshCellIndices, hexMeshDeformations, hexMeshAnistropyMetricList);
+            fileName, hexMeshVertices, hexMeshCellIndices, hexMeshDeformations, hexMeshAnisotropyMetricList);
     if (loadingSuccessful) {
         newMeshLoaded = true;
         printLoadingTime = true;
@@ -838,10 +840,53 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         bool loadMeshRepresentation =
                 renderingMode != RENDERING_MODE_PSEUDO_VOLUME && renderingMode != RENDERING_MODE_DEPTH_COMPLEXITY;
         inputData->setHexMeshData(vertices, hexMeshCellIndices, loadMeshRepresentation);
-        if (hexMeshAnistropyMetricList.empty()) {
-            inputData->setQualityMeasure(selectedQualityMeasure);
-        } else {
-            inputData->setManualVertexAttributes(hexMeshAnistropyMetricList);
+        inputData->setQualityMeasure(selectedQualityMeasure);
+        MeshSourceDescription& sourceDescription = meshSourceDescriptions.at(selectedFileSourceIndex - 1);
+        std::vector<std::string>& dataAdditionalFiles =
+                sourceDescription.dataAdditionalFiles.at(selectedMeshIndex - 1);
+        if (!hexMeshAnisotropyMetricList.empty()) {
+            inputData->addManualVertexAttribute(hexMeshAnisotropyMetricList, "Anisotropy");
+        }
+        if (!dataAdditionalFiles.empty()) {
+            for (std::string& additionalDataName : dataAdditionalFiles) {
+                if (boost::ends_with(additionalDataName, ".dat")) {
+                    std::string additionalDataFilename =
+                            meshDirectory + sourceDescription.path + "/" + additionalDataName;
+                    std::vector<std::vector<float>> datData = loadDatData(additionalDataFilename);
+
+                    std::string dataType = "Unknown";
+                    std::string filenameLowerCase = boost::to_lower_copy(additionalDataName);
+                    if (filenameLowerCase.find("stress") != std::string::npos) {
+                        dataType = "";
+                        if (filenameLowerCase.find("cartesian") != std::string::npos) {
+                            dataType = "Cartesian ";
+                        } else if (filenameLowerCase.find("principal") != std::string::npos) {
+                            dataType = "Principal ";
+                        } else if (filenameLowerCase.find("mises") != std::string::npos) {
+                            dataType = "von Mises ";
+                        }
+                        dataType += "Stress";
+
+                        // Compute absolute data.
+                        for (std::vector<float>& attrList : datData) {
+                            #pragma omp parallel for shared(attrList) default(none)
+                            for (size_t i = 0; i < attrList.size(); i++) {
+                                attrList.at(i) = std::abs(attrList.at(i));
+                            }
+                        }
+                    }
+                    if (filenameLowerCase.find("vertex") != std::string::npos
+                            && filenameLowerCase.find("displacement") != std::string::npos) {
+                        dataType = "Vertex Displacement";
+                    }
+
+                    int i = 0;
+                    for (std::vector<float>& attributeList : datData) {
+                        inputData->addManualVertexAttribute(attributeList, dataType + " (" + std::to_string(i) + ")");
+                        i++;
+                    }
+                }
+            }
         }
 
         for (HexahedralMeshFilter* meshFilter : meshFilters) {

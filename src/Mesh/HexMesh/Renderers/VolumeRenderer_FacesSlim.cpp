@@ -37,6 +37,7 @@
 #include <Graphics/OpenGL/Shader.hpp>
 #include <Utils/AppSettings.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
+#include <ImGui/imgui_custom.h>
 
 #include "Utils/InternalState.hpp"
 #include "Utils/AutomaticPerformanceMeasurer.hpp"
@@ -70,8 +71,7 @@ VolumeRenderer_FacesSlim::VolumeRenderer_FacesSlim(
     sgl::ShaderManager->addPreprocessorDefine("DEPTH_TYPE_UINT", "");
 
     sgl::ShaderManager->invalidateShaderCache();
-    gatherShader = sgl::ShaderManager->getShaderProgram(
-            {"MeshShader_NoShading.Vertex.Attribute", "MeshShader_NoShading.Fragment"});
+    reloadGatherShader(false);
     reloadResolveShader();
     clearShader = sgl::ShaderManager->getShaderProgram(
             {"LinkedListClear.Vertex", "LinkedListClear.Fragment"});
@@ -103,6 +103,18 @@ void VolumeRenderer_FacesSlim::uploadVisualizationMapping(HexMeshPtr meshIn, boo
     this->hexMesh = meshIn;
     updateLargeMeshMode();
 
+    if (isNewMesh) {
+        multiVarAttrIdx = 0;
+    }
+
+    if ((meshIn->hasMultiVarData() && useMultiVarData && !isMultiVarData)
+            || (!meshIn->hasMultiVarData() && useMultiVarData && isMultiVarData)) {
+        isMultiVarData = meshIn->hasMultiVarData();
+        reloadGatherShader(false);
+    } else {
+        isMultiVarData = meshIn->hasMultiVarData();
+    }
+
     std::vector<uint32_t> triangleIndices;
     std::vector<glm::vec3> vertexPositions;
     std::vector<float> vertexAttributes;
@@ -112,6 +124,9 @@ void VolumeRenderer_FacesSlim::uploadVisualizationMapping(HexMeshPtr meshIn, boo
             triangleIndices.size() * sizeof(uint32_t)
             + vertexPositions.size() * sizeof(glm::vec3)
             + vertexAttributes.size() * sizeof(float);
+    if (useMultiVarData && isMultiVarData) {
+        modelBufferSizeBytes += vertexAttributes.size() * sizeof(float);
+    }
     sgl::Logfile::get()->writeInfo(
             std::string() + "GPU model buffer size MiB: "
             + std::to_string(modelBufferSizeBytes / 1024.0 / 1024.0));
@@ -132,10 +147,25 @@ void VolumeRenderer_FacesSlim::uploadVisualizationMapping(HexMeshPtr meshIn, boo
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the color buffer.
-    sgl::GeometryBufferPtr attributeBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexAttributes.size()*sizeof(float), (void*)&vertexAttributes.front(), sgl::VERTEX_BUFFER);
-    shaderAttributes->addGeometryBuffer(
-            attributeBuffer, "vertexAttribute", sgl::ATTRIB_FLOAT, 1);
+    if (!useMultiVarData || !isMultiVarData) {
+        sgl::GeometryBufferPtr attributeBuffer = sgl::Renderer->createGeometryBuffer(
+                vertexAttributes.size()*sizeof(float), (void*)&vertexAttributes.front(), sgl::VERTEX_BUFFER);
+        shaderAttributes->addGeometryBuffer(
+                attributeBuffer, "vertexAttribute", sgl::ATTRIB_FLOAT, 1);
+    } else {
+        std::vector<float> interpolatedCellAttributes = hexMesh->getInterpolatedCellAttributeVertexData();
+        std::vector<float> manualVertexAttributes = hexMesh->getManualVertexAttributeDataNormalized(multiVarAttrIdx);
+        sgl::GeometryBufferPtr attributeBuffer0 = sgl::Renderer->createGeometryBuffer(
+                interpolatedCellAttributes.size()*sizeof(float), (void*)&interpolatedCellAttributes.front(),
+                sgl::VERTEX_BUFFER);
+        sgl::GeometryBufferPtr attributeBuffer1 = sgl::Renderer->createGeometryBuffer(
+                manualVertexAttributes.size()*sizeof(float), (void*)&manualVertexAttributes.front(),
+                sgl::VERTEX_BUFFER);
+        shaderAttributes->addGeometryBuffer(
+                attributeBuffer0, "vertexAttribute0", sgl::ATTRIB_FLOAT, 1);
+        shaderAttributes->addGeometryBuffer(
+                attributeBuffer1, "vertexAttribute1", sgl::ATTRIB_FLOAT, 1);
+    }
 
     reloadModelEdgeDetection(hexMesh);
 
@@ -168,6 +198,21 @@ void VolumeRenderer_FacesSlim::reallocateFragmentBuffer() {
     fragmentBuffer = sgl::GeometryBufferPtr(); // Delete old data first (-> refcount 0)
     fragmentBuffer = sgl::Renderer->createGeometryBuffer(
             fragmentBufferSizeBytes, NULL, sgl::SHADER_STORAGE_BUFFER);
+}
+
+void VolumeRenderer_FacesSlim::reloadGatherShader(bool copyShaderAttributes) {
+    sgl::ShaderManager->invalidateShaderCache();
+    if (!isMultiVarData || !useMultiVarData) {
+        gatherShader = sgl::ShaderManager->getShaderProgram(
+                {"MeshShader_NoShading.Vertex.Attribute", "MeshShader_NoShading.Fragment"});
+    } else {
+        gatherShader = sgl::ShaderManager->getShaderProgram(
+                {"MeshShader_MultiVar.Vertex.Attribute", "MeshShader_MultiVar.Fragment"});
+    }
+
+    if (copyShaderAttributes && shaderAttributes) {
+        shaderAttributes = shaderAttributes->copy(gatherShader);
+    }
 }
 
 void VolumeRenderer_FacesSlim::reloadResolveShader() {
@@ -270,12 +315,16 @@ void VolumeRenderer_FacesSlim::setUniformData() {
     gatherShader->setUniform("viewportW", width);
     gatherShader->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
     gatherShader->setUniformOptional("cameraPosition", sceneData.camera->getPosition());
-    gatherShader->setUniform(
-            "minAttributeValue", transferFunctionWindow.getSelectedRangeMin());
-    gatherShader->setUniform(
-            "maxAttributeValue", transferFunctionWindow.getSelectedRangeMax());
-    gatherShader->setUniform(
-            "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
+    if (!useMultiVarData || !isMultiVarData) {
+        gatherShader->setUniform(
+                "minAttributeValue", transferFunctionWindow.getSelectedRangeMin());
+        gatherShader->setUniform(
+                "maxAttributeValue", transferFunctionWindow.getSelectedRangeMax());
+        gatherShader->setUniform(
+                "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
+    } else {
+        gatherShader->setUniform("opacity", multiVarOpacity);
+    }
 
     resolveShader->setUniform("viewportW", width);
     resolveShader->setShaderStorageBuffer(0, "FragmentBuffer", fragmentBuffer);
@@ -364,10 +413,31 @@ void VolumeRenderer_FacesSlim::render() {
 
 void VolumeRenderer_FacesSlim::renderGui() {
     if (ImGui::Begin("Pseudo Volume Renderer", &showRendererWindow)) {
+        if (isMultiVarData && ImGui::Checkbox("Use Multi-Var Data", &useMultiVarData)) {
+            reloadGatherShader(false);
+            uploadVisualizationMapping(hexMesh, false);
+            reRender = true;
+        }
+        if (isMultiVarData && useMultiVarData && hexMesh) {
+            std::vector<std::string> manualVertexAttributesNames = hexMesh->getManualVertexAttributesNames();
+            if (ImGui::Combo(
+                    "Attribute #2", &multiVarAttrIdx, manualVertexAttributesNames.data(),
+                    manualVertexAttributesNames.size())) {
+                uploadVisualizationMapping(hexMesh, false);
+                reRender = true;
+            }
+            if (ImGui::SliderFloat("Opacity", &multiVarOpacity, 0.001, 1.0)) {
+                reRender = true;
+            }
+        }
         if (ImGui::Combo(
                 "Sorting Mode", (int*)&sortingAlgorithmMode, SORTING_MODE_NAMES, NUM_SORTING_MODES)) {
             setSortingAlgorithmDefine();
             reloadResolveShader();
+            reRender = true;
+        }
+        if (ImGui::Button("Reload Gather Shader")) {
+            reloadGatherShader(true);
             reRender = true;
         }
         reRender = renderGuiEdgeDetection() || reRender;

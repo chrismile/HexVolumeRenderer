@@ -159,7 +159,23 @@ std::vector<MeshSourceDescription> parseSourceDescriptions() {
         source.paper.DOI = paper["DOI"].asString();
         Json::Value data = (*sourceIt)["data"];
         for (Json::Value::const_iterator dataIt = data.begin(); dataIt != data.end(); ++dataIt) {
-            source.data.push_back(dataIt->asString());
+            std::vector<std::string> additionalFiles;
+            if (dataIt->isString()) {
+                source.data.push_back(dataIt->asString());
+            } else if (dataIt->isArray()) {
+                int filenameIdx = 0;
+                for (Json::Value::const_iterator filenameIt = dataIt->begin(); filenameIt != dataIt->end(); ++filenameIt) {
+                    if (filenameIdx == 0) {
+                        source.data.push_back(filenameIt->asString());
+                    } else {
+                        additionalFiles.push_back(filenameIt->asString());
+                    }
+                    filenameIdx++;
+                }
+            } else {
+                sgl::Logfile::get()->writeError("ERROR in parseSourceDescriptions: 'data' is no string or array.");
+            }
+            source.dataAdditionalFiles.push_back(additionalFiles);
         }
         meshSourceDescriptions.push_back(source);
     }

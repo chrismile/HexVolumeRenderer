@@ -160,7 +160,7 @@ void HexMesh::setHexMeshData(
     dirty = true;
 }
 
-void HexMesh::setManualVertexAttributes(const std::vector<float>& vertexAttributes) {
+void HexMesh::addManualVertexAttribute(const std::vector<float>& vertexAttributes, const std::string& attributeName) {
     float minAttribute = FLT_MAX;
     float maxAttribute = -FLT_MAX;
     #pragma omp parallel for default(none) reduction(min: minAttribute) reduction(max: maxAttribute) shared(vertexAttributes)
@@ -169,12 +169,14 @@ void HexMesh::setManualVertexAttributes(const std::vector<float>& vertexAttribut
         maxAttribute = std::max(maxAttribute, vertexAttributes.at(i));
     }
 
-    manualVertexAttributes.resize(vertexAttributes.size());
-    #pragma omp parallel for default(none) shared(manualVertexAttributes, vertexAttributes, minAttribute, maxAttribute)
-    for (size_t i = 0; i < vertexAttributes.size(); i++) {
-        manualVertexAttributes.at(i) = (vertexAttributes.at(i) - minAttribute) / (maxAttribute - minAttribute);
-    }
-    
+    manualVertexAttributesMinMax.push_back(glm::vec2(minAttribute, maxAttribute));
+    manualVertexAttributesList.push_back(vertexAttributes);
+    manualVertexAttributesNames.push_back(attributeName);
+
+    useManualVertexAttribute = true;
+    manualVertexAttributeIdx = 0;
+    manualVertexAttributes = &manualVertexAttributesList.at(manualVertexAttributeIdx);
+
     recomputeHistogram();
 }
 
@@ -469,11 +471,11 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
 }
 
 void HexMesh::recomputeHistogram() {
-    if (manualVertexAttributes.empty()) {
+    if (!useManualVertexAttribute) {
         //transferFunctionWindow.computeHistogram(cellQualityMeasureList, qualityMinNormalized, qualityMaxNormalized);
         transferFunctionWindow.computeHistogram(cellQualityMeasureList, 0.0f, 1.0f);
     } else {
-        transferFunctionWindow.computeHistogram(manualVertexAttributes, 0.0f, 1.0f);
+        transferFunctionWindow.computeHistogram(*manualVertexAttributes, 0.0f, 1.0f);
     }
 }
 
@@ -485,7 +487,7 @@ float HexMesh::getCellAttributeManualVertexAttributes(uint32_t h_id) {
     float cellAttribute = 0.0f;
     Hybrid& h = mesh->Hs.at(h_id);
     for (uint32_t v_id : h.vs) {
-        cellAttribute += manualVertexAttributes.at(v_id);
+        cellAttribute += manualVertexAttributes->at(v_id);
     }
     cellAttribute /= h.vs.size();
     return cellAttribute;
@@ -826,11 +828,11 @@ void HexMesh::getSurfaceData(
                 glm::vec4 vertexPosition(
                         mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
                 vertexPositions.push_back(vertexPosition);
-                if (this->manualVertexAttributes.empty()) {
+                if (!useManualVertexAttribute) {
                     vertexAttributes.push_back(cellAttribute);
                 } else {
                     // Use manually specified attributes.
-                    vertexAttributes.push_back(manualVertexAttributes.at(v_id));
+                    vertexAttributes.push_back(manualVertexAttributes->at(v_id));
                 }
             }
 
@@ -1008,7 +1010,7 @@ void HexMesh::getVolumeData_Faces(
             size_t idxStart = vertexPositions.size();
             float vertexAttribute;
             // Compute attribute data.
-            if (this->manualVertexAttributes.empty()) {
+            if (!useManualVertexAttribute) {
                 vertexAttribute = getCellAttribute(f.neighbor_hs.at(0));
             } else {
                 vertexAttribute = getCellAttributeManualVertexAttributes(f.neighbor_hs.at(0));
@@ -1032,7 +1034,7 @@ void HexMesh::getVolumeData_Faces(
             size_t idxStart = vertexPositions.size();
             float vertexAttribute;
             // Compute attribute data.
-            if (this->manualVertexAttributes.empty()) {
+            if (!useManualVertexAttribute) {
                 vertexAttribute = getCellAttribute(f.neighbor_hs.at(f.boundary ? 0 : 1));
             } else {
                 vertexAttribute = getCellAttributeManualVertexAttributes(f.neighbor_hs.at(f.boundary ? 0 : 1));
@@ -1071,7 +1073,7 @@ void HexMesh::getVolumeData_Volume(
             size_t idxStart = vertexPositions.size();
             float vertexAttribute;
             // Compute attribute data.
-            if (this->manualVertexAttributes.empty()) {
+            if (!useManualVertexAttribute) {
                 vertexAttribute = getCellAttribute(f.neighbor_hs.at(0));
             } else {
                 vertexAttribute = getCellAttributeManualVertexAttributes(f.neighbor_hs.at(0));
@@ -1094,7 +1096,7 @@ void HexMesh::getVolumeData_Volume(
             size_t idxStart = vertexPositions.size();
             float vertexAttribute;
             // Compute attribute data.
-            if (this->manualVertexAttributes.empty()) {
+            if (!useManualVertexAttribute) {
                 vertexAttribute = getCellAttribute(f.neighbor_hs.at(1));
             } else {
                 vertexAttribute = getCellAttributeManualVertexAttributes(f.neighbor_hs.at(1));
@@ -1132,7 +1134,7 @@ void HexMesh::getVolumeData_FacesShared(
         glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
         vertexPositions.push_back(vertexPosition);
     }
-    if (this->manualVertexAttributes.empty()) {
+    if (!useManualVertexAttribute) {
         if (useVolumeWeighting) {
             for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
                 vertexAttributes.push_back(interpolateCellAttributePerVertex(v_id, cellVolumes));
@@ -1145,7 +1147,7 @@ void HexMesh::getVolumeData_FacesShared(
     } else {
         // Use manually specified attributes.
         for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
-            vertexAttributes.push_back(this->manualVertexAttributes.at(v_id));
+            vertexAttributes.push_back(this->manualVertexAttributes->at(v_id));
         }
     }
 
@@ -1189,10 +1191,10 @@ void HexMesh::getVolumeData_VolumeShared(
     // Add all hexahedral mesh vertices to the triangle mesh vertex data.
     for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
         float vertexAttribute;
-        if (this->manualVertexAttributes.empty()) {
+        if (!useManualVertexAttribute) {
             vertexAttribute = interpolateCellAttributePerVertex(v_id, cellVolumes);
         } else {
-            vertexAttribute = this->manualVertexAttributes.at(v_id);
+            vertexAttribute = this->manualVertexAttributes->at(v_id);
         }
         vertexAttributes.push_back(vertexAttribute);
         glm::vec3 vertexPosition(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
@@ -2663,7 +2665,7 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
     }
 
     // 1.2 Get vertex attributes.
-    if (this->manualVertexAttributes.empty()) {
+    if (!useManualVertexAttribute) {
         if (useVolumeWeighting) {
             for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
                 HexahedralCellVertexUnified& hexahedralCellVertex = hexahedralCellVertices.at(v_id);
@@ -2679,14 +2681,14 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
         // Use manually specified attributes.
         for (uint32_t v_id = 0; v_id < mesh->Vs.size(); v_id++) {
             HexahedralCellVertexUnified& hexahedralCellVertex = hexahedralCellVertices.at(v_id);
-            hexahedralCellVertex.vertexAttribute = this->manualVertexAttributes.at(v_id);
+            hexahedralCellVertex.vertexAttribute = this->manualVertexAttributes->at(v_id);
         }
     }
 
 
     // 2. Edge data.
     hexahedralCellEdges.reserve(mesh->Es.size());
-    if (this->manualVertexAttributes.empty()) {
+    if (!useManualVertexAttribute) {
         // Compute all edge attributes.
         for (uint32_t e_id = 0; e_id < mesh->Es.size(); e_id++) {
             hexahedralCellEdges.push_back(HexahedralCellEdgeUnified());
@@ -2701,8 +2703,8 @@ void HexMesh::getSurfaceDataWireframeFacesUnified_AttributePerVertex(
             hexahedralCellEdges.push_back(HexahedralCellEdgeUnified());
             HexahedralCellEdgeUnified& hexahedralCellEdge = hexahedralCellEdges.back();
             hexahedralCellEdge.edgeAttribute =
-                    (this->manualVertexAttributes.at(e.vs.at(0))
-                     + this->manualVertexAttributes.at(e.vs.at(1))) * 0.5f;
+                    (this->manualVertexAttributes->at(e.vs.at(0))
+                     + this->manualVertexAttributes->at(e.vs.at(1))) * 0.5f;
             hexahedralCellEdge.edgeLodValue = edgeLodValues.at(e_id);
             //hexahedralCellEdge.edgeSingularityInformation = packEdgeSingularityInformation(e_id);
         }

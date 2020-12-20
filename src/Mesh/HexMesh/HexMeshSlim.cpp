@@ -232,8 +232,17 @@ void HexMesh::getVolumeData_FacesShared_Slim(
     // Add all hexahedral mesh vertices to the triangle mesh vertex data.
     for (uint32_t v_id = 0; v_id < this->vertices.size(); v_id++) {
         vertexPositions.push_back(this->vertices.at(v_id));
-        vertexAttributes.push_back(maximumCellAttributePerVertexSlim(verticesSlim, cellQualityMeasureList, v_id));
     }
+    if (!useManualVertexAttribute) {
+        for (uint32_t v_id = 0; v_id < this->vertices.size(); v_id++) {
+            vertexAttributes.push_back(maximumCellAttributePerVertexSlim(verticesSlim, cellQualityMeasureList, v_id));
+        }
+    } else {
+        for (uint32_t v_id = 0; v_id < this->vertices.size(); v_id++) {
+            vertexAttributes.push_back(this->manualVertexAttributes->at(v_id));
+        }
+    }
+
 
     // Add all triangle indices.
     triangleIndices.reserve(facesSlim.size() * 6);
@@ -265,4 +274,41 @@ void HexMesh::getVolumeData_DepthComplexity_Slim(
         triangleIndices.push_back(f.vs[2]);
         triangleIndices.push_back(f.vs[0]);
     }
+}
+
+
+std::vector<float> HexMesh::getInterpolatedCellAttributeVertexData() const {
+    std::vector<float> vertexAttributes;
+    vertexAttributes.reserve(verticesSlim.size());
+    for (uint32_t v_id = 0; v_id < this->vertices.size(); v_id++) {
+        vertexAttributes.push_back(maximumCellAttributePerVertexSlim(verticesSlim, cellQualityMeasureList, v_id));
+    }
+    return vertexAttributes;
+}
+
+std::vector<float> HexMesh::getManualVertexAttributeDataNormalized() const {
+    glm::vec2 minMaxValue = manualVertexAttributesMinMax.at(manualVertexAttributeIdx);
+    std::vector<float> attributeData;
+    attributeData.resize(manualVertexAttributes->size());
+
+    #pragma omp parallel for shared(manualVertexAttributes, attributeData, minMaxValue) default(none)
+    for (size_t i = 0; i < manualVertexAttributes->size(); i++) {
+        attributeData.at(i) = (manualVertexAttributes->at(i) - minMaxValue.x) / (minMaxValue.y - minMaxValue.x);
+    }
+
+    return attributeData;
+}
+
+std::vector<float> HexMesh::getManualVertexAttributeDataNormalized(int attrIdx) const {
+    glm::vec2 minMaxValue = manualVertexAttributesMinMax.at(attrIdx);
+    const std::vector<float>& manualVertexAttributes = manualVertexAttributesList.at(attrIdx);
+    std::vector<float> attributeData;
+    attributeData.resize(manualVertexAttributes.size());
+
+    #pragma omp parallel for shared(manualVertexAttributes, attributeData, minMaxValue) default(none)
+    for (size_t i = 0; i < manualVertexAttributes.size(); i++) {
+        attributeData.at(i) = (manualVertexAttributes.at(i) - minMaxValue.x) / (minMaxValue.y - minMaxValue.x);
+    }
+
+    return attributeData;
 }

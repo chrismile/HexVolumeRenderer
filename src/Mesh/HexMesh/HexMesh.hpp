@@ -177,7 +177,7 @@ public:
     void setHexMeshData(
             const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices,
             bool loadMeshRepresentation = true);
-    void setManualVertexAttributes(const std::vector<float>& vertexAttributes);
+    void addManualVertexAttribute(const std::vector<float>& vertexAttributes, const std::string& attributeName);
     void setQualityMeasure(QualityMeasure qualityMeasure);
     void onTransferFunctionMapRebuilt();
     bool isDirty() { return dirty; }
@@ -632,6 +632,16 @@ public:
     static const glm::vec4 outlineColorRegular;
     static const glm::vec4 outlineColorSingular;
 
+
+    // Multi-var data.
+    inline bool hasMultiVarData() const { return !manualVertexAttributesList.empty(); }
+    inline const std::vector<float>& getManualVertexAttributeData() const { return *manualVertexAttributes; }
+    inline const std::vector<float>& getManualVertexAttributeData(int attrIdx) const { return manualVertexAttributesList.at(attrIdx); }
+    std::vector<float> getManualVertexAttributeDataNormalized() const;
+    std::vector<float> getManualVertexAttributeDataNormalized(int attrIdx) const;
+    std::vector<float> getInterpolatedCellAttributeVertexData() const;
+    const std::vector<std::string>& getManualVertexAttributesNames() const { return manualVertexAttributesNames; }
+
 private:
     void rebuildInternalRepresentationIfNecessary();
     void computeAllCellVolumes();
@@ -747,7 +757,19 @@ private:
     std::unordered_set<uint32_t> singularEdgeIds;
     std::vector<float> cellVolumes;
     std::vector<float> faceAreas;
-    std::vector<float> manualVertexAttributes; ///< optional. @see setManualVertexAttributes
+
+    std::vector<std::string> manualVertexAttributesNames;
+    std::vector<std::vector<float>> manualVertexAttributesList;
+    std::vector<glm::vec2> manualVertexAttributesMinMax;
+    bool useManualVertexAttribute = false;
+    int manualVertexAttributeIdx = 0;
+    std::vector<float>* manualVertexAttributes = nullptr;
+
+    // The user can select between interpolated cell attributes and manually specified vertex attributes.
+    /// Interpolated cell quality measures + manually specified attributes.
+    //std::vector<std::string> availableVertexAttributeNames;
+    //int selectedAvailableVertexAttributeIdx;
+    //void changeSelectedVertexAttributeIdx();
 };
 
 #endif //GENERALMAP_GENERALMAP_HPP
