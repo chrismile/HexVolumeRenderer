@@ -509,12 +509,12 @@ void ClearViewRenderer::update(float dt) {
                 int mouseY = sgl::Mouse->getY();
                 focusPointScreen = glm::vec2(mouseX, window->getHeight() - mouseY - 1);
                 glm::vec2 normalizedPosition = glm::vec2(
-                        focusPointScreen.x / windowHeight * 2.0f - 1.0f,
+                        (focusPointScreen.x * 2.0f - (windowWidth - 1.0f)) / windowHeight,
                         focusPointScreen.y / windowHeight * 2.0f - 1.0f
                 );
-                //if (sgl::Mouse->buttonPressed(1)) {
-                //    std::cout << "(" << normalizedPosition.x << ", " << normalizedPosition.y << ")," << std::endl;
-                //}
+                if (sgl::Mouse->buttonPressed(1)) {
+                    std::cout << "(" << normalizedPosition.x << ", " << normalizedPosition.y << ")," << std::endl;
+                }
                 reRender = true;
             }
         }
@@ -526,7 +526,7 @@ void ClearViewRenderer::update(float dt) {
             int mouseY = sgl::Mouse->getY();
             focusPointScreen = glm::vec2(mouseX, window->getHeight() - mouseY - 1);
             glm::vec2 normalizedPosition = glm::vec2(
-                    focusPointScreen.x / windowHeight * 2.0f - 1.0f,
+                    (focusPointScreen.x - (windowWidth - 1.0f) * 0.5f) / windowHeight,
                     focusPointScreen.y / windowHeight * 2.0f - 1.0f
             );
             std::cout << "(" << normalizedPosition.x << ", " << normalizedPosition.y << ")," << std::endl;

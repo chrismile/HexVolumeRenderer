@@ -31,16 +31,16 @@ def distance_vec2(v0, v1):
 def move_lens_overview():
     total_time = 30.0
     lens_positions = [
-        (2.01944, -0.458333),
-        (0.463889, -0.458333),
-        (-0.425, -0.458333),
-        (0.0916667, 0.186111),
-        (0.131944, 0.283333),
-        (0.675, 0.283333),
-        (0.995833, 0.283333),
-        (1.13333, 0.152778),
-        (1.29028, 0.1),
-        (1.99306, -0.470833),
+        (1.2423566666666666, -0.458333),
+        (-0.3131943333333333, -0.458333),
+        (-1.2020833333333334, -0.458333),
+        (-0.6854166333333335, 0.186111),
+        (-0.6451393333333333, 0.283333),
+        (-0.10208333333333333, 0.283333),
+        (0.21874966666666656, 0.283333),
+        (0.35624666666666654, 0.152778),
+        (0.5131966666666667, 0.1),
+        (1.2159766666666667, -0.470833)
     ]
 
     # Move lens to start position.
@@ -69,14 +69,6 @@ def move_lens_overview():
             g.set_duration(2)
 
     g.set_duration(4)
-
-    # Hide lens.
-    #g.set_duration(2)
-    #g.set_duration(1)
-    #g.set_rendering_algorithm_settings({ "screen_space_lens_radius": 0.0 })
-    #g.set_duration(0)
-    #g.set_rendering_algorithm_settings({ "screen_space_lens_position": (10.5, 10.5) })
-    #g.set_duration(2)
 
 
 def replay():

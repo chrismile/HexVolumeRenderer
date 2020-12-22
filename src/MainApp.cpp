@@ -842,8 +842,10 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         inputData->setHexMeshData(vertices, hexMeshCellIndices, loadMeshRepresentation);
         inputData->setQualityMeasure(selectedQualityMeasure);
         MeshSourceDescription& sourceDescription = meshSourceDescriptions.at(selectedFileSourceIndex - 1);
-        std::vector<std::string>& dataAdditionalFiles =
-                sourceDescription.dataAdditionalFiles.at(selectedMeshIndex - 1);
+        std::vector<std::string> dataAdditionalFiles;
+        if (selectedMeshIndex != 0) {
+            dataAdditionalFiles = sourceDescription.dataAdditionalFiles.at(selectedMeshIndex - 1);
+        }
         if (!hexMeshAnisotropyMetricList.empty()) {
             inputData->addManualVertexAttribute(hexMeshAnisotropyMetricList, "Anisotropy");
         }

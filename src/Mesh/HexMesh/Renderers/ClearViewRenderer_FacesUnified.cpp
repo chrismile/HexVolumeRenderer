@@ -286,6 +286,7 @@ void ClearViewRenderer_FacesUnified::setNewSettings(const SettingsMap& settings)
     if (settings.getValueOpt("line_width", lineWidth)) {
         manualLineWidthSet = true;
     }
+    settings.getValueOpt("modulate_line_thickness_by_depth", modulateLineThicknessByDepth);
     settings.getValueOpt("lod_value_context", selectedLodValueContext);
     settings.getValueOpt("lod_value_focus", selectedLodValueFocus);
     if (settings.getValueOpt("use_screen_space_lens", useScreenSpaceLens)) {
@@ -305,10 +306,22 @@ void ClearViewRenderer_FacesUnified::setNewSettings(const SettingsMap& settings)
     if (settings.getValueOpt("screen_space_lens_position", screenSpaceLensPositionRelative)) {
         sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
         int height = window->getHeight();
-        focusPointScreen.x = height * (screenSpaceLensPositionRelative.x + 1.0f) / 2.0f;
+        focusPointScreen.x = (height * screenSpaceLensPositionRelative.x + (windowWidth - 1.0f)) / 2.0f;
         focusPointScreen.y = height * (screenSpaceLensPositionRelative.y + 1.0f) / 2.0f;
     }
     settings.getValueOpt("object_space_lens_position", focusPoint);
+
+    LodSettings lodSettings = this->lodSettings;
+    settings.getValueOpt("lod_merge_factor", lodSettings.lodMergeFactor);
+    settings.getValueOpt("use_volume_and_area_measures", lodSettings.useVolumeAndAreaMeasures);
+    settings.getValueOpt("use_weights_for_merging", lodSettings.useWeightsForMerging);
+    settings.getValueOpt("use_num_cells_or_volume", lodSettings.useNumCellsOrVolume);
+    if (lodSettings != this->lodSettings) {
+        this->lodSettings = lodSettings;
+        if (hexMesh) {
+            uploadVisualizationMapping(hexMesh, false);
+        }
+    }
 
     if (shallReloadGatherShader) {
         reloadGatherShader(true);

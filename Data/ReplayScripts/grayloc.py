@@ -31,15 +31,15 @@ def distance_vec2(v0, v1):
 def move_lens_overview():
     total_time = 10.0
     lens_positions = [
-        (1.28472, -0.401389),
-        (1.03472, -0.579167),
-        (0.793056, -0.619444),
-        (0.293056, -0.416667),
-        (0.334722, 0.102778),
-        (0.440278, 0.590278),
-        (0.509722, 0.172222),
-        (1.17778, 0.155556),
-        (1.26944, -0.405556)
+        (0.5076366666666666, -0.401389),
+        (0.25763666666666657, -0.579167),
+        (0.01597266666666681, -0.619444),
+        (-0.48402733333333336, -0.416667),
+        (-0.4423613333333334, 0.102778),
+        (-0.3368053333333333, 0.590278),
+        (-0.2673613333333334, 0.172222),
+        (0.40069666666666703, 0.155556),
+        (0.4923566666666665, -0.405556)
     ]
 
     # Move lens to start position.
@@ -72,10 +72,9 @@ def move_camera():
     g.set_duration(2)
 
 def change_important_lines_close():
-
     # Make lens grow.
     g.set_duration(0)
-    g.set_rendering_algorithm_settings({ "screen_space_lens_position": (0.945, 0.0), "screen_space_lens_radius": 0.0 })
+    g.set_rendering_algorithm_settings({ "screen_space_lens_position": (0.167916, 0.0), "screen_space_lens_radius": 0.0 })
     g.set_duration(1)
     g.set_rendering_algorithm_settings({ "screen_space_lens_radius": 560.0 })
     g.set_duration(1)
@@ -105,7 +104,6 @@ def change_important_lines_close():
 def object_space_lens_close():
     position_near = (0.092, -0.056, 0.161)
     position_far = (0.100, -0.101, -0.073)
-    #position_middle = (0.094, -0.070, 0.080)
     position_middle = (0.093, -0.074, 0.064)
 
     g.set_duration(0.0)
