@@ -29,8 +29,6 @@ in vec3 fragmentPositionWorld;
 in float fragmentAttribute0;
 in float fragmentAttribute1;
 
-uniform float opacity;
-
 #include "TransferFunction.glsl"
 
 #if defined(DIRECT_BLIT_GATHER)
@@ -58,17 +56,16 @@ void main() {
     vec4 fragmentColor = transferFunction(val);*/
 
     const vec4 C_MAP[4] = {
-    vec4(1.0, 1.0, 1.0, 0.0), vec4(1.0, 1.0, 0.4, 1.0), vec4(1.0, 0.4549019607843137, 1.0, 1.0), vec4(1.0, 0.0, 0.0, 1.0)
-    //vec4(0.0, 0.0, 0.0, 0.0), vec4(0.8823529411764706, 0.8823529411764706, 0.0, 1.0), vec4(0.807843137254902, 0.0, 0.807843137254902, 1.0), vec4(0.8823529411764706, 0.0, 0.0, 1.0)
+    vec4(1.0, 1.0, 1.0, 0.0), vec4(1.0, 1.0, 0.13286832155381798, 1.0),
+    vec4(1.0, 0.17464740365558504, 1.0, 1.0), vec4(1.0, 0.0, 0.0, 1.0),
     };
 
-    //const float x = clamp(fragmentAttribute0, 0.0, 1.0);
-    //const float y = 1.0 - pow(1.0 - fragmentAttribute1, 1.8);
-    //const float y = clamp(fragmentAttribute1, 0.0, 1.0);
-    float x = clamp(fragmentAttribute0 * 3.0, 0.0, 1.0);
-    float y = clamp(fragmentAttribute1 * 3.0, 0.0, 1.0);
-    x = 1.0 - pow(1.0 - x, 1.8);
-    y = 1.0 - pow(1.0 - y, 1.8);
+    const float x = clamp(fragmentAttribute0, 0.0, 1.0);
+    const float y = clamp(fragmentAttribute1 * 2.0, 0.0, 1.0);
+    //float x = clamp(fragmentAttribute0 * 3.0, 0.0, 1.0);
+    //float y = clamp(fragmentAttribute1 * 3.0, 0.0, 1.0);
+    //x = 1.0 - pow(1.0 - x, 1.8);
+    //y = 1.0 - pow(1.0 - y, 1.8);
 
     const vec4 c_x0 = x * C_MAP[1] + (1.0 - x) * C_MAP[0];
     const vec4 c_x1 = x * C_MAP[3] + (1.0 - x) * C_MAP[2];
@@ -77,10 +74,7 @@ void main() {
     float opacityOut = transferFunction(c_f.a).a;
     //float opacityOut = transferFunction(max(fragmentAttribute0, fragmentAttribute1)).a;
 
-    //const vec4 fragmentColor = vec4(sRGBToLinearRGB(vec3(c_f.r, c_f.g, c_f.b)), opacity * c_f.a);
-    //vec4 fragmentColor = vec4(fragmentAttribute0, fragmentAttribute1, 0.0, opacity * max(fragmentAttribute0, fragmentAttribute1));
     const vec4 fragmentColor = vec4(sRGBToLinearRGB(vec3(c_f.r, c_f.g, c_f.b)), opacityOut);
-    //const vec4 fragmentColor = vec4(sRGBToLinearRGB(vec3(fragmentAttribute1, 0.0, 0.0)), opacityOut);
 
 #if defined(DIRECT_BLIT_GATHER)
     // Direct rendering, no transparency.

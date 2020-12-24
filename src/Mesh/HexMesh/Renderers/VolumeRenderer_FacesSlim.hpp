@@ -100,7 +100,6 @@ protected:
     bool isMultiVarData = false;
     bool useMultiVarData = true;
     int multiVarAttrIdx = 0;
-    float multiVarOpacity = 0.015f;
 
     // Per-pixel linked list data.
     size_t fragmentBufferSize = 0;

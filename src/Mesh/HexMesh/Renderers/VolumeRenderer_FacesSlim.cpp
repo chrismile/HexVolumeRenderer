@@ -322,8 +322,6 @@ void VolumeRenderer_FacesSlim::setUniformData() {
                 "maxAttributeValue", transferFunctionWindow.getSelectedRangeMax());
         gatherShader->setUniform(
                 "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
-    } else {
-        gatherShader->setUniform("opacity", multiVarOpacity);
     }
 
     resolveShader->setUniform("viewportW", width);
@@ -424,9 +422,6 @@ void VolumeRenderer_FacesSlim::renderGui() {
                     "Attribute #2", &multiVarAttrIdx, manualVertexAttributesNames.data(),
                     manualVertexAttributesNames.size())) {
                 uploadVisualizationMapping(hexMesh, false);
-                reRender = true;
-            }
-            if (ImGui::SliderFloat("Opacity", &multiVarOpacity, 0.001, 1.0)) {
                 reRender = true;
             }
         }
