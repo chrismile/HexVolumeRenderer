@@ -50,7 +50,7 @@ enum LargeMeshMode {
 const int MESH_MODE_DEPTH_COMPLEXITIES[4][2] = {
         80, 256, // avg and max depth complexity medium
         128, 380, // avg and max depth complexity large
-        256, 900, // avg and max depth complexity very large
+        256, 950, // avg and max depth complexity very large
 };
 
 #endif //HEXVOLUMERENDERER_PERPIXELLINKEDLIST_HPP
