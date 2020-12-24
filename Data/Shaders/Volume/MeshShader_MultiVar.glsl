@@ -61,7 +61,7 @@ void main() {
     };
 
     const float x = clamp(fragmentAttribute0, 0.0, 1.0);
-    const float y = clamp(fragmentAttribute1 * 7.0, 0.0, 1.0);
+    const float y = clamp(fragmentAttribute1 * 6.0, 0.0, 1.0);
     //float x = clamp(fragmentAttribute0 * 3.0, 0.0, 1.0);
     //float y = clamp(fragmentAttribute1 * 3.0, 0.0, 1.0);
     //x = 1.0 - pow(1.0 - x, 1.8);

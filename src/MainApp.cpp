@@ -166,7 +166,9 @@ MainApp::MainApp()
     }
     if (useCameraFlight && recording) {
         sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-        window->setWindowSize(recordingResolution.x, recordingResolution.y);
+        if (useRecordingResolution) {
+            window->setWindowSize(recordingResolution.x, recordingResolution.y);
+        }
         realTimeCameraFlight = false;
         transferFunctionWindow.loadFunctionFromFile("Data/TransferFunctions/Standard_PerVertex.xml");
         loadHexahedralMesh(
@@ -469,7 +471,7 @@ void MainApp::renderGui() {
     }
     if (replayWidgetUpdateType == ReplayWidget::REPLAY_WIDGET_UPDATE_START_RECORDING) {
         sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-        if (window->getWindowResolution() != recordingResolution) {
+        if (useRecordingResolution && window->getWindowResolution() != recordingResolution) {
             window->setWindowSize(recordingResolution.x, recordingResolution.y);
         }
 
