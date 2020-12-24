@@ -198,7 +198,22 @@ static PyObject* py_set_rendering_algorithm_settings(PyObject* self, PyObject* a
 
 static PyObject* py_set_camera_position(PyObject* self, PyObject* args) {
     glm::vec3 cameraPosition = glm::vec3(0.0f);
-    if (!PyArg_ParseTuple(args, "fff", &cameraPosition.x, &cameraPosition.y, &cameraPosition.z)) {
+    Py_ssize_t tupleSize = PyTuple_Size(args);
+    if (tupleSize == 1) {
+        PyObject* positionTuple = nullptr;
+        if (!PyArg_ParseTuple(args, "O", &positionTuple)) {
+            return NULL;
+        }
+        if (!PyArg_ParseTuple(positionTuple, "fff", &cameraPosition.x, &cameraPosition.y, &cameraPosition.z)) {
+            return NULL;
+        }
+    } else if (tupleSize == 3) {
+        if (!PyArg_ParseTuple(args, "fff", &cameraPosition.x, &cameraPosition.y, &cameraPosition.z)) {
+            return NULL;
+        }
+    } else {
+        sgl::Logfile::get()->writeError(
+                "ERROR in py_set_camera_position: Tuple must contain three float values or one tuple.");
         return NULL;
     }
 
@@ -209,7 +224,22 @@ static PyObject* py_set_camera_position(PyObject* self, PyObject* args) {
 
 static PyObject* py_set_camera_yaw_pitch_rad(PyObject* self, PyObject* args) {
     float yaw = 0.0f, pitch = 0.0f;
-    if (!PyArg_ParseTuple(args, "ff", &yaw, &pitch)) {
+    Py_ssize_t tupleSize = PyTuple_Size(args);
+    if (tupleSize == 1) {
+        PyObject* yawPitchTuple = nullptr;
+        if (!PyArg_ParseTuple(args, "O", &yawPitchTuple)) {
+            return NULL;
+        }
+        if (!PyArg_ParseTuple(yawPitchTuple, "ff", &yaw, &pitch)) {
+            return NULL;
+        }
+    } else if (tupleSize == 2) {
+        if (!PyArg_ParseTuple(args, "ff", &yaw, &pitch)) {
+            return NULL;
+        }
+    } else {
+        sgl::Logfile::get()->writeError(
+                "ERROR in py_set_camera_yaw_pitch_rad: Tuple must contain two float values or one tuple.");
         return NULL;
     }
     glm::quat cameraOrientation = glm::vec3(0.0f);

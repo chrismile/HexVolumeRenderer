@@ -13,6 +13,11 @@ void main() {
 
 #version 430 core
 
+#ifdef MAX_NUM_FRAGS
+#undef MAX_NUM_FRAGS
+#define MAX_NUM_FRAGS 950
+#endif
+
 #include "LinkedListHeader.glsl"
 
 uint colorList[MAX_NUM_FRAGS];

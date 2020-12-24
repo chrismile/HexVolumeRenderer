@@ -35,6 +35,7 @@
 #include <Graphics/Shader/ShaderManager.hpp>
 #include <Graphics/OpenGL/GeometryBuffer.hpp>
 #include <Graphics/OpenGL/Shader.hpp>
+#include <Graphics/OpenGL/SystemGL.hpp>
 #include <Utils/AppSettings.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 #include <ImGui/imgui_custom.h>
@@ -189,6 +190,24 @@ void VolumeRenderer_FacesSlim::reallocateFragmentBuffer() {
         sgl::Logfile::get()->writeInfo(
                 std::string() + "Fragment buffer size GiB: "
                 + std::to_string(fragmentBufferSizeBytes / 1024.0 / 1024.0 / 1024.0));
+    }
+
+    // https://www.khronos.org/registry/OpenGL/extensions/NVX/NVX_gpu_memory_info.txt
+    if (sgl::SystemGL::get()->isGLExtensionAvailable("GL_NVX_gpu_memory_info")) {
+        GLint memKilobytes = 0;
+        glGetIntegerv(GL_GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX, &memKilobytes);
+        double dedicatedMemGiB = memKilobytes * 1000.0 / 1024.0 / 1024.0 / 1024.0;
+        double numMillionCells = hexMesh ? hexMesh->getNumCells() * 1e-6 : 0.0;
+        std::cout << "Dedicated mem: " << dedicatedMemGiB << " GiB" << std::endl;
+        std::cout << "Cells: " << numMillionCells << "M" << std::endl;
+        if (dedicatedMemGiB < 9.0 && numMillionCells > 30.0) {
+            if (fragmentBufferSizeBytes / (1024.0 * 1024.0 * 1024.0) >= 2.6) {
+                sgl::Logfile::get()->writeError(
+                        std::string() + "Clamped memory to 2.6 GiB due to dedicated VRAM limitations.");
+                fragmentBufferSizeBytes = size_t(2.6 * 1024.0 * 1024.0 * 1024.0);
+                fragmentBufferSize = fragmentBufferSizeBytes / sizeof(LinkedListFragmentNode);
+            }
+        }
     }
 
     if (sceneData.performanceMeasurer) {
