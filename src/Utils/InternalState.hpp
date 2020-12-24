@@ -50,7 +50,7 @@ enum RenderingMode {
 };
 const char *const RENDERING_MODE_NAMES[] = {
         "Surface", "Wireframe", "Depth Complexity",
-        "ClearView (Unified)", "Pseudo Volume",
+        "ClearView (Unified)", "Face-Based Volume",
         "Volume", "ClearView (Volume)",
         "Volume (Faces)", "ClearView (Faces)",
         "Singularity", "Base Complex (Lines)", "Base Complex (Surface)",
