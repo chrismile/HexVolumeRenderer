@@ -12,6 +12,14 @@ The program requires the library sgl (https://github.com/chrismile/sgl).
 On Ubuntu 20.04 for example, you can install all other necessary dependencies with this command (additionally to the prerequisites required by sgl):
 
 ```
+sudo apt-get install libjsoncpp-dev libeigen3-dev libcurl4-openssl-dev
+OR:
+sudo apt-get install libjsoncpp-dev libeigen3-dev libcurl4-gnutls-dev
+```
+
+On Ubuntu 18.04:
+
+```
 sudo apt-get install libjsoncpp-dev libcurl-dev libeigen3-dev liblemon-dev
 ```
 
