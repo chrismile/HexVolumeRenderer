@@ -70,51 +70,75 @@ const int hexFaceTable[6][4] = {
         { 1,5,6,2 },
 };
 
-/**
- * This function code below contains parts from BaseComplex/global_functions.cpp
- *
- * This file is part of the implementation of
- *    Robust Structure Simplification for Hex Re-meshing
- *    Xifeng Gao, Daniele Panozzo, Wenping Wang, Zhigang Deng, Guoning Chen
- *    In ACM Transactions on Graphics (Proceedings of SIGGRAPH ASIA 2017)
- *
- * Copyright (C) 2017 Xifeng Gao<gxf.xisha@gmail.com>
- *
- * This Source Code Form is subject to the terms of the Mozilla Public License
- * v. 2.0. If a copy of the MPL was not distributed with this file, You can
- * obtain one at http://mozilla.org/MPL/2.0/.
- */
 void buildFacesSlim(
         const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices,
-        std::vector<FaceSlim>& facesSlim, std::vector<bool>& facesBoundary) {
+        std::vector<FaceSlim>& facesSlim, std::vector<bool>& isBoundaryFace) {
+    struct TempFace {
+        uint32_t vertexId[4];
+        uint32_t faceId;
+
+        inline bool operator==(const TempFace& other) const {
+            for (int i = 0; i < 4; i++) {
+                if (vertexId[i] != other.vertexId[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        inline bool operator!=(const TempFace& other) const {
+            for (int i = 0; i < 4; i++) {
+                if (vertexId[i] != other.vertexId[i]) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        inline bool operator<(const TempFace& other) const {
+            for (int i = 0; i < 4; i++) {
+                if (vertexId[i] < other.vertexId[i]) {
+                    return true;
+                } else if (vertexId[i] > other.vertexId[i]) {
+                    return false;
+                }
+            }
+            return faceId < other.faceId;
+        }
+    };
+
     const uint32_t numCells = cellIndices.size() / 8;
-    std::vector<FaceSlim> total_fs(numCells * 6);
-    std::vector<std::tuple<uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t>> tempF(numCells * 6);
-    FaceSlim f;
-    for (uint32_t h_id = 0; h_id < numCells; ++h_id) {
-        for (short j = 0; j < 6; j++){
-            for (short k = 0; k < 4; k++) f.vs[k] = cellIndices.at(h_id * 8 + hexFaceTable[j][k]);
-            uint32_t id = 6 * h_id + j;
-            total_fs[id] = f;
-            std::sort(f.vs, f.vs + 4);
-            tempF[id] = std::make_tuple(f.vs[0], f.vs[1], f.vs[2], f.vs[3], id, h_id, j);
+    std::vector<FaceSlim> totalFaces(numCells * 6);
+    std::vector<TempFace> tempFaces(numCells * 6);
+
+    FaceSlim face;
+    for (uint32_t cellId = 0; cellId < numCells; ++cellId) {
+        for (uint32_t faceIdx = 0; faceIdx < 6; faceIdx++){
+            for (uint32_t vertexIdx = 0; vertexIdx < 4; vertexIdx++) {
+                face.vs[vertexIdx] = cellIndices.at(cellId * 8 + hexFaceTable[faceIdx][vertexIdx]);
+            }
+
+            uint32_t faceId = 6 * cellId + faceIdx;
+            totalFaces[faceId] = face;
+            std::sort(face.vs, face.vs + 4);
+            tempFaces[faceId] = TempFace{
+                    face.vs[0], face.vs[1], face.vs[2], face.vs[3], faceId
+            };
         }
     }
-    std::sort(tempF.begin(), tempF.end());
-    facesSlim.reserve(tempF.size() / 3);
-    uint32_t F_num = 0;
-    for (uint32_t i = 0; i < tempF.size(); ++i) {
-        if (i == 0 || (i != 0 &&
-                       (std::get<0>(tempF[i]) != std::get<0>(tempF[i - 1]) || std::get<1>(tempF[i]) != std::get<1>(tempF[i - 1]) ||
-                        std::get<2>(tempF[i]) != std::get<2>(tempF[i - 1]) || std::get<3>(tempF[i]) != std::get<3>(tempF[i - 1])))) {
-            F_num++;
-            f = total_fs[std::get<4>(tempF[i])];
-            facesSlim.push_back(f);
-            facesBoundary.push_back(true);
+    std::sort(tempFaces.begin(), tempFaces.end());
+
+    facesSlim.reserve(tempFaces.size() / 3);
+    uint32_t numFaces = 0;
+    for (uint32_t i = 0; i < tempFaces.size(); ++i) {
+        if (i == 0 || tempFaces[i] != tempFaces[i - 1]) {
+            face = totalFaces[tempFaces[i].faceId];
+            facesSlim.push_back(face);
+            isBoundaryFace.push_back(true);
+            numFaces++;
+        } else {
+            isBoundaryFace[numFaces - 1] = false;
         }
-        else if (i != 0 && (std::get<0>(tempF[i]) == std::get<0>(tempF[i - 1]) && std::get<1>(tempF[i]) == std::get<1>(tempF[i - 1]) &&
-                            std::get<2>(tempF[i]) == std::get<2>(tempF[i - 1]) && std::get<3>(tempF[i]) == std::get<3>(tempF[i - 1])))
-            facesBoundary[F_num - 1] = false;
     }
 }
 
