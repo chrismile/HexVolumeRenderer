@@ -44,6 +44,6 @@
 void getSphereSurfaceRenderData(
         const glm::vec3& center, float radius, int sectorCount, int stackCount,
         std::vector<glm::vec3>& vertexPositions, std::vector<glm::vec3>& vertexNormals,
-        std::vector<uint32_t>& indices);
+        std::vector<uint32_t>& triangleIndices);
 
 #endif //HEXVOLUMERENDERER_SPHERE_HPP

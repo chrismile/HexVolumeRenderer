@@ -239,10 +239,10 @@ void ClearViewRenderer::loadFocusRepresentation() {
         // Get the sphere render data.
         std::vector<glm::vec3> sphereVertexPositions;
         std::vector<glm::vec3> sphereVertexNormals;
-        std::vector<uint32_t> sphereIndices;
+        std::vector<uint32_t> sphereTriangleIndices;
         getSphereSurfaceRenderData(
                 glm::vec3(0,0,0), lineWidth * 0.5f, 8, 8,
-                sphereVertexPositions, sphereVertexNormals, sphereIndices);
+                sphereVertexPositions, sphereVertexNormals, sphereTriangleIndices);
 
         shaderAttributesFocusPoints = sgl::ShaderManager->createShaderAttributes(gatherShaderFocusSpheres);
         shaderAttributesFocusPoints->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
@@ -255,7 +255,7 @@ void ClearViewRenderer::loadFocusRepresentation() {
         shaderAttributesFocusPoints->addGeometryBuffer(
                 focusPointVertexNormalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);*/
         sgl::GeometryBufferPtr focusPointIndexBuffer = sgl::Renderer->createGeometryBuffer(
-                sphereIndices.size() * sizeof(uint32_t), sphereIndices.data(), sgl::INDEX_BUFFER);
+                sphereTriangleIndices.size() * sizeof(uint32_t), sphereTriangleIndices.data(), sgl::INDEX_BUFFER);
         shaderAttributesFocusPoints->setIndexGeometryBuffer(focusPointIndexBuffer, sgl::ATTRIB_UNSIGNED_INT);
         shaderAttributesFocusPoints->setInstanceCount(numInstancingPoints);
     } else if (lineRenderingMode == LINE_RENDERING_MODE_BILLBOARD_LINES) {

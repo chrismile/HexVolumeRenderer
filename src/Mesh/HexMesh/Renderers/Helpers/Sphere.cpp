@@ -32,7 +32,7 @@
 void getSphereSurfaceRenderData(
         const glm::vec3& center, float radius, int sectorCount, int stackCount,
         std::vector<glm::vec3>& vertexPositions, std::vector<glm::vec3>& vertexNormals,
-        std::vector<uint32_t>& indices) {
+        std::vector<uint32_t>& triangleIndices) {
     float phi, theta, sinPhi, cosPhi;
     float sectorStep = sgl::TWO_PI / sectorCount;
     float stackStep = sgl::PI / stackCount;
@@ -58,14 +58,14 @@ void getSphereSurfaceRenderData(
         k2 = k1 + sectorCount + 1;
         for (int sectorIdx = 0; sectorIdx <= sectorCount; ++sectorIdx) {
             if(stackIdx != 0) {
-                indices.push_back(k1);
-                indices.push_back(k2);
-                indices.push_back(k1 + 1);
+                triangleIndices.push_back(k1);
+                triangleIndices.push_back(k2);
+                triangleIndices.push_back(k1 + 1);
             }
             if(stackIdx != (stackCount-1)) {
-                indices.push_back(k1 + 1);
-                indices.push_back(k2);
-                indices.push_back(k2 + 1);
+                triangleIndices.push_back(k1 + 1);
+                triangleIndices.push_back(k2);
+                triangleIndices.push_back(k2 + 1);
             }
             k1++;
             k2++;
