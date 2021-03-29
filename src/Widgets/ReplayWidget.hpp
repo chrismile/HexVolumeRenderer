@@ -241,6 +241,7 @@ private:
 
     // Gui functions & data.
     ReplayWidgetUpdateType renderFileDialog();
+    bool showWindow = true;
     std::vector<std::string> availableScriptFiles;
     int selectedFileIndex = -1;
     bool recording = false;

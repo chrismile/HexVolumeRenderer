@@ -519,44 +519,54 @@ void ReplayWidget::updateAvailableReplayScripts() {
 ReplayWidget::ReplayWidgetUpdateType ReplayWidget::renderFileDialog() {
     ReplayWidget::ReplayWidgetUpdateType updateType = ReplayWidget::REPLAY_WIDGET_UPDATE_NONE;
 
-    // Load file data
-    if (ImGui::ListBox("##availablefiles",& selectedFileIndex, [this](void* data, int idx, const char** out_text) -> bool {
-        *out_text = availableScriptFiles.at(idx).c_str();
-        return true;
-    }, NULL, availableScriptFiles.size(), 4)) {
-        scriptFileName = availableScriptFiles.at(selectedFileIndex);
-    } ImVec2 cursorPosEnd = ImGui::GetCursorPos(); ImGui::SameLine();
-
-    ImVec2 cursorPos = ImGui::GetCursorPos();
-    ImGui::Text("Available files"); ImGui::SetCursorPos(cursorPos + ImVec2(0.0f, 42.0f));
-    ImGui::SetCursorPos(cursorPosEnd);
-
-    if (!recording && currentStateIndex >= int(replayStates.size())) {
-        ImGui::InputText("##savefilelabel", &scriptFileName); ImGui::SameLine();
-        if (ImGui::Button("Run") && !scriptFileName.empty()) {
-            bool loadingSuccessful = runScript(scriptFileName);
-            if (loadingSuccessful) {
-                updateType = ReplayWidget::REPLAY_WIDGET_UPDATE_LOAD;
-            }
-        } ImGui::SameLine();
-        if (ImGui::Button("Record") && !scriptFileName.empty()) {
-            bool loadingSuccessful = runScript(scriptFileName);
-            if (loadingSuccessful) {
-                recording = true;
-                updateType = ReplayWidget::REPLAY_WIDGET_UPDATE_START_RECORDING;
-            }
+    if (ImGui::Begin("Replay Widget", &showWindow)) {
+        // Load file data
+        if (ImGui::ListBox(
+                "##availablefiles", &selectedFileIndex,
+                [this](void *data, int idx, const char **out_text) -> bool {
+                    *out_text = availableScriptFiles.at(idx).c_str();
+                    return true;
+                }, NULL, availableScriptFiles.size(), 4)) {
+            scriptFileName = availableScriptFiles.at(selectedFileIndex);
         }
-    } else {
-        if (ImGui::Button("Stop")) {
-            currentStateIndex = int(replayStates.size());
-            if (recording) {
-                recording = false;
-                updateType = ReplayWidget::REPLAY_WIDGET_UPDATE_STOP_RECORDING;
-            } else {
-                updateType = ReplayWidget::REPLAY_WIDGET_UPDATE_STOP;
+        ImVec2 cursorPosEnd = ImGui::GetCursorPos();
+        ImGui::SameLine();
+
+        ImVec2 cursorPos = ImGui::GetCursorPos();
+        ImGui::Text("Available files");
+        ImGui::SetCursorPos(cursorPos + ImVec2(0.0f, 42.0f));
+        ImGui::SetCursorPos(cursorPosEnd);
+
+        if (!recording && currentStateIndex >= int(replayStates.size())) {
+            ImGui::InputText("##savefilelabel", &scriptFileName);
+            ImGui::SameLine();
+            if (ImGui::Button("Run") && !scriptFileName.empty()) {
+                bool loadingSuccessful = runScript(scriptFileName);
+                if (loadingSuccessful) {
+                    updateType = ReplayWidget::REPLAY_WIDGET_UPDATE_LOAD;
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Record") && !scriptFileName.empty()) {
+                bool loadingSuccessful = runScript(scriptFileName);
+                if (loadingSuccessful) {
+                    recording = true;
+                    updateType = ReplayWidget::REPLAY_WIDGET_UPDATE_START_RECORDING;
+                }
+            }
+        } else {
+            if (ImGui::Button("Stop")) {
+                currentStateIndex = int(replayStates.size());
+                if (recording) {
+                    recording = false;
+                    updateType = ReplayWidget::REPLAY_WIDGET_UPDATE_STOP_RECORDING;
+                } else {
+                    updateType = ReplayWidget::REPLAY_WIDGET_UPDATE_STOP;
+                }
             }
         }
     }
+    ImGui::End();
 
     return updateType;
 }
