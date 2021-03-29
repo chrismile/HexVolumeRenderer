@@ -388,6 +388,7 @@ bool ReplayWidget::runScript(const std::string& filename) {
     cameraOrientationLast =
             glm::angleAxis(-sceneData.camera->getPitch(), glm::vec3(1, 0, 0))
             * glm::angleAxis(sceneData.camera->getYaw() + sgl::PI / 2.0f, glm::vec3(0, 1, 0));
+    cameraFovyLast = sceneData.camera->getFOVy();
     currentRendererSettings = std::map<std::string, std::string>();
     replaySettingsLast = ReplaySettingsMap();
 
@@ -431,11 +432,12 @@ bool ReplayWidget::update(float currentTime, bool& stopRecording, bool& stopCame
             if (!replayState.cameraCheckpointName.empty()) {
                 sgl::Checkpoint checkpoint;
                 checkpointWindow.getCheckpoint(replayState.cameraCheckpointName, checkpoint);
-                replayState.cameraPositionSet = replayState.cameraOrientationSet = true;
+                replayState.cameraPositionSet = replayState.cameraOrientationSet = replayState.cameraFovySet = true;
                 replayState.cameraPosition = checkpoint.position;
                 replayState.cameraOrientation =
                         glm::angleAxis(-checkpoint.pitch, glm::vec3(1, 0, 0))
                         * glm::angleAxis(checkpoint.yaw + sgl::PI / 2.0f, glm::vec3(0, 1, 0));
+                replayState.cameraFovy = checkpoint.fovy;
             }
 
             replayState.rendererSettings.setStaticSettings(currentRendererSettings);
@@ -455,9 +457,13 @@ bool ReplayWidget::update(float currentTime, bool& stopRecording, bool& stopCame
                 if (replayState.cameraOrientationSet) {
                     cameraOrientationLast = replayState.cameraOrientation;
                 }
+                if (replayState.cameraFovySet) {
+                    cameraFovyLast = replayState.cameraFovy;
+                }
 
                 currentCameraMatrix =
                         glm::toMat4(cameraOrientationLast) * sgl::matrixTranslation(-cameraPositionLast);
+                currentFovy = cameraFovyLast;
                 replayState.rendererSettings.setDynamicSettings(currentRendererSettings);
 
                 replaySettingsLast.updateReplaySettings(replayState.rendererSettings);
@@ -471,13 +477,18 @@ bool ReplayWidget::update(float currentTime, bool& stopRecording, bool& stopCame
             float t = (currentTime - replayState.startTime) / (replayState.stopTime - replayState.startTime);
             glm::vec3 position = cameraPositionLast;
             glm::quat orientation = cameraOrientationLast;
+            float fovy = cameraFovyLast;
             if (replayState.cameraPositionSet) {
                 position = glm::mix(cameraPositionLast, replayState.cameraPosition, t);
             }
             if (replayState.cameraOrientationSet) {
                 orientation = glm::slerp(cameraOrientationLast, replayState.cameraOrientation, t);
             }
+            if (replayState.cameraFovySet) {
+                fovy = glm::mix(cameraFovyLast, replayState.cameraFovy, t);
+            }
             currentCameraMatrix = glm::toMat4(orientation) * sgl::matrixTranslation(-position);
+            currentFovy = fovy;
             replaySettingsLast.setInterpolatedDynamicSettings(
                     replayState.rendererSettings, currentRendererSettings, t);
         }

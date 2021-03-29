@@ -177,9 +177,11 @@ struct ReplayState {
     // The camera state to load (optional).
     bool cameraPositionSet = false;
     bool cameraOrientationSet = false;
+    bool cameraFovySet = false;
     std::string cameraCheckpointName;
     glm::vec3 cameraPosition;
     glm::quat cameraOrientation;
+    float cameraFovy;
 
     // Renderer settings (optional).
     ReplaySettingsMap rendererSettings;
@@ -203,7 +205,8 @@ public:
     };
     ReplayWidgetUpdateType renderGui();
 
-    inline glm::mat4x4 getViewMatrix() { return currentCameraMatrix; }
+    inline const glm::mat4x4& getViewMatrix() { return currentCameraMatrix; }
+    inline float getCameraFovy() { return currentFovy; }
     inline SettingsMap getCurrentRendererSettings() { return currentRendererSettings; }
     inline bool getUseCameraFlight() { return useCameraFlight; }
 
@@ -236,7 +239,9 @@ private:
     SettingsMap currentRendererSettings;
     glm::vec3 cameraPositionLast;
     glm::quat cameraOrientationLast;
+    float cameraFovyLast;
     glm::mat4x4 currentCameraMatrix;
+    float currentFovy;
     bool useCameraFlight = false;
 
     // Gui functions & data.

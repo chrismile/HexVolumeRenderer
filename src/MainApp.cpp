@@ -142,6 +142,28 @@ MainApp::MainApp()
     });
 #endif
 
+    cameraPath.setApplicationCallback([this](
+            const std::string& modelFilename, glm::vec3& centerOffset, float& startAngle, float& pulseFactor,
+            float& standardZoom) {
+        if (boost::starts_with(
+                modelFilename,
+                "Data/Meshes/2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation/anc101_a1.mesh")) {
+            centerOffset = glm::vec3(0.0f, -0.02f, 0.0f);
+            pulseFactor = 3.0f;
+            standardZoom = 1.6f;
+        }
+        if (boost::starts_with(
+                modelFilename,
+                "Data/Meshes/2014 - l1-Based Construction of Polycube Maps from Complex Shapes/cognit/hex.vtk")) {
+            centerOffset = glm::vec3(0.0f, -0.02f, 0.0f);
+            pulseFactor = 3.0f;
+            standardZoom = 1.6f;
+        }
+        if (usePerformanceMeasurementMode && boost::ends_with(modelFilename, "cubic128.vtk")) {
+            standardZoom = 1.3f;
+        }
+    });
+
     clearColor = sgl::Color(0, 0, 0, 255);
     clearColorSelection = ImColor(clearColor.getColorRGBA());
     transferFunctionWindow.setClearColor(clearColor);
@@ -663,6 +685,9 @@ void MainApp::update(float dt) {
     if (replayWidget.update(recordingTime, stopRecording, stopCameraFlight)) {
         if (!useCameraFlight) {
             camera->overwriteViewMatrix(replayWidget.getViewMatrix());
+            if (camera->getFOVy() != replayWidget.getCameraFovy()) {
+                camera->setFOVy(replayWidget.getCameraFovy());
+            }
         }
         SettingsMap currentRendererSettings = replayWidget.getCurrentRendererSettings();
         for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
