@@ -46,7 +46,7 @@ public:
     virtual void onResolutionChanged();
 
 protected:
-    void initShaders(const std::list<std::string>& gatherShaderNames);
+    void initShaders(const std::vector<std::string>& gatherShaderNames);
     virtual void setSortingAlgorithmDefine();
     virtual void setUniformData();
     virtual void clear();

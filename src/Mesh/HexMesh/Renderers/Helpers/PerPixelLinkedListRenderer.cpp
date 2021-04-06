@@ -67,7 +67,7 @@ PerPixelLinkedListRenderer::PerPixelLinkedListRenderer(
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
 }
 
-void PerPixelLinkedListRenderer::initShaders(const std::list<std::string>& gatherShaderNames) {
+void PerPixelLinkedListRenderer::initShaders(const std::vector<std::string>& gatherShaderNames) {
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
     sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "\"LinkedListGather.glsl\"");

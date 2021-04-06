@@ -34,7 +34,7 @@
 
 namespace sgl {
 class Camera;
-typedef boost::shared_ptr<Camera> CameraPtr;
+typedef std::shared_ptr<Camera> CameraPtr;
 }
 
 /**
