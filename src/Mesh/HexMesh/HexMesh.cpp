@@ -418,6 +418,14 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
     glm::vec3 v[8];
 
     if (mesh) {
+#ifdef OPENMP_NO_MEMBERS
+        // Local variable for older versions of OpenMP.
+        float& qualityMin = this->qualityMin;
+        float& qualityMax = this->qualityMax;
+        float& qualityMinNormalized = this->qualityMinNormalized;
+        float& qualityMaxNormalized = this->qualityMaxNormalized;
+#endif
+
         #pragma omp parallel for reduction(min: qualityMin) reduction(max: qualityMax) private(v) \
                 shared(cellQualityList, qualityFunctor, arg) default(none)
         for (size_t i = 0; i < meshNumCells; i++) {
@@ -441,6 +449,14 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
             qualityMaxNormalized = std::max(qualityMaxNormalized, cellQualityMeasureList.at(i));
         }
     } else {
+#ifdef OPENMP_NO_MEMBERS
+        // Local variable for older versions of OpenMP.
+        float& qualityMin = this->qualityMin;
+        float& qualityMax = this->qualityMax;
+        float& qualityMinNormalized = this->qualityMinNormalized;
+        float& qualityMaxNormalized = this->qualityMaxNormalized;
+#endif
+
         #pragma omp parallel for reduction(min: qualityMin) reduction(max: qualityMax) private(v) \
                 shared(cellQualityList, qualityFunctor, arg) default(none)
         for (size_t i = 0; i < meshNumCells; i++) {
@@ -593,6 +609,11 @@ float HexMesh::getFaceArea(uint32_t f_id) {
 }
 
 float HexMesh::getFaceIdsAreaSum(const std::vector<uint32_t>& f_ids) {
+#ifdef OPENMP_NO_MEMBERS
+    // Local variable for older versions of OpenMP.
+    std::vector<float>& faceAreas = this->faceAreas;
+#endif
+
     if (faceAreas.empty()) {
         computeAllFaceAreas();
     }
@@ -609,6 +630,12 @@ float HexMesh::getFaceIdsAreaSum(const std::vector<uint32_t>& f_ids) {
 }
 
 void HexMesh::computeAllFaceAreas() {
+#ifdef OPENMP_NO_MEMBERS
+    // Local variable for older versions of OpenMP.
+    std::vector<float>& faceAreas = this->faceAreas;
+    Mesh* mesh = this->mesh;
+#endif
+
     faceAreas.resize(mesh->Fs.size());
     #pragma omp parallel for default(none) shared(faceAreas, mesh)
     for (uint32_t f_id = 0; f_id < mesh->Fs.size(); f_id++) {
@@ -629,6 +656,11 @@ float HexMesh::getCellVolume(uint32_t h_id) {
 }
 
 float HexMesh::getCellIdsVolumeSum(const std::vector<uint32_t>& h_ids) {
+#ifdef OPENMP_NO_MEMBERS
+    // Local variable for older versions of OpenMP.
+    std::vector<float>& cellVolumes = this->cellVolumes;
+#endif
+
     if (cellVolumes.empty()) {
         computeAllCellVolumes();
     }
@@ -645,6 +677,12 @@ float HexMesh::getCellIdsVolumeSum(const std::vector<uint32_t>& h_ids) {
 }
 
 void HexMesh::computeAllCellVolumes() {
+#ifdef OPENMP_NO_MEMBERS
+    // Local variable for older versions of OpenMP.
+    std::vector<float>& cellVolumes = this->cellVolumes;
+    Mesh* mesh = this->mesh;
+#endif
+
     cellVolumes.resize(mesh->Hs.size());
     #pragma omp parallel for default(none) shared(cellVolumes, mesh)
     for (uint32_t h_id = 0; h_id < mesh->Hs.size(); h_id++) {

@@ -311,8 +311,10 @@ std::vector<float> HexMesh::getInterpolatedCellAttributeVertexData() const {
 }
 
 std::vector<float> HexMesh::getManualVertexAttributeDataNormalized() const {
+#ifdef OPENMP_NO_MEMBERS
     // Local variable for older versions of OpenMP.
     std::vector<float>* manualVertexAttributes = this->manualVertexAttributes;
+#endif
 
     glm::vec2 minMaxValue = manualVertexAttributesMinMax.at(manualVertexAttributeIdx);
     std::vector<float> attributeData;
