@@ -44,6 +44,8 @@ void QualityFilter::filterMesh(HexMeshPtr meshIn) {
 }
 
 void QualityFilter::renderGui() {
+    ImGui::SetNextWindowSize(ImVec2(800, 110), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(3025, 1395), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Quality Filter", &showFilterWindow)) {
         if (ImGui::SliderFloat("Threshold", &filterRatio, 0.0f, 1.0f)) {
             dirty = true;

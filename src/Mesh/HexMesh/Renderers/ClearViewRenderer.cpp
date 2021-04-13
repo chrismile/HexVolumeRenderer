@@ -373,6 +373,8 @@ void ClearViewRenderer::render() {
 }
 
 void ClearViewRenderer::renderGui() {
+    ImGui::SetNextWindowSize(ImVec2(746, 1426), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
     if (ImGui::Begin(windowName.c_str(), &showRendererWindow)) {
         childClassRenderGuiBegin();
         if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {

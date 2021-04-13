@@ -138,7 +138,9 @@ void SurfaceRenderer::render() {
 }
 
 void SurfaceRenderer::renderGui() {
-    if (ImGui::Begin("Volume Renderer (Faces)", &showRendererWindow)) {
+    ImGui::SetNextWindowSize(ImVec2(540, 160), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
+    if (ImGui::Begin("Surface Renderer", &showRendererWindow)) {
         if (ImGui::Checkbox("Use Shading", &useShading)) {
             reRender = true;
         }

@@ -454,6 +454,8 @@ void MainApp::renderGui() {
     sgl::ImGuiWrapper::get()->renderStart();
 
     if (showSettingsWindow) {
+        ImGui::SetNextWindowSize(ImVec2(744, 1348), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowPos(ImVec2(3085, 39), ImGuiCond_FirstUseEver);
         if (ImGui::Begin("Settings", &showSettingsWindow)) {
             SciVisApp::renderGuiFpsCounter();
 

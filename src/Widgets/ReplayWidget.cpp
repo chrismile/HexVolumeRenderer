@@ -546,6 +546,8 @@ void ReplayWidget::updateAvailableReplayScripts() {
 ReplayWidget::ReplayWidgetUpdateType ReplayWidget::renderFileDialog() {
     ReplayWidget::ReplayWidgetUpdateType updateType = ReplayWidget::REPLAY_WIDGET_UPDATE_NONE;
 
+    ImGui::SetNextWindowSize(ImVec2(646, 294), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(3184, 1786), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Replay Widget", &showWindow)) {
         // Load file data
         if (ImGui::ListBox(
