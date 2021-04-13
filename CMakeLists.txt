@@ -26,6 +26,8 @@ option(USE_CORK "Build with Cork as CSG Library" OFF)
 option(USE_LEMON "Build with matching code and LEMON graph library" OFF)
 option(USE_STEAMWORKS "Build with Steamworks SDK" OFF)
 
+find_package(PkgConfig REQUIRED)
+
 if (USE_PYTHON)
 	if (${CMAKE_VERSION} VERSION_GREATER "3.11")
 		find_package(Python3 COMPONENTS Development QUIET)
@@ -63,7 +65,6 @@ else()
 	list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Utils/Steamworks.cpp)
 endif()
 
-find_package(PkgConfig REQUIRED)
 find_package(embree 3.0 QUIET)
 if(embree_FOUND)
 	MESSAGE(STATUS "Found Embree. Using Embree as the ray-mesh intersection library.")
