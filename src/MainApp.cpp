@@ -795,7 +795,7 @@ void MainApp::normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
         for (size_t i = 0; i < vertices.size(); i++) {
             glm::vec4 rotatedVertex = rotationMatrix * glm::vec4(
                     vertices.at(i).x, vertices.at(i).y, vertices.at(i).z, 1.0f);
-            vertices.at(i) = rotatedVertex;
+            vertices.at(i) = glm::vec3(rotatedVertex.x, rotatedVertex.y, rotatedVertex.z);
         }
     }
 }
