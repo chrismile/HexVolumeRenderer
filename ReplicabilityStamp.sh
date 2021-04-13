@@ -31,4 +31,17 @@
 # It is assumed that the build folder is called 'build' and lies in the project
 # directory.
 
+if [ -d "Data/Meshes/2020" ]; then
+    # This tool can help download data sets from HexaLab. The program assumes the user has the rights to download the data.
+    #
+    # HexaLab.net: an online viewer for hexahedral meshes
+    # Matteo Braccix, Marco Tarini1,2,x, Nico Pietroni1,4, Marco Livesu3, Paolo Cignoni1
+    # Computer-Aided Design, Volume 110, May 2019
+    # DOI:10.1016/j.cad.2018.12.003
+    # (preprint available on arxiv)
+    # Copyright 2018 Visual Computing Lab ISTI - CNR
+    echo "Downloading HexaLab data sets..."
+    build/HexaLabDatasetsDownloader
+fi
+
 build/HexVolumeRenderer --replicability

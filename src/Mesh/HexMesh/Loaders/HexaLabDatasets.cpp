@@ -115,7 +115,6 @@ void downloadHexaLabDataSetThreadFunction(std::function<void()> callback) {
 }
 
 void downloadHexaLabDataSets(std::function<void()> callback, LoaderThread& loaderThread) {
-
     if (sgl::FileUtils::get()->exists(meshDirectory)) {
         // Already downloaded
         return;

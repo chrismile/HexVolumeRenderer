@@ -6,6 +6,10 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 set (CMAKE_CXX_STANDARD 11)
 
 file(GLOB_RECURSE SOURCES src/*.cpp src/*.c)
+list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Mesh/HexMesh/Loaders/HexaLabDatasetsDownloader.cpp)
+list(APPEND SOURCES_DOWNLOADER ${CMAKE_CURRENT_SOURCE_DIR}/src/Mesh/HexMesh/Loaders/HexaLabDatasets.hpp)
+list(APPEND SOURCES_DOWNLOADER ${CMAKE_CURRENT_SOURCE_DIR}/src/Mesh/HexMesh/Loaders/HexaLabDatasets.cpp)
+list(APPEND SOURCES_DOWNLOADER ${CMAKE_CURRENT_SOURCE_DIR}/src/Mesh/HexMesh/Loaders/HexaLabDatasetsDownloader.cpp)
 include_directories(src)
 
 #if(MSVC)
@@ -150,3 +154,8 @@ if(OPENMP_FOUND)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
+
+
+# Downloading data sets for replicability stamp automatically.
+add_executable(HexaLabDatasetsDownloader ${SOURCES_DOWNLOADER})
+target_link_libraries(HexaLabDatasetsDownloader PUBLIC sgl ${CURL_LIBRARIES} ${JSONCPP_LIBRARIES})

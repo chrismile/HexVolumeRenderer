@@ -1,7 +1,7 @@
 /*
  * BSD 2-Clause License
  *
- * Copyright (c) 2020, Christoph Neuhauser
+ * Copyright (c) 2021, Christoph Neuhauser
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,16 +26,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_HEXALABDATASETS_HPP
-#define HEXVOLUMERENDERER_HEXALABDATASETS_HPP
-
-#include <string>
-#include <vector>
-#include <functional>
-#include <thread>
+#include "HexaLabDatasets.hpp"
 
 /**
- * This file can help download data sets from HexaLab. The program assumes the user has the rights to download the data.
+ * This tool can help download data sets from HexaLab. The program assumes the user has the rights to download the data.
  *
  * HexaLab.net: an online viewer for hexahedral meshes
  * Matteo Braccix, Marco Tarini1,2,x, Nico Pietroni1,4, Marco Livesu3, Paolo Cignoni1
@@ -44,43 +38,9 @@
  * (preprint available on arxiv)
  * Copyright 2018 Visual Computing Lab ISTI - CNR
  */
-
-const std::string meshDirectory = "Data/Meshes/";
-
-struct MeshPaperDescription {
-    std::string title, venue, authors, year, PDF, web, DOI;
-};
-
-struct MeshSourceDescription {
-    MeshPaperDescription paper;
-    std::string path, label;
-    std::vector<std::string> data;
-    std::vector<std::vector<std::string>> dataAdditionalFiles;
-};
-
-class LoaderThread {
-public:
-    LoaderThread() : loaderThread() {}
-    ~LoaderThread() {
-        if (ownsThread) {
-            loaderThread.join();
-        }
-    }
-    void setThread(std::thread& thread) {
-        ownsThread = true;
-        loaderThread = std::move(thread);
-    }
-    void join() {
-        return loaderThread.join();
-    }
-
-private:
-    std::thread loaderThread;
-    bool ownsThread = false;
-};
-
-/// The passed callback is called when the data was loaded successfully.
-void downloadHexaLabDataSets(std::function<void()> callback, LoaderThread& loaderThread);
-std::vector<MeshSourceDescription> parseSourceDescriptions();
-
-#endif //HEXVOLUMERENDERER_HEXALABDATASETS_HPP
+int main(int argc, char *argv[]) {
+    LoaderThread loaderThread;
+    downloadHexaLabDataSets([]() {}, loaderThread);
+    loaderThread.join();
+    return 0;
+}
