@@ -430,7 +430,9 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
                 shared(cellQualityList, qualityFunctor, arg) default(none)
         for (size_t i = 0; i < meshNumCells; i++) {
             Hybrid& h = mesh->Hs.at(i);
+#ifndef OPENMP_NO_MEMBERS
             assert(h.vs.size() == 8);
+#endif
             for (size_t j = 0; j < h.vs.size(); j++) {
                 uint32_t v_id = h.vs.at(j);
                 v[j] = glm::vec3(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
@@ -863,8 +865,8 @@ void HexMesh::getSurfaceData(
             assert(f.vs.size() == 4);
             for (size_t j = 0; j < 4; j++) {
                 uint32_t v_id = f.vs.at(j);
-                glm::vec4 vertexPosition(
-                        mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
+                glm::vec3 vertexPosition(
+                        mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
                 vertexPositions.push_back(vertexPosition);
                 if (!useManualVertexAttribute) {
                     vertexAttributes.push_back(cellAttribute);
@@ -946,8 +948,8 @@ void HexMesh::getSurfaceData(
             assert(f.vs.size() == 4);
             for (size_t j = 0; j < 4; j++) {
                 uint32_t v_id = f.vs.at(j);
-                glm::vec4 vertexPosition(
-                        mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id), 1.0f);
+                glm::vec3 vertexPosition(
+                        mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
                 vertexPositions.push_back(vertexPosition);
             }
 

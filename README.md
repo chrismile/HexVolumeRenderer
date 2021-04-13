@@ -13,9 +13,9 @@ The program requires the library sgl (https://github.com/chrismile/sgl).
 On Ubuntu 20.04 for example, you can install all other necessary dependencies with this command (additionally to the prerequisites required by sgl):
 
 ```
-sudo apt-get install libjsoncpp-dev libeigen3-dev libcurl4-openssl-dev
+sudo apt-get install libjsoncpp-dev libeigen3-dev python3 libcurl4-openssl-dev
 OR:
-sudo apt-get install libjsoncpp-dev libeigen3-dev libcurl4-gnutls-dev
+sudo apt-get install libjsoncpp-dev libeigen3-dev python3 libcurl4-gnutls-dev
 ```
 
 On Ubuntu 18.04:
@@ -38,7 +38,7 @@ ln -s ../Data .
 The build process was also tested on Windows 10 64-bit using MSYS2 and Mingw-w64 (http://www.msys2.org/). Using MSYS2 and Pacman, the following packages need to be installed additionally to the prerequisites required by sgl.
 
 ```
-pacman -S mingw64/mingw-w64-x86_64-jsoncpp mingw64/mingw-w64-x86_64-curl mingw64/mingw-w64-x86_64-eigen3 mingw64/mingw-w64-x86_64-embree
+pacman -S mingw64/mingw-w64-x86_64-jsoncpp mingw64/mingw-w64-x86_64-curl mingw64/mingw-w64-x86_64-eigen3 mingw64/mingw-w64-x86_64-python mingw64/mingw-w64-x86_64-embree
 ```
 
 Furthermore, the graph library LEMON (http://lemon.cs.elte.hu/trac/lemon) needs to be built manually, as no msys2 package is available for it at the time of writing this README file.
