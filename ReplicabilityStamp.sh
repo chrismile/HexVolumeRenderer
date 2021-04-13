@@ -31,7 +31,7 @@
 # It is assumed that the build folder is called 'build' and lies in the project
 # directory.
 
-if [ ! -d "Data/Meshes/2020" ]; then
+if [ ! -d "Data/Meshes/2019 - Symmetric Moving Frames" ]; then
     # This tool can help download data sets from HexaLab. The program assumes the user has the rights to download the data.
     #
     # HexaLab.net: an online viewer for hexahedral meshes
