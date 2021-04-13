@@ -262,9 +262,13 @@ MainApp::~MainApp() {
 }
 
 void MainApp::loadReplicabilityStampState() {
+#ifdef USE_PYTHON
     replayWidget.loadReplicabilityStampState();
     recordingTime = 0.0f;
     realTimeReplayUpdates = false;
+#else
+    throw std::runtime_error("Error in MainApp::loadReplicabilityStampState: Program built without Python support!");
+#endif
 }
 
 void MainApp::setNewState(const InternalState &newState) {
