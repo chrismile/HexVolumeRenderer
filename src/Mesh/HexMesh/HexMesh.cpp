@@ -424,15 +424,34 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
         float& qualityMax = this->qualityMax;
         float& qualityMinNormalized = this->qualityMinNormalized;
         float& qualityMaxNormalized = this->qualityMaxNormalized;
-#endif
 
+        #pragma omp parallel for reduction(min: qualityMin) reduction(max: qualityMax) private(v) \
+                shared(cellQualityList, qualityFunctor, arg)
+        for (size_t i = 0; i < meshNumCells; i++) {
+            Hybrid& h = mesh->Hs.at(i);
+            for (size_t j = 0; j < h.vs.size(); j++) {
+                uint32_t v_id = h.vs.at(j);
+                v[j] = glm::vec3(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+            }
+            float quality = qualityFunctor(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], arg);
+            qualityMin = std::min(qualityMin, quality);
+            qualityMax = std::max(qualityMax, quality);
+            cellQualityList.at(i) = quality;
+        }
+        #pragma omp parallel for reduction(min: qualityMinNormalized) reduction(max: qualityMaxNormalized) \
+                shared(cellQualityList, hexaLabQualityMeasure)
+        for (size_t i = 0; i < meshNumCells; i++) {
+            cellQualityMeasureList.at(i) = 1.0f - HexaLab::normalize_quality_measure(
+                    hexaLabQualityMeasure, cellQualityList.at(i), qualityMin, qualityMax);
+            qualityMinNormalized = std::min(qualityMinNormalized, cellQualityMeasureList.at(i));
+            qualityMaxNormalized = std::max(qualityMaxNormalized, cellQualityMeasureList.at(i));
+        }
+#else
         #pragma omp parallel for reduction(min: qualityMin) reduction(max: qualityMax) private(v) \
                 shared(cellQualityList, qualityFunctor, arg) default(none)
         for (size_t i = 0; i < meshNumCells; i++) {
             Hybrid& h = mesh->Hs.at(i);
-#ifndef OPENMP_NO_MEMBERS
             assert(h.vs.size() == 8);
-#endif
             for (size_t j = 0; j < h.vs.size(); j++) {
                 uint32_t v_id = h.vs.at(j);
                 v[j] = glm::vec3(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
@@ -450,6 +469,7 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
             qualityMinNormalized = std::min(qualityMinNormalized, cellQualityMeasureList.at(i));
             qualityMaxNormalized = std::max(qualityMaxNormalized, cellQualityMeasureList.at(i));
         }
+#endif
     } else {
 #ifdef OPENMP_NO_MEMBERS
         // Local variable for older versions of OpenMP.
@@ -457,8 +477,28 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
         float& qualityMax = this->qualityMax;
         float& qualityMinNormalized = this->qualityMinNormalized;
         float& qualityMaxNormalized = this->qualityMaxNormalized;
-#endif
 
+        #pragma omp parallel for reduction(min: qualityMin) reduction(max: qualityMax) private(v) \
+                shared(cellQualityList, qualityFunctor, arg)
+        for (size_t i = 0; i < meshNumCells; i++) {
+            for (size_t j = 0; j < 8; j++) {
+                uint32_t v_id = cellIndices.at(i * 8 + j);
+                v[j] = glm::vec3(vertices.at(v_id));
+            }
+            float quality = qualityFunctor(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], arg);
+            qualityMin = std::min(qualityMin, quality);
+            qualityMax = std::max(qualityMax, quality);
+            cellQualityList.at(i) = quality;
+        }
+        #pragma omp parallel for reduction(min: qualityMinNormalized) reduction(max: qualityMaxNormalized) \
+                shared(cellQualityList, hexaLabQualityMeasure)
+        for (size_t i = 0; i < meshNumCells; i++) {
+            cellQualityMeasureList.at(i) = 1.0f - HexaLab::normalize_quality_measure(
+                    hexaLabQualityMeasure, cellQualityList.at(i), qualityMin, qualityMax);
+            qualityMinNormalized = std::min(qualityMinNormalized, cellQualityMeasureList.at(i));
+            qualityMaxNormalized = std::max(qualityMaxNormalized, cellQualityMeasureList.at(i));
+        }
+#else
         #pragma omp parallel for reduction(min: qualityMin) reduction(max: qualityMax) private(v) \
                 shared(cellQualityList, qualityFunctor, arg) default(none)
         for (size_t i = 0; i < meshNumCells; i++) {
@@ -479,6 +519,7 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
             qualityMinNormalized = std::min(qualityMinNormalized, cellQualityMeasureList.at(i));
             qualityMaxNormalized = std::max(qualityMaxNormalized, cellQualityMeasureList.at(i));
         }
+#endif
     }
     std::cout << "Quality: " << HexaLab::get_quality_name(hexaLabQualityMeasure)
             << ", range: [" << qualityMin << ", " << qualityMax << "], normalized range: "
