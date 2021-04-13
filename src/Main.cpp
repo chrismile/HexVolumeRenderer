@@ -61,14 +61,20 @@ int main(int argc, char *argv[]) {
 #else
     sgl::AppSettings::get()->setLoadGUI(fontRanges.Data);
 #endif
-    sgl::Window *window = sgl::AppSettings::get()->createWindow();
+    sgl::Window* window = sgl::AppSettings::get()->createWindow();
     sgl::AppSettings::get()->initializeSubsystems();
 
 #ifdef USE_PYTHON
     Py_Initialize();
 #endif
 
-    sgl::AppLogic *app = new MainApp();
+    MainApp* app = new MainApp();
+
+    // Code path for replicability stamp.
+    if (argc == 2 && strcmp(argv[1], "--replicability") == 0) {
+        app->loadReplicabilityStampState();
+    }
+
     app->run();
 
     delete app;

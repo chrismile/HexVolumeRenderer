@@ -62,6 +62,9 @@ public:
     MainApp();
     ~MainApp();
 
+    /// Replicability stamp mode.
+    void loadReplicabilityStampState();
+
     /// For changing performance measurement modes.
     void setNewState(const InternalState& newState);
 

@@ -261,6 +261,12 @@ MainApp::~MainApp() {
 #endif
 }
 
+void MainApp::loadReplicabilityStampState() {
+    replayWidget.loadReplicabilityStampState();
+    recordingTime = 0.0f;
+    realTimeReplayUpdates = false;
+}
+
 void MainApp::setNewState(const InternalState &newState) {
     if (performanceMeasurer) {
         performanceMeasurer->setCurrentAlgorithmBufferSizeBytes(0);

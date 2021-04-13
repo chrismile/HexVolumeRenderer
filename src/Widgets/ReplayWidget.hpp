@@ -214,6 +214,9 @@ public:
     void setLoadMeshCallback(std::function<void(const MeshDescriptor& meshDescriptor)> loadMeshCallback);
     void setLoadRendererCallback(std::function<void(const std::string& rendererName)> loadRendererCallback);
 
+    /// Replicability stamp mode.
+    ReplayWidget::ReplayWidgetUpdateType loadReplicabilityStampState();
+
 
 private:
     // Global data.

@@ -242,12 +242,28 @@ static PyObject* py_set_camera_yaw_pitch_rad(PyObject* self, PyObject* args) {
                 "ERROR in py_set_camera_yaw_pitch_rad: Tuple must contain two float values or one tuple.");
         return NULL;
     }
-    glm::quat cameraOrientation = glm::vec3(0.0f);
+
+    // We don't want a flip-over at the poles of the unit sphere.
+    /*const float EPSILON = 0.001f;
+    pitch = sgl::clamp(pitch, -sgl::HALF_PI + EPSILON, sgl::HALF_PI - EPSILON);
+
+    glm::vec3 cameraFront, cameraRight, cameraUp;
+
+    glm::vec3 globalUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    cameraFront.x = cos(yaw) * cos(pitch);
+    cameraFront.y = sin(pitch);
+    cameraFront.z = sin(yaw) * cos(pitch);
+
+    cameraFront = glm::normalize(cameraFront);
+    cameraRight = glm::normalize(glm::cross(cameraFront, globalUp));
+    cameraUp    = glm::normalize(glm::cross(cameraRight, cameraFront));*/
 
     currentReplayStateGlobal.cameraOrientationSet = true;
+    //currentReplayStateGlobal.cameraOrientation = glm::quat_cast(glm::lookAt(
+    //        glm::vec3(0.0f), cameraFront, cameraUp));
     currentReplayStateGlobal.cameraOrientation =
-            glm::angleAxis(-pitch, glm::vec3(1, 0, 0))
-            * glm::angleAxis(yaw + sgl::PI / 2.0f, glm::vec3(0, 1, 0));
+               glm::angleAxis(-pitch, glm::vec3(1, 0, 0))
+               * glm::angleAxis(yaw + sgl::PI / 2.0f, glm::vec3(0, 1, 0));
     Py_RETURN_NONE;
 }
 
@@ -584,4 +600,13 @@ ReplayWidget::ReplayWidgetUpdateType ReplayWidget::renderFileDialog() {
 
 ReplayWidget::ReplayWidgetUpdateType ReplayWidget::renderGui() {
     return renderFileDialog();
+}
+
+ReplayWidget::ReplayWidgetUpdateType ReplayWidget::loadReplicabilityStampState() {
+    ReplayWidget::ReplayWidgetUpdateType updateType = ReplayWidget::REPLAY_WIDGET_UPDATE_NONE;
+    bool loadingSuccessful = runScript("fig19.py");
+    if (loadingSuccessful) {
+        updateType = ReplayWidget::REPLAY_WIDGET_UPDATE_LOAD;
+    }
+    return updateType;
 }

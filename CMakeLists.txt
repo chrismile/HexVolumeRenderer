@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.11)
+cmake_minimum_required (VERSION 3.5)
 project (HexVolumeRenderer)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 #MESSAGE(STATUS "CMAKE_MODULE_PATH: " ${CMAKE_MODULE_PATH})
@@ -15,6 +15,11 @@ include_directories(src)
 #elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 #	set(CMAKE_CXX_FLAGS "-Wall")
 #endif()
+
+# Prefer GLVND by default when available.
+if (${CMAKE_VERSION} VERSION_GREATER "3.11")
+	cmake_policy(SET CMP0072 NEW)
+endif()
 
 option(USE_PYTHON "Build with Python 3 support for replay scripts" ON)
 option(USE_CORK "Build with Cork as CSG Library" OFF)
