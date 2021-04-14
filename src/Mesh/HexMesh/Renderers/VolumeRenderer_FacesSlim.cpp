@@ -55,11 +55,11 @@ static int sortingAlgorithmMode = 0;
 // A fragment node stores rendering information about one specific fragment.
 struct LinkedListFragmentNode {
     // RGBA color of the node
-    uint color;
+    uint32_t color;
     // Depth value of the fragment (in view space)
     float depth;
     // The index of the next node in "nodes" array
-    uint next;
+    uint32_t next;
 };
 
 VolumeRenderer_FacesSlim::VolumeRenderer_FacesSlim(
