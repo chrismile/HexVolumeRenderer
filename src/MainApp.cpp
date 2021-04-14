@@ -147,14 +147,16 @@ MainApp::MainApp()
             float& standardZoom) {
         if (boost::starts_with(
                 modelFilename,
-                "Data/Meshes/2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation/anc101_a1.mesh")) {
+                sgl::AppSettings::get()->getDataDirectory() +
+                "Meshes/2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation/anc101_a1.mesh")) {
             centerOffset = glm::vec3(0.0f, -0.02f, 0.0f);
             pulseFactor = 3.0f;
             standardZoom = 1.6f;
         }
         if (boost::starts_with(
                 modelFilename,
-                "Data/Meshes/2014 - l1-Based Construction of Polycube Maps from Complex Shapes/cognit/hex.vtk")) {
+                sgl::AppSettings::get()->getDataDirectory() +
+                "Meshes/2014 - l1-Based Construction of Polycube Maps from Complex Shapes/cognit/hex.vtk")) {
             centerOffset = glm::vec3(0.0f, -0.02f, 0.0f);
             pulseFactor = 3.0f;
             standardZoom = 1.6f;
@@ -192,9 +194,11 @@ MainApp::MainApp()
             window->setWindowSize(recordingResolution.x, recordingResolution.y);
         }
         realTimeCameraFlight = false;
-        transferFunctionWindow.loadFunctionFromFile("Data/TransferFunctions/Standard_PerVertex.xml");
+        transferFunctionWindow.loadFunctionFromFile(
+                sgl::AppSettings::get()->getDataDirectory() + "TransferFunctions/Standard_PerVertex.xml");
         loadHexahedralMesh(
-                "Data/Meshes/2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation/anc101_a1.mesh");
+                sgl::AppSettings::get()->getDataDirectory()
+                + "Meshes/2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation/anc101_a1.mesh");
         renderingMode = RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED;
     }
 
@@ -212,6 +216,7 @@ MainApp::MainApp()
     setRenderers();
 
     customMeshFileName = sgl::FileUtils::get()->getUserDirectory();
+    const std::string meshDirectory = sgl::AppSettings::get()->getDataDirectory() + "Meshes/";
     hexaLabDataSetsDownloaded = sgl::FileUtils::get()->exists(meshDirectory + "index.json");
     loadAvailableDataSetSources();
 
@@ -291,7 +296,9 @@ void MainApp::setNewState(const InternalState &newState) {
 
     // 1.2. Load the new transfer function if necessary.
     if (!newState.transferFunctionName.empty() && newState.transferFunctionName != lastState.transferFunctionName) {
-        transferFunctionWindow.loadFunctionFromFile("Data/TransferFunctions/" + newState.transferFunctionName);
+        transferFunctionWindow.loadFunctionFromFile(
+                sgl::AppSettings::get()->getDataDirectory()
+                + "TransferFunctions/" + newState.transferFunctionName);
         colorLegendWidget.setTransferFunctionColorMap(
                 transferFunctionWindow.getTransferFunctionMap_sRGB());
     }
@@ -595,6 +602,7 @@ std::string MainApp::getSelectedMeshFilename() {
     }
 
     MeshSourceDescription& sourceDescription = meshSourceDescriptions.at(selectedFileSourceIndex - 1);
+    const std::string meshDirectory = sgl::AppSettings::get()->getDataDirectory() + "Meshes/";
     return meshDirectory + sourceDescription.path + "/" + sourceDescription.data.at(selectedMeshIndex - 1);
 }
 
@@ -891,6 +899,7 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         if (!dataAdditionalFiles.empty()) {
             for (std::string& additionalDataName : dataAdditionalFiles) {
                 if (boost::ends_with(additionalDataName, ".dat")) {
+                    const std::string meshDirectory = sgl::AppSettings::get()->getDataDirectory() + "Meshes/";
                     std::string additionalDataFilename =
                             meshDirectory + sourceDescription.path + "/" + additionalDataName;
                     std::vector<std::vector<float>> datData = loadDatData(additionalDataFilename);

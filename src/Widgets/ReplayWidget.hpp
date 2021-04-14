@@ -226,7 +226,7 @@ private:
 
     // Script directory data.
     sgl::PathWatch directoryContentWatch;
-    std::string scriptDirectory = "Data/ReplayScripts/";
+    std::string scriptDirectory;
     std::string scriptFileName = "";
     void updateAvailableReplayScripts();
     std::function<void(const std::string& rendererName)> loadRendererCallback;

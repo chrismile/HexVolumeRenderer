@@ -38,12 +38,12 @@
 #include <jsoncpp/json/json.h>
 #endif
 
+#include <Utils/AppSettings.hpp>
 #include <Utils/File/FileUtils.hpp>
 #include <Utils/File/Logfile.hpp>
 
 #include "HexaLabDatasets.hpp"
 
-const std::string indexFileName = meshDirectory + "index.json";
 const std::string hexaLabBaseUrl = "https://www.hexalab.net/datasets/";
 
 static size_t writeDataCallbackCurl(void *pointer, size_t size, size_t numMembers, void *stream) {
@@ -81,6 +81,8 @@ static volatile bool downloadThreadIsRunning = false;
 void downloadHexaLabDataSetThreadFunction(std::function<void()> callback) {
     // Load the configuration file.
     curl_global_init(CURL_GLOBAL_ALL);
+    const std::string meshDirectory = sgl::AppSettings::get()->getDataDirectory() + "Meshes/";
+    const std::string indexFileName = meshDirectory + "index.json";
     downloadFile(hexaLabBaseUrl + "index.json", indexFileName);
 
     // Now, parse the index.json file.
@@ -115,6 +117,7 @@ void downloadHexaLabDataSetThreadFunction(std::function<void()> callback) {
 }
 
 void downloadHexaLabDataSets(std::function<void()> callback, LoaderThread& loaderThread) {
+    const std::string meshDirectory = sgl::AppSettings::get()->getDataDirectory() + "Meshes/";
     if (sgl::FileUtils::get()->exists(meshDirectory)) {
         // Already downloaded
         return;
@@ -133,6 +136,8 @@ std::vector<MeshSourceDescription> parseSourceDescriptions() {
     std::vector<MeshSourceDescription> meshSourceDescriptions;
 
     // Parse the index.json file.
+    const std::string meshDirectory = sgl::AppSettings::get()->getDataDirectory() + "Meshes/";
+    const std::string indexFileName = meshDirectory + "index.json";
     std::ifstream jsonFileStream(indexFileName);
     Json::CharReaderBuilder builder;
     JSONCPP_STRING errorString;

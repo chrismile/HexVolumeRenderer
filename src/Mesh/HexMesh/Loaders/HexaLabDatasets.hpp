@@ -45,8 +45,6 @@
  * Copyright 2018 Visual Computing Lab ISTI - CNR
  */
 
-const std::string meshDirectory = "Data/Meshes/";
-
 struct MeshPaperDescription {
     std::string title, venue, authors, year, PDF, web, DOI;
 };

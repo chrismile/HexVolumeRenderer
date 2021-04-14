@@ -35,6 +35,7 @@
 #include <glm/glm.hpp>
 
 #include <Utils/Convert.hpp>
+#include <Utils/AppSettings.hpp>
 #include "Utils/VecStringConversion.hpp"
 
 enum RenderingMode {
@@ -160,7 +161,8 @@ struct MeshDescriptor {
     }
 
     std::string getFilename() const {
-        return "Data/Meshes/" + paperName + "/" + meshName + "." + meshFileEnding;
+        return sgl::AppSettings::get()->getDataDirectory()
+                + "Meshes/" + paperName + "/" + meshName + "." + meshFileEnding;
     }
 
     std::string paperName;
