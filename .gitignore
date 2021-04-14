@@ -89,3 +89,5 @@ Data/ReplayScripts/__pycache__/*
 
 Data/ControlPoints.txt
 imgui.ini
+
+dependencies/*

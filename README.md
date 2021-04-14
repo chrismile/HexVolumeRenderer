@@ -21,7 +21,7 @@ sudo apt-get install libjsoncpp-dev libeigen3-dev python3-dev libcurl4-gnutls-de
 On Ubuntu 18.04:
 
 ```
-sudo apt-get install libjsoncpp-dev libcurl-dev libeigen3-dev liblemon-dev
+sudo apt-get install libjsoncpp-dev libcurl-dev libeigen3-dev python3-dev liblemon-dev
 ```
 
 Lemon is an optional dependency. After installing sgl (see above) execute in the repository directory:
@@ -117,17 +117,7 @@ without modifications to the upstream version of the code of the respective libr
 Thus, the code is not provided in the repository.
 
 
-## Optional CSG Code
+## Replicability
 
-The program can make use of CSG libraries to compute the union of tube meshes for optimal line rendering.
-Please note, however, that this requires a very slow preprocess step. At the moment, only the CSG library Cork
-(https://github.com/gilbo/cork) is supported. It is licensed under the LGPL license. For more details on the license,
-please refer to 'LICENSE-Libraries/LICENSE-Cork'. To enable Cork support, run
+For more details on the TVCG Replicability Stamp, please refer to `replicability/README.md`.
 
-```
-cmake .. -DUSE_CORK=ON -DCORK_LIBRARIES=/home/christoph/Programming/HiwiCG/cork/lib/libcork.so -DCORK_INCLUDE_DIR=/home/christoph/Programming/HiwiCG/cork/include
-```
-
-Please note that compiling Cork requires `libgmp-dev` and that you need to dynamically link to it to fulfill the
-licensing terms of the LGPL. By default, Cork builds a static library.
-Make sure to edit the Makefile and add the `-fPIC -shared` flags for compiling and linking, respectively.
