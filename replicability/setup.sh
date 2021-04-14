@@ -40,7 +40,7 @@ fi
 # We assume we are in the repository directory now.
 REPO_DIR="${PWD}"
 
-    # Install all necessary packages using the package manager (super user rights required on Ubuntu for this).
+# Install all necessary packages using the package manager (super user rights required on Ubuntu for this).
 if [ ! -d "dependencies" ]; then
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         echo "Installing necessary packages..."

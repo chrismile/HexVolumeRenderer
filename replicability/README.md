@@ -31,6 +31,7 @@ program, as it will install some dependencies using the Ubuntu package manager.
 
 Please download and install MSYS2 from https://www.msys2.org/.
 Then, follow the instruction on the MSYS2 webpage to make sure that MSYS2 is up-to-date.
+If MSYS2 was already installed on your system, execute `pacman -Syu` until all packages are up-to-date.
 
 In the next step, open the MSYS2 MinGW 64-bit shell using the Windows start menu and execute the script `setup.sh`.
 It will compile and install all requirements, download the used data sets, build the program and execute the program
