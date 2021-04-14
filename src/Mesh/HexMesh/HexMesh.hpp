@@ -120,8 +120,8 @@ struct HexahedralCellFace {
     //uint32_t edgeSingularityInformationList[4];
 //};
 struct HexahedralCellFaceUnified {
-    uint vertexIdx[4];
-    uint edgeIdx[4];
+    uint32_t vertexIdx[4];
+    uint32_t edgeIdx[4];
 };
 struct HexahedralCellVertexUnified {
     glm::vec3 vertexPosition;
@@ -145,7 +145,7 @@ struct HexahedralCellFaceUnified_Volume2 {
      * Bit 2-31: The valence of the edge (i.e., the number of incident cells).
      */
     uint32_t edgeSingularityInformationList[4];
-    uint bitfield[4]; // bit 0: Is boundary surface?
+    uint32_t bitfield[4]; // bit 0: Is boundary surface?
 };
 
 /**
