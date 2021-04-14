@@ -48,11 +48,13 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     libjsoncpp-dev libeigen3-dev python3-dev libcurl4-openssl-dev
 elif [[ "$OSTYPE" == "msys"* ]]; then
     echo "Installing necessary packages..."
-    pacman -S make git wget mingw64/mingw-w64-x86_64-gcc wget mingw64/mingw-w64-x86_64-gdb
-    pacman -S mingw64/mingw-w64-x86_64-glm mingw64/mingw-w64-x86_64-libpng mingw64/mingw-w64-x86_64-SDL2 \
+    echo "y" | pacman -S make git wget mingw64/mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-gdb
+    echo "y" | pacman -S mingw64/mingw-w64-x86_64-glm mingw64/mingw-w64-x86_64-libpng mingw64/mingw-w64-x86_64-SDL2 \
     mingw64/mingw-w64-x86_64-SDL2_image mingw64/mingw-w64-x86_64-SDL2_mixer mingw64/mingw-w64-x86_64-SDL2_ttf \
     mingw64/mingw-w64-x86_64-tinyxml2 mingw64/mingw-w64-x86_64-boost mingw64/mingw-w64-x86_64-glew \
-    mingw64/mingw-w64-x86_64-cmake mingw64/mingw-w64-x86_64-libarchive
+    mingw64/mingw-w64-x86_64-cmake mingw64/mingw-w64-x86_64-libarchive \
+    mingw64/mingw-w64-x86_64-jsoncpp mingw64/mingw-w64-x86_64-curl mingw64/mingw-w64-x86_64-eigen3 \
+    mingw64/mingw-w64-x86_64-python mingw64/mingw-w64-x86_64-embree
 else
     echo "Unknown operating system ${$OSTYPE}" >&2
     exit 1
