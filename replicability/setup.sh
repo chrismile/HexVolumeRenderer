@@ -40,28 +40,30 @@ fi
 # We assume we are in the repository directory now.
 REPO_DIR="${PWD}"
 
-# Set up all dependencies of HexVolumeRenderer and sgl.
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    echo "Installing necessary packages..."
-    sudo apt-get install git cmake libglm-dev libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-    libpng-dev libboost-filesystem-dev libtinyxml2-dev libarchive-dev libglew-dev \
-    libjsoncpp-dev libeigen3-dev python3-dev libcurl4-openssl-dev
-elif [[ "$OSTYPE" == "msys"* ]]; then
-    echo "Installing necessary packages..."
-    echo "y" | pacman -S make git wget mingw64/mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-gdb
-    echo "y" | pacman -S mingw64/mingw-w64-x86_64-glm mingw64/mingw-w64-x86_64-libpng mingw64/mingw-w64-x86_64-SDL2 \
-    mingw64/mingw-w64-x86_64-SDL2_image mingw64/mingw-w64-x86_64-SDL2_mixer mingw64/mingw-w64-x86_64-SDL2_ttf \
-    mingw64/mingw-w64-x86_64-tinyxml2 mingw64/mingw-w64-x86_64-boost mingw64/mingw-w64-x86_64-glew \
-    mingw64/mingw-w64-x86_64-cmake mingw64/mingw-w64-x86_64-libarchive \
-    mingw64/mingw-w64-x86_64-jsoncpp mingw64/mingw-w64-x86_64-curl mingw64/mingw-w64-x86_64-eigen3 \
-    mingw64/mingw-w64-x86_64-python mingw64/mingw-w64-x86_64-embree
-else
-    echo "Unknown operating system ${$OSTYPE}" >&2
-    exit 1
+    # Install all necessary packages using the package manager (super user rights required on Ubuntu for this).
+if [ ! -d "dependencies" ]; then
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo "Installing necessary packages..."
+        sudo apt-get install git cmake libglm-dev libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+        libpng-dev libboost-filesystem-dev libtinyxml2-dev libarchive-dev libglew-dev \
+        libjsoncpp-dev libeigen3-dev python3-dev libcurl4-openssl-dev
+    elif [[ "$OSTYPE" == "msys"* ]]; then
+        echo "Installing necessary packages..."
+        echo "y" | pacman -S make git wget mingw64/mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-gdb
+        echo "y" | pacman -S mingw64/mingw-w64-x86_64-glm mingw64/mingw-w64-x86_64-libpng mingw64/mingw-w64-x86_64-SDL2 \
+        mingw64/mingw-w64-x86_64-SDL2_image mingw64/mingw-w64-x86_64-SDL2_mixer mingw64/mingw-w64-x86_64-SDL2_ttf \
+        mingw64/mingw-w64-x86_64-tinyxml2 mingw64/mingw-w64-x86_64-boost mingw64/mingw-w64-x86_64-glew \
+        mingw64/mingw-w64-x86_64-cmake mingw64/mingw-w64-x86_64-libarchive \
+        mingw64/mingw-w64-x86_64-jsoncpp mingw64/mingw-w64-x86_64-curl mingw64/mingw-w64-x86_64-eigen3 \
+        mingw64/mingw-w64-x86_64-python mingw64/mingw-w64-x86_64-embree
+    else
+        echo "Unknown operating system ${$OSTYPE}" >&2
+        exit 1
+    fi
 fi
 
 # Download, compile and install sgl.
-if [ ! -d "dependencies" ]; then
+if [ ! -d "dependencies/sgl/build" ]; then
     echo "Compiling and installing sgl..."
     mkdir dependencies
     mkdir dependencies/sgl
@@ -96,9 +98,9 @@ if [ ! -d "build" ]; then
     mkdir build
     cd build
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        cmake -DCMAKE_BUILD_TYPE=Release -Dsgl_DIR="${REPO_DIR}/dependencies/sgl" ..
+        cmake -DCMAKE_BUILD_TYPE=Release -Dsgl_DIR="${REPO_DIR}/dependencies/sgl/lib/cmake/sgl" ..
     elif [[ "$OSTYPE" == "msys"* ]]; then
-        cmake -G "MSYS Makefiles" -DCMAKE_BUILD_TYPE=Release -Dsgl_DIR="${REPO_DIR}/dependencies/sgl" ..
+        cmake -G "MSYS Makefiles" -DCMAKE_BUILD_TYPE=Release -Dsgl_DIR="${REPO_DIR}/dependencies/sgl/lib/cmake/sgl" ..
     fi
     make -j
     cd ..
