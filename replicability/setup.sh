@@ -63,7 +63,7 @@ if [ ! -d "dependencies" ]; then
 fi
 
 # Download, compile and install sgl.
-if [ ! -d "dependencies/sgl/build" ]; then
+if [ ! -d "dependencies/sgl" ]; then
     echo "Compiling and installing sgl..."
     mkdir dependencies
     mkdir dependencies/sgl
