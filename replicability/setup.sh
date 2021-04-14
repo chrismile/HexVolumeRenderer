@@ -100,7 +100,7 @@ if [ ! -d "build" ]; then
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         cmake -DCMAKE_BUILD_TYPE=Release -Dsgl_DIR="${REPO_DIR}/dependencies/sgl/lib/cmake/sgl" ..
     elif [[ "$OSTYPE" == "msys"* ]]; then
-        cmake -G "MSYS Makefiles" -DCMAKE_BUILD_TYPE=Release -Dsgl_DIR="${REPO_DIR}/dependencies/sgl/lib/cmake/sgl" ..
+        cmake -G "MSYS Makefiles" -DPython3_FIND_REGISTRY=NEVER -DCMAKE_BUILD_TYPE=Release -Dsgl_DIR="${REPO_DIR}/dependencies/sgl/lib/cmake/sgl" ..
     fi
     make -j
     cd ..

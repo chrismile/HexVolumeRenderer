@@ -45,7 +45,7 @@ Furthermore, the graph library LEMON (http://lemon.cs.elte.hu/trac/lemon) needs 
 
 On Windows, using MSYS2 and Mingw-w64 (http://www.msys2.org/), it is best to use the following CMake command to configure CMake:
 ```
-cmake .. -G"MSYS Makefiles"
+cmake -G "MSYS Makefiles" -DPython3_FIND_REGISTRY=NEVER ..
 ```
 
 To run the program, execute:
