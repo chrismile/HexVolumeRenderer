@@ -48,8 +48,8 @@ static int EXPECTED_DEPTH_COMPLEXITY = 90;
 struct LinkedListFragmentNodeAttributeTextures {
     float importanceAttribute; ///< Between 0 and 1.
     float depth; ///< The linear depth of the fragment (i.e., distance to the camera).
-    uint directionQuantized; ///< First 16 bits encode x, second 16 bits encode y.
-    uint next; ///< Next entry index in the per-pixel linked list (or -1 == 0xFFFFFFFFu).
+    uint32_t directionQuantized; ///< First 16 bits encode x, second 16 bits encode y.
+    uint32_t next; ///< Next entry index in the per-pixel linked list (or -1 == 0xFFFFFFFFu).
 };
 
 LineDensityControlRenderer::LineDensityControlRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)

@@ -88,7 +88,7 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         export LD_LIBRARY_PATH=LD_LIBRARY_PATH:"${REPO_DIR}/dependencies/sgl/lib"
     fi
 elif [[ "$OSTYPE" == "msys"* ]]; then
-    if [[ ! "${$PATH}" == *"${REPO_DIR}/dependencies/sgl/bin"* ]]; then
+    if [[ ! "${PATH}" == *"${REPO_DIR}/dependencies/sgl/bin"* ]]; then
         export PATH=$PATH:"${REPO_DIR}/dependencies/sgl/bin"
     fi
 fi
