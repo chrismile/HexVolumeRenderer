@@ -544,6 +544,26 @@ void ClearViewRenderer::renderGui() {
                 && ImGui::Checkbox("Clip Focus Outline", &clipFocusOutline)) {
             reRender = true;
         }
+        /*if (clearViewRendererType == CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED
+                && ImGui::Checkbox("Use Depth Cues", &useDepthCues)) {
+            updateDepthCueMode();
+            reloadGatherShader(true);
+            reRender = true;
+        }*/
+        if (clearViewRendererType == CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED && ImGui::SliderFloat(
+                "Depth Cue Strength", &depthCueStrength, 0.0f, 1.0f)) {
+            if (depthCueStrength <= 0.0f && useDepthCues) {
+                useDepthCues = false;
+                updateDepthCueMode();
+                reloadGatherShader(true);
+            }
+            if (depthCueStrength > 0.0f && !useDepthCues) {
+                useDepthCues = true;
+                updateDepthCueMode();
+                reloadGatherShader(true);
+            }
+            reRender = true;
+        }
         if (clearViewRendererType == CLEAR_VIEW_RENDERER_TYPE_FACES
                 && !useWeightedVertexAttributes && ImGui::Checkbox("Use Shading", &useShading)) {
             reRender = true;

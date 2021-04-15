@@ -69,6 +69,7 @@ if [ ! -d "dependencies/sgl" ]; then
     mkdir dependencies/sgl
     mkdir dependencies/sgl-repo
     git clone https://github.com/chrismile/sgl.git dependencies/sgl-repo
+    git checkout tvcg-hexmesh
     cd dependencies/sgl-repo
     mkdir build
     cd build

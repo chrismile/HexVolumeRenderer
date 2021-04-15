@@ -171,7 +171,7 @@ protected:
     void updateDepthCueGeometryData();
     void setUniformDataDepthCues(sgl::ShaderProgramPtr shaderProgram);
     bool useDepthCues = true;
-    float depthCueStrength = 0.8f;
+    float depthCueStrength = 0.6f;
     bool computeDepthCuesOnGpu = true;
     float minDepth = 0.0f;
     float maxDepth = 1.0f;

@@ -144,9 +144,9 @@ void main()
         //}
         //#endif
 
-        #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
+#if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
         lineColors[i] = lineColor;
-        #endif
+#endif
 
         edgeLodValues[i] = hexahedralCellEdge.edgeLodValue;
         //edgeSingularityInformationList[i] = edgeSingularityInformation;
@@ -227,6 +227,8 @@ in vec3 fragmentNormal;
 #include "LightingFlat.glsl"
 #endif
 
+#include "DepthCues.glsl"
+
 void main()
 {
     float distanceToFocusPointNormalized = min(length(fragmentPositionWorld - sphereCenter) / sphereRadius, 1.0);
@@ -263,9 +265,9 @@ void main()
 #ifdef RENDER_FOCUS_FACES
     if (cellColor.a > 0.0 && focusFactor > 1e-6) {
         vec4 colorSurface = vec4(cellColor.rgb, focusFactor);
-    #ifdef USE_LIGHTING
+#ifdef USE_LIGHTING
         colorSurface = blinnPhongShading(colorSurface);
-    #endif
+#endif
         volumeColor.rgb = colorSurface.rgb * colorSurface.a + volumeColor.rgb * volumeColor.a * (1.0 - colorSurface.a);
         volumeColor.a = colorSurface.a + volumeColor.a * (1.0 - colorSurface.a);
         if (volumeColor.a > 1e-4) {
@@ -276,7 +278,7 @@ void main()
 
     vec4 blendedColor = volumeColor;
 
-    #ifdef HIGHLIGHT_EDGES
+#ifdef HIGHLIGHT_EDGES
     const float LOD_EPSILON = 0.001;
     float discreteSelectedLodValueFocus = max(selectedLodValueFocus * maxLodValue, LOD_EPSILON);
     float discreteSelectedLodValueContext = max(selectedLodValueContext * maxLodValue, LOD_EPSILON);
@@ -332,9 +334,9 @@ void main()
             discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 0.0,
             focusFactor);
 
-    #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
+#if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
     vec4 lineBaseColor = lineColors[minDistanceIndex];
-    #else
+#else
     /*vec3 linePoints[2];
     linePoints[0] = vertexPositions[minDistanceIndex];
     linePoints[1] = vertexPositions[(minDistanceIndex + 1) % 4];
@@ -342,7 +344,7 @@ void main()
     float interpolationFactor = length(closestLinePoint - linePoints[0]) / length(linePoints[1] - linePoints[0]);
     vec4 lineBaseColor = vec4(mix(vertexColors[minDistanceIndex].rgb, vertexColors[(minDistanceIndex + 1) % 4].rgb, interpolationFactor), 1.0);*/
     vec4 lineBaseColor = vec4(fragmentColor.rgb, 1.0);
-    #endif
+#endif
 
     vec3 lineBaseColorFocus = mix(lineBaseColor.rgb, backgroundColor, 0.3);
     vec3 lineBaseColorContext = mix(fragmentColor.rgb, foregroundColor, 0.3);
@@ -359,6 +361,12 @@ void main()
 
         float depthCueFactorFocus = clamp(pow(distanceToFocusPointNormalized, 1.9), 0.0, 1.0);
         float depthCueFactorDistance = clamp(fragmentDistance, 0.0, 1.0) * 0.002 / lineWidthPrime;
+
+#ifdef USE_DEPTH_CUES
+        float depthCueFactorDepth = computeDepthCueFactor();
+        depthCueFactorDepth *= focusFactor;
+        lineBaseColor.rgb = mix(lineBaseColor.rgb, vec3(0.0, 0.0, 0.0), depthCueFactorDepth);
+#endif
 
         // Color depth cue.
         lineBaseColor.rgb = mix(lineBaseColor.rgb, vec3(0.5, 0.5, 0.5), depthCueFactor * 0.6);
@@ -396,10 +404,10 @@ void main()
             blendedColor.rgb /= blendedColor.a;
         }
     } else if (lineCoordinatesAll <= 1.0) {
-    #ifdef ACCENTUATE_ALL_EDGES
-        #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
+#ifdef ACCENTUATE_ALL_EDGES
+#if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
         vec4 lineBaseColorAll = lineColors[minDistanceIndexAll];
-        #else
+#else
         /*vec3 linePoints[2];
         linePoints[0] = vertexPositions[minDistanceIndexAll];
         linePoints[1] = vertexPositions[(minDistanceIndexAll + 1) % 4];
@@ -407,17 +415,17 @@ void main()
         float interpolationFactor = length(closestLinePoint - linePoints[0]) / length(linePoints[1] - linePoints[0]);
         vec4 lineBaseColorAll = vec4(mix(vertexColors[minDistanceIndexAll].rgb, vertexColors[(minDistanceIndexAll + 1) % 4].rgb, interpolationFactor), 1.0);*/
         vec4 lineBaseColorAll = vec4(fragmentColor.rgb, 1.0);
-        #endif
+#endif
 
         vec3 lineColor = mix(lineBaseColorAll.rgb, foregroundColor, 0.1);
         blendedColor.rgb = mix(volumeColor.rgb, lineColor.rgb, clamp(0.6 - fragmentDistance, 0.0, 0.3));
         blendedColor.a = clamp(blendedColor.a * 1.5, 0.0, 1.0);
-    #endif
+#endif
     }
-    #endif
+#endif
 
     // Render outline similar to what ClearView does.
-    #ifdef USE_FOCUS_OUTLINE
+#ifdef USE_FOCUS_OUTLINE
     const float FOCUS_OUTLINE_WIDTH = 2.0;
     //float dist = 1.0 - clamp(abs(length(fragmentPositionWorld - sphereCenter) / sphereRadius) / FOCUS_OUTLINE_WIDTH, 0.0, 1.0);
     //float dist = 1.0 - clamp(abs(length(fragmentPositionWorld - sphereCenter) / sphereRadius) / FOCUS_OUTLINE_WIDTH, 0.0, 1.0);
@@ -438,7 +446,7 @@ void main()
 
     vec4 outlineColor = vec4(focusOutlineColor.rgb, abc * dist);
     blendedColor = mix(blendedColor, outlineColor, outlineColor.a);
-    #endif
+#endif
 
     gatherFragmentCustomDepth(blendedColor, fragmentDistance);
 }
@@ -506,6 +514,8 @@ in vec3 fragmentNormal;
 #include "LightingFlat.glsl"
 #endif
 
+#include "DepthCues.glsl"
+
 void main()
 {
     vec3 fragmentPositionNdc = fragmentPositionClip.xyz / fragmentPositionClip.w;
@@ -541,9 +551,9 @@ void main()
 #ifdef RENDER_FOCUS_FACES
     if (cellColor.a > 0.0 && focusFactor > 1e-6) {
         vec4 colorSurface = vec4(cellColor.rgb, focusFactor);
-    #ifdef USE_LIGHTING
+#ifdef USE_LIGHTING
         colorSurface = blinnPhongShading(colorSurface);
-    #endif
+#endif
         volumeColor.rgb = colorSurface.rgb * colorSurface.a + volumeColor.rgb * volumeColor.a * (1.0 - colorSurface.a);
         volumeColor.a = colorSurface.a + volumeColor.a * (1.0 - colorSurface.a);
         if (volumeColor.a > 1e-4) {
@@ -554,7 +564,7 @@ void main()
 
     vec4 blendedColor = volumeColor;
 
-    #ifdef HIGHLIGHT_EDGES
+#ifdef HIGHLIGHT_EDGES
     const float LOD_EPSILON = 0.001;
     float discreteSelectedLodValueFocus = selectedLodValueFocus * maxLodValue;
     float discreteSelectedLodValueContext = selectedLodValueContext * maxLodValue;
@@ -606,9 +616,9 @@ void main()
             discreteLodValue <= lodLevelFocus + LOD_EPSILON ? 1.0 : 0.0,
             focusFactor);
 
-    #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
+#if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
     vec4 lineBaseColor = lineColors[minDistanceIndex];
-    #else
+#else
     /*vec3 linePoints[2];
     linePoints[0] = vertexPositions[minDistanceIndex];
     linePoints[1] = vertexPositions[(minDistanceIndex + 1) % 4];
@@ -616,7 +626,7 @@ void main()
     float interpolationFactor = length(closestLinePoint - linePoints[0]) / length(linePoints[1] - linePoints[0]);
     vec4 lineBaseColor = vec4(mix(vertexColors[minDistanceIndex].rgb, vertexColors[(minDistanceIndex + 1) % 4].rgb, interpolationFactor), 1.0);*/
     vec4 lineBaseColor = vec4(fragmentColor.rgb, 1.0);
-    #endif
+#endif
 
     vec3 lineBaseColorFocus;
     if (foregroundColor.x < 0.5) {
@@ -625,11 +635,11 @@ void main()
     } else {
         lineBaseColorFocus = mix(lineBaseColor.rgb, backgroundColor, 0.3);
     }
-    #ifndef USE_SINGULAR_EDGE_COLOR_MAP
+#ifndef USE_SINGULAR_EDGE_COLOR_MAP
     vec3 lineBaseColorContext = mix(fragmentColor.rgb, foregroundColor, 0.3);
-    #else
+#else
     vec3 lineBaseColorContext = mix(lineBaseColor.rgb, foregroundColor, 0.3);
-    #endif
+#endif
     lineBaseColor.rgb = mix(lineBaseColorContext, lineBaseColorFocus, focusFactor);
 
     float lineCoordinates = max(minDistance / lineRadius, 0.0);
@@ -643,6 +653,15 @@ void main()
 
         float depthCueFactorFocus = clamp(pow(screenSpaceSphereDistanceNormalized, 1.9), 0.0, 1.0);
         float depthCueFactorDistance = clamp(fragmentDistance, 0.0, 1.0) * 0.002 / lineWidthPrime;
+
+#ifdef USE_DEPTH_CUES
+        float depthCueFactorDepth = computeDepthCueFactor();// * 17.0;
+        /*if (depthCueFactorDepth > depthCueStrength) {
+            depthCueFactorDepth = depthCueStrength;
+        }*/
+        depthCueFactorDepth *= focusFactor;
+        lineBaseColor.rgb = mix(lineBaseColor.rgb, vec3(0.0, 0.0, 0.0), depthCueFactorDepth);
+#endif
 
         // Color depth cue.
         lineBaseColor.rgb = mix(lineBaseColor.rgb, vec3(0.5, 0.5, 0.5), depthCueFactor * 0.6);
@@ -682,10 +701,10 @@ void main()
             blendedColor.rgb /= blendedColor.a;
         }
     } else if (lineCoordinatesAll <= 1.0) {
-    #ifdef ACCENTUATE_ALL_EDGES
-        #if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
+#ifdef ACCENTUATE_ALL_EDGES
+#if defined(USE_PER_LINE_ATTRIBUTES) || defined(USE_SINGULAR_EDGE_COLOR_MAP)
         vec4 lineBaseColorAll = lineColors[minDistanceIndexAll];
-        #else
+#else
         /*vec3 linePoints[2];
         linePoints[0] = vertexPositions[minDistanceIndexAll];
         linePoints[1] = vertexPositions[(minDistanceIndexAll + 1) % 4];
@@ -693,7 +712,7 @@ void main()
         float interpolationFactor = length(closestLinePoint - linePoints[0]) / length(linePoints[1] - linePoints[0]);
         vec4 lineBaseColorAll = vec4(mix(vertexColors[minDistanceIndexAll].rgb, vertexColors[(minDistanceIndexAll + 1) % 4].rgb, interpolationFactor), 1.0);*/
         vec4 lineBaseColorAll = vec4(fragmentColor.rgb, 1.0);
-        #endif
+#endif
 
         // TEST: Show all lines.
         //vec3 lineColor = mix(volumeColor.rgb, foregroundColor, 0.15);
@@ -702,17 +721,19 @@ void main()
         vec3 lineColor = mix(lineBaseColorAll.rgb, foregroundColor, 0.1);
         blendedColor.rgb = mix(volumeColor.rgb, lineColor.rgb, clamp(0.6 - fragmentDistance, 0.0, 0.3));
         blendedColor.a = clamp(blendedColor.a * 1.5, 0.0, 1.0);
-    #endif
+#endif
     }
-    #endif
+#endif
 
     // Render outline similar to what ClearView does.
-    #ifdef USE_FOCUS_OUTLINE
+#ifdef USE_FOCUS_OUTLINE
     const float FOCUS_OUTLINE_WIDTH = 2.0;
     float dist = 1.0 - clamp(abs(length(fragmentWindowPosition - sphereCenterScreen) - sphereRadiusPixels) / FOCUS_OUTLINE_WIDTH, 0.0, 1.0);
     vec4 outlineColor = vec4(focusOutlineColor.rgb, dist);
     blendedColor = mix(blendedColor, outlineColor, outlineColor.a);
-    #endif
+#endif
+
+    //blendedColor.rgb = vec3(min(computeDepthCueFactor() * 10.0, 1.0));
 
     gatherFragmentCustomDepth(blendedColor, fragmentDistance);
 }
