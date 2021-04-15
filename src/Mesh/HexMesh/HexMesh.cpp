@@ -853,6 +853,85 @@ float HexMesh::maximumCellAttributePerEdge(uint32_t e_id) {
 }
 
 
+std::vector<glm::vec3> HexMesh::getFilteredVertices(bool removeFilteredCells) {
+    if (!removeFilteredCells) {
+        return vertices;
+    }
+
+    rebuildInternalRepresentationIfNecessary();
+
+    std::unordered_set<uint32_t> usedVertexIndices;
+    for (size_t i = 0; i < mesh->Hs.size(); i++) {
+        Hybrid& h = mesh->Hs.at(i);
+        for (size_t j = 0; j < h.fs.size(); j++) {
+            Hybrid_F& f = mesh->Fs.at(h.fs.at(j));
+            if (!f.boundary && !std::any_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+                return isCellMarked(h_id);
+            })) {
+                continue;
+            }
+            if (removeFilteredCells && std::all_of(f.neighbor_hs.begin(), f.neighbor_hs.end(), [this](uint32_t h_id) {
+                return isCellMarked(h_id);
+            })) {
+                continue;
+            }
+
+            assert(f.neighbor_hs.size() >= 1 && f.neighbor_hs.size() <= 2);
+            bool invertWinding = f.neighbor_hs.at(0) != h.id;
+
+            assert(f.vs.size() == 4);
+            for (size_t j = 0; j < 4; j++) {
+                uint32_t v_id = f.vs.at(j);
+                usedVertexIndices.insert(v_id);
+            }
+        }
+    }
+
+    std::vector<glm::vec3> vertexPositions;
+    for (uint32_t v_id : usedVertexIndices) {
+        glm::vec3 vertexPosition(
+                mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
+        vertexPositions.push_back(vertexPosition);
+    }
+
+    return vertexPositions;
+}
+
+sgl::AABB3 HexMesh::getModelBoundingBox(bool removeFilteredCells) {
+    std::vector<glm::vec3>* vertices;
+    std::vector<glm::vec3> verticesLocal;
+    if (removeFilteredCells) {
+        verticesLocal = getFilteredVertices(removeFilteredCells);
+        vertices = &verticesLocal;
+    } else {
+        vertices = &this->vertices;
+    }
+
+    float minPosX = std::numeric_limits<float>::max();
+    float minPosY = std::numeric_limits<float>::max();
+    float minPosZ = std::numeric_limits<float>::max();
+    float maxPosX = std::numeric_limits<float>::lowest();
+    float maxPosY = std::numeric_limits<float>::lowest();
+    float maxPosZ = std::numeric_limits<float>::lowest();
+
+    #pragma omp parallel for default(none) reduction(min: minPosX) reduction(min: minPosY) reduction(min: minPosZ) \
+    reduction(max: maxPosX) reduction(max: maxPosY) reduction(max: maxPosZ) shared(vertices)
+    for (size_t i = 0; i < vertices->size(); i++) {
+        const glm::vec3& pos = vertices->at(i);
+        minPosX = std::min(minPosX, pos.x);
+        minPosY = std::min(minPosY, pos.y);
+        minPosZ = std::min(minPosZ, pos.z);
+        maxPosX = std::max(maxPosX, pos.x);
+        maxPosY = std::max(maxPosY, pos.y);
+        maxPosZ = std::max(maxPosZ, pos.z);
+    }
+
+    sgl::AABB3 modelBoundingBox(glm::vec3(minPosX, minPosY, minPosZ), glm::vec3(maxPosX, maxPosY, maxPosZ));
+
+    return modelBoundingBox;
+}
+
+
 glm::vec4 HexMesh::edgeColorMap(bool isSingular, bool isBoundary, int valence) {
     if (!isSingular) {
         return outlineColorRegular;

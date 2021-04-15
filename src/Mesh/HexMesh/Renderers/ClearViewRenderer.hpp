@@ -165,6 +165,21 @@ protected:
     bool useVolumeWeighting = false;
     LineRenderingMode lineRenderingMode = LINE_RENDERING_MODE_WIREFRAME_FACES;
     LineRenderingStyle lineRenderingStyle = LINE_RENDERING_STYLE_HALO;
+
+    // Depth cue computation.
+    void updateDepthCueMode();
+    void updateDepthCueGeometryData();
+    void setUniformDataDepthCues(sgl::ShaderProgramPtr shaderProgram);
+    bool useDepthCues = true;
+    float depthCueStrength = 0.8f;
+    bool computeDepthCuesOnGpu = true;
+    float minDepth = 0.0f;
+    float maxDepth = 1.0f;
+    std::vector<glm::vec3> filteredCellVertices;
+    sgl::GeometryBufferPtr filteredCellVerticesBuffer;
+    sgl::GeometryBufferPtr depthMinMaxBuffers[2];
+    sgl::ShaderProgramPtr computeDepthValuesShaderProgram;
+    sgl::ShaderProgramPtr minMaxReduceDepthShaderProgram;
 };
 
 #endif //HEXVOLUMERENDERER_CLEARVIEWRENDERER_HPP

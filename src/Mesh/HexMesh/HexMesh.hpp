@@ -280,6 +280,16 @@ public:
     float maximumCellAttributePerEdge(uint32_t v_id);
 
     /**
+     * Returns the filtered (i.e., used for rendering) mesh vertices.
+     */
+    std::vector<glm::vec3> getFilteredVertices(bool removeFilteredCells = true);
+
+    /**
+     * Returns The axis-aligned bounding box of the mesh in world space.
+     */
+    sgl::AABB3 getModelBoundingBox(bool removeFilteredCells = true);
+
+    /**
      * Maps mesh edge properties to a color for rendering.
      * @param isSingular Whether the edge is singular (could also be computed from the two values below).
      * @param isBoundary Whether the edge lies on the boundary surface of the mesh.

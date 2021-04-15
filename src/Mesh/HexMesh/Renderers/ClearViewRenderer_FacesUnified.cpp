@@ -81,6 +81,11 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(
     sgl::ShaderManager->addPreprocessorDefine("OIT_GATHER_HEADER", "\"LinkedListGather.glsl\"");
     sgl::ShaderManager->addPreprocessorDefine("DEPTH_TYPE_UINT", "");
 
+    updateDepthCueMode();
+    sgl::ShaderManager->addPreprocessorDefine("COMPUTE_DEPTH_CUES_GPU", "");
+    computeDepthValuesShaderProgram = sgl::ShaderManager->getShaderProgram({"ComputeDepthValues.Compute"});
+    minMaxReduceDepthShaderProgram = sgl::ShaderManager->getShaderProgram({"MinMaxReduceDepth.Compute"});
+
     shaderProgramSurface = sgl::ShaderManager->getShaderProgram(
             {"MeshShader.Vertex.Plain", "MeshShader.Fragment.Plain"});
     reloadSphereRenderData();
@@ -116,7 +121,14 @@ ClearViewRenderer_FacesUnified::~ClearViewRenderer_FacesUnified() {
         delete timer;
         sceneData.performanceMeasurer->setClearViewTimer(nullptr);
     }
+
     sgl::ShaderManager->removePreprocessorDefine("DEPTH_TYPE_UINT");
+
+    if (useDepthCues) {
+        sgl::ShaderManager->removePreprocessorDefine("USE_SCREEN_SPACE_POSITION");
+        sgl::ShaderManager->removePreprocessorDefine("USE_DEPTH_CUES");
+    }
+    sgl::ShaderManager->removePreprocessorDefine("COMPUTE_DEPTH_CUES_GPU");
 }
 
 void ClearViewRenderer_FacesUnified::render() {
@@ -369,6 +381,15 @@ void ClearViewRenderer_FacesUnified::uploadVisualizationMapping(HexMeshPtr meshI
     }
     reloadSphereRenderData();
 
+    // Update the depth cue data.
+    filteredCellVertices.clear();
+    filteredCellVerticesBuffer = sgl::GeometryBufferPtr();
+    depthMinMaxBuffers[0] = sgl::GeometryBufferPtr();
+    depthMinMaxBuffers[1] = sgl::GeometryBufferPtr();
+    if (useDepthCues) {
+        updateDepthCueGeometryData();
+    }
+
     // Don't highlight singular edges when we have far too many of them.
     bool tooMuchSingularEdgeModeNewMesh = meshIn->getNumberOfSingularEdges(true, 1) > 10000u;
     if (tooMuchSingularEdgeModeNewMesh != tooMuchSingularEdgeMode) {
@@ -573,6 +594,10 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
 
     if (showFocusFaces) {
         gatherShader->setUniform("importantCellFactor", importantCellFactor);
+    }
+
+    if (useDepthCues && hexMesh) {
+        setUniformDataDepthCues(gatherShader);
     }
 
     shaderProgramSurface->setUniform("viewportW", width);

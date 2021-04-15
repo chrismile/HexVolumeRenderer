@@ -42,6 +42,9 @@
 #include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
 #include "ClearViewRenderer.hpp"
 
+// For compute shaders.
+constexpr size_t BLOCK_SIZE = 256;
+
 // When rendering spheres using instancing.
 struct SphereInstancingData {
     glm::vec3 position;
@@ -370,6 +373,128 @@ void ClearViewRenderer::render() {
     clear();
     gather();
     resolve();
+}
+
+void ClearViewRenderer::updateDepthCueMode() {
+    if (useDepthCues) {
+        sgl::ShaderManager->addPreprocessorDefine("USE_SCREEN_SPACE_POSITION", "");
+        sgl::ShaderManager->addPreprocessorDefine("USE_DEPTH_CUES", "");
+
+        if (hexMesh && filteredCellVertices.empty()) {
+            updateDepthCueGeometryData();
+        }
+    } else {
+        sgl::ShaderManager->removePreprocessorDefine("USE_SCREEN_SPACE_POSITION");
+        sgl::ShaderManager->removePreprocessorDefine("USE_DEPTH_CUES");
+    }
+}
+
+void ClearViewRenderer::updateDepthCueGeometryData() {
+    filteredCellVertices = hexMesh->getFilteredVertices();
+    std::vector<glm::vec4> filteredCellVerticesVec4;
+    for (const glm::vec3& point : filteredCellVertices) {
+        filteredCellVerticesVec4.push_back(glm::vec4(point.x, point.y, point.z, 1.0f));
+    }
+    filteredCellVerticesBuffer = sgl::Renderer->createGeometryBuffer(
+            filteredCellVerticesVec4.size() * sizeof(glm::vec4), (void*)&filteredCellVerticesVec4.front(),
+            sgl::SHADER_STORAGE_BUFFER);
+
+    depthMinMaxBuffers[0] = sgl::Renderer->createGeometryBuffer(
+            sgl::iceil(filteredCellVertices.size(), BLOCK_SIZE) * sizeof(glm::vec2),
+            sgl::SHADER_STORAGE_BUFFER);
+    depthMinMaxBuffers[1] = sgl::Renderer->createGeometryBuffer(
+            sgl::iceil(filteredCellVertices.size(), BLOCK_SIZE * BLOCK_SIZE * 2) * sizeof(glm::vec2),
+            sgl::SHADER_STORAGE_BUFFER);
+}
+
+void ClearViewRenderer::setUniformDataDepthCues(sgl::ShaderProgramPtr shaderProgram) {
+    if (useDepthCues && hexMesh && computeDepthCuesOnGpu) {
+        sgl::ShaderManager->bindShaderStorageBuffer(12, filteredCellVerticesBuffer);
+        sgl::ShaderManager->bindShaderStorageBuffer(11, depthMinMaxBuffers[0]);
+        uint32_t numVertices = filteredCellVerticesBuffer->getSize() / sizeof(glm::vec4);
+        uint32_t numBlocks = sgl::iceil(numVertices, BLOCK_SIZE);
+        computeDepthValuesShaderProgram->setUniform("numVertices", numVertices);
+        computeDepthValuesShaderProgram->setUniform("nearDist", sceneData.camera->getNearClipDistance());
+        computeDepthValuesShaderProgram->setUniform("farDist", sceneData.camera->getFarClipDistance());
+        computeDepthValuesShaderProgram->setUniform("cameraViewMatrix", sceneData.camera->getViewMatrix());
+        computeDepthValuesShaderProgram->setUniform(
+                "cameraProjectionMatrix", sceneData.camera->getProjectionMatrix());
+        computeDepthValuesShaderProgram->dispatchCompute(numBlocks);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+        minMaxReduceDepthShaderProgram->setUniform("nearDist", sceneData.camera->getNearClipDistance());
+        minMaxReduceDepthShaderProgram->setUniform("farDist", sceneData.camera->getFarClipDistance());
+        int iteration = 0;
+        uint32_t inputSize;
+        while (numBlocks > 1) {
+            if (iteration != 0) {
+                // Already bound for computeDepthValuesShaderProgram if i == 0.
+                sgl::ShaderManager->bindShaderStorageBuffer(11, depthMinMaxBuffers[iteration % 2]);
+            }
+            sgl::ShaderManager->bindShaderStorageBuffer(12, depthMinMaxBuffers[(iteration + 1) % 2]);
+
+            inputSize = numBlocks;
+            numBlocks = sgl::iceil(numBlocks, BLOCK_SIZE*2);
+            minMaxReduceDepthShaderProgram->setUniform("sizeOfInput", inputSize);
+            minMaxReduceDepthShaderProgram->dispatchCompute(numBlocks);
+            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+            iteration++;
+        }
+
+        // Bind the output of ComputeDepthValues.glsl to position 12 for Lighting.glsl if no reduction was necessary.
+        if (iteration == 0) {
+            sgl::ShaderManager->bindShaderStorageBuffer(12, depthMinMaxBuffers[0]);
+        }
+    }
+
+    if (useDepthCues && hexMesh && !computeDepthCuesOnGpu) {
+        bool useBoundingBox = hexMesh->getNumVertices() > 1000;
+        if (useBoundingBox) {
+            const sgl::AABB3& boundingBox = hexMesh->getModelBoundingBox();
+            sgl::AABB3 screenSpaceBoundingBox = boundingBox.transformed(sceneData.camera->getViewMatrix());
+            minDepth = -screenSpaceBoundingBox.getMaximum().z;
+            maxDepth = -screenSpaceBoundingBox.getMinimum().z;
+        } else {
+            glm::mat4 viewMatrix = sceneData.camera->getViewMatrix();
+            minDepth = std::numeric_limits<float>::max();
+            maxDepth = std::numeric_limits<float>::lowest();
+#ifdef OPENMP_NO_MEMBERS
+            // Local variable for older versions of OpenMP.
+            std::vector<glm::vec3>& filteredCellVertices = this->filteredCellVertices;
+            float& minDepth = this->minDepth;
+            float& maxDepth = this->maxDepth;
+
+            #pragma omp parallel for shared(viewMatrix, filteredCellVertices) \
+            reduction(min: minDepth) reduction(max: maxDepth)
+            for (size_t pointIdx = 0; pointIdx < filteredCellVertices.size(); pointIdx++) {
+                const glm::vec3& point = filteredCellVertices.at(pointIdx);
+                float depth = -sgl::transformPoint(viewMatrix, point).z;
+                minDepth = std::min(minDepth, depth);
+                maxDepth = std::max(maxDepth, depth);
+            }
+#else
+            #pragma omp parallel for default(none) shared(viewMatrix, filteredCellVertices) \
+            reduction(min: minDepth) reduction(max: maxDepth)
+            for (size_t pointIdx = 0; pointIdx < filteredCellVertices.size(); pointIdx++) {
+                const glm::vec3& point = filteredCellVertices.at(pointIdx);
+                float depth = -sgl::transformPoint(viewMatrix, point).z;
+                minDepth = std::min(minDepth, depth);
+                maxDepth = std::max(maxDepth, depth);
+            }
+#endif
+        }
+
+        minDepth = glm::clamp(
+                minDepth, sceneData.camera->getFarClipDistance(), sceneData.camera->getNearClipDistance());
+        maxDepth = glm::clamp(
+                maxDepth, sceneData.camera->getFarClipDistance(), sceneData.camera->getNearClipDistance());
+
+        shaderProgram->setUniformOptional("minDepth", minDepth);
+        shaderProgram->setUniformOptional("maxDepth", maxDepth);
+    }
+
+    shaderProgram->setUniformOptional("depthCueStrength", depthCueStrength);
 }
 
 void ClearViewRenderer::renderGui() {
