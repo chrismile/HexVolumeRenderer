@@ -44,7 +44,7 @@ REPO_DIR="${PWD}"
 if [ ! -d "dependencies" ]; then
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         echo "Installing necessary packages..."
-        sudo apt-get install git cmake libglm-dev libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+        sudo apt-get install git cmake g++ libglm-dev libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
         libpng-dev libboost-filesystem-dev libtinyxml2-dev libarchive-dev libglew-dev \
         libjsoncpp-dev libeigen3-dev python3-dev libcurl4-openssl-dev
     elif [[ "$OSTYPE" == "msys"* ]]; then
