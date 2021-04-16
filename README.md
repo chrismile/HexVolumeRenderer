@@ -32,7 +32,6 @@ cd build
 cmake ..
 make -j
 ```
-(Alternatively, use 'cp -R ../Data .' to copy the Data directory instead of creating a soft link to it).
 
 The build process was also tested on Windows 10 64-bit using MSYS2 and Mingw-w64 (http://www.msys2.org/). Using MSYS2 and Pacman, the following packages need to be installed additionally to the prerequisites required by sgl.
 
@@ -49,7 +48,7 @@ cmake -G "MSYS Makefiles" -DPython3_FIND_REGISTRY=NEVER ..
 
 To run the program, execute:
 ```
-export LD_LIBRARY_PATH=/usr/local/lib
+export PYTHONHOME="/mingw64"
 ./HexVolumeRenderer
 ```
 
@@ -66,6 +65,30 @@ If TBB and ISPC are not found and installed manually, please use the following c
 
 ```
 cmake -DUSE_EMBREE=ON -DISPC_EXECUTABLE=<path-to-ispc-binary> -DTBB_ROOT=<path-to-tbb> -Dembree_DIR=<path-to-embree> ..
+```
+
+## How to run on Windows with CLion
+
+In order to run the program with CLion on Windows in conjunction with msys2, adding a MinGW toolchain is necessary.
+For this, select the following options when creating a new toolchain in the settings (assuming msys2 is installed in
+the standard directory C:\msys64).
+- Environment: C:\msys64\mingw64
+- CMake: C:\msys64\mingw64\bin\cmake.exe
+- Make: C:\msys64\usr\bin\make.exe
+- C Compiler: C:\msys64\mingw64\bin\gcc.exe
+- C++ Compiler: C:\msys64\mingw64\bin\g++.exe
+- Debugger: C:\msys64\mingw64\bin\gdb.exe
+
+Then, add the following CMake options to the used build profiles.
+```
+-G "MSYS Makefiles" -DPython3_FIND_REGISTRY=NEVER -Dsgl_DIR=/usr/local/lib/cmake/sgl
+```
+
+Finally, in order for Windows to find the .dll files at runtime, add the following environment variables to the run
+configurations.
+
+```
+PYTHONHOME=C:/msys64/mingw64;PATH=C:/msys64/mingw64/bin\;C:/msys64/usr/local/bin
 ```
 
 ## How to add new data sets

@@ -69,7 +69,10 @@ else()
 	list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Utils/Steamworks.cpp)
 endif()
 
-find_package(embree 3.0 QUIET)
+# Embree version 3.12.1-2 shipped by msys2 seems to be buggy and crashes on rtcCommitScene :(
+if(NOT "${CMAKE_GENERATOR}" STREQUAL "MSYS Makefiles")
+	find_package(embree 3.0 QUIET)
+endif()
 if(embree_FOUND)
 	MESSAGE(STATUS "Found Embree. Using Embree as the ray-mesh intersection library.")
 else()
@@ -123,6 +126,7 @@ endif()
 target_link_libraries(HexVolumeRenderer PUBLIC sgl ${Boost_LIBRARIES} GLEW::GLEW ${NETCDF_LIBRARIES} ${CURL_LIBRARIES} ${JSONCPP_LIBRARIES}) # ${LEMON_LIBRARIES}
 
 include_directories(${sgl_INCLUDES} ${Boost_INCLUDES} ${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDES} ${NETCDF_INCLUDES} ${CURL_INCLUDES} ${JSONCPP_INCLUDES})
+include_directories(/msys64/usr/local/include/sgl)
 
 if (Python3_FOUND AND USE_PYTHON)
 	add_definitions(-DUSE_PYTHON)
