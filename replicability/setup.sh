@@ -122,6 +122,13 @@ if [ ! -d "Data/Meshes/2019 - Symmetric Moving Frames" ]; then
     build/HexaLabDatasetsDownloader
 fi
 
+# Adapt the Python home path if msys2 is used.
+if [[ "$OSTYPE" == "msys"* ]]; then
+    if [[ ! "${PYTHONHOME}" == *"/mingw64"* ]]; then
+        export PYTHONHOME="/mingw64"
+    fi
+fi
+
 # Run the program.
 build/HexVolumeRenderer --replicability
 
