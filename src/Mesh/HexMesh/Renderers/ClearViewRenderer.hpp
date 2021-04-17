@@ -157,7 +157,7 @@ protected:
     float lineWidth = 0.0015f;
     bool modulateLineThicknessByDepth = false;
     bool useFocusOutline = true;
-    glm::vec4 focusOutlineColor = glm::vec4(0.792f, 0.824f, 0.894f, 1.0f);
+    glm::vec4 focusOutlineColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
     float focusOutlineWidth = 3.0f;
     bool clipFocusOutline = true;
     bool useShading = false;
@@ -171,7 +171,7 @@ protected:
     void updateDepthCueGeometryData();
     void setUniformDataDepthCues(sgl::ShaderProgramPtr shaderProgram);
     bool useDepthCues = true;
-    float depthCueStrength = 0.6f;
+    float depthCueStrength = 0.5f;
     bool computeDepthCuesOnGpu = true;
     float minDepth = 0.0f;
     float maxDepth = 1.0f;
