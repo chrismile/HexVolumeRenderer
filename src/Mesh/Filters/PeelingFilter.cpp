@@ -92,8 +92,7 @@ void PeelingFilter::filterMesh(HexMeshPtr meshIn) {
 }
 
 void PeelingFilter::renderGui() {
-    ImGui::SetNextWindowSize(ImVec2(800, 110), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos(ImVec2(3025, 1671), ImGuiCond_FirstUseEver);
+    sgl::ImGuiWrapper::get()->setNextWindowStandardPosSize(3025, 1671, 800, 110);
     if (ImGui::Begin("Peeling Filter", &showFilterWindow)) {
         if (ImGui::SliderInt("Depth", &peelingDepth, 0, maxPeelingDepth)) {
             dirty = true;

@@ -87,8 +87,7 @@ void WireframeRenderer_Faces::render() {
 }
 
 void WireframeRenderer_Faces::renderGui() {
-    ImGui::SetNextWindowSize(ImVec2(540, 110), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos(ImVec2(0, 200), ImGuiCond_FirstUseEver);
+    sgl::ImGuiWrapper::get()->setNextWindowStandardPosSize(0, 200, 540, 110);
     if (ImGui::Begin("Wireframe Renderer (Faces)", &showRendererWindow)) {
         if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             reRender = true;

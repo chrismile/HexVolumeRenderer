@@ -59,8 +59,7 @@ void PlaneFilter::filterMesh(HexMeshPtr meshIn) {
 }
 
 void PlaneFilter::renderGui() {
-    ImGui::SetNextWindowSize(ImVec2(800, 160), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos(ImVec2(3025, 1508), ImGuiCond_FirstUseEver);
+    sgl::ImGuiWrapper::get()->setNextWindowStandardPosSize(3025, 1508, 800, 160);
     if (ImGui::Begin("Plane Filter", &showFilterWindow)) {
         if (ImGui::SliderFloat("Slice", &filterRatio, 0.0f, 1.0f)) {
             dirty = true;

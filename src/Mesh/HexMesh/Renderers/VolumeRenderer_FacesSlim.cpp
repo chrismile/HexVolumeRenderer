@@ -429,8 +429,7 @@ void VolumeRenderer_FacesSlim::render() {
 }
 
 void VolumeRenderer_FacesSlim::renderGui() {
-    ImGui::SetNextWindowSize(ImVec2(586, 346), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos(ImVec2(5, 72), ImGuiCond_FirstUseEver);
+    sgl::ImGuiWrapper::get()->setNextWindowStandardPosSize(5, 72, 586, 346);
     if (ImGui::Begin("Pseudo Volume Renderer", &showRendererWindow)) {
         if (isMultiVarData && ImGui::Checkbox("Use Multi-Var Data", &useMultiVarData)) {
             reloadGatherShader(false);
