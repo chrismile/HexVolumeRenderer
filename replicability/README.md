@@ -43,9 +43,10 @@ connection speed.
 ## Troubleshooting
 
 If an error occurs during the build process, please open a bug report or contact us by e-mail.
-After the bug is fixed, please delete the `dependencies` and `build`.
+After the bug was fixed, please pull the new code and delete the directories `dependencies` and `build` before again
+calling `setup.sh`.
 
-When compiling the program on Windows, please make sure that MSYS2 is up-to-date. If you are f
+When compiling the program on Windows, please make sure that MSYS2 is up-to-date.
 
 ## Hardware
 
