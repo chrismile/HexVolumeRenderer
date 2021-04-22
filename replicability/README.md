@@ -8,7 +8,7 @@ We give permission to the Replicability Stamp committee and reviewers of the Gra
 
 ## Submission
 
-Interactive Focus+Context Rendering for Volumetric Mesh Inspection. \
+Interactive Focus+Context Rendering for Hexahedral Mesh Inspection. \
 Christoph Neuhauser, Junpeng Wang, Rüdiger Westermann. \
 to appear in IEEE Transactions on Visualization and Computer Graphics 2021 (TVCG 2021).
 

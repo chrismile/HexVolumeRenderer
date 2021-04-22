@@ -3,7 +3,7 @@ A program for rendering hexahedral meshes in the form of transparent volumes.
 
 This repository was created for the paper
 
-Interactive Focus+Context Rendering for Volumetric Mesh Inspection. \
+Interactive Focus+Context Rendering for Hexahedral Mesh Inspection. \
 Christoph Neuhauser, Junpeng Wang, Rüdiger Westermann. \
 to appear in IEEE Transactions on Visualization and Computer Graphics 2021 (TVCG 2021).
 
