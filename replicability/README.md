@@ -20,7 +20,7 @@ The build process was tested on...
 - Ubuntu 16.04 and Ubuntu 20.04
 - Windows 10 using MSYS2
 
-## Build Process on Ubuntu 20.04
+## Build Process on Ubuntu
 
 Please execute the script `setup.sh` in this folder on the command line. It will compile and install all requirements,
 download the data sets, build the program and execute the program reproducing Figure 19 (right) from the paper.
