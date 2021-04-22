@@ -20,6 +20,10 @@ The build process was tested on...
 - Ubuntu 16.04 and Ubuntu 20.04
 - Windows 10 using MSYS2
 
+## Hardware
+
+So far, the program was only tested using GPUs from NVIDIA.
+
 ## Build Process on Ubuntu
 
 Please execute the script `setup.sh` in this folder on the command line. It will compile and install all requirements,
@@ -48,6 +52,5 @@ calling `setup.sh`.
 
 When compiling the program on Windows, please make sure that MSYS2 is up-to-date.
 
-## Hardware
-
-So far, the program was only tested using GPUs from NVIDIA.
+When calling `setup.sh`, the program will download 1.4 GiB of hex-mesh data.
+Please make sure that enough hard-drive space is available for the mesh files.
