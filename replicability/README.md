@@ -12,6 +12,8 @@ Interactive Focus+Context Rendering for Volumetric Mesh Inspection. \
 Christoph Neuhauser, Junpeng Wang, Rüdiger Westermann. \
 to appear in IEEE Transactions on Visualization and Computer Graphics 2021 (TVCG 2021).
 
+DOI: 10.1109/TVCG.2021.3074607
+
 ## Supported Operating Systems
 
 The build process was tested on...
