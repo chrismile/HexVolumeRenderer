@@ -17,7 +17,7 @@ DOI: 10.1109/TVCG.2021.3074607
 ## Supported Operating Systems
 
 The build process was tested on...
-- Ubuntu 20.04
+- Ubuntu 16.04 and Ubuntu 20.04
 - Windows 10 using MSYS2
 
 ## Build Process on Ubuntu 20.04
