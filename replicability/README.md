@@ -44,6 +44,21 @@ this folder. It will compile and install all requirements, download the used dat
 the program reproducing Figure 19 (right) from the paper. This process may take some time depending on your internet
 connection speed.
 
+## Tested Versions of Dependencies
+
+We have tested compilation with the following versions of the dependencies.
+- sgl: https://github.com/chrismile/sgl/tree/tvcg-hexmesh
+- libpng: 1.6.x
+- SDL2: 2.0.x
+- SDL2_image: 2.0.x
+- CURL: 7.x
+- jsoncpp: 1.9.x
+- Eigen: 3.3.x
+- glm: 0.9.x
+- tinyxml2: 7.x
+- GLEW: 2.x
+- Boost: > 1.68
+
 ## Troubleshooting
 
 If an error occurs during the build process, please open a bug report or contact us by e-mail.
