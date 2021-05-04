@@ -41,7 +41,7 @@ Intel's Embree ray tracing library, and it might not compile if your MSYS2 packa
 
 In the next step, open the MSYS2 MinGW 64-bit shell using the Windows start menu and execute the script `setup.sh` in
 this folder. It will compile and install all requirements, download the used data sets, build the program and execute
-the program reproducing figure 19 (right) from the paper. This process may take some time depending on your internet
+the program reproducing Figure 19 (right) from the paper. This process may take some time depending on your internet
 connection speed.
 
 ## Troubleshooting
