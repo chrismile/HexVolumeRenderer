@@ -16,27 +16,31 @@ The LOD structure discussed can be viewed with the renderer "LOD Lines (Preview,
 
 A dependency of the program is the library sgl (https://github.com/chrismile/sgl).
 It needs to be installed somewhere on the system. If it is not found by CMake, use `-Dsgl_DIR=<path-to-cmake-config>`.
-tvcg-hexmesh
+We recommend to use the branch `tvcg-hexmesh` of sgl, which was tested for compatibility with HexVolumeRenderer.
 
-On Ubuntu 20.04 for example, you can install all other necessary dependencies (besides the ones already required by sgl)
-with this command:
+On Ubuntu 20.04, you can install all other necessary dependencies (besides the ones already required by sgl) with this
+command:
 
 ```
-sudo apt-get install libjsoncpp-dev libeigen3-dev python3-dev libcurl4-openssl-dev
+sudo apt-get install cmake libglm-dev libsdl2-dev libsdl2-image-dev libpng-dev libboost-filesystem-dev libtinyxml2-dev \
+libarchive-dev libjsoncpp-dev libeigen3-dev python3-dev
+
+sudo apt-get install libcurl4-openssl-dev
 OR:
-sudo apt-get install libjsoncpp-dev libeigen3-dev python3-dev libcurl4-gnutls-dev
+sudo apt-get install libcurl4-gnutls-dev
 ```
 
 On Ubuntu 18.04:
 
 ```
-sudo apt-get install libjsoncpp-dev libcurl-dev libeigen3-dev python3-dev liblemon-dev
+sudo apt-get install cmake libglm-dev libsdl2-dev libsdl2-image-dev libpng-dev libboost-filesystem-dev libtinyxml2-dev \
+libarchive-dev libjsoncpp-dev libeigen3-dev libcurl-dev liblemon-dev
 ```
 
 On Arch Linux:
 
 ```
-sudo pacman -S 
+sudo pacman -S cmake glew boost glm tinyxml2 sdl2 sdl2_image python3 eigen curl jsoncpp
 ```
 
 Lemon is an optional dependency. After installing sgl (see above), execute in the repository directory:

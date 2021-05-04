@@ -131,7 +131,6 @@ target_link_libraries(HexVolumeRenderer PUBLIC sgl ${Boost_LIBRARIES} GLEW::GLEW
 include_directories(${sgl_INCLUDES} ${Boost_INCLUDES} ${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDES} ${NETCDF_INCLUDES} ${CURL_INCLUDES} ${JSONCPP_INCLUDE_DIRS})
 include_directories(/msys64/usr/local/include/sgl)
 
-MESSAGE(STATUS "JSONCPP_INCLUDES: " ${JSONCPP_INCLUDE_DIRS})
 if (Python3_FOUND AND USE_PYTHON)
 	add_definitions(-DUSE_PYTHON)
 	if (${CMAKE_VERSION} VERSION_GREATER "3.11")
