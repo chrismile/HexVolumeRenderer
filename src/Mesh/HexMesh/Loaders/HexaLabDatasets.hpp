@@ -60,7 +60,7 @@ class LoaderThread {
 public:
     LoaderThread() : loaderThread() {}
     ~LoaderThread() {
-        if (ownsThread) {
+        if (ownsThread && loaderThread.joinable()) {
             loaderThread.join();
         }
     }
