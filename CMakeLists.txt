@@ -100,12 +100,13 @@ if(USE_STEAMWORKS)
 	target_link_libraries(HexVolumeRenderer PUBLIC steam_api)
 endif()
 
+set(FPHSA_NAME_MISMATCHED TRUE)
+find_package(SDL2 REQUIRED)
 if(WIN32)
 	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
-	target_link_libraries(HexVolumeRenderer PUBLIC mingw32 SDL2main SDL2)
-else()
-	target_link_libraries(HexVolumeRenderer PUBLIC SDL2)
+	target_link_libraries(HexVolumeRenderer PUBLIC mingw32)
 endif()
+target_link_libraries(HexVolumeRenderer PUBLIC SDL2::Main)
 
 
 cmake_policy(SET CMP0012 NEW)
@@ -125,9 +126,10 @@ else()
 endif()
 target_link_libraries(HexVolumeRenderer PUBLIC sgl ${Boost_LIBRARIES} GLEW::GLEW ${NETCDF_LIBRARIES} ${CURL_LIBRARIES} ${JSONCPP_LIBRARIES}) # ${LEMON_LIBRARIES}
 
-include_directories(${sgl_INCLUDES} ${Boost_INCLUDES} ${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDES} ${NETCDF_INCLUDES} ${CURL_INCLUDES} ${JSONCPP_INCLUDES})
+include_directories(${sgl_INCLUDES} ${Boost_INCLUDES} ${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDES} ${NETCDF_INCLUDES} ${CURL_INCLUDES} ${JSONCPP_INCLUDE_DIRS})
 include_directories(/msys64/usr/local/include/sgl)
 
+MESSAGE(STATUS "JSONCPP_INCLUDES: " ${JSONCPP_INCLUDE_DIRS})
 if (Python3_FOUND AND USE_PYTHON)
 	add_definitions(-DUSE_PYTHON)
 	if (${CMAKE_VERSION} VERSION_GREATER "3.11")

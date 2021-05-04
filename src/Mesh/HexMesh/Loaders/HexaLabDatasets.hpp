@@ -69,7 +69,9 @@ public:
         loaderThread = std::move(thread);
     }
     void join() {
-        return loaderThread.join();
+        if (loaderThread.joinable()) {
+            loaderThread.join();
+        }
     }
 
 private:

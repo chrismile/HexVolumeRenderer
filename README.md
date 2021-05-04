@@ -16,8 +16,10 @@ The LOD structure discussed can be viewed with the renderer "LOD Lines (Preview,
 
 A dependency of the program is the library sgl (https://github.com/chrismile/sgl).
 It needs to be installed somewhere on the system. If it is not found by CMake, use `-Dsgl_DIR=<path-to-cmake-config>`.
-On Ubuntu 20.04 for example, you can install all other necessary dependencies with this command (additionally to the
-prerequisites required by sgl):
+tvcg-hexmesh
+
+On Ubuntu 20.04 for example, you can install all other necessary dependencies (besides the ones already required by sgl)
+with this command:
 
 ```
 sudo apt-get install libjsoncpp-dev libeigen3-dev python3-dev libcurl4-openssl-dev
@@ -31,6 +33,12 @@ On Ubuntu 18.04:
 sudo apt-get install libjsoncpp-dev libcurl-dev libeigen3-dev python3-dev liblemon-dev
 ```
 
+On Arch Linux:
+
+```
+sudo pacman -S 
+```
+
 Lemon is an optional dependency. After installing sgl (see above), execute in the repository directory:
 
 ```
@@ -40,7 +48,10 @@ cmake ..
 make -j
 ```
 
-To run the program, execute:
+If the program was built out-of-source (i.e., the folder `build` does not lie in the source directory), the user must
+create a symbolic link to the directory `Data` in the build folder.
+
+To run the program execute (adapt LD_LIBRARY_PATH to wherever dependencies like sgl were installed):
 
 ```
 export LD_LIBRARY_PATH=/usr/local/lib
