@@ -104,12 +104,11 @@ set(FPHSA_NAME_MISMATCHED TRUE)
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
 find_package(PNG REQUIRED)
-if(WIN32)
+if((${CMAKE_GENERATOR} STREQUAL "MinGW Makefiles") OR (${CMAKE_GENERATOR} STREQUAL "MSYS Makefiles"))
 	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
 	target_link_libraries(HexVolumeRenderer PUBLIC mingw32)
 endif()
 target_link_libraries(HexVolumeRenderer PUBLIC SDL2::Main)
-
 
 cmake_policy(SET CMP0012 NEW)
 find_package(OpenMP REQUIRED)

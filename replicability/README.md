@@ -10,19 +10,20 @@ We give permission to the Replicability Stamp committee and reviewers of the Gra
 
 Interactive Focus+Context Rendering for Hexahedral Mesh Inspection. \
 Christoph Neuhauser, Junpeng Wang, Rüdiger Westermann. \
-to appear in IEEE Transactions on Visualization and Computer Graphics 2021 (TVCG 2021).
-
+to appear in IEEE Transactions on Visualization and Computer Graphics 2021 (TVCG 2021). \
 DOI: 10.1109/TVCG.2021.3074607
 
 ## Supported Operating Systems
 
 The build process was tested on...
 - Ubuntu 16.04 and Ubuntu 20.04
+- Arch Linux (on 2021-05-04)
 - Windows 10 using MSYS2
 
 ## Hardware
 
-So far, the program was only tested using GPUs from NVIDIA.
+So far, the program was only tested using GPUs from NVIDIA. If you encounter any bugs on other hardware, please open an
+issue report (https://github.com/chrismile/HexVolumeRenderer/issues) for this project.
 
 ## Build Process on Ubuntu
 

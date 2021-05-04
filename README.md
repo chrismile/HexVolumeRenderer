@@ -5,8 +5,7 @@ This repository was created for the paper
 
 Interactive Focus+Context Rendering for Hexahedral Mesh Inspection. \
 Christoph Neuhauser, Junpeng Wang, Rüdiger Westermann. \
-to appear in IEEE Transactions on Visualization and Computer Graphics 2021 (TVCG 2021).
-
+to appear in IEEE Transactions on Visualization and Computer Graphics 2021 (TVCG 2021). \
 DOI: 10.1109/TVCG.2021.3074607
 
 The rendering mode discussed in the paper can be used when selecting the renderer "ClearView (Unified)" in the program.
@@ -14,11 +13,11 @@ The LOD structure discussed can be viewed with the renderer "LOD Lines (Preview,
 
 ## Building and running the programm on Linux
 
-A dependency of the program is the library sgl (https://github.com/chrismile/sgl).
+A dependency of this program is the library sgl (https://github.com/chrismile/sgl).
 It needs to be installed somewhere on the system. If it is not found by CMake, use `-Dsgl_DIR=<path-to-cmake-config>`.
-We recommend to use the branch `tvcg-hexmesh` of sgl, which was tested for compatibility with HexVolumeRenderer.
+We recommend using the branch `tvcg-hexmesh` of sgl, which was tested for compatibility with HexVolumeRenderer.
 
-On Ubuntu 20.04, you can install all other necessary dependencies (besides the ones already required by sgl) with this
+On Ubuntu 20.04, you can install all other necessary dependencies (including the ones already required by sgl) with this
 command:
 
 ```
@@ -55,7 +54,8 @@ make -j
 If the program was built out-of-source (i.e., the folder `build` does not lie in the source directory), the user must
 create a symbolic link to the directory `Data` in the build folder.
 
-To run the program execute (adapt LD_LIBRARY_PATH to wherever dependencies like sgl were installed):
+To run the program execute (adapt LD_LIBRARY_PATH to the directory containing the shared libraries of dependencies like
+sgl):
 
 ```
 export LD_LIBRARY_PATH=/usr/local/lib
@@ -82,7 +82,8 @@ The build process was also tested on Windows 10 64-bit using MSYS2 and Mingw-w64
 Using MSYS2 and Pacman, the following packages need to be installed additionally to the prerequisites required by sgl.
 
 ```
-pacman -S mingw64/mingw-w64-x86_64-jsoncpp mingw64/mingw-w64-x86_64-curl mingw64/mingw-w64-x86_64-eigen3 mingw64/mingw-w64-x86_64-python mingw64/mingw-w64-x86_64-embree
+pacman -S mingw64/mingw-w64-x86_64-jsoncpp mingw64/mingw-w64-x86_64-curl mingw64/mingw-w64-x86_64-eigen3 \
+mingw64/mingw-w64-x86_64-python mingw64/mingw-w64-x86_64-embree
 ```
 
 Furthermore, the graph library LEMON (http://lemon.cs.elte.hu/trac/lemon), which is an optional dependency, needs to be
