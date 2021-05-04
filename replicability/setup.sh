@@ -43,10 +43,15 @@ REPO_DIR="${PWD}"
 # Install all necessary packages using the package manager (super user rights required on Ubuntu for this).
 if [ ! -d "dependencies" ]; then
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        echo "Installing necessary packages..."
-        sudo apt-get install git cmake g++ libglm-dev libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-        libpng-dev libboost-filesystem-dev libtinyxml2-dev libarchive-dev libglew-dev \
-        libjsoncpp-dev libeigen3-dev python3-dev libcurl4-openssl-dev
+        if [ -x "$(command -v apt)" ]; then
+            echo "Installing necessary packages..."
+            sudo apt-get install git cmake g++ libglm-dev libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+            libpng-dev libboost-filesystem-dev libtinyxml2-dev libarchive-dev libglew-dev \
+            libjsoncpp-dev libeigen3-dev python3-dev libcurl4-openssl-dev
+        elif [ -x "$(command -v pacman)" ]; then
+            echo "Installing necessary packages..."
+            sudo pacman -S git cmake glew boost glm tinyxml2 sdl2 sdl2_image python3 eigen curl jsoncpp
+        fi
     elif [[ "$OSTYPE" == "msys"* ]]; then
         echo "Installing necessary packages..."
         echo "y" | pacman -S make git wget mingw64/mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-gdb
