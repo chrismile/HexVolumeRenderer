@@ -102,6 +102,8 @@ endif()
 
 set(FPHSA_NAME_MISMATCHED TRUE)
 find_package(SDL2 REQUIRED)
+find_package(SDL2_image REQUIRED)
+find_package(PNG REQUIRED)
 if(WIN32)
 	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
 	target_link_libraries(HexVolumeRenderer PUBLIC mingw32)
