@@ -30,6 +30,9 @@ option(USE_CORK "Build with Cork as CSG Library" OFF)
 option(USE_LEMON "Build with matching code and LEMON graph library" OFF)
 option(USE_STEAMWORKS "Build with Steamworks SDK" OFF)
 
+set(DATA_PATH "${CMAKE_SOURCE_DIR}/Data" CACHE PATH "location of folder 'Data'")
+add_definitions(-DDATA_PATH=\"${DATA_PATH}\")
+
 find_package(PkgConfig REQUIRED)
 
 if (USE_PYTHON)
