@@ -34,8 +34,6 @@ option(USE_STEAMWORKS "Build with Steamworks SDK" OFF)
 set(DATA_PATH "${CMAKE_SOURCE_DIR}/Data" CACHE PATH "Location of folder 'Data'")
 add_definitions(-DDATA_PATH=\"${DATA_PATH}\")
 
-find_package(PkgConfig REQUIRED)
-
 if (USE_PYTHON)
 	if (${CMAKE_VERSION} VERSION_GREATER "3.11")
 		# 2021-05-06: CMake won't find vcpkg version if we don't search for the interpreter.
