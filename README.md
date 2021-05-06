@@ -1,4 +1,5 @@
 # HexVolumeRenderer
+
 A program for rendering hexahedral meshes in the form of transparent volumes.
 
 This repository was created for the paper
@@ -11,122 +12,16 @@ DOI: 10.1109/TVCG.2021.3074607
 The rendering mode discussed in the paper can be used when selecting the renderer "ClearView (Unified)" in the program.
 The LOD structure discussed can be viewed with the renderer "LOD Lines (Preview, Sheets)".
 
-## Building and running the programm on Linux
 
-A dependency of this program is the library sgl (https://github.com/chrismile/sgl).
-It needs to be installed somewhere on the system. If it is not found by CMake, use `-Dsgl_DIR=<path-to-cmake-config>`.
-We recommend using the branch `tvcg-hexmesh` of sgl, which was tested for compatibility with HexVolumeRenderer.
+## Building and running the programm
 
-On Ubuntu 20.04, you can install all other necessary dependencies (including the ones already required by sgl) with this
-command:
+Currently, there are three main ways to compile the program:
+- Linux: Using the system package manager to install all dependencies (tested: apt on Ubuntu, pacman on Arch Linux).
+- Linux & Windows: Installing all dependencies using [vcpkg](https://github.com/microsoft/vcpkg).
+- Windows: Using MSYS2 to install all dependencies.
 
-```
-sudo apt-get install cmake libglm-dev libsdl2-dev libsdl2-image-dev libpng-dev libboost-filesystem-dev libtinyxml2-dev \
-libarchive-dev libjsoncpp-dev libeigen3-dev python3-dev
-
-sudo apt-get install libcurl4-openssl-dev
-OR:
-sudo apt-get install libcurl4-gnutls-dev
-```
-
-On Ubuntu 18.04:
-
-```
-sudo apt-get install cmake libglm-dev libsdl2-dev libsdl2-image-dev libpng-dev libboost-filesystem-dev libtinyxml2-dev \
-libarchive-dev libjsoncpp-dev libeigen3-dev libcurl-dev liblemon-dev
-```
-
-On Arch Linux:
-
-```
-sudo pacman -S cmake glew boost glm tinyxml2 sdl2 sdl2_image python3 eigen curl jsoncpp
-```
-
-Lemon is an optional dependency. After installing sgl (see above), execute in the repository directory:
-
-```
-mkdir build
-cd build
-cmake ..
-make -j
-```
-
-If the program was built out-of-source (i.e., the folder `build` does not lie in the source directory), the user must
-create a symbolic link to the directory `Data` in the build folder.
-
-To run the program execute (adapt LD_LIBRARY_PATH to the directory containing the shared libraries of dependencies like
-sgl):
-
-```
-export LD_LIBRARY_PATH=/usr/local/lib
-./HexVolumeRenderer
-```
-
-The program is also able to use Embree instead of NanoRT (which is shipped together with this application) for ray-mesh
-intersection tests. Embree is considerably faster. To enable Embree support, please use the following command.
-
-```
-cmake -DUSE_EMBREE=ON -Dembree_DIR=<path-to-embree> ..
-```
-
-The user needs to manually download Embree from its website and make sure that all its dependencies (like TBB and ISPC)
-are also installed. If TBB and ISPC are not found and installed manually, please use the following command.
-
-```
-cmake -DUSE_EMBREE=ON -DISPC_EXECUTABLE=<path-to-ispc-binary> -DTBB_ROOT=<path-to-tbb> -Dembree_DIR=<path-to-embree> ..
-```
-
-## Building and running the program on Windows
-
-The build process was also tested on Windows 10 64-bit using MSYS2 and Mingw-w64 (http://www.msys2.org/).
-Using MSYS2 and Pacman, the following packages need to be installed additionally to the prerequisites required by sgl.
-
-```
-pacman -S mingw64/mingw-w64-x86_64-jsoncpp mingw64/mingw-w64-x86_64-curl mingw64/mingw-w64-x86_64-eigen3 \
-mingw64/mingw-w64-x86_64-python mingw64/mingw-w64-x86_64-embree
-```
-
-Furthermore, the graph library LEMON (http://lemon.cs.elte.hu/trac/lemon), which is an optional dependency, needs to be
-built manually if needed, as no msys2 package is available for it at the time of writing this README file.
-
-On Windows, using MSYS2 and Mingw-w64 (http://www.msys2.org/), it is best to use the following CMake command to
-configure CMake:
-
-```
-cmake -G "MSYS Makefiles" -DPython3_FIND_REGISTRY=NEVER ..
-```
-
-To run the program, execute:
-
-```
-export PYTHONHOME="/mingw64"
-./HexVolumeRenderer
-```
-
-### How to run with CLion on Windows
-
-In order to run the program with CLion on Windows in conjunction with msys2, adding a MinGW toolchain is necessary.
-For this, select the following options when creating a new toolchain in the settings (assuming msys2 is installed in
-the standard directory C:\msys64).
-- Environment: C:\msys64\mingw64
-- CMake: C:\msys64\mingw64\bin\cmake.exe
-- Make: C:\msys64\usr\bin\make.exe
-- C Compiler: C:\msys64\mingw64\bin\gcc.exe
-- C++ Compiler: C:\msys64\mingw64\bin\g++.exe
-- Debugger: C:\msys64\mingw64\bin\gdb.exe
-
-Then, add the following CMake options to the used build profiles.
-
-```
--G "MSYS Makefiles" -DPython3_FIND_REGISTRY=NEVER -Dsgl_DIR=/usr/local/lib/cmake/sgl
-```
-
-Finally, in order for Windows to find the .dll files at runtime, add the following environment variables to the run
-configurations.
-
-```
-PYTHONHOME=C:/msys64/mingw64;PATH=C:/msys64/mingw64/bin\;C:/msys64/usr/local/bin
-```
+On Windows, we recommend to use vcpkg if you need to use Microsoft Visual Studio.
+Guides for the different build types can be found in the directory `docs/compilation`.
 
 
 ## How to add new data sets

@@ -6,12 +6,14 @@ For more details on the Replicability Stamp, please refer to http://www.replicab
 We give permission to the Replicability Stamp committee and reviewers of the Graphics Replicability Stamp Initiative
 (GRSI) to review the code and advertise the review publicly after the stamp is approved.
 
+
 ## Submission
 
 Interactive Focus+Context Rendering for Hexahedral Mesh Inspection. \
 Christoph Neuhauser, Junpeng Wang, Rüdiger Westermann. \
 to appear in IEEE Transactions on Visualization and Computer Graphics 2021 (TVCG 2021). \
 DOI: 10.1109/TVCG.2021.3074607
+
 
 ## Supported Operating Systems
 
@@ -20,10 +22,12 @@ The build process was tested on...
 - Arch Linux (on 2021-05-04)
 - Windows 10 using MSYS2
 
+
 ## Hardware
 
 So far, the program was only tested using GPUs from NVIDIA. If you encounter any bugs on other hardware, please open an
 issue report (https://github.com/chrismile/HexVolumeRenderer/issues) for this project.
+
 
 ## Build Process on Ubuntu
 
@@ -31,6 +35,7 @@ Please execute the script `setup.sh` in this folder on the command line. It will
 download the data sets, build the program and execute the program reproducing Figure 19 (right) from the paper.
 This process may take some time depending on your internet connection speed. Please note that super user rights need to
 be given to parts of the program, as it will install some dependencies using the Ubuntu package manager.
+
 
 ## Build Process on Windows 10
 
@@ -44,6 +49,7 @@ In the next step, open the MSYS2 MinGW 64-bit shell using the Windows start menu
 this folder. It will compile and install all requirements, download the used data sets, build the program and execute
 the program reproducing Figure 19 (right) from the paper. This process may take some time depending on your internet
 connection speed.
+
 
 ## Tested Versions of Dependencies
 
@@ -59,6 +65,7 @@ We have tested compilation with the following versions of the dependencies.
 - tinyxml2: 7.x
 - GLEW: 2.x
 - Boost: > 1.68
+
 
 ## Troubleshooting
 

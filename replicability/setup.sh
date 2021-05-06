@@ -45,12 +45,12 @@ if [ ! -d "dependencies" ]; then
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         if [ -x "$(command -v apt)" ]; then
             echo "Installing necessary packages..."
-            sudo apt-get install git cmake g++ libglm-dev libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-            libpng-dev libboost-filesystem-dev libtinyxml2-dev libarchive-dev libglew-dev \
+            sudo apt-get install git cmake g++ libglm-dev libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev \
+            libsdl2-ttf-dev  libpng-dev libboost-filesystem-dev libtinyxml2-dev libarchive-dev libglew-dev \
             libjsoncpp-dev libeigen3-dev python3-dev libcurl4-openssl-dev
         elif [ -x "$(command -v pacman)" ]; then
             echo "Installing necessary packages..."
-            sudo pacman -S git cmake glew boost glm tinyxml2 sdl2 sdl2_image python3 eigen curl jsoncpp
+            sudo pacman -S git cmake glew boost libarchive glm tinyxml2 sdl2 sdl2_image python3 eigen curl jsoncpp
         fi
     elif [[ "$OSTYPE" == "msys"* ]]; then
         echo "Installing necessary packages..."

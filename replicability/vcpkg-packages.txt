@@ -1,0 +1,86 @@
+boost-algorithm:x64-linux                          1.75.0
+boost-array:x64-linux                              1.75.0
+boost-assert:x64-linux                             1.75.0
+boost-bind:x64-linux                               1.75.0
+boost-build:x64-linux                              1.75.0
+boost-compatibility:x64-linux                      1.75.0
+boost-concept-check:x64-linux                      1.75.0#2
+boost-config:x64-linux                             1.75.0
+boost-container-hash:x64-linux                     1.75.0
+boost-container:x64-linux                          1.75.0#1
+boost-conversion:x64-linux                         1.75.0
+boost-core:x64-linux                               1.75.0
+boost-detail:x64-linux                             1.75.0
+boost-exception:x64-linux                          1.75.0#1
+boost-filesystem:x64-linux                         1.75.0#1
+boost-function-types:x64-linux                     1.75.0
+boost-function:x64-linux                           1.75.0
+boost-functional:x64-linux                         1.75.0
+boost-fusion:x64-linux                             1.75.0
+boost-integer:x64-linux                            1.75.0
+boost-intrusive:x64-linux                          1.75.0
+boost-io:x64-linux                                 1.75.0
+boost-iterator:x64-linux                           1.75.0
+boost-modular-build-helper:x64-linux               1.75.0#9
+boost-move:x64-linux                               1.75.0
+boost-mpl:x64-linux                                1.75.0
+boost-numeric-conversion:x64-linux                 1.75.0
+boost-optional:x64-linux                           1.75.0
+boost-predef:x64-linux                             1.75.0
+boost-preprocessor:x64-linux                       1.75.0
+boost-range:x64-linux                              1.75.0
+boost-regex:x64-linux                              1.75.0#2
+boost-smart-ptr:x64-linux                          1.75.0
+boost-static-assert:x64-linux                      1.75.0
+boost-system:x64-linux                             1.75.0#1
+boost-throw-exception:x64-linux                    1.75.0
+boost-tuple:x64-linux                              1.75.0
+boost-type-index:x64-linux                         1.75.0
+boost-type-traits:x64-linux                        1.75.0
+boost-typeof:x64-linux                             1.75.0
+boost-uninstall:x64-linux                          1.75.0
+boost-unordered:x64-linux                          1.75.0
+boost-utility:x64-linux                            1.75.0
+boost-vcpkg-helpers:x64-linux                      7#2
+boost-winapi:x64-linux                             1.75.0
+bzip2:x64-linux                                    1.0.8#1
+curl:x64-linux                                     7.74.0#4
+curl[non-http]:x64-linux
+curl[openssl]:x64-linux
+curl[ssl]:x64-linux
+eigen3:x64-linux                                   3.3.9
+embree3:x64-linux                                  3.11.0#2
+expat:x64-linux                                    2020-08-18
+glew:x64-linux                                     2.1.0#10
+glm:x64-linux                                      0.9.9.8#1
+glslang:x64-linux                                  2019-03-05#3
+jsoncpp:x64-linux                                  1.9.4
+libarchive:x64-linux                               3.4.3#5
+libarchive[bzip2]:x64-linux
+libarchive[lz4]:x64-linux
+libarchive[lzma]:x64-linux
+libarchive[zstd]:x64-linux
+libffi:x64-linux                                   3.3#8
+libiconv:x64-linux                                 1.16#8
+libjpeg-turbo:x64-linux                            2.0.6
+liblzma:x64-linux                                  5.2.5#2
+libpng:x64-linux                                   1.6.37#14
+libxml2:x64-linux                                  2.9.10#6
+lz4:x64-linux                                      1.9.3
+opengl:x64-linux                                   0.0#8
+openssl:x64-linux                                  1.1.1k
+python3:x64-linux                                  3.9.2#2
+sdl2-image:x64-linux                               2.0.5#1
+sdl2-image[libjpeg-turbo]:x64-linux
+sdl2:x64-linux                                     2.0.14#4
+sdl2[vulkan]:x64-linux
+shaderc:x64-linux                                  2019-06-26#2
+spirv-headers:x64-linux                            2021-03-25
+spirv-tools:x64-linux                              2020.7
+sqlite3:x64-linux                                  3.35.4
+tbb:x64-linux                                      2020_U3#4
+tinyxml2:x64-linux                                 8.0.0-1
+vulkan:x64-linux                                   1.1.82.1-1
+xxhash:x64-linux                                   0.8.0#1
+zlib:x64-linux                                     1.2.11#10
+zstd:x64-linux                                     1.4.9
