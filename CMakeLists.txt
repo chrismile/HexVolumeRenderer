@@ -124,11 +124,10 @@ if((${CMAKE_GENERATOR} STREQUAL "MinGW Makefiles") OR (${CMAKE_GENERATOR} STREQU
 	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
 	target_link_libraries(HexVolumeRenderer PUBLIC mingw32)
 endif()
-target_link_libraries(HexVolumeRenderer PUBLIC SDL2::Main)
 if(VCPKG_TOOLCHAIN)
-	target_link_libraries(HexVolumeRenderer PUBLIC SDL2::SDL2_image)
+	target_link_libraries(HexVolumeRenderer PUBLIC SDL2::SDL2main SDL2::SDL2_image)
 else()
-	target_link_libraries(HexVolumeRenderer PUBLIC SDL2::Image)
+	target_link_libraries(HexVolumeRenderer PUBLIC SDL2::Main SDL2::Image)
 endif()
 
 cmake_policy(SET CMP0012 NEW)
