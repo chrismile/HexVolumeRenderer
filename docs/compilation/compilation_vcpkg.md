@@ -13,7 +13,7 @@ On Windows `--triplet=x64-windows` needs to be added if the 64-bit version of th
 
 ```
 ./vcpkg install boost-core boost-algorithm boost-filesystem boost-locale libpng sdl2[vulkan] sdl2-image \
-tinyxml2 glew glm libarchive[bzip2,core,lz4,lzma,zstd] eigen3 embree3 jsoncpp python3 curl zeromq
+tinyxml2 glew glm libarchive[bzip2,core,lz4,lzma,zstd] eigen3 embree3 jsoncpp python3 curl
 ```
 
 
