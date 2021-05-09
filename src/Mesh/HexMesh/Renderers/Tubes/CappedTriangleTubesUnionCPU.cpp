@@ -75,7 +75,7 @@ void addHemisphereToMesh_Union(
                     pt.x * normal.y + pt.y * binormal.y + pt.z * tangent.y + center.y,
                     pt.x * normal.z + pt.y * binormal.z + pt.z * tangent.z + center.z
             );
-            glm::vec3 normal = glm::normalize(glm::vec3(
+            glm::vec3 normalMesh = glm::normalize(glm::vec3(
                     pt.x * normal.x + pt.y * binormal.x + pt.z * tangent.x,
                     pt.x * normal.y + pt.y * binormal.y + pt.z * tangent.y,
                     pt.x * normal.z + pt.y * binormal.z + pt.z * tangent.z

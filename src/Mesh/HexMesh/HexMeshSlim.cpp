@@ -311,16 +311,13 @@ std::vector<float> HexMesh::getInterpolatedCellAttributeVertexData() const {
 }
 
 std::vector<float> HexMesh::getManualVertexAttributeDataNormalized() const {
-#ifdef OPENMP_NO_MEMBERS
-    // Local variable for older versions of OpenMP.
-    std::vector<float>* manualVertexAttributes = this->manualVertexAttributes;
-#endif
-
     glm::vec2 minMaxValue = manualVertexAttributesMinMax.at(manualVertexAttributeIdx);
     std::vector<float> attributeData;
     attributeData.resize(manualVertexAttributes->size());
 
+#if _OPENMP >= 201107
     #pragma omp parallel for shared(manualVertexAttributes, attributeData, minMaxValue) default(none)
+#endif
     for (size_t i = 0; i < manualVertexAttributes->size(); i++) {
         attributeData.at(i) = (manualVertexAttributes->at(i) - minMaxValue.x) / (minMaxValue.y - minMaxValue.x);
     }
@@ -334,7 +331,9 @@ std::vector<float> HexMesh::getManualVertexAttributeDataNormalized(int attrIdx) 
     std::vector<float> attributeData;
     attributeData.resize(manualVertexAttributes.size());
 
+#if _OPENMP >= 200805
     #pragma omp parallel for shared(manualVertexAttributes, attributeData, minMaxValue) default(none)
+#endif
     for (size_t i = 0; i < manualVertexAttributes.size(); i++) {
         attributeData.at(i) = (manualVertexAttributes.at(i) - minMaxValue.x) / (minMaxValue.y - minMaxValue.x);
     }

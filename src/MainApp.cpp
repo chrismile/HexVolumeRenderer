@@ -771,7 +771,10 @@ void MainApp::update(float dt) {
 sgl::AABB3 MainApp::computeAABB3(const std::vector<glm::vec3>& vertices) {
     sgl::AABB3 aabb;
     float minX = FLT_MAX, minY = FLT_MAX, minZ = FLT_MAX, maxX = -FLT_MAX, maxY = -FLT_MAX, maxZ = -FLT_MAX;
-    #pragma omp parallel for reduction(min: minX) reduction(min: minY) reduction(min: minZ) reduction(max: maxX) reduction(max: maxY) reduction(max: maxZ)
+#if _OPENMP >= 201107
+    #pragma omp parallel for reduction(min: minX) reduction(min: minY) reduction(min: minZ) reduction(max: maxX) \
+    reduction(max: maxY) reduction(max: maxZ)
+#endif
     for (size_t i = 0; i < vertices.size(); i++) {
         const glm::vec3& pt = vertices.at(i);
         minX = std::min(minX, pt.x);
@@ -792,7 +795,9 @@ void MainApp::normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
     glm::vec3 scale3D = 0.5f / aabb.getDimensions();
     float scale = std::min(scale3D.x, std::min(scale3D.y, scale3D.z));
 
+#if _OPENMP >= 200805
     #pragma omp parallel for
+#endif
     for (size_t i = 0; i < vertices.size(); i++) {
         vertices.at(i) = (vertices.at(i) + translation) * scale;
     }
@@ -800,7 +805,9 @@ void MainApp::normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
     if (rotateModelBy90DegreeTurns != 0) {
         glm::mat4 rotationMatrix = glm::rotate(rotateModelBy90DegreeTurns * sgl::HALF_PI, modelRotationAxis);
 
+#if _OPENMP >= 200805
         #pragma omp parallel for
+#endif
         for (size_t i = 0; i < vertices.size(); i++) {
             glm::vec4 rotatedVertex = rotationMatrix * glm::vec4(
                     vertices.at(i).x, vertices.at(i).y, vertices.at(i).z, 1.0f);
@@ -812,14 +819,18 @@ void MainApp::normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
 void MainApp::applyVertexDeformations(
         std::vector<glm::vec3>& vertices, const std::vector<glm::vec3>& deformations, const float deformationFactor) {
     float maxDeformation = -FLT_MAX;
+#if _OPENMP >= 201107
     #pragma omp parallel for reduction(max: maxDeformation)
+#endif
     for (size_t i = 0; i < deformations.size(); i++) {
         maxDeformation = std::max(maxDeformation, glm::length(deformations.at(i)));
     }
 
     sgl::AABB3 aabb = computeAABB3(vertices);
     const float deformationScalingFactor = glm::length(aabb.getDimensions()) * deformationFactor / maxDeformation;
+#if _OPENMP >= 200805
     #pragma omp parallel for
+#endif
     for (size_t i = 0; i < vertices.size(); i++) {
         vertices.at(i) = vertices.at(i) + deformationScalingFactor * deformations.at(i);
     }
@@ -918,7 +929,9 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
 
                         // Compute absolute data.
                         for (std::vector<float>& attrList : datData) {
+#if _OPENMP >= 200805
                             #pragma omp parallel for shared(attrList) default(none)
+#endif
                             for (size_t i = 0; i < attrList.size(); i++) {
                                 attrList.at(i) = std::abs(attrList.at(i));
                             }

@@ -163,7 +163,10 @@ void HexMesh::setHexMeshData(
 void HexMesh::addManualVertexAttribute(const std::vector<float>& vertexAttributes, const std::string& attributeName) {
     float minAttribute = FLT_MAX;
     float maxAttribute = -FLT_MAX;
-    #pragma omp parallel for default(none) reduction(min: minAttribute) reduction(max: maxAttribute) shared(vertexAttributes)
+#if _OPENMP >= 201107
+    #pragma omp parallel for default(none) reduction(min: minAttribute) reduction(max: maxAttribute) \
+    shared(vertexAttributes)
+#endif
     for (size_t i = 0; i < vertexAttributes.size(); i++) {
         minAttribute = std::min(minAttribute, vertexAttributes.at(i));
         maxAttribute = std::max(maxAttribute, vertexAttributes.at(i));
@@ -418,37 +421,10 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
     glm::vec3 v[8];
 
     if (mesh) {
-#ifdef OPENMP_NO_MEMBERS
-        // Local variable for older versions of OpenMP.
-        float& qualityMin = this->qualityMin;
-        float& qualityMax = this->qualityMax;
-        float& qualityMinNormalized = this->qualityMinNormalized;
-        float& qualityMaxNormalized = this->qualityMaxNormalized;
-
-        #pragma omp parallel for reduction(min: qualityMin) reduction(max: qualityMax) private(v) \
-                shared(cellQualityList, qualityFunctor, arg)
-        for (size_t i = 0; i < meshNumCells; i++) {
-            Hybrid& h = mesh->Hs.at(i);
-            for (size_t j = 0; j < h.vs.size(); j++) {
-                uint32_t v_id = h.vs.at(j);
-                v[j] = glm::vec3(mesh->V(0, v_id), mesh->V(1, v_id), mesh->V(2, v_id));
-            }
-            float quality = qualityFunctor(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], arg);
-            qualityMin = std::min(qualityMin, quality);
-            qualityMax = std::max(qualityMax, quality);
-            cellQualityList.at(i) = quality;
-        }
-        #pragma omp parallel for reduction(min: qualityMinNormalized) reduction(max: qualityMaxNormalized) \
-                shared(cellQualityList, hexaLabQualityMeasure)
-        for (size_t i = 0; i < meshNumCells; i++) {
-            cellQualityMeasureList.at(i) = 1.0f - HexaLab::normalize_quality_measure(
-                    hexaLabQualityMeasure, cellQualityList.at(i), qualityMin, qualityMax);
-            qualityMinNormalized = std::min(qualityMinNormalized, cellQualityMeasureList.at(i));
-            qualityMaxNormalized = std::max(qualityMaxNormalized, cellQualityMeasureList.at(i));
-        }
-#else
+#if _OPENMP >= 201107
         #pragma omp parallel for reduction(min: qualityMin) reduction(max: qualityMax) private(v) \
                 shared(cellQualityList, qualityFunctor, arg) default(none)
+#endif
         for (size_t i = 0; i < meshNumCells; i++) {
             Hybrid& h = mesh->Hs.at(i);
             assert(h.vs.size() == 8);
@@ -461,46 +437,21 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
             qualityMax = std::max(qualityMax, quality);
             cellQualityList.at(i) = quality;
         }
+#if _OPENMP >= 201107
         #pragma omp parallel for reduction(min: qualityMinNormalized) reduction(max: qualityMaxNormalized) \
                 shared(cellQualityList, hexaLabQualityMeasure) default(none)
-        for (size_t i = 0; i < meshNumCells; i++) {
-            cellQualityMeasureList.at(i) = 1.0f - HexaLab::normalize_quality_measure(
-                    hexaLabQualityMeasure, cellQualityList.at(i), qualityMin, qualityMax);
-            qualityMinNormalized = std::min(qualityMinNormalized, cellQualityMeasureList.at(i));
-            qualityMaxNormalized = std::max(qualityMaxNormalized, cellQualityMeasureList.at(i));
-        }
 #endif
-    } else {
-#ifdef OPENMP_NO_MEMBERS
-        // Local variable for older versions of OpenMP.
-        float& qualityMin = this->qualityMin;
-        float& qualityMax = this->qualityMax;
-        float& qualityMinNormalized = this->qualityMinNormalized;
-        float& qualityMaxNormalized = this->qualityMaxNormalized;
-
-        #pragma omp parallel for reduction(min: qualityMin) reduction(max: qualityMax) private(v) \
-                shared(cellQualityList, qualityFunctor, arg)
-        for (size_t i = 0; i < meshNumCells; i++) {
-            for (size_t j = 0; j < 8; j++) {
-                uint32_t v_id = cellIndices.at(i * 8 + j);
-                v[j] = glm::vec3(vertices.at(v_id));
-            }
-            float quality = qualityFunctor(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], arg);
-            qualityMin = std::min(qualityMin, quality);
-            qualityMax = std::max(qualityMax, quality);
-            cellQualityList.at(i) = quality;
-        }
-        #pragma omp parallel for reduction(min: qualityMinNormalized) reduction(max: qualityMaxNormalized) \
-                shared(cellQualityList, hexaLabQualityMeasure)
         for (size_t i = 0; i < meshNumCells; i++) {
             cellQualityMeasureList.at(i) = 1.0f - HexaLab::normalize_quality_measure(
                     hexaLabQualityMeasure, cellQualityList.at(i), qualityMin, qualityMax);
             qualityMinNormalized = std::min(qualityMinNormalized, cellQualityMeasureList.at(i));
             qualityMaxNormalized = std::max(qualityMaxNormalized, cellQualityMeasureList.at(i));
         }
-#else
+    } else {
+#if _OPENMP >= 201107
         #pragma omp parallel for reduction(min: qualityMin) reduction(max: qualityMax) private(v) \
                 shared(cellQualityList, qualityFunctor, arg) default(none)
+#endif
         for (size_t i = 0; i < meshNumCells; i++) {
             for (size_t j = 0; j < 8; j++) {
                 uint32_t v_id = cellIndices.at(i * 8 + j);
@@ -511,15 +462,16 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
             qualityMax = std::max(qualityMax, quality);
             cellQualityList.at(i) = quality;
         }
+#if _OPENMP >= 201107
         #pragma omp parallel for reduction(min: qualityMinNormalized) reduction(max: qualityMaxNormalized) \
                 shared(cellQualityList, hexaLabQualityMeasure) default(none)
+#endif
         for (size_t i = 0; i < meshNumCells; i++) {
             cellQualityMeasureList.at(i) = 1.0f - HexaLab::normalize_quality_measure(
                     hexaLabQualityMeasure, cellQualityList.at(i), qualityMin, qualityMax);
             qualityMinNormalized = std::min(qualityMinNormalized, cellQualityMeasureList.at(i));
             qualityMaxNormalized = std::max(qualityMaxNormalized, cellQualityMeasureList.at(i));
         }
-#endif
     }
     std::cout << "Quality: " << HexaLab::get_quality_name(hexaLabQualityMeasure)
             << ", range: [" << qualityMin << ", " << qualityMax << "], normalized range: "
@@ -652,17 +604,14 @@ float HexMesh::getFaceArea(uint32_t f_id) {
 }
 
 float HexMesh::getFaceIdsAreaSum(const std::vector<uint32_t>& f_ids) {
-#ifdef OPENMP_NO_MEMBERS
-    // Local variable for older versions of OpenMP.
-    std::vector<float>& faceAreas = this->faceAreas;
-#endif
-
     if (faceAreas.empty()) {
         computeAllFaceAreas();
     }
 
     float areaSum = 0.0f;
+#if _OPENMP >= 201107
     #pragma omp parallel for default(none) reduction(+: areaSum) shared(f_ids, faceAreas)
+#endif
     for (size_t i = 0; i < f_ids.size(); i++) {
         areaSum += faceAreas.at(f_ids.at(i));
     }
@@ -673,14 +622,10 @@ float HexMesh::getFaceIdsAreaSum(const std::vector<uint32_t>& f_ids) {
 }
 
 void HexMesh::computeAllFaceAreas() {
-#ifdef OPENMP_NO_MEMBERS
-    // Local variable for older versions of OpenMP.
-    std::vector<float>& faceAreas = this->faceAreas;
-    Mesh* mesh = this->mesh;
-#endif
-
     faceAreas.resize(mesh->Fs.size());
+#if _OPENMP >= 201107
     #pragma omp parallel for default(none) shared(faceAreas, mesh)
+#endif
     for (uint32_t f_id = 0; f_id < mesh->Fs.size(); f_id++) {
         faceAreas.at(f_id) = getFaceArea(f_id);
     }
@@ -699,17 +644,14 @@ float HexMesh::getCellVolume(uint32_t h_id) {
 }
 
 float HexMesh::getCellIdsVolumeSum(const std::vector<uint32_t>& h_ids) {
-#ifdef OPENMP_NO_MEMBERS
-    // Local variable for older versions of OpenMP.
-    std::vector<float>& cellVolumes = this->cellVolumes;
-#endif
-
     if (cellVolumes.empty()) {
         computeAllCellVolumes();
     }
 
     float volumeSum = 0.0f;
+#if _OPENMP >= 201107
     #pragma omp parallel for default(none) reduction(+: volumeSum) shared(h_ids, cellVolumes)
+#endif
     for (size_t i = 0; i < h_ids.size(); i++) {
         volumeSum += cellVolumes.at(h_ids.at(i));
     }
@@ -720,14 +662,10 @@ float HexMesh::getCellIdsVolumeSum(const std::vector<uint32_t>& h_ids) {
 }
 
 void HexMesh::computeAllCellVolumes() {
-#ifdef OPENMP_NO_MEMBERS
-    // Local variable for older versions of OpenMP.
-    std::vector<float>& cellVolumes = this->cellVolumes;
-    Mesh* mesh = this->mesh;
-#endif
-
     cellVolumes.resize(mesh->Hs.size());
+#if _OPENMP >= 201107
     #pragma omp parallel for default(none) shared(cellVolumes, mesh)
+#endif
     for (uint32_t h_id = 0; h_id < mesh->Hs.size(); h_id++) {
         cellVolumes.at(h_id) = getCellVolume(h_id);
     }
@@ -914,8 +852,10 @@ sgl::AABB3 HexMesh::getModelBoundingBox(bool removeFilteredCells) {
     float maxPosY = std::numeric_limits<float>::lowest();
     float maxPosZ = std::numeric_limits<float>::lowest();
 
+#if _OPENMP >= 201107
     #pragma omp parallel for default(none) reduction(min: minPosX) reduction(min: minPosY) reduction(min: minPosZ) \
     reduction(max: maxPosX) reduction(max: maxPosY) reduction(max: maxPosZ) shared(vertices)
+#endif
     for (size_t i = 0; i < vertices->size(); i++) {
         const glm::vec3& pos = vertices->at(i);
         minPosX = std::min(minPosX, pos.x);
@@ -1930,7 +1870,9 @@ void HexMesh::getLodLineRepresentation(
     // Create the three LOD base arrays for each parametrization direction for all grids.
     std::vector<std::vector<std::vector<float>>> lodValuesAllGrids;
     lodValuesAllGrids.resize(gridPartitions.size());
+#if _OPENMP >= 200805
     #pragma omp parallel for
+#endif
     for (size_t gridIdx = 0; gridIdx < gridPartitions.size(); gridIdx++) {
         std::vector<std::vector<float>>& lodValuesAllDirections = lodValuesAllGrids.at(gridIdx);
         lodValuesAllDirections.resize(3);
@@ -1946,7 +1888,9 @@ void HexMesh::getLodLineRepresentation(
 
     // We want to normalize the LOD values to the range [0, 1]. First, compute the maximum value.
     float maxValue = 1.0f;
+#if _OPENMP >= 201107
     #pragma omp parallel for reduction(max: maxValue)
+#endif
     for (size_t gridIdx = 0; gridIdx < gridPartitions.size(); gridIdx++) {
         std::vector<std::vector<float>>& lodValuesAllDirections = lodValuesAllGrids.at(gridIdx);
         for (int dim = 0; dim < 3; dim++) {
@@ -1958,7 +1902,9 @@ void HexMesh::getLodLineRepresentation(
     }
 
     // Now, normalize the values by division.
+#if _OPENMP >= 200805
     #pragma omp parallel for
+#endif
     for (size_t gridIdx = 0; gridIdx < gridPartitions.size(); gridIdx++) {
         std::vector<std::vector<float>>& lodValuesAllDirections = lodValuesAllGrids.at(gridIdx);
         for (int dim = 0; dim < 3; dim++) {

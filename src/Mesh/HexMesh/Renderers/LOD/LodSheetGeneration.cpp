@@ -248,15 +248,16 @@ void generateSheetLevelOfDetailEdgeStructure(
         mergedComponents.push_back(mergedComponent);
         size_t mergedComponentIndex = 0;
         mergedComponentIndexMap.insert(std::make_pair(
-                bestMatchingComponentConnectionData.firstIdx, mergedComponentIndex));
+                bestMatchingComponentConnectionData.firstIdx, uint32_t(mergedComponentIndex)));
         mergedComponentIndexMap.insert(std::make_pair(
-                bestMatchingComponentConnectionData.secondIdx, mergedComponentIndex));
+                bestMatchingComponentConnectionData.secondIdx, uint32_t(mergedComponentIndex)));
         mergedComponentIndex++;
 
         // Add all unmatched (i.e., unchanged) components to the index map and the merged component set.
         size_t oldComponentIndex = 0;
         for (SheetComponent* component : components) {
-            mergedComponentIndexMap.insert(std::make_pair(oldComponentIndex, mergedComponentIndex));
+            mergedComponentIndexMap.insert(
+                    std::make_pair(uint32_t(oldComponentIndex), uint32_t(mergedComponentIndex)));
             if (component != component0 && component != component1) {
                 mergedComponents.push_back(component);
                 mergedComponentIndex++;
@@ -352,7 +353,9 @@ void generateSheetLevelOfDetailEdgeStructure(
 
     // We want to normalize the LOD values to the range [0, 1]. First, compute the maximum value.
     int maxValueInt = 1;
+#if _OPENMP >= 201107
     #pragma omp parallel for reduction(max: maxValueInt) default(none) shared(lodEdgeVisibilityMap)
+#endif
     for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
         maxValueInt = std::max(maxValueInt, lodEdgeVisibilityMap.at(i));
     }
@@ -360,7 +363,9 @@ void generateSheetLevelOfDetailEdgeStructure(
         *maxValueIntPtr = maxValueInt;
     }
 
+#if _OPENMP >= 200805
     #pragma omp parallel for default(none) shared(lodEdgeVisibilityMap, maxValueInt)
+#endif
     for (size_t i = 0; i < lodEdgeVisibilityMap.size(); i++) {
         if (lodEdgeVisibilityMap.at(i) > 0) {
             lodEdgeVisibilityMap.at(i) = maxValueInt - lodEdgeVisibilityMap.at(i) + 1;

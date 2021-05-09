@@ -459,30 +459,16 @@ void ClearViewRenderer::setUniformDataDepthCues(sgl::ShaderProgramPtr shaderProg
             glm::mat4 viewMatrix = sceneData.camera->getViewMatrix();
             minDepth = std::numeric_limits<float>::max();
             maxDepth = std::numeric_limits<float>::lowest();
-#ifdef OPENMP_NO_MEMBERS
-            // Local variable for older versions of OpenMP.
-            std::vector<glm::vec3>& filteredCellVertices = this->filteredCellVertices;
-            float& minDepth = this->minDepth;
-            float& maxDepth = this->maxDepth;
-
-            #pragma omp parallel for shared(viewMatrix, filteredCellVertices) \
-            reduction(min: minDepth) reduction(max: maxDepth)
-            for (size_t pointIdx = 0; pointIdx < filteredCellVertices.size(); pointIdx++) {
-                const glm::vec3& point = filteredCellVertices.at(pointIdx);
-                float depth = -sgl::transformPoint(viewMatrix, point).z;
-                minDepth = std::min(minDepth, depth);
-                maxDepth = std::max(maxDepth, depth);
-            }
-#else
+#if _OPENMP >= 201107
             #pragma omp parallel for default(none) shared(viewMatrix, filteredCellVertices) \
             reduction(min: minDepth) reduction(max: maxDepth)
+#endif
             for (size_t pointIdx = 0; pointIdx < filteredCellVertices.size(); pointIdx++) {
                 const glm::vec3& point = filteredCellVertices.at(pointIdx);
                 float depth = -sgl::transformPoint(viewMatrix, point).z;
                 minDepth = std::min(minDepth, depth);
                 maxDepth = std::max(maxDepth, depth);
             }
-#endif
         }
 
         minDepth = glm::clamp(
