@@ -58,10 +58,37 @@ Then, the program can be built using the following commands. Please adapt the pa
 ```
 mkdir build
 cd build
-cmake -DCMAKE_TOOLCHAIN_FILE=$VCPKG_HOME/scripts/buildsystems/vcpkg.cmake -Dsgl_DIR=<path-to-sgl>lib/cmake/sgl ..
+cmake -DCMAKE_TOOLCHAIN_FILE=$VCPKG_HOME/scripts/buildsystems/vcpkg.cmake -Dsgl_DIR=<path-to-sgl>/lib/cmake/sgl ..
 cmake --build .
-cmake --build . --target install
 ```
 
 Hint: To change the language of warnings and error messages to English even if your system uses another language,
 consider setting the environment variable `set VSLANG=1033`.
+
+To run the program, use the following commands on cmd.exe ...
+
+```
+set PATH=%PATH%;<path-to-sgl>/bin
+
+# Debug
+set PATH=%PATH%;$VCPKG_HOME/installed/x64-windows/debug/bin
+
+# Release
+set PATH=%PATH%;$VCPKG_HOME/installed/x64-windows/bin
+
+HexVolumeRenderer.exe
+```
+
+... or the following commands on the PowerShell.
+
+```
+$env:Path += ";<path-to-sgl>/bin"
+
+# Debug
+$env:Path += ";$VCPKG_HOME/installed/x64-windows/debug/bin"
+
+# Release
+$env:Path += ";$VCPKG_HOME/installed/x64-windows/bin"
+
+./HexVolumeRenderer.exe
+```

@@ -113,7 +113,7 @@ if(USE_STEAMWORKS)
 endif()
 
 set(FPHSA_NAME_MISMATCHED TRUE)
-find_package(SDL2 REQUIRED)
+find_package(SDL2 CONFIG REQUIRED)
 if(VCPKG_TOOLCHAIN)
 	find_package(sdl2-image REQUIRED)
 else()
