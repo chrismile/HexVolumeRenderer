@@ -12,8 +12,7 @@ All other necessary dependencies besides sgl can be installed using the followin
 On Windows `--triplet=x64-windows` needs to be added if the 64-bit version of the packages should be installed.
 
 ```
-./vcpkg install boost-core boost-algorithm boost-filesystem boost-locale libpng sdl2[vulkan] sdl2-image \
-tinyxml2 glew glm libarchive[bzip2,core,lz4,lzma,zstd] eigen3 embree3 jsoncpp python3 curl
+./vcpkg install boost-core boost-algorithm boost-filesystem sdl2[vulkan] glew glm eigen3 embree3 jsoncpp python3 curl
 ```
 
 
@@ -59,7 +58,7 @@ Then, the program can be built using the following commands. Please adapt the pa
 mkdir build
 cd build
 cmake -DCMAKE_TOOLCHAIN_FILE=$VCPKG_HOME/scripts/buildsystems/vcpkg.cmake -Dsgl_DIR=<path-to-sgl>/lib/cmake/sgl ..
-cmake --build .
+cmake --build . --parallel
 ```
 
 Hint: To change the language of warnings and error messages to English even if your system uses another language,
