@@ -26,6 +26,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <Utils/File/FileUtils.hpp>
+#include <Utils/AppSettings.hpp>
 #include "HexaLabDatasets.hpp"
 
 /**
@@ -39,6 +41,12 @@
  * Copyright 2018 Visual Computing Lab ISTI - CNR
  */
 int main(int argc, char *argv[]) {
+#ifdef DATA_PATH
+    if (!sgl::FileUtils::get()->directoryExists("Data") && !sgl::FileUtils::get()->directoryExists("../Data")) {
+        sgl::AppSettings::get()->setDataDirectory(DATA_PATH);
+    }
+#endif
+
     LoaderThread loaderThread;
     downloadHexaLabDataSets([]() {}, loaderThread);
     loaderThread.join();
