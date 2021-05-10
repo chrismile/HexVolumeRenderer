@@ -68,6 +68,7 @@ To run the program, use the following commands on cmd.exe ...
 
 ```
 set PATH=%PATH%;<path-to-sgl>/bin
+set PYTHONHOME=$VCPKG_HOME/installed/x64-windows/tools/python3
 
 # Debug
 set PATH=%PATH%;$VCPKG_HOME/installed/x64-windows/debug/bin
@@ -82,6 +83,7 @@ HexVolumeRenderer.exe
 
 ```
 $env:Path += ";<path-to-sgl>/bin"
+$env:PYTHONHOME = "$VCPKG_HOME/installed/x64-windows/tools/python3"
 
 # Debug
 $env:Path += ";$VCPKG_HOME/installed/x64-windows/debug/bin"
