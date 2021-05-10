@@ -741,10 +741,10 @@ class BVHAccel {
   ///
   /// @param[in] ray Input ray
   /// @param[in] intersector Intersector object. This object is called for each possible intersection of ray and BVH during traversal.
-  /// @param[out] isect Intersection point information(filled when any hit point was found)
+  /// @param[out] isect Intersection point information(filled when closest hit point was found)
   /// @param[in] options Traversal options.
   ///
-  /// @return true if any hit point found
+  /// @return true if the closest hit point found.
   ///
   template <class I, class H>
   bool Traverse(const Ray<T> &ray, const I &intersector, H *isect,
@@ -951,8 +951,26 @@ class TriangleMesh {
   const T *vertices_;
   const unsigned int *faces_;
   const size_t vertex_stride_bytes_;
+
+  //
+  // Accessors
+  //
+  const T *GetVertices() const {
+    return vertices_;
+  }
+
+  const unsigned int *GetFaces() const {
+    return faces_;
+  }
+
+  size_t GetVertexStrideBytes() const {
+    return vertex_stride_bytes_;
+  }
 };
 
+///
+/// Stores intersection point information for triangle geometry.
+///
 template <typename T = float>
 class TriangleIntersection {
  public:
@@ -964,9 +982,31 @@ class TriangleIntersection {
   unsigned int prim_id;
 };
 
+///
+/// Intersector is a template class which implements intersection method and stores
+/// intesection point information(`H`)
+///
+/// @tparam T Precision(float or double)
+/// @tparam H Intersection point information struct
+///
 template <typename T = float, class H = TriangleIntersection<T> >
 class TriangleIntersector {
  public:
+
+  // Initialize from mesh object.
+  // M: mesh class
+  template<class M>
+  TriangleIntersector(const M &m)
+      : vertices_(m.GetVertices()),
+        faces_(m.GetFaces()),
+        vertex_stride_bytes_(m.GetVertexStrideBytes()) {}
+
+  template<class M>
+  TriangleIntersector(const M *m)
+      : vertices_(m->GetVertices()),
+        faces_(m->GetFaces()),
+        vertex_stride_bytes_(m->GetVertexStrideBytes()) {}
+
   TriangleIntersector(const T *vertices, const unsigned int *faces,
                       const size_t vertex_stride_bytes)  // e.g.
                                                          // vertex_stride_bytes
@@ -2149,8 +2189,8 @@ void BVHAccel<T>::Debug() {
 
   for (size_t i = 0; i < nodes_.size(); i++) {
     printf("node[%d] : bmin %f, %f, %f, bmax %f, %f, %f\n", int(i),
-           nodes_[i].bmin[0], nodes_[i].bmin[1], nodes_[i].bmin[1],
-           nodes_[i].bmax[0], nodes_[i].bmax[1], nodes_[i].bmax[1]);
+           nodes_[i].bmin[0], nodes_[i].bmin[1], nodes_[i].bmin[2],
+           nodes_[i].bmax[0], nodes_[i].bmax[1], nodes_[i].bmax[2]);
   }
 }
 
