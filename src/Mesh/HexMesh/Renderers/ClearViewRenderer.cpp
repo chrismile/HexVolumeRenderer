@@ -644,9 +644,9 @@ void ClearViewRenderer::update(float dt) {
                         (focusPointScreen.x * 2.0f - (windowWidth - 1.0f)) / windowHeight,
                         focusPointScreen.y / windowHeight * 2.0f - 1.0f
                 );
-                if (sgl::Mouse->buttonPressed(1)) {
-                    std::cout << "(" << normalizedPosition.x << ", " << normalizedPosition.y << ")," << std::endl;
-                }
+                //if (sgl::Mouse->buttonPressed(1)) {
+                //    std::cout << "(" << normalizedPosition.x << ", " << normalizedPosition.y << ")," << std::endl;
+                //}
                 reRender = true;
             }
         }
