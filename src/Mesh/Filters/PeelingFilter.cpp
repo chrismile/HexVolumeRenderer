@@ -51,12 +51,12 @@ void PeelingFilter::onMeshLoaded(HexMeshPtr meshIn) {
             return mesh.Fs.at(f_id).boundary;
         })) {
             cellDepths.at(h.id) = 0;
-            openList.enqueue(h.id);
+            openList.push_back(h.id);
         }
     }
 
-    while (!openList.isEmpty()) {
-        uint32_t h_id = openList.popFront();
+    while (!openList.is_empty()) {
+        uint32_t h_id = openList.pop_front();
         Hybrid& h = mesh.Hs.at(h_id);
         int cellDepth = cellDepths.at(h_id);
         for (uint32_t f_id : h.fs) {
@@ -65,7 +65,7 @@ void PeelingFilter::onMeshLoaded(HexMeshPtr meshIn) {
                 uint32_t neighbor_h_id = f.neighbor_hs.at(0) == h_id ? f.neighbor_hs.at(1) : f.neighbor_hs.at(0);
                 int neighborDepth = cellDepths.at(neighbor_h_id);
                 if (neighborDepth > cellDepth + 1) {
-                    openList.enqueue(neighbor_h_id);
+                    openList.push_back(neighbor_h_id);
                     cellDepths.at(neighbor_h_id) = cellDepth + 1;
                     maxPeelingDepth = std::max(maxPeelingDepth, cellDepth + 1);
                 }
