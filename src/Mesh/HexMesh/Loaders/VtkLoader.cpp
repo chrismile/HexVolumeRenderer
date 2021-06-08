@@ -42,7 +42,8 @@
 bool VtkLoader::loadHexahedralMeshFromFile(
         const std::string& filename,
         std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices,
-        std::vector<glm::vec3>& deformations, std::vector<float>& anisotropyMetricList) {
+        std::vector<glm::vec3>& deformations, std::vector<float>& attributeList,
+        bool& isPerVertexData) {
     bool foundVersionHeader = false;
     bool foundTitle = false;
     bool foundType = false;
@@ -148,7 +149,7 @@ bool VtkLoader::loadHexahedralMeshFromFile(
                 sgl::Logfile::get()->writeError("Error in VtkLoader: Data is not scalar!");
                 return false;
             }
-            anisotropyMetricList.push_back(sgl::fromString<float>(tokens.at(0)));
+            attributeList.push_back(sgl::fromString<float>(tokens.at(0)));
             numAnisotropyMetricLinesLeft--;
             if (numAnisotropyMetricLinesLeft <= 0) {
                 isAnisotropyMetricReadMode = false;
@@ -280,6 +281,7 @@ bool VtkLoader::loadHexahedralMeshFromFile(
             }
             numAnisotropyMetricLinesLeft = sgl::fromString<size_t>(tokens.at(1));
             isAnisotropyMetricReadMode = true;
+            isPerVertexData = true;
             return true;
         }
 

@@ -42,7 +42,8 @@
 bool MeshLoader::loadHexahedralMeshFromFile(
         const std::string& filename,
         std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices,
-        std::vector<glm::vec3>& deformations, std::vector<float>& anisotropyMetricList) {
+        std::vector<glm::vec3>& deformations, std::vector<float>& attributeList,
+        bool& isPerVertexData) {
     bool foundVersionHeader = false;
 
     bool foundDimensionHeader = false;

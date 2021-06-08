@@ -39,21 +39,24 @@
 
 class HexahedralMeshLoader {
 public:
-    // Reads the mesh from the specified file
+    virtual ~HexahedralMeshLoader() {}
+
     /**
      * Reads the mesh from the specified file. The vertices and the cell indices are required.
      * All other attributes are optional.
-     * @param filename
-     * @param vertices
-     * @param cellIndices
-     * @param deformations
-     * @param anisotropyMetricList
-     * @return
+     * @param filename The filename of the mesh to load.
+     * @param vertices The mesh vertices.
+     * @param cellIndices The indices of vertices forming hexahedral cells. Eight consecutive indices build one cell.
+     * @param deformations Cell deformation data (optional).
+     * @param attributeList Vertex or cells attribute data (e.g., anisotropy metric data stored per-vertex, optional).
+     * @param isPerVertexData Whether the data stored in attributeList is per-vertex or per-cell.
+     * @return True if loading was successful, and false otherwise.
      */
     virtual bool loadHexahedralMeshFromFile(
             const std::string& filename,
             std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices,
-            std::vector<glm::vec3>& deformations, std::vector<float>& anisotropyMetricList)=0;
+            std::vector<glm::vec3>& deformations, std::vector<float>& attributeList,
+            bool& isPerVertexData)=0;
 };
 
 /**

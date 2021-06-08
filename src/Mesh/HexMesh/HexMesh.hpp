@@ -178,6 +178,7 @@ public:
             const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& cellIndices,
             bool loadMeshRepresentation = true);
     void addManualVertexAttribute(const std::vector<float>& vertexAttributes, const std::string& attributeName);
+    void addManualCellAttribute(const std::vector<float>& cellAttributes, const std::string& attributeName);
     void setQualityMeasure(QualityMeasure qualityMeasure);
     void onTransferFunctionMapRebuilt();
     bool isDirty() { return dirty; }
@@ -768,12 +769,21 @@ private:
     std::vector<float> cellVolumes;
     std::vector<float> faceAreas;
 
+    // Manual vertex attributes.
     std::vector<std::string> manualVertexAttributesNames;
     std::vector<std::vector<float>> manualVertexAttributesList;
     std::vector<glm::vec2> manualVertexAttributesMinMax;
     bool useManualVertexAttribute = false;
     int manualVertexAttributeIdx = 0;
     std::vector<float>* manualVertexAttributes = nullptr;
+
+    // Manual cell attributes.
+    std::vector<std::string> manualCellAttributesNames;
+    std::vector<std::vector<float>> manualCellAttributesList;
+    std::vector<glm::vec2> manualCellAttributesMinMax;
+    bool useManualCellAttribute = false;
+    int manualCellAttributeIdx = 0;
+    std::vector<float>* manualCellAttributes = nullptr;
 
     // The user can select between interpolated cell attributes and manually specified vertex attributes.
     /// Interpolated cell quality measures + manually specified attributes.

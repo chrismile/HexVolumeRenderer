@@ -172,13 +172,38 @@ void HexMesh::addManualVertexAttribute(const std::vector<float>& vertexAttribute
         maxAttribute = std::max(maxAttribute, vertexAttributes.at(i));
     }
 
-    manualVertexAttributesMinMax.push_back(glm::vec2(minAttribute, maxAttribute));
+    manualVertexAttributesMinMax.emplace_back(glm::vec2(minAttribute, maxAttribute));
     manualVertexAttributesList.push_back(vertexAttributes);
     manualVertexAttributesNames.push_back(attributeName);
 
     useManualVertexAttribute = true;
     manualVertexAttributeIdx = 0;
     manualVertexAttributes = &manualVertexAttributesList.at(manualVertexAttributeIdx);
+
+    recomputeHistogram();
+}
+
+void HexMesh::addManualCellAttribute(const std::vector<float>& cellAttributes, const std::string& attributeName) {
+    float minAttribute = FLT_MAX;
+    float maxAttribute = -FLT_MAX;
+#if _OPENMP >= 201107
+#pragma omp parallel for default(none) reduction(min: minAttribute) reduction(max: maxAttribute) \
+    shared(cellAttributes)
+#endif
+    for (size_t i = 0; i < cellAttributes.size(); i++) {
+        minAttribute = std::min(minAttribute, cellAttributes.at(i));
+        maxAttribute = std::max(maxAttribute, cellAttributes.at(i));
+    }
+
+    manualCellAttributesMinMax.emplace_back(glm::vec2(minAttribute, maxAttribute));
+    manualCellAttributesList.push_back(cellAttributes);
+    manualCellAttributesNames.push_back(attributeName);
+
+    useManualCellAttribute = true;
+    manualCellAttributeIdx = 0;
+    manualCellAttributes = &manualCellAttributesList.at(manualCellAttributeIdx);
+
+    cellQualityMeasureList = cellAttributes;
 
     recomputeHistogram();
 }
@@ -482,11 +507,13 @@ void HexMesh::setQualityMeasure(QualityMeasure qualityMeasure) {
 }
 
 void HexMesh::recomputeHistogram() {
-    if (!useManualVertexAttribute) {
+    if (useManualVertexAttribute) {
+        transferFunctionWindow.computeHistogram(*manualVertexAttributes, 0.0f, 1.0f);
+    } else if (useManualCellAttribute) {
+        transferFunctionWindow.computeHistogram(*manualCellAttributes, 0.0f, 1.0f);
+    } else {
         //transferFunctionWindow.computeHistogram(cellQualityMeasureList, qualityMinNormalized, qualityMaxNormalized);
         transferFunctionWindow.computeHistogram(cellQualityMeasureList, 0.0f, 1.0f);
-    } else {
-        transferFunctionWindow.computeHistogram(*manualVertexAttributes, 0.0f, 1.0f);
     }
 }
 

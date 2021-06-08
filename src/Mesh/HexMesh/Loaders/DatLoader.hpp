@@ -31,9 +31,19 @@
 
 #include <string>
 #include <vector>
+#include "HexahedralMeshLoader.hpp"
+
+class DatCartesianGridLoader : public HexahedralMeshLoader {
+public:
+    virtual bool loadHexahedralMeshFromFile(
+            const std::string& filename,
+            std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices,
+            std::vector<glm::vec3>& deformations, std::vector<float>& attributeList,
+            bool& isPerVertexData);
+};
 
 /**
- * Parses a .dat file containing a set of N attributes per line.
+ * Parses a .dat file containing additional data with a set of N attributes per line.
  * @param filename The filename of the .dat file.
  * @return The attribute data (i.e., N x num_lines values).
  */

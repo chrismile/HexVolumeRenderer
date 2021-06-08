@@ -181,6 +181,7 @@ MainApp::MainApp()
 
     meshLoaderMap.insert(std::make_pair("vtk", new VtkLoader));
     meshLoaderMap.insert(std::make_pair("mesh", new MeshLoader));
+    meshLoaderMap.insert(std::make_pair("dat", new DatCartesianGridLoader));
     meshFilters.push_back(new PlaneFilter);
     meshFilters.push_back(new PeelingFilter);
     meshFilters.push_back(new QualityFilter);
@@ -861,9 +862,11 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
     hexMeshVertices.clear();
     hexMeshCellIndices.clear();
     hexMeshDeformations.clear();
-    hexMeshAnisotropyMetricList.clear();
+    hexMeshAttributeList.clear();
+    bool isPerVertexData = true;
     bool loadingSuccessful = it->second->loadHexahedralMeshFromFile(
-            fileName, hexMeshVertices, hexMeshCellIndices, hexMeshDeformations, hexMeshAnisotropyMetricList);
+            fileName, hexMeshVertices, hexMeshCellIndices, hexMeshDeformations,
+            hexMeshAttributeList, isPerVertexData);
     if (loadingSuccessful) {
         newMeshLoaded = true;
         printLoadingTime = true;
@@ -903,8 +906,12 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         if (selectedMeshIndex != 0) {
             dataAdditionalFiles = sourceDescription.dataAdditionalFiles.at(selectedMeshIndex - 1);
         }
-        if (!hexMeshAnisotropyMetricList.empty()) {
-            inputData->addManualVertexAttribute(hexMeshAnisotropyMetricList, "Anisotropy");
+        if (!hexMeshAttributeList.empty()) {
+            if (isPerVertexData) {
+                inputData->addManualVertexAttribute(hexMeshAttributeList, "Anisotropy");
+            } else {
+                inputData->addManualCellAttribute(hexMeshAttributeList, "Cell Attribute");
+            }
         }
         if (!dataAdditionalFiles.empty()) {
             for (std::string& additionalDataName : dataAdditionalFiles) {

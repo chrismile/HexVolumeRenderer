@@ -32,6 +32,57 @@
 
 #include "DatLoader.hpp"
 
+#define PT_IDXn(x, y, z) ((x) + ((y) + (z) * (numCellsY + 1)) * (numCellsX + 1))
+
+bool DatCartesianGridLoader::loadHexahedralMeshFromFile(
+        const std::string& filename,
+        std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices,
+        std::vector<glm::vec3>& deformations, std::vector<float>& attributeList,
+        bool& isPerVertexData) {
+    sgl::LineReader lineReader(filename);
+
+    std::vector<uint32_t> numCellsLine = lineReader.readVectorLine<uint32_t>(3);
+    uint32_t numCellsX = numCellsLine.at(0);
+    uint32_t numCellsY = numCellsLine.at(1);
+    uint32_t numCellsZ = numCellsLine.at(2);
+    uint32_t numCellsTotal = numCellsX * numCellsY * numCellsZ;
+
+    // Add the vertices.
+    for (uint32_t z = 0; z < numCellsZ + 1; z++) {
+        for (uint32_t y = 0; y < numCellsY + 1; y++) {
+            for (uint32_t x = 0; x < numCellsX + 1; x++) {
+                vertices.emplace_back(glm::vec3(x, y, z));
+            }
+        }
+    }
+
+    // Add the cell IDs.
+    for (uint32_t z = 0; z < numCellsZ; z++) {
+        for (uint32_t y = 0; y < numCellsY; y++) {
+            for (uint32_t x = 0; x < numCellsX; x++) {
+                cellIndices.emplace_back(PT_IDXn(x+0, y+0, z+0));
+                cellIndices.emplace_back(PT_IDXn(x+1, y+0, z+0));
+                cellIndices.emplace_back(PT_IDXn(x+1, y+1, z+0));
+                cellIndices.emplace_back(PT_IDXn(x+0, y+1, z+0));
+                cellIndices.emplace_back(PT_IDXn(x+0, y+0, z+1));
+                cellIndices.emplace_back(PT_IDXn(x+1, y+0, z+1));
+                cellIndices.emplace_back(PT_IDXn(x+1, y+1, z+1));
+                cellIndices.emplace_back(PT_IDXn(x+0, y+1, z+1));
+            }
+        }
+    }
+
+    attributeList.reserve(numCellsTotal);
+    for (uint32_t cellIdx = 0; cellIdx < numCellsTotal; cellIdx++) {
+        float cellAttribute = lineReader.readScalarLine<float>();
+        attributeList.push_back(cellAttribute);
+    }
+    isPerVertexData = false; //< Per-cell data!
+
+    return true;
+}
+
+
 std::vector<std::vector<float>> loadDatData(const std::string& filename) {
     sgl::LineReader lineReader(filename);
     std::vector<std::vector<float>> attributesList;
