@@ -81,10 +81,9 @@ int main(int argc, char *argv[]) {
     }
 
     app->run();
-
     delete app;
+
     sgl::AppSettings::get()->release();
-    delete window;
 
 #ifdef USE_PYTHON
     Py_Finalize();

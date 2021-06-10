@@ -287,7 +287,7 @@ void MainApp::setNewState(const InternalState &newState) {
     int currentWindowWidth = window->getWidth();
     int currentWindowHeight = window->getHeight();
     glm::ivec2 newResolution = newState.windowResolution;
-    if (newResolution.x > 0 && newResolution.x > 0 && currentWindowWidth != newResolution.x
+    if (newResolution.x > 0 && newResolution.y > 0 && currentWindowWidth != newResolution.x
             && currentWindowHeight != newResolution.y) {
         window->setWindowSize(newResolution.x, newResolution.y);
     }
@@ -910,7 +910,12 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
             if (isPerVertexData) {
                 inputData->addManualVertexAttribute(hexMeshAttributeList, "Anisotropy");
             } else {
-                inputData->addManualCellAttribute(hexMeshAttributeList, "Cell Attribute");
+                inputData->addManualCellAttribute(hexMeshAttributeList, "Convergence");
+                //std::vector<float> unconvergence(hexMeshAttributeList.size());
+                //for (size_t i = 0; i < hexMeshAttributeList.size(); i++) {
+                //    unconvergence.at(i) = 4.0f * hexMeshAttributeList.at(i) * (1.0f - hexMeshAttributeList.at(i));
+                //}
+                //inputData->addManualCellAttribute(unconvergence, "Unconvergence");
             }
         }
         if (!dataAdditionalFiles.empty()) {

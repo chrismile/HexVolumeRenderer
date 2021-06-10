@@ -74,6 +74,7 @@ protected:
 
     // The rendering data for the volume object.
     sgl::ShaderAttributesPtr shaderAttributes;
+    sgl::ShaderAttributesPtr shaderAttributesHull;
 
     // Per-pixel linked list data.
     sgl::GeometryBufferPtr fragmentBuffer;
@@ -83,6 +84,7 @@ protected:
     // The shaders for rendering.
     sgl::ShaderProgramPtr clearShader;
     sgl::ShaderProgramPtr gatherShader;
+    sgl::ShaderProgramPtr gatherShaderHull;
     sgl::ShaderProgramPtr resolveShader;
 
     // Blit data (ignores model-view-projection matrix and uses normalized device coordinates)
@@ -91,6 +93,7 @@ protected:
 
     // GUI data
     bool showRendererWindow = true;
+    float hullOpacity = 0.0f;
     bool useShading = false;
     bool useWeightedVertexAttributes = false;
 };

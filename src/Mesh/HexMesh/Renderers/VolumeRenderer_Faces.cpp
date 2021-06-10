@@ -62,6 +62,9 @@ struct LinkedListFragmentNode {
     uint32_t next;
 };
 
+const glm::vec4 hullColor = glm::vec4(
+        sgl::TransferFunctionWindow::sRGBToLinearRGB(glm::vec3(0.5, 0.5, 0.5f)), 0.3f);
+
 VolumeRenderer_Faces::VolumeRenderer_Faces(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : HexahedralMeshRenderer(sceneData, transferFunctionWindow) {
     sgl::ShaderManager->invalidateShaderCache();
@@ -72,6 +75,8 @@ VolumeRenderer_Faces::VolumeRenderer_Faces(SceneData &sceneData, sgl::TransferFu
     sgl::ShaderManager->invalidateShaderCache();
     gatherShader = sgl::ShaderManager->getShaderProgram(
             {"MeshShader.Vertex.Attribute", "MeshShader.Fragment"});
+    gatherShaderHull = sgl::ShaderManager->getShaderProgram(
+            {"MeshShader.Vertex.Plain", "MeshShader.Fragment.Plain.PositiveDepthBias"});
     resolveShader = sgl::ShaderManager->getShaderProgram(
             {"LinkedListResolve.Vertex", "LinkedListResolve.Fragment"});
     clearShader = sgl::ShaderManager->getShaderProgram(
@@ -135,6 +140,37 @@ void VolumeRenderer_Faces::uploadVisualizationMapping(HexMeshPtr meshIn, bool is
             vertexAttributes.size()*sizeof(float), (void*)&vertexAttributes.front(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             attributeBuffer, "vertexAttribute", sgl::ATTRIB_FLOAT, 1);
+
+
+    // Get hull data.
+    std::vector<uint32_t> triangleIndicesHull;
+    std::vector<glm::vec3> vertexPositionsHull;
+    std::vector<glm::vec3> vertexNormalsHull;
+    std::vector<float> vertexAttributesHull;
+    meshIn->getSurfaceData(
+            triangleIndicesHull, vertexPositionsHull,
+            vertexNormalsHull, vertexAttributesHull,
+            false);
+
+    shaderAttributesHull = sgl::ShaderManager->createShaderAttributes(gatherShaderHull);
+    shaderAttributesHull->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);
+
+    // Add the index buffer.
+    sgl::GeometryBufferPtr indexBufferHull = sgl::Renderer->createGeometryBuffer(
+            sizeof(uint32_t)*triangleIndicesHull.size(), (void*)&triangleIndicesHull.front(), sgl::INDEX_BUFFER);
+    shaderAttributesHull->setIndexGeometryBuffer(indexBufferHull, sgl::ATTRIB_UNSIGNED_INT);
+
+    // Add the position buffer.
+    sgl::GeometryBufferPtr positionBufferHull = sgl::Renderer->createGeometryBuffer(
+            vertexPositionsHull.size()*sizeof(glm::vec3), (void*)&vertexPositionsHull.front(), sgl::VERTEX_BUFFER);
+    shaderAttributesHull->addGeometryBuffer(
+            positionBufferHull, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
+
+    // Add the normal buffer.
+    sgl::GeometryBufferPtr normalBufferHull = sgl::Renderer->createGeometryBuffer(
+            vertexNormalsHull.size()*sizeof(glm::vec3), (void*)&vertexNormalsHull.front(), sgl::VERTEX_BUFFER);
+    shaderAttributesHull->addGeometryBuffer(
+            normalBufferHull, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
 
     dirty = false;
     reRender = true;
@@ -204,6 +240,14 @@ void VolumeRenderer_Faces::setUniformData() {
 
     clearShader->setUniform("viewportW", width);
     clearShader->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
+
+    if (hullOpacity > 0.0f) {
+        gatherShaderHull->setUniform("useShading", int(useShading));
+        gatherShaderHull->setUniform("viewportW", width);
+        gatherShaderHull->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
+        gatherShaderHull->setUniform("cameraPosition", sceneData.camera->getPosition());
+        gatherShaderHull->setUniform("color", glm::vec4(hullColor.r, hullColor.g, hullColor.b, hullOpacity));
+    }
 }
 
 void VolumeRenderer_Faces::clear() {
@@ -247,6 +291,9 @@ void VolumeRenderer_Faces::gather() {
 
     // Now, the final gather step.
     sgl::Renderer->render(shaderAttributes);
+    if (hullOpacity > 0.0f) {
+        sgl::Renderer->render(shaderAttributesHull);
+    }
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
@@ -280,6 +327,9 @@ void VolumeRenderer_Faces::render() {
 void VolumeRenderer_Faces::renderGui() {
     if (ImGui::Begin("Volume Renderer (Faces)", &showRendererWindow)) {
         if (!useWeightedVertexAttributes && ImGui::Checkbox("Use Shading", &useShading)) {
+            reRender = true;
+        }
+        if (ImGui::SliderFloat("Hull Opacity", &hullOpacity, 0.0f, 0.5f, "%.4f")) {
             reRender = true;
         }
         if (ImGui::Checkbox("Use Weighted Vertex Attributes", &useWeightedVertexAttributes)) {
