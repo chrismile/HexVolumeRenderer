@@ -150,8 +150,6 @@ void LineDensityControlRenderer::onResolutionChanged() {
     attributeTextureFramebuffer = sgl::Renderer->createFBO();
     sgl::TextureSettings textureSettings;
     textureSettings.internalFormat = GL_RGBA32F;
-    textureSettings.pixelType = GL_FLOAT;
-    textureSettings.pixelFormat = GL_RGBA;
     textureSettings.textureMinFilter = GL_LINEAR;
     textureSettings.textureMagFilter = GL_LINEAR;
     attributeTexture = sgl::TextureManager->createEmptyTexture(

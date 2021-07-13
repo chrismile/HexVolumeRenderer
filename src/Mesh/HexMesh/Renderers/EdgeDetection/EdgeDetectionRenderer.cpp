@@ -147,8 +147,6 @@ void EdgeDetectionRenderer::reloadTexturesEdgeDetection() {
     if (outlineMode == OUTLINE_MODE_NORMAL || outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
         sgl::TextureSettings textureSettingsNormal;
         textureSettingsNormal.internalFormat = GL_RGB32F; // TODO: Compress.
-        textureSettingsNormal.pixelType = GL_FLOAT;
-        textureSettingsNormal.pixelFormat = GL_RGB;
         normalTextureEdgeDetection = sgl::TextureManager->createEmptyTexture(width, height, textureSettingsNormal);
         framebufferEdgeDetection->bindTexture(normalTextureEdgeDetection, sgl::COLOR_ATTACHMENT0);
     }
@@ -156,8 +154,6 @@ void EdgeDetectionRenderer::reloadTexturesEdgeDetection() {
     if (outlineMode == OUTLINE_MODE_STENCIL) {
         sgl::TextureSettings textureSettings;
         textureSettings.internalFormat = GL_RGBA8;
-        textureSettings.pixelType = GL_UNSIGNED_BYTE;
-        textureSettings.pixelFormat = GL_RGB;
         imageTextureEdgeDetection = sgl::TextureManager->createEmptyTexture(width, height, textureSettings);
         framebufferEdgeDetection->bindTexture(imageTextureEdgeDetection);
         framebufferEdgeDetection->bindRenderbuffer(
@@ -255,11 +251,10 @@ void EdgeDetectionRenderer::createWeightTextureEdgeDetection() {
         std::cout << std::endl;
     }
     sgl::TextureSettings textureSettings;
-    textureSettings.pixelType = GL_FLOAT;
-    textureSettings.pixelFormat = GL_RED;
     textureSettings.internalFormat = GL_R32F;
     weightTextureEdgeDetection = sgl::TextureManager->createTexture(
-            textureData, weightTextureSize.x, weightTextureSize.y, textureSettings);
+            textureData, weightTextureSize.x, weightTextureSize.y,
+            sgl::PixelFormat(GL_RED, GL_FLOAT), textureSettings);
     delete[] textureData;
 }
 

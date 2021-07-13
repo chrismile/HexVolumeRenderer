@@ -62,11 +62,9 @@ void SingularEdgeColorMapWidget::updateSingularEdgeColorLookupTexture() {
         sgl::TextureSettings textureSettings;
         textureSettings.textureMinFilter = GL_NEAREST;
         textureSettings.textureMagFilter = GL_NEAREST;
-        textureSettings.pixelType = GL_FLOAT;
-        textureSettings.pixelFormat = GL_RGBA;
         textureSettings.internalFormat = GL_RGBA32F;
         singularEdgeColorLookupTexture = sgl::TextureManager->createTexture(
-                textureData, NUM_VALENCE_LEVELS, 2, textureSettings);
+                textureData, NUM_VALENCE_LEVELS, 2, sgl::PixelFormat(GL_RGBA, GL_FLOAT), textureSettings);
     }
 }
 

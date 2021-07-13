@@ -77,8 +77,6 @@ void NoiseReduction::onResolutionChanged() {
     sgl::TextureSettings textureSettings;
     if (useSingleChannelTexture) {
         textureSettings.internalFormat = GL_R8;
-        textureSettings.pixelType = GL_UNSIGNED_BYTE;
-        textureSettings.pixelFormat = GL_RED;
     }
     for (int i = 0; i < 2; i++) {
         textures[i] = sgl::TextureManager->createEmptyTexture(width, height, sgl::TextureSettings());
