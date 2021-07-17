@@ -295,11 +295,11 @@ void createCappedTriangleTubesUnionRenderDataCPU(
         CorkTriMesh inputUnionTriMesh, inputTubeMesh, outputUnionTriMesh;
         inputUnionTriMesh.n_triangles = unionMeshTriangleIndices.size() / 3;
         inputUnionTriMesh.n_vertices = unionMeshVertexPositions.size();
-        inputUnionTriMesh.triangles = &unionMeshTriangleIndices.front();
+        inputUnionTriMesh.triangles = unionMeshTriangleIndices.data();
         inputUnionTriMesh.vertices = &unionMeshVertexPositions.front().x;
         inputTubeMesh.n_triangles = currentTubeTriangleIndices.size() / 3;
         inputTubeMesh.n_vertices = currentTubeVertexPositions.size();
-        inputTubeMesh.triangles = &currentTubeTriangleIndices.front();
+        inputTubeMesh.triangles = currentTubeTriangleIndices.data();
         inputTubeMesh.vertices = &currentTubeVertexPositions.front().x;
         computeUnion(inputUnionTriMesh, inputTubeMesh, &outputUnionTriMesh);
         unionMeshTriangleIndices.resize(outputUnionTriMesh.n_triangles * 3);

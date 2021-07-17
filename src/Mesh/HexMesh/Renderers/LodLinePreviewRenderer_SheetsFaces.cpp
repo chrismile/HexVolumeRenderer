@@ -59,12 +59,12 @@ void LodLinePreviewRenderer_SheetsFaces::uploadVisualizationMapping(HexMeshPtr m
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*indices.size(), indices.data(), sgl::INDEX_BUFFER);
     shaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Create an SSBO for the hexahedral cell faces.
     hexahedralCellFacesBuffer = sgl::Renderer->createGeometryBuffer(
-            hexahedralCellFaces.size()*sizeof(LodPreviewHexahedralCellFace), (void*)&hexahedralCellFaces.front(),
+            hexahedralCellFaces.size()*sizeof(LodPreviewHexahedralCellFace), hexahedralCellFaces.data(),
             sgl::SHADER_STORAGE_BUFFER);
 
     /*std::vector<glm::vec3> vertices;
@@ -77,19 +77,19 @@ void LodLinePreviewRenderer_SheetsFaces::uploadVisualizationMapping(HexMeshPtr m
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertices.size()*sizeof(glm::vec3), (void*)&vertices.front(), sgl::VERTEX_BUFFER);
+            vertices.size()*sizeof(glm::vec3), vertices.data(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the color buffer.
     sgl::GeometryBufferPtr colorBuffer = sgl::Renderer->createGeometryBuffer(
-            colors.size()*sizeof(glm::vec4), (void*)&colors.front(), sgl::VERTEX_BUFFER);
+            colors.size()*sizeof(glm::vec4), colors.data(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             colorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
 
     // Add the LOD value buffer.
     sgl::GeometryBufferPtr lodValueBuffer = sgl::Renderer->createGeometryBuffer(
-            lodValues.size()*sizeof(float), (void*)&lodValues.front(), sgl::VERTEX_BUFFER);
+            lodValues.size()*sizeof(float), lodValues.data(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             lodValueBuffer, "vertexLodValue", sgl::ATTRIB_FLOAT, 1);*/
 

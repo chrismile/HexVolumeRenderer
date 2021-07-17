@@ -57,7 +57,7 @@ void EdgeDetectionRenderer::initializeEdgeDetection() {
             glm::vec3(1,1,0), glm::vec3(-1,-1,0), glm::vec3(1,-1,0),
             glm::vec3(-1,-1,0), glm::vec3(1,1,0), glm::vec3(-1,1,0)};
     sgl::GeometryBufferPtr geomBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(glm::vec3)*fullscreenQuad.size(), (void*)&fullscreenQuad.front());
+            sizeof(glm::vec3)*fullscreenQuad.size(), fullscreenQuad.data());
 
     shaderAttributesFullScreenBlitEdgeDetection = sgl::ShaderManager->createShaderAttributes(
             shaderFullScreenBlitEdgeDetection);
@@ -179,11 +179,11 @@ void EdgeDetectionRenderer::reloadModelEdgeDetection(HexMeshPtr& mesh) {
 
     // Create the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*triangleIndices.size(), triangleIndices.data(), sgl::INDEX_BUFFER);
 
     // Create the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
+            vertexPositions.size()*sizeof(glm::vec3), vertexPositions.data(), sgl::VERTEX_BUFFER);
 
     meshShaderAttributesEdgeDetection = sgl::ShaderManager->createShaderAttributes(meshShaderEdgeDetection);
     meshShaderAttributesEdgeDetection->setVertexMode(sgl::VERTEX_MODE_TRIANGLES);

@@ -104,7 +104,7 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(
             glm::vec3(1,1,0), glm::vec3(-1,-1,0), glm::vec3(1,-1,0),
             glm::vec3(-1,-1,0), glm::vec3(1,1,0), glm::vec3(-1,1,0)};
     sgl::GeometryBufferPtr geomBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(glm::vec3)*fullscreenQuad.size(), (void*)&fullscreenQuad.front());
+            sizeof(glm::vec3)*fullscreenQuad.size(), fullscreenQuad.data());
     blitRenderData->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
@@ -445,25 +445,25 @@ void ClearViewRenderer_FacesUnified::uploadVisualizationMapping(HexMeshPtr meshI
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*indices.size(), indices.data(), sgl::INDEX_BUFFER);
     shaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Create an SSBO for the hexahedral cell data.
     hexahedralCellFacesBuffer = sgl::Renderer->createGeometryBuffer(
-            hexahedralCellFaces.size()*sizeof(HexahedralCellFaceUnified), (void*)&hexahedralCellFaces.front(),
+            hexahedralCellFaces.size()*sizeof(HexahedralCellFaceUnified), hexahedralCellFaces.data(),
             sgl::SHADER_STORAGE_BUFFER);
     hexahedralCellVerticesBuffer = sgl::Renderer->createGeometryBuffer(
-            hexahedralCellVertices.size()*sizeof(HexahedralCellVertexUnified), (void*)&hexahedralCellVertices.front(),
+            hexahedralCellVertices.size()*sizeof(HexahedralCellVertexUnified), hexahedralCellVertices.data(),
             sgl::SHADER_STORAGE_BUFFER);
     hexahedralCellEdgesBuffer = sgl::Renderer->createGeometryBuffer(
-            hexahedralCellEdges.size()*sizeof(HexahedralCellEdgeUnified), (void*)&hexahedralCellEdges.front(),
+            hexahedralCellEdges.size()*sizeof(HexahedralCellEdgeUnified), hexahedralCellEdges.data(),
             sgl::SHADER_STORAGE_BUFFER);
     if (showFocusFaces) {
         hexahedralCellFacesCellLinksBuffer = sgl::Renderer->createGeometryBuffer(
-                hexahedralCellFacesCellLinks.size()*sizeof(glm::uvec2), (void*)&hexahedralCellFacesCellLinks.front(),
+                hexahedralCellFacesCellLinks.size()*sizeof(glm::uvec2), hexahedralCellFacesCellLinks.data(),
                 sgl::SHADER_STORAGE_BUFFER);
         hexahedralCellsBuffer = sgl::Renderer->createGeometryBuffer(
-                hexahedralCells.size()*sizeof(float), (void*)&hexahedralCells.front(),
+                hexahedralCells.size()*sizeof(float), hexahedralCells.data(),
                 sgl::SHADER_STORAGE_BUFFER);
     }
 

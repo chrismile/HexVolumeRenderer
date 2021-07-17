@@ -183,18 +183,18 @@ void HexSheetRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewM
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*triangleIndices.size(), triangleIndices.data(), sgl::INDEX_BUFFER);
     shaderAttributesHull->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
+            vertexPositions.size()*sizeof(glm::vec3), vertexPositions.data(), sgl::VERTEX_BUFFER);
     shaderAttributesHull->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the normal buffer.
     sgl::GeometryBufferPtr normalBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexNormals.size()*sizeof(glm::vec3), (void*)&vertexNormals.front(), sgl::VERTEX_BUFFER);
+            vertexNormals.size()*sizeof(glm::vec3), vertexNormals.data(), sgl::VERTEX_BUFFER);
     shaderAttributesHull->addGeometryBuffer(
             normalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
 
@@ -343,24 +343,24 @@ void HexSheetRenderer::recreateRenderingData() {
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*triangleIndices.size(), triangleIndices.data(), sgl::INDEX_BUFFER);
     shaderAttributesSheet->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
+            vertexPositions.size()*sizeof(glm::vec3), vertexPositions.data(), sgl::VERTEX_BUFFER);
     shaderAttributesSheet->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the normal buffer.
     sgl::GeometryBufferPtr normalBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexNormals.size()*sizeof(glm::vec3), (void*)&vertexNormals.front(), sgl::VERTEX_BUFFER);
+            vertexNormals.size()*sizeof(glm::vec3), vertexNormals.data(), sgl::VERTEX_BUFFER);
     shaderAttributesSheet->addGeometryBuffer(
             normalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
 
     // Add the color buffer.
     sgl::GeometryBufferPtr colorBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexColors.size()*sizeof(glm::vec4), (void*)&vertexColors.front(), sgl::VERTEX_BUFFER);
+            vertexColors.size()*sizeof(glm::vec4), vertexColors.data(), sgl::VERTEX_BUFFER);
     shaderAttributesSheet->addGeometryBuffer(
             colorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
 
@@ -375,12 +375,12 @@ void HexSheetRenderer::recreateRenderingData() {
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBufferWireframe = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*indices.size(), indices.data(), sgl::INDEX_BUFFER);
     shaderAttributesWireframe->setIndexGeometryBuffer(indexBufferWireframe, sgl::ATTRIB_UNSIGNED_INT);
 
     // Create an SSBO for the hexahedral cell faces.
     wireframeFacesBuffer = sgl::Renderer->createGeometryBuffer(
-            hexahedralCellFaces.size()*sizeof(HexahedralCellFace), (void*)&hexahedralCellFaces.front(),
+            hexahedralCellFaces.size()*sizeof(HexahedralCellFace), hexahedralCellFaces.data(),
             sgl::SHADER_STORAGE_BUFFER);
 
 }

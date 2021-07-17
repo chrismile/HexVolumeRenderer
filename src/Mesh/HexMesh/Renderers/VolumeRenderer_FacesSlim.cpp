@@ -84,12 +84,12 @@ VolumeRenderer_FacesSlim::VolumeRenderer_FacesSlim(
             glm::vec3(1,1,0), glm::vec3(-1,-1,0), glm::vec3(1,-1,0),
             glm::vec3(-1,-1,0), glm::vec3(1,1,0), glm::vec3(-1,1,0)};
     sgl::GeometryBufferPtr geomBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(glm::vec3)*fullscreenQuad.size(), (void*)&fullscreenQuad.front());
+            sizeof(glm::vec3)*fullscreenQuad.size(), fullscreenQuad.data());
     blitRenderData->addGeometryBuffer(geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     clearRenderData = sgl::ShaderManager->createShaderAttributes(clearShader);
     geomBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(glm::vec3)*fullscreenQuad.size(), (void*)&fullscreenQuad.front());
+            sizeof(glm::vec3)*fullscreenQuad.size(), fullscreenQuad.data());
     clearRenderData->addGeometryBuffer(geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     initializeEdgeDetection();
@@ -138,29 +138,29 @@ void VolumeRenderer_FacesSlim::uploadVisualizationMapping(HexMeshPtr meshIn, boo
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*triangleIndices.size(), triangleIndices.data(), sgl::INDEX_BUFFER);
     shaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
+            vertexPositions.size()*sizeof(glm::vec3), vertexPositions.data(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the color buffer.
     if (!useMultiVarData || !isMultiVarData) {
         sgl::GeometryBufferPtr attributeBuffer = sgl::Renderer->createGeometryBuffer(
-                vertexAttributes.size()*sizeof(float), (void*)&vertexAttributes.front(), sgl::VERTEX_BUFFER);
+                vertexAttributes.size()*sizeof(float), vertexAttributes.data(), sgl::VERTEX_BUFFER);
         shaderAttributes->addGeometryBuffer(
                 attributeBuffer, "vertexAttribute", sgl::ATTRIB_FLOAT, 1);
     } else {
         std::vector<float> interpolatedCellAttributes = hexMesh->getInterpolatedCellAttributeVertexData();
         std::vector<float> manualVertexAttributes = hexMesh->getManualVertexAttributeDataNormalized(multiVarAttrIdx);
         sgl::GeometryBufferPtr attributeBuffer0 = sgl::Renderer->createGeometryBuffer(
-                interpolatedCellAttributes.size()*sizeof(float), (void*)&interpolatedCellAttributes.front(),
+                interpolatedCellAttributes.size()*sizeof(float), interpolatedCellAttributes.data(),
                 sgl::VERTEX_BUFFER);
         sgl::GeometryBufferPtr attributeBuffer1 = sgl::Renderer->createGeometryBuffer(
-                manualVertexAttributes.size()*sizeof(float), (void*)&manualVertexAttributes.front(),
+                manualVertexAttributes.size()*sizeof(float), manualVertexAttributes.data(),
                 sgl::VERTEX_BUFFER);
         shaderAttributes->addGeometryBuffer(
                 attributeBuffer0, "vertexAttribute0", sgl::ATTRIB_FLOAT, 1);

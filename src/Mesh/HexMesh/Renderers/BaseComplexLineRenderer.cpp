@@ -57,21 +57,21 @@ void BaseComplexLineRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool
 
     // Add the position buffer.
     sgl::GeometryBufferPtr linePositionBuffer = sgl::Renderer->createGeometryBuffer(
-            lineVertices.size()*sizeof(glm::vec3), (void*)&lineVertices.front(), sgl::VERTEX_BUFFER);
+            lineVertices.size()*sizeof(glm::vec3), lineVertices.data(), sgl::VERTEX_BUFFER);
     lineShaderAttributes->addGeometryBuffer(
             linePositionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
     sgl::GeometryBufferPtr pointPositionBuffer = sgl::Renderer->createGeometryBuffer(
-            pointVertices.size()*sizeof(glm::vec3), (void*)&pointVertices.front(), sgl::VERTEX_BUFFER);
+            pointVertices.size()*sizeof(glm::vec3), pointVertices.data(), sgl::VERTEX_BUFFER);
     pointShaderAttributes->addGeometryBuffer(
             pointPositionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the color buffer.
     sgl::GeometryBufferPtr lineColorBuffer = sgl::Renderer->createGeometryBuffer(
-            lineColors.size()*sizeof(glm::vec4), (void*)&lineColors.front(), sgl::VERTEX_BUFFER);
+            lineColors.size()*sizeof(glm::vec4), lineColors.data(), sgl::VERTEX_BUFFER);
     lineShaderAttributes->addGeometryBuffer(
             lineColorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
     sgl::GeometryBufferPtr pointColorBuffer = sgl::Renderer->createGeometryBuffer(
-            pointColors.size()*sizeof(glm::vec4), (void*)&pointColors.front(), sgl::VERTEX_BUFFER);
+            pointColors.size()*sizeof(glm::vec4), pointColors.data(), sgl::VERTEX_BUFFER);
     pointShaderAttributes->addGeometryBuffer(
             pointColorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
 

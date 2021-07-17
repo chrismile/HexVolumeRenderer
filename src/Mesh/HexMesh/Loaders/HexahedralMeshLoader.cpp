@@ -28,12 +28,10 @@
 
 #include "HexahedralMeshLoader.hpp"
 
-#include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include <Utils/File/Logfile.hpp>
 #include <Utils/File/FileLoader.hpp>
-#include <Utils/Convert.hpp>
 
 /**
  * Splits a string into tokens with the whitespace characters as delimiters (space, tabulator).

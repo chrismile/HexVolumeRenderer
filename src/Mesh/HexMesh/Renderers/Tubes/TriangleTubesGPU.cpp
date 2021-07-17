@@ -131,10 +131,10 @@ void createTriangleTubesRenderDataGPU(
     // PART 1: Create line normals & mask invalid line points
     auto startNormals = std::chrono::system_clock::now();
     sgl::GeometryBufferPtr lineOffsetBufferInput = sgl::Renderer->createGeometryBuffer(
-            (numLinesInput+1) * sizeof(uint32_t), &lineOffsetsInput.front(),
+            (numLinesInput+1) * sizeof(uint32_t), lineOffsetsInput.data(),
             sgl::SHADER_STORAGE_BUFFER, sgl::BUFFER_STATIC);
     sgl::GeometryBufferPtr inputLinePointBuffer = sgl::Renderer->createGeometryBuffer(
-            inputLinePoints.size() * sizeof(InputLinePoint), &inputLinePoints.front(),
+            inputLinePoints.size() * sizeof(InputLinePoint), inputLinePoints.data(),
             sgl::SHADER_STORAGE_BUFFER, sgl::BUFFER_STATIC);
     sgl::GeometryBufferPtr outputLinePointBuffer = sgl::Renderer->createGeometryBuffer(
             inputLinePoints.size() * sizeof(OutputLinePoint),
@@ -154,7 +154,7 @@ void createTriangleTubesRenderDataGPU(
 
     bufferMemory = outputLinePointBuffer->mapBuffer(sgl::BUFFER_MAP_READ_ONLY);
     outputLinePoints.resize(inputLinePoints.size());
-    memcpy(&outputLinePoints.front(), bufferMemory, outputLinePoints.size() * sizeof(OutputLinePoint));
+    memcpy(outputLinePoints.data(), bufferMemory, outputLinePoints.size() * sizeof(OutputLinePoint));
     outputLinePointBuffer->unmapBuffer();
     auto endNormals = std::chrono::system_clock::now();
     auto elapsedNormals = std::chrono::duration_cast<std::chrono::milliseconds>(endNormals - startNormals);
@@ -203,7 +203,7 @@ void createTriangleTubesRenderDataGPU(
     tubeVertices.resize(numCircleSubdivisions * pathLinePoints.size());
 
     sgl::GeometryBufferPtr pathLinePointsBuffer = sgl::Renderer->createGeometryBuffer(
-            pathLinePoints.size() * sizeof(PathLinePoint), &pathLinePoints.front(),
+            pathLinePoints.size() * sizeof(PathLinePoint), pathLinePoints.data(),
             sgl::SHADER_STORAGE_BUFFER, sgl::BUFFER_STATIC);
     sgl::GeometryBufferPtr tubeVertexBuffer = sgl::Renderer->createGeometryBuffer(
             numCircleSubdivisions * pathLinePoints.size() * sizeof(TubeVertex),
@@ -230,7 +230,7 @@ void createTriangleTubesRenderDataGPU(
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     bufferMemory = tubeVertexBuffer->mapBuffer(sgl::BUFFER_MAP_READ_ONLY);
-    memcpy(&tubeVertices.front(), bufferMemory, numCircleSubdivisions * pathLinePoints.size() * sizeof(TubeVertex));
+    memcpy(tubeVertices.data(), bufferMemory, numCircleSubdivisions * pathLinePoints.size() * sizeof(TubeVertex));
     tubeVertexBuffer->unmapBuffer();
 
     vertexPositions.reserve(tubeVertices.size());
@@ -258,7 +258,7 @@ void createTriangleTubesRenderDataGPU(
     triangleIndices.resize(numIndices);
 
     sgl::GeometryBufferPtr lineOffsetBufferOutput = sgl::Renderer->createGeometryBuffer(
-            (numLinesOutput+1) * sizeof(uint32_t), &lineOffsetsOutput.front(),
+            (numLinesOutput+1) * sizeof(uint32_t), lineOffsetsOutput.data(),
             sgl::SHADER_STORAGE_BUFFER, sgl::BUFFER_STATIC);
     sgl::GeometryBufferPtr tubeIndexBuffer = sgl::Renderer->createGeometryBuffer(
             numIndices * sizeof(uint32_t),
@@ -273,7 +273,7 @@ void createTriangleTubesRenderDataGPU(
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
     bufferMemory = tubeIndexBuffer->mapBuffer(sgl::BUFFER_MAP_READ_ONLY);
-    memcpy(&triangleIndices.front(), bufferMemory, numIndices * sizeof(uint32_t));
+    memcpy(triangleIndices.data(), bufferMemory, numIndices * sizeof(uint32_t));
     tubeIndexBuffer->unmapBuffer();
     auto endIndices = std::chrono::system_clock::now();
     auto elapsedIndices = std::chrono::duration_cast<std::chrono::milliseconds>(endIndices - startIndices);

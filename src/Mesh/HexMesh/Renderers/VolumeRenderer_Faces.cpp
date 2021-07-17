@@ -89,12 +89,12 @@ VolumeRenderer_Faces::VolumeRenderer_Faces(SceneData &sceneData, sgl::TransferFu
             glm::vec3(1,1,0), glm::vec3(-1,-1,0), glm::vec3(1,-1,0),
             glm::vec3(-1,-1,0), glm::vec3(1,1,0), glm::vec3(-1,1,0)};
     sgl::GeometryBufferPtr geomBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(glm::vec3)*fullscreenQuad.size(), (void*)&fullscreenQuad.front());
+            sizeof(glm::vec3)*fullscreenQuad.size(), fullscreenQuad.data());
     blitRenderData->addGeometryBuffer(geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     clearRenderData = sgl::ShaderManager->createShaderAttributes(clearShader);
     geomBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(glm::vec3)*fullscreenQuad.size(), (void*)&fullscreenQuad.front());
+            sizeof(glm::vec3)*fullscreenQuad.size(), fullscreenQuad.data());
     clearRenderData->addGeometryBuffer(geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     onResolutionChanged();
@@ -120,24 +120,24 @@ void VolumeRenderer_Faces::uploadVisualizationMapping(HexMeshPtr meshIn, bool is
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*triangleIndices.size(), triangleIndices.data(), sgl::INDEX_BUFFER);
     shaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
+            vertexPositions.size()*sizeof(glm::vec3), vertexPositions.data(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the normal buffer.
     sgl::GeometryBufferPtr normalBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexNormals.size()*sizeof(glm::vec3), (void*)&vertexNormals.front(), sgl::VERTEX_BUFFER);
+            vertexNormals.size()*sizeof(glm::vec3), vertexNormals.data(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             normalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
 
     // Add the color buffer.
     sgl::GeometryBufferPtr attributeBuffer = sgl::Renderer->createGeometryBuffer(
-            vertexAttributes.size()*sizeof(float), (void*)&vertexAttributes.front(), sgl::VERTEX_BUFFER);
+            vertexAttributes.size()*sizeof(float), vertexAttributes.data(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             attributeBuffer, "vertexAttribute", sgl::ATTRIB_FLOAT, 1);
 
@@ -157,18 +157,18 @@ void VolumeRenderer_Faces::uploadVisualizationMapping(HexMeshPtr meshIn, bool is
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBufferHull = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*triangleIndicesHull.size(), (void*)&triangleIndicesHull.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*triangleIndicesHull.size(), triangleIndicesHull.data(), sgl::INDEX_BUFFER);
     shaderAttributesHull->setIndexGeometryBuffer(indexBufferHull, sgl::ATTRIB_UNSIGNED_INT);
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBufferHull = sgl::Renderer->createGeometryBuffer(
-            vertexPositionsHull.size()*sizeof(glm::vec3), (void*)&vertexPositionsHull.front(), sgl::VERTEX_BUFFER);
+            vertexPositionsHull.size()*sizeof(glm::vec3), vertexPositionsHull.data(), sgl::VERTEX_BUFFER);
     shaderAttributesHull->addGeometryBuffer(
             positionBufferHull, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the normal buffer.
     sgl::GeometryBufferPtr normalBufferHull = sgl::Renderer->createGeometryBuffer(
-            vertexNormalsHull.size()*sizeof(glm::vec3), (void*)&vertexNormalsHull.front(), sgl::VERTEX_BUFFER);
+            vertexNormalsHull.size()*sizeof(glm::vec3), vertexNormalsHull.data(), sgl::VERTEX_BUFFER);
     shaderAttributesHull->addGeometryBuffer(
             normalBufferHull, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
 

@@ -78,14 +78,14 @@ LineDensityControlRenderer::LineDensityControlRenderer(SceneData &sceneData, sgl
             glm::vec3(1,1,0), glm::vec3(-1,-1,0), glm::vec3(1,-1,0),
             glm::vec3(-1,-1,0), glm::vec3(1,1,0), glm::vec3(-1,1,0)};
     sgl::GeometryBufferPtr geomBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(glm::vec3)*fullscreenQuad.size(), (void*)&fullscreenQuad.front());
+            sizeof(glm::vec3)*fullscreenQuad.size(), fullscreenQuad.data());
     createAttributeTextureResolveRenderData->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     createAttributeTextureClearRenderData =
             sgl::ShaderManager->createShaderAttributes(createAttributeTextureClearShader);
     geomBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(glm::vec3)*fullscreenQuad.size(), (void*)&fullscreenQuad.front());
+            sizeof(glm::vec3)*fullscreenQuad.size(), fullscreenQuad.data());
     createAttributeTextureClearRenderData->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
@@ -101,7 +101,7 @@ LineDensityControlRenderer::LineDensityControlRenderer(SceneData &sceneData, sgl
     // Create the blur render data.
     int stride = sizeof(sgl::VertexTextured);
     sgl::GeometryBufferPtr geomBufferTextured = sgl::Renderer->createGeometryBuffer(
-            sizeof(sgl::VertexTextured) * fullscreenTexturedQuad.size(), &fullscreenTexturedQuad.front());
+            sizeof(sgl::VertexTextured) * fullscreenTexturedQuad.size(), fullscreenTexturedQuad.data());
     blurRenderData = sgl::ShaderManager->createShaderAttributes(blurShader);
     blurRenderData->addGeometryBuffer(
             geomBufferTextured, "vertexPosition",
@@ -181,14 +181,14 @@ void LineDensityControlRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, b
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*triangleIndices.size(), (void*)&triangleIndices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*triangleIndices.size(), triangleIndices.data(), sgl::INDEX_BUFFER);
     lineDensityControlRenderData->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
     createAttributeTextureGatherRenderData->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Create an SSBO for the hexahedral cell faces.
     hexahedralCellFacesBuffer = sgl::Renderer->createGeometryBuffer(
             hexahedralCellFaces.size()*sizeof(HexahedralCellFaceLineDensityControl),
-            (void*)&hexahedralCellFaces.front(), sgl::SHADER_STORAGE_BUFFER);
+            hexahedralCellFaces.data(), sgl::SHADER_STORAGE_BUFFER);
 
     singularEdgeColorMapWidget.generateSingularityStructureInformation(meshIn);
 

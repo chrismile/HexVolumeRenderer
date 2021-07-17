@@ -136,12 +136,12 @@ void ClearViewRenderer::loadFocusRepresentation() {
 
         // Add the index buffer.
         sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-                sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
+                sizeof(uint32_t)*indices.size(), indices.data(), sgl::INDEX_BUFFER);
         shaderAttributesFocus->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
         // Create an SSBO for the hexahedral cell faces.
         hexahedralCellFacesBuffer = sgl::Renderer->createGeometryBuffer(
-                hexahedralCellFaces.size()*sizeof(HexahedralCellFace), (void*)&hexahedralCellFaces.front(),
+                hexahedralCellFaces.size()*sizeof(HexahedralCellFace), hexahedralCellFaces.data(),
                 sgl::SHADER_STORAGE_BUFFER);
     } else if (lineRenderingMode == LINE_RENDERING_MODE_TUBES || lineRenderingMode == LINE_RENDERING_MODE_TUBES_CAPPED
             || lineRenderingMode == LINE_RENDERING_MODE_TUBES_UNION) {
@@ -198,25 +198,25 @@ void ClearViewRenderer::loadFocusRepresentation() {
 
         // Add the position buffer.
         sgl::GeometryBufferPtr tubeVertexBuffer = sgl::Renderer->createGeometryBuffer(
-                vertexPositions.size()*sizeof(glm::vec3), (void*)&vertexPositions.front(), sgl::VERTEX_BUFFER);
+                vertexPositions.size()*sizeof(glm::vec3), vertexPositions.data(), sgl::VERTEX_BUFFER);
         shaderAttributesFocus->addGeometryBuffer(
                 tubeVertexBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
         // Add the normal buffer.
         sgl::GeometryBufferPtr tubeNormalBuffer = sgl::Renderer->createGeometryBuffer(
-                vertexNormals.size()*sizeof(glm::vec3), (void*)&vertexNormals.front(), sgl::VERTEX_BUFFER);
+                vertexNormals.size()*sizeof(glm::vec3), vertexNormals.data(), sgl::VERTEX_BUFFER);
         shaderAttributesFocus->addGeometryBuffer(
                 tubeNormalBuffer, "vertexNormal", sgl::ATTRIB_FLOAT, 3);
 
         // Add the tangent buffer.
         sgl::GeometryBufferPtr tubeTangentBuffer = sgl::Renderer->createGeometryBuffer(
-                vertexTangents.size()*sizeof(glm::vec3), (void*)&vertexTangents.front(), sgl::VERTEX_BUFFER);
+                vertexTangents.size()*sizeof(glm::vec3), vertexTangents.data(), sgl::VERTEX_BUFFER);
         shaderAttributesFocus->addGeometryBuffer(
                 tubeTangentBuffer, "vertexTangent", sgl::ATTRIB_FLOAT, 3);
 
         // Add the color buffer.
         sgl::GeometryBufferPtr tubeColorBuffer = sgl::Renderer->createGeometryBuffer(
-                vertexColors.size()*sizeof(glm::vec4), (void*)&vertexColors.front(), sgl::VERTEX_BUFFER);
+                vertexColors.size()*sizeof(glm::vec4), vertexColors.data(), sgl::VERTEX_BUFFER);
         shaderAttributesFocus->addGeometryBuffer(
                 tubeColorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
 
@@ -272,13 +272,13 @@ void ClearViewRenderer::loadFocusRepresentation() {
 
         // Add the position buffer.
         sgl::GeometryBufferPtr lineVertexBuffer = sgl::Renderer->createGeometryBuffer(
-                lineVertices.size()*sizeof(glm::vec3), (void*)&lineVertices.front(), sgl::VERTEX_BUFFER);
+                lineVertices.size()*sizeof(glm::vec3), lineVertices.data(), sgl::VERTEX_BUFFER);
         shaderAttributesFocus->addGeometryBuffer(
                 lineVertexBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
         // Add the color buffer.
         sgl::GeometryBufferPtr lineColorBuffer = sgl::Renderer->createGeometryBuffer(
-                lineColors.size()*sizeof(glm::vec4), (void*)&lineColors.front(), sgl::VERTEX_BUFFER);
+                lineColors.size()*sizeof(glm::vec4), lineColors.data(), sgl::VERTEX_BUFFER);
         shaderAttributesFocus->addGeometryBuffer(
                 lineColorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
     }
@@ -396,7 +396,7 @@ void ClearViewRenderer::updateDepthCueGeometryData() {
         filteredCellVerticesVec4.push_back(glm::vec4(point.x, point.y, point.z, 1.0f));
     }
     filteredCellVerticesBuffer = sgl::Renderer->createGeometryBuffer(
-            filteredCellVerticesVec4.size() * sizeof(glm::vec4), (void*)&filteredCellVerticesVec4.front(),
+            filteredCellVerticesVec4.size() * sizeof(glm::vec4), filteredCellVerticesVec4.data(),
             sgl::SHADER_STORAGE_BUFFER);
 
     depthMinMaxBuffers[0] = sgl::Renderer->createGeometryBuffer(

@@ -87,13 +87,13 @@ void PerPixelLinkedListRenderer::initShaders(const std::vector<std::string>& gat
             glm::vec3(1,1,0), glm::vec3(-1,-1,0), glm::vec3(1,-1,0),
             glm::vec3(-1,-1,0), glm::vec3(1,1,0), glm::vec3(-1,1,0)};
     sgl::GeometryBufferPtr geomBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(glm::vec3)*fullscreenQuad.size(), (void*)&fullscreenQuad.front());
+            sizeof(glm::vec3)*fullscreenQuad.size(), fullscreenQuad.data());
     blitRenderData->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     clearRenderData = sgl::ShaderManager->createShaderAttributes(clearShader);
     geomBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(glm::vec3)*fullscreenQuad.size(), (void*)&fullscreenQuad.front());
+            sizeof(glm::vec3)*fullscreenQuad.size(), fullscreenQuad.data());
     clearRenderData->addGeometryBuffer(
             geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 

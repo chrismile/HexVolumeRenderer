@@ -54,13 +54,13 @@ void PartitionLineRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool i
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            lineVertices.size()*sizeof(glm::vec3), (void*)&lineVertices.front(), sgl::VERTEX_BUFFER);
+            lineVertices.size()*sizeof(glm::vec3), lineVertices.data(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the color buffer.
     sgl::GeometryBufferPtr lineColorBuffer = sgl::Renderer->createGeometryBuffer(
-            lineColors.size()*sizeof(glm::vec4), (void*)&lineColors.front(), sgl::VERTEX_BUFFER);
+            lineColors.size()*sizeof(glm::vec4), lineColors.data(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             lineColorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
 

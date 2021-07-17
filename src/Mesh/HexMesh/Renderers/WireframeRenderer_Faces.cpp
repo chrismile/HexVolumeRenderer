@@ -64,12 +64,12 @@ void WireframeRenderer_Faces::uploadVisualizationMapping(HexMeshPtr meshIn, bool
 
     // Add the index buffer.
     sgl::GeometryBufferPtr indexBuffer = sgl::Renderer->createGeometryBuffer(
-            sizeof(uint32_t)*indices.size(), (void*)&indices.front(), sgl::INDEX_BUFFER);
+            sizeof(uint32_t)*indices.size(), indices.data(), sgl::INDEX_BUFFER);
     shaderAttributes->setIndexGeometryBuffer(indexBuffer, sgl::ATTRIB_UNSIGNED_INT);
 
     // Create an SSBO for the hexahedral cell faces.
     hexahedralCellFacesBuffer = sgl::Renderer->createGeometryBuffer(
-            hexahedralCellFaces.size()*sizeof(HexahedralCellFace), (void*)&hexahedralCellFaces.front(),
+            hexahedralCellFaces.size()*sizeof(HexahedralCellFace), hexahedralCellFaces.data(),
             sgl::SHADER_STORAGE_BUFFER);
 
     dirty = false;

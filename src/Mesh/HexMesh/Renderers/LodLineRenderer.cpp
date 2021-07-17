@@ -97,13 +97,13 @@ void LodLineRenderer::uploadVisualizationMapping(HexMeshPtr meshIn, bool isNewMe
 
     // Add the position buffer.
     sgl::GeometryBufferPtr positionBuffer = sgl::Renderer->createGeometryBuffer(
-            vertices.size()*sizeof(glm::vec3), (void*)&vertices.front(), sgl::VERTEX_BUFFER);
+            vertices.size()*sizeof(glm::vec3), vertices.data(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             positionBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     // Add the color buffer.
     sgl::GeometryBufferPtr colorBuffer = sgl::Renderer->createGeometryBuffer(
-            colors.size()*sizeof(glm::vec4), (void*)&colors.front(), sgl::VERTEX_BUFFER);
+            colors.size()*sizeof(glm::vec4), colors.data(), sgl::VERTEX_BUFFER);
     shaderAttributes->addGeometryBuffer(
             colorBuffer, "vertexColor", sgl::ATTRIB_FLOAT, 4);
 
