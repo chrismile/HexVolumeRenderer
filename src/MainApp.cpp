@@ -459,8 +459,6 @@ void MainApp::render() {
 }
 
 void MainApp::renderGui() {
-    sgl::ImGuiWrapper::get()->renderStart();
-
     if (showSettingsWindow) {
         sgl::ImGuiWrapper::get()->setNextWindowStandardPosSize(3085, 39, 744, 1348);
         if (ImGui::Begin("Settings", &showSettingsWindow)) {
@@ -526,6 +524,7 @@ void MainApp::renderGui() {
         recordingTimeStampStart = sgl::Timer->getTicksMicroseconds();
 
         recording = true;
+        isFirstRecordingFrame = true;
         videoWriter = new sgl::VideoWriter(
                 saveDirectoryVideos + saveFilenameVideos
                 + "_" + sgl::toString(videoNumber++) + ".mp4", FRAME_RATE_VIDEOS);
@@ -560,8 +559,6 @@ void MainApp::renderGui() {
     for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
         meshRenderer->renderGui();
     }
-
-    sgl::ImGuiWrapper::get()->renderEnd();
 }
 
 void MainApp::loadAvailableDataSetSources() {
