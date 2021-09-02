@@ -27,6 +27,9 @@
  */
 
 #ifdef USE_PYTHON
+#ifdef PYTHONHOME_PATH
+#include <cstdlib>
+#endif
 #include <Python.h>
 #endif
 
@@ -70,6 +73,12 @@ int main(int argc, char *argv[]) {
     sgl::AppSettings::get()->initializeSubsystems();
 
 #ifdef USE_PYTHON
+#ifdef PYTHONHOME_PATH
+    const char* pythonhomeEnvVar = getenv("PYTHONHOME");
+    if (!pythonhomeEnvVar || strlen(pythonhomeEnvVar) == 0) {
+        Py_SetPythonHome(PYTHONHOME_PATH);
+    }
+#endif
     Py_Initialize();
 #endif
 
