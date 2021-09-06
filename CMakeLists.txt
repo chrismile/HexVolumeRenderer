@@ -13,6 +13,12 @@ list(APPEND SOURCES_DOWNLOADER ${CMAKE_CURRENT_SOURCE_DIR}/src/Mesh/HexMesh/Load
 list(APPEND SOURCES_DOWNLOADER ${CMAKE_CURRENT_SOURCE_DIR}/src/Mesh/HexMesh/Loaders/HexaLabDatasetsDownloader.cpp)
 include_directories(src)
 
+if(MSVC)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
+	# Avoid warning 'IMPORTED_IMPLIB not set for imported target "sgl" configuration "MinSizeRel/RelWithDebInfo".'
+	set(CMAKE_CONFIGURATION_TYPES Debug Release)
+endif()
+
 #if(MSVC)
 #	set(CMAKE_CXX_FLAGS "-W3 /EHsc")
 #elseif(CMAKE_COMPILER_IS_GNUCXX)
