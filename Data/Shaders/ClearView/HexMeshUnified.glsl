@@ -378,7 +378,7 @@ void main()
         outlineColor = mix(outlineColor, lineBaseColor.rgb, clamp(max(depthCueFactorFocus, depthCueFactorDistance), 0.0, 1.0));
 
         // Fade out the outline with increasing distance
-        const float EPSILON = clamp(fragmentDistance / lineRadius * 0.0005, 0.0, 0.49);
+        const float EPSILON = clamp(getAntialiasingFactor(fragmentDistance / lineRadius), 0.0, 0.49);
         const float WHITE_THRESHOLD = 0.7 + (0.3 + EPSILON) * contextFactor;
         float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
         vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,
@@ -478,7 +478,6 @@ in vec4 cellColor;
 out vec4 fragColor;
 #endif
 
-uniform ivec2 viewportSize;
 uniform float lineWidth;
 uniform float maxLodValue;
 uniform float selectedLodValueFocus;
@@ -515,6 +514,7 @@ in vec3 fragmentNormal;
 #endif
 
 #include "DepthCues.glsl"
+#include "Antialiasing.glsl"
 
 void main()
 {
@@ -673,7 +673,7 @@ void main()
         outlineColor = mix(outlineColor, lineBaseColor.rgb, clamp(max(depthCueFactorFocus, depthCueFactorDistance), 0.0, 1.0));
 
         // Fade out the outline with increasing distance
-        const float EPSILON = clamp(fragmentDistance / lineRadius * 0.0002, 0.0, 0.49);
+        const float EPSILON = clamp(getAntialiasingFactor(fragmentDistance / lineRadius), 0.0, 0.49);
         const float WHITE_THRESHOLD = 0.7 + (0.3 + EPSILON) * contextFactor;
         float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, lineCoordinates);
         vec4 lineColor = vec4(mix(lineBaseColor.rgb, outlineColor,

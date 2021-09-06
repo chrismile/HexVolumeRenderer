@@ -582,9 +582,10 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     //if (useFocusOutline) {
     //    gatherShader->setUniform("focusOutlineColor", focusOutlineColor);
     //}
+    gatherShader->setUniform("fieldOfViewY", sceneData.camera->getFOVy());
+    gatherShader->setUniform("viewportSize", glm::ivec2(windowWidth, windowHeight));
 
     if (useScreenSpaceLens) {
-        gatherShader->setUniform("viewportSize", glm::ivec2(windowWidth, windowHeight));
         gatherShader->setUniform("sphereCenterScreen", focusPointScreen);
         gatherShader->setUniform("sphereRadiusPixels", std::max(screenSpaceLensPixelRadius, 0.0f));
     } else {
