@@ -91,7 +91,7 @@ imgui.ini
 
 # Build script
 Shipping/*
-.build/*
+.build*
 third_party/*
 
 dependencies/*
