@@ -156,7 +156,7 @@ if(NOT (EIGEN3_VERSION_STRING LESS 3.3))
 else()
 	include_directories(${EIGEN3_INCLUDE_DIR})
 endif()
-target_link_libraries(HexVolumeRenderer PUBLIC sgl ${Boost_LIBRARIES} GLEW::GLEW ${NETCDF_LIBRARIES} ${CURL_LIBRARIES}) # ${LEMON_LIBRARIES}
+target_link_libraries(HexVolumeRenderer PUBLIC sgl ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} GLEW::GLEW ${NETCDF_LIBRARIES} ${CURL_LIBRARIES}) # ${LEMON_LIBRARIES}
 include_directories(${sgl_INCLUDES} ${Boost_INCLUDE_DIR} ${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDES} ${NETCDF_INCLUDES} ${CURL_INCLUDES})
 
 if (TARGET jsoncpp_lib)
