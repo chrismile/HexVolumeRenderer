@@ -111,7 +111,7 @@ void EdgeDetectionRenderer::reloadModelEdgeDetectionShader() {
         if (outlineMode == OUTLINE_MODE_DEPTH) {
             shaderAttributesEdgeDetection = sgl::ShaderManager->createShaderAttributes(
                     depthTextureShaderEdgeDetection);
-        } else if (outlineMode == OUTLINE_MODE_DEPTH) {
+        } else if (outlineMode == OUTLINE_MODE_NORMAL) {
             shaderAttributesEdgeDetection = sgl::ShaderManager->createShaderAttributes(
                     normalTextureShaderEdgeDetection);
         } else if (outlineMode == OUTLINE_MODE_DEPTH_NORMAL) {
