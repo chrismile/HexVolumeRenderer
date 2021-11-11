@@ -663,7 +663,7 @@ void MainApp::renderSceneSettingsGui() {
     }
 
     SciVisApp::renderSceneSettingsGuiPre();
-    ImGui::Checkbox("Show Transfer Function Window", &transferFunctionWindow.getShowTransferFunctionWindow());
+    ImGui::Checkbox("Show Transfer Function Window", &transferFunctionWindow.getShowWindow());
     ImGui::Checkbox("Render Color Legend", &shallRenderColorLegendWidgets);
 
     if (ImGui::Combo(
@@ -747,7 +747,7 @@ void MainApp::update(float dt) {
 
     moveCameraKeyboard(dt);
     if (sgl::Keyboard->isKeyDown(SDLK_u)) {
-        transferFunctionWindow.setShow(showSettingsWindow);
+        transferFunctionWindow.setShowWindow(showSettingsWindow);
     }
 
     if (io.WantCaptureMouse) {
@@ -771,7 +771,7 @@ sgl::AABB3 MainApp::computeAABB3(const std::vector<glm::vec3>& vertices) {
     float minX = FLT_MAX, minY = FLT_MAX, minZ = FLT_MAX, maxX = -FLT_MAX, maxY = -FLT_MAX, maxZ = -FLT_MAX;
 #if _OPENMP >= 201107
     #pragma omp parallel for reduction(min: minX) reduction(min: minY) reduction(min: minZ) reduction(max: maxX) \
-    reduction(max: maxY) reduction(max: maxZ)
+    reduction(max: maxY) reduction(max: maxZ) shared(vertices) default(none)
 #endif
     for (size_t i = 0; i < vertices.size(); i++) {
         const glm::vec3& pt = vertices.at(i);
@@ -794,7 +794,7 @@ void MainApp::normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
     float scale = std::min(scale3D.x, std::min(scale3D.y, scale3D.z));
 
 #if _OPENMP >= 200805
-    #pragma omp parallel for
+    #pragma omp parallel for shared(vertices, translation, scale) default(none)
 #endif
     for (size_t i = 0; i < vertices.size(); i++) {
         vertices.at(i) = (vertices.at(i) + translation) * scale;
@@ -804,7 +804,7 @@ void MainApp::normalizeVertexPositions(std::vector<glm::vec3>& vertices) {
         glm::mat4 rotationMatrix = glm::rotate(rotateModelBy90DegreeTurns * sgl::HALF_PI, modelRotationAxis);
 
 #if _OPENMP >= 200805
-        #pragma omp parallel for
+        #pragma omp parallel for shared(vertices, rotationMatrix) default(none)
 #endif
         for (size_t i = 0; i < vertices.size(); i++) {
             glm::vec4 rotatedVertex = rotationMatrix * glm::vec4(
@@ -818,7 +818,7 @@ void MainApp::applyVertexDeformations(
         std::vector<glm::vec3>& vertices, const std::vector<glm::vec3>& deformations, const float deformationFactor) {
     float maxDeformation = -FLT_MAX;
 #if _OPENMP >= 201107
-    #pragma omp parallel for reduction(max: maxDeformation)
+    #pragma omp parallel for reduction(max: maxDeformation) shared(vertices, deformations) default(none)
 #endif
     for (size_t i = 0; i < deformations.size(); i++) {
         maxDeformation = std::max(maxDeformation, glm::length(deformations.at(i)));
@@ -827,7 +827,7 @@ void MainApp::applyVertexDeformations(
     sgl::AABB3 aabb = computeAABB3(vertices);
     const float deformationScalingFactor = glm::length(aabb.getDimensions()) * deformationFactor / maxDeformation;
 #if _OPENMP >= 200805
-    #pragma omp parallel for
+    #pragma omp parallel for shared(vertices, deformations, deformationScalingFactor) default(none)
 #endif
     for (size_t i = 0; i < vertices.size(); i++) {
         vertices.at(i) = vertices.at(i) + deformationScalingFactor * deformations.at(i);
@@ -835,7 +835,7 @@ void MainApp::applyVertexDeformations(
 }
 
 void MainApp::loadHexahedralMesh(const std::string &fileName) {
-    if (fileName.size() == 0) {
+    if (fileName.empty()) {
         inputData = HexMeshPtr();
         return;
     }
