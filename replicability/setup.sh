@@ -62,7 +62,7 @@ if [ ! -d "dependencies" ]; then
         mingw64/mingw-w64-x86_64-jsoncpp mingw64/mingw-w64-x86_64-curl mingw64/mingw-w64-x86_64-eigen3 \
         mingw64/mingw-w64-x86_64-python mingw64/mingw-w64-x86_64-embree
     else
-        echo "Unknown operating system ${$OSTYPE}" >&2
+        echo "Unknown operating system $OSTYPE." >&2
         exit 1
     fi
 fi

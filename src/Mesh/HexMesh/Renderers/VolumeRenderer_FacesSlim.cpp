@@ -239,7 +239,7 @@ void VolumeRenderer_FacesSlim::reloadResolveShader() {
     sgl::ShaderManager->addPreprocessorDefine("MAX_NUM_FRAGS", sgl::toString(expectedMaxDepthComplexity));
 
     if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_QUICKSORT
-        || sortingAlgorithmMode == SORTING_ALGORITHM_MODE_QUICKSORT_HYBRID) {
+            || sortingAlgorithmMode == SORTING_ALGORITHM_MODE_QUICKSORT_HYBRID) {
         int stackSize = std::ceil(std::log2(expectedMaxDepthComplexity)) * 2 + 4;
         sgl::ShaderManager->addPreprocessorDefine("STACK_SIZE", sgl::toString(stackSize));
     }
