@@ -36,8 +36,8 @@ void PlaneFilter::filterMesh(HexMeshPtr meshIn) {
     Mesh& mesh = meshIn->getBaseComplexMesh();
     glm::vec3 normalizedDirection = glm::normalize(direction);
 
-    float minOffset = FLT_MAX;
-    float maxOffset = -FLT_MAX;
+    float minOffset = std::numeric_limits<float>::max();
+    float maxOffset = std::numeric_limits<float>::lowest();
     for (Hybrid_V& v : mesh.Vs) {
         float offset = glm::dot(normalizedDirection,
                 glm::vec3(mesh.V(0, v.id), mesh.V(1, v.id), mesh.V(2, v.id)));
