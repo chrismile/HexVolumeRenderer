@@ -104,6 +104,17 @@ else()
 	add_executable(HexVolumeRenderer ${SOURCES})
 endif()
 
+# Hide console window in release build on Windows/MSVC.
+# See: https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/recipe/VSConfigSpecificSettings
+if(MSVC)
+	set_target_properties(HexVolumeRenderer PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
+	set_target_properties(HexVolumeRenderer PROPERTIES COMPILE_DEFINITIONS_DEBUG "_CONSOLE")
+	set_target_properties(HexVolumeRenderer PROPERTIES LINK_FLAGS_RELWITHDEBINFO "/SUBSYSTEM:CONSOLE")
+	set_target_properties(HexVolumeRenderer PROPERTIES COMPILE_DEFINITIONS_RELWITHDEBINFO "_CONSOLE")
+	set_target_properties(HexVolumeRenderer PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
+	set_target_properties(HexVolumeRenderer PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:WINDOWS")
+endif()
+
 if(USE_CORK)
 	find_package(Cork REQUIRED)
 	find_package(GMP REQUIRED)
