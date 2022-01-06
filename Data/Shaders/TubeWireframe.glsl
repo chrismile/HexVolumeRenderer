@@ -12,8 +12,7 @@ out vec3 fragmentNormal;
 out vec3 fragmentTangent;
 out vec4 fragmentColor;
 
-void main()
-{
+void main() {
     fragmentPositionWorld = (mMatrix * vec4(vertexPosition, 1.0)).xyz;
     fragmentNormal = vertexNormal;
     fragmentTangent = vertexTangent;
@@ -44,8 +43,7 @@ uniform vec3 cameraPosition;
 #include OIT_GATHER_HEADER
 #endif
 
-void main()
-{
+void main() {
     vec4 color = fragmentColor;
     //color = blinnPhongShadingHalo(color);
     color = flatShadingHalo(color);
@@ -80,8 +78,7 @@ out vec4 fragColor;
 #define TUBE_HALO_LIGHTING
 #include "Lighting.glsl"
 
-void main()
-{
+void main() {
     vec4 color = fragmentColor;
     float fragmentDepth;
     #if defined(LINE_RENDERING_STYLE_HALO)
@@ -97,4 +94,3 @@ void main()
     gatherFragment(color);
     #endif
 }
-

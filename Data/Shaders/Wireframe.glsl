@@ -5,14 +5,12 @@
 layout(location = 0) in vec3 vertexPosition;
 layout(location = 1) in vec4 vertexColor;
 
-out VertexData
-{
+out VertexData {
     vec3 linePosition;
     vec4 lineColor;
 };
 
-void main()
-{
+void main() {
     linePosition = (mMatrix * vec4(vertexPosition, 1.0)).xyz;
     lineColor = vertexColor;
     gl_Position = mvpMatrix * vec4(vertexPosition, 1.0);
@@ -32,14 +30,12 @@ out vec3 fragmentPositionWorld;
 out float quadCoords; // Between -1 and 1
 out vec4 fragmentColor;
 
-in VertexData
-{
+in VertexData {
     vec3 linePosition;
     vec4 lineColor;
 } v_in[];
 
-void main()
-{
+void main() {
     vec3 linePosition0 = v_in[0].linePosition;
     vec3 linePosition1 = v_in[1].linePosition;
     vec4 lineColor0 = v_in[0].lineColor;
@@ -103,8 +99,7 @@ out vec4 fragColor;
 
 uniform vec3 cameraPosition;
 
-void main()
-{
+void main() {
     float absCoords = abs(quadCoords);
     float fragmentDepth = length(fragmentPositionWorld - cameraPosition);
     const float WHITE_THRESHOLD = 0.7;
@@ -134,12 +129,10 @@ out vec4 fragColor;
 
 uniform vec3 cameraPosition;
 
-void main()
-{
+void main() {
     // To counteract depth fighting with overlay wireframe.
     gl_FragDepth = gl_FragCoord.z - 0.00001;
     //float coverage = 1.0 - smoothstep(0.90, 1.0, abs(quadCoords));
     float coverage = 1.0 - smoothstep(1.0, 1.0, abs(quadCoords));
     fragColor = vec4(fragmentColor.rgb, fragmentColor.a * coverage);
 }
-

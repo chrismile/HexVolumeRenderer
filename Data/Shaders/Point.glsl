@@ -5,14 +5,12 @@
 layout(location = 0) in vec3 vertexPosition;
 layout(location = 1) in vec4 vertexColor;
 
-out VertexData
-{
+out VertexData {
     vec3 pointPosition;
     vec4 pointColor;
 };
 
-void main()
-{
+void main() {
     pointPosition = (mMatrix * vec4(vertexPosition, 1.0)).xyz;
     pointColor = vertexColor;
     gl_Position = mvpMatrix * vec4(vertexPosition, 1.0);
@@ -33,14 +31,12 @@ out vec3 fragmentPositionWorld;
 out vec2 quadCoords; // Between -1 and 1
 out vec4 fragmentColor;
 
-in VertexData
-{
+in VertexData {
     vec3 pointPosition;
     vec4 pointColor;
 } v_in[];
 
-void main()
-{
+void main() {
     vec3 pointPosition = v_in[0].pointPosition;
     vec4 pointColor = v_in[0].pointColor;
 
@@ -92,8 +88,7 @@ out vec4 fragColor;
 
 uniform vec3 cameraPosition;
 
-void main()
-{
+void main() {
     // To counteract depth fighting with overlay wireframe.
     gl_FragDepth = gl_FragCoord.z - 0.0002;
     //float coverage = 1.0 - smoothstep(0.95, 1.0, length(quadCoords));

@@ -19,8 +19,7 @@ out vec3 fragmentPositionWorld;
 //out vec3 fragmentNormal;
 out vec4 fragmentColor;
 
-void main()
-{
+void main() {
     SphereInstancingData sphereInstancingData = sphereInstancingDataBuffer[gl_InstanceID];
     vec3 translatedPosition = vertexPosition + sphereInstancingData.position;
     //fragmentNormal = vertexNormal;
@@ -47,16 +46,14 @@ out vec4 fragColor;
 #include OIT_GATHER_HEADER
 #endif
 
-void main()
-{
+void main() {
     vec4 color = fragmentColor;
     color.a *= getClearViewFocusFragmentOpacityFactor();
 
-    #if defined(DIRECT_BLIT_GATHER)
+#if defined(DIRECT_BLIT_GATHER)
     // Direct rendering, no transparency.
     fragColor = vec4(color.rgb, 1.0);
-    #else
+#else
     gatherFragment(color);
-    #endif
+#endif
 }
-

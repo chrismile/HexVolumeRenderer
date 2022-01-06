@@ -26,8 +26,7 @@ out vec3 fragmentPositionWorld;
 flat out vec3 vertexPositions[4];
 flat out vec4 lineColors[4];
 
-void main()
-{
+void main() {
     int globalId = gl_VertexID;
     int faceId = globalId / 4;
     int vertexId = globalId % 4;
@@ -69,8 +68,7 @@ uniform float lineWidth;
 #define DEPTH_HELPER_USE_PROJECTION_MATRIX
 #include "DepthHelper.glsl"
 
-void main()
-{
+void main() {
     // Compute the distance to the edges and get the minimum distance.
     float minDistance = 1e9;
     int minDistanceIndex = 0;
@@ -134,8 +132,7 @@ uniform float lineWidth;
 #include "Lighting.glsl"
 #include "PointToLineDistance.glsl"
 
-void main()
-{
+void main() {
     // Compute the distance to the edges and get the minimum distance.
     float minDistance = 1e9;
     int minDistanceIndex = 0;

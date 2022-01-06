@@ -5,14 +5,12 @@
 layout(location = 0) in vec3 vertexPosition;
 layout(location = 1) in vec4 vertexColor;
 
-out VertexData
-{
+out VertexData {
     vec3 linePosition;
     vec4 lineColor;
 };
 
-void main()
-{
+void main() {
     linePosition = (mMatrix * vec4(vertexPosition, 1.0)).xyz;
     lineColor = vertexColor;
     gl_Position = mvpMatrix * vec4(vertexPosition, 1.0);
@@ -32,14 +30,12 @@ out vec3 fragmentPositionWorld;
 out float quadCoords; // Between -1 and 1
 out vec4 fragmentColor;
 
-in VertexData
-{
+in VertexData {
     vec3 linePosition;
     vec4 lineColor;
 } v_in[];
 
-void main()
-{
+void main() {
     vec3 linePosition0 = v_in[0].linePosition;
     vec3 linePosition1 = v_in[1].linePosition;
     vec4 lineColor0 = v_in[0].lineColor;
@@ -107,8 +103,7 @@ out vec4 fragColor;
 #include OIT_GATHER_HEADER
 #endif
 
-void main()
-{
+void main() {
     float distanceToCenterPercentage = length(fragmentPositionWorld - sphereCenter) / sphereRadius;
     //vec3 lineColor = mix(fragmentColor.rgb, vec3(0.5, 0.5, 0.5), clamp(distanceToCenterPercentage*distanceToCenterPercentage, 0.0, 1.0));
     vec3 lineColor = fragmentColor.rgb;

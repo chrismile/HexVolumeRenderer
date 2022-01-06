@@ -13,7 +13,6 @@ void main()
 
 #version 430 core
 
-uniform sampler2D texture;
 out vec4 fragColor;
 
 void main()

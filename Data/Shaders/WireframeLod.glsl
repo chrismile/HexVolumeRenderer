@@ -6,15 +6,13 @@ layout(location = 0) in vec3 vertexPosition;
 layout(location = 1) in float vertexLodValue;
 layout(location = 2) in vec4 vertexColor;
 
-out VertexData
-{
+out VertexData {
     vec3 linePosition;
     float lineLodValue;
     vec4 lineColor;
 };
 
-void main()
-{
+void main() {
     linePosition = (mMatrix * vec4(vertexPosition, 1.0)).xyz;
     lineLodValue = vertexLodValue;
     lineColor = vertexColor;
@@ -36,15 +34,13 @@ out float fragmentLodValue;
 out vec4 fragmentColor;
 out float quadCoords; // Between -1 and 1
 
-in VertexData
-{
+in VertexData {
     vec3 linePosition;
     float lineLodValue;
     vec4 lineColor;
 } v_in[];
 
-void main()
-{
+void main() {
     vec3 linePosition0 = v_in[0].linePosition;
     vec3 linePosition1 = v_in[1].linePosition;
     float lineLodValue0 = v_in[0].lineLodValue;
@@ -115,8 +111,7 @@ uniform vec3 cameraPosition;
 
 const float LOD_EPSILON = 0.001;
 
-void main()
-{
+void main() {
     // To counteract depth fighting with overlay wireframe.
     gl_FragDepth = gl_FragCoord.z - 0.00001;
 
@@ -157,8 +152,7 @@ uniform vec3 cameraPosition;
 
 const float LOD_EPSILON = 0.001;
 
-void main()
-{
+void main() {
     // To counteract depth fighting with overlay wireframe.
     gl_FragDepth = gl_FragCoord.z - 0.00001;
 
@@ -176,8 +170,9 @@ void main()
     float EPSILON = clamp(fragmentDepth, 0.0, 0.49);
     float coverage = 1.0 - smoothstep(1.0 - 2.0*EPSILON, 1.0, absCoords);
     //float coverage = 1.0 - smoothstep(1.0, 1.0, abs(quadCoords));
-    fragColor = vec4(mix(fragmentColor.rgb, vec3(1.0, 1.0, 1.0),
-            smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, absCoords)),
+    fragColor = vec4(
+            mix(
+                fragmentColor.rgb, vec3(1.0, 1.0, 1.0),
+                smoothstep(WHITE_THRESHOLD - EPSILON, WHITE_THRESHOLD + EPSILON, absCoords)),
             fragmentColor.a * coverage);
 }
-

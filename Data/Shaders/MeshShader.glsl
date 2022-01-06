@@ -10,8 +10,7 @@ out vec3 fragmentPositionWorld;
 out vec3 fragmentNormal;
 out vec4 fragmentColor;
 
-void main()
-{
+void main() {
     fragmentNormal = vertexNormal;
     fragmentColor = vertexColor;
     fragmentPositionWorld = (mMatrix * vec4(vertexPosition, 1.0)).xyz;
@@ -33,8 +32,7 @@ out vec4 fragmentColor;
 
 #include "TransferFunction.glsl"
 
-void main()
-{
+void main() {
     fragmentNormal = vertexNormal;
     fragmentColor = transferFunction(vertexAttribute);
     fragmentPositionWorld = (mMatrix * vec4(vertexPosition, 1.0)).xyz;
@@ -64,8 +62,7 @@ uniform int useShading = 1;
 
 #include "Lighting.glsl"
 
-void main()
-{
+void main() {
     vec4 color;
     if (useShading == 1) {
         color = blinnPhongShading(fragmentColor);
@@ -104,8 +101,7 @@ uniform int useShading = 1;
 
 #include "Lighting.glsl"
 
-void main()
-{
+void main() {
     vec4 color;
     if (useShading == 1) {
         color = blinnPhongShading(fragmentColor);
@@ -134,8 +130,7 @@ out vec3 fragmentPositionWorld;
 out vec3 fragmentNormal;
 out vec4 fragmentColor;
 
-void main()
-{
+void main() {
     fragmentNormal = vertexNormal;
     fragmentPositionWorld = (mMatrix * vec4(vertexPosition, 1.0)).xyz;
     gl_Position = mvpMatrix * vec4(vertexPosition, 1.0);
@@ -165,8 +160,7 @@ uniform int useShading = 1;
 
 #include "Lighting.glsl"
 
-void main()
-{
+void main() {
     vec4 phongColor;
     if (useShading == 1) {
         phongColor = blinnPhongShading(color);
@@ -205,8 +199,7 @@ uniform int useShading = 1;
 
 #include "Lighting.glsl"
 
-void main()
-{
+void main() {
     vec4 phongColor;
     if (useShading == 1) {
         phongColor = blinnPhongShading(color);

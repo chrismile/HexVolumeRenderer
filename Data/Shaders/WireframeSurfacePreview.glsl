@@ -29,8 +29,7 @@ flat out vec4 edgeLodValues;
 
 #include "TransferFunction.glsl"
 
-void main()
-{
+void main() {
     int globalId = gl_VertexID;
     int faceId = globalId / 4;
     int vertexId = globalId % 4;
@@ -77,8 +76,7 @@ const float LOD_EPSILON = 0.001;
 #include "Lighting.glsl"
 #include "PointToLineDistance.glsl"
 
-void main()
-{
+void main() {
     const float INF = 1e9;
     int discreteSelectedLodValue = int(round(maxLod * (maxLodValueInt+1)));
 
