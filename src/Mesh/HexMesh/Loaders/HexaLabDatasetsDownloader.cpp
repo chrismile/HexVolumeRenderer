@@ -46,6 +46,7 @@ int main(int argc, char *argv[]) {
         sgl::AppSettings::get()->setDataDirectory(DATA_PATH);
     }
 #endif
+    sgl::AppSettings::get()->initializeDataDirectory();
 
     LoaderThread loaderThread;
     downloadHexaLabDataSets([]() {}, loaderThread);
