@@ -21,6 +21,6 @@ in vec4 gl_FragCoord;
 out vec4 fragColor;
 
 void main() {
-    vec4 color = texture2D(textureIn, gl_FragCoord.xy / vec2(viewportSize - ivec2(1, 1)));
+    vec4 color = texture(textureIn, gl_FragCoord.xy / vec2(viewportSize - ivec2(1, 1)));
     fragColor = vec4(vec3(1.0) - clearColor.rgb, color.r * 0.5);
 }

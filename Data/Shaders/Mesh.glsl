@@ -43,5 +43,5 @@ in vec2 fragTexCoord;
 out vec4 fragColor;
 
 void main() {
-    fragColor = color * texture2D(albedoTexture, fragTexCoord);
+    fragColor = color * texture(albedoTexture, fragTexCoord);
 }

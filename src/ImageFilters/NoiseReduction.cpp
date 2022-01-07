@@ -60,11 +60,11 @@ void NoiseReduction::initialize(bool useSingleChannelTexture) {
 
     noiseReductionShaderAttributes = sgl::ShaderManager->createShaderAttributes(noiseReductionShader);
     noiseReductionShaderAttributes->addGeometryBuffer(
-            geomBuffer, "position", sgl::ATTRIB_FLOAT, 3);
+            geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     blitShaderAttributes = sgl::ShaderManager->createShaderAttributes(blitShader);
     blitShaderAttributes->addGeometryBuffer(
-            geomBuffer, "position", sgl::ATTRIB_FLOAT, 3);
+            geomBuffer, "vertexPosition", sgl::ATTRIB_FLOAT, 3);
 
     onResolutionChanged();
 }
@@ -98,7 +98,7 @@ void NoiseReduction::denoiseTexture() {
         textureIn = &textures[iteration % 2];
         framebufferOut = &framebuffers[(iteration + 1) % 2];
         sgl::Renderer->bindFBO(*framebufferOut);
-        noiseReductionShader->setUniform("textureIn", *textureIn, 0);
+        noiseReductionShader->setUniform("inputTexture", *textureIn, 0);
         sgl::Renderer->render(noiseReductionShaderAttributes);
     }
 }
@@ -108,7 +108,7 @@ void NoiseReduction::blitDenoisedTexture() {
     int width = window->getWidth();
     int height = window->getHeight();
 
-    blitShader->setUniform("texture", textures[iteration % 2], 0);
+    blitShader->setUniform("inputTexture", textures[iteration % 2], 0);
     blitShader->setUniform("viewportSize", glm::ivec2(width, height));
     sgl::Renderer->render(blitShaderAttributes);
 }

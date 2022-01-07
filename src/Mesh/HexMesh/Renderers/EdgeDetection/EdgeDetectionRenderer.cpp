@@ -40,6 +40,7 @@
 
 void EdgeDetectionRenderer::initializeEdgeDetection() {
     weightTextureSize = glm::ivec2(5, 5);
+    oldWeightTextureSize = weightTextureSize;
 
     noiseReduction.initialize(true);
 
@@ -210,7 +211,7 @@ void EdgeDetectionRenderer::createWeightTextureEdgeDetection() {
                 int x = ix - weightTextureSize.x / 2;
                 int y = iy - weightTextureSize.y / 2;
                 // https://homepages.inf.ed.ac.uk/rbf/HIPR2/log.htm
-                float term3 = (x*x + y*y) * FACTOR_2;
+                float term3 = float(x*x + y*y) * FACTOR_2;
                 textureData[ix + iy*weightTextureSize.x] = FACTOR_1 * (1.0f + term3) * std::exp(term3);
             }
         }
@@ -236,6 +237,8 @@ void EdgeDetectionRenderer::createWeightTextureEdgeDetection() {
             negativeEntriesAbsoluteSum += -entry;
         }
     }
+    positiveEntriesAbsoluteSum = std::max(positiveEntriesAbsoluteSum, 1e-7f);
+    negativeEntriesAbsoluteSum = std::max(negativeEntriesAbsoluteSum, 1e-7f);
     for (int i = 0; i < numEntries; i++) {
         float entry = textureData[i];
         if (entry >= 0.0f) {
@@ -391,10 +394,15 @@ bool EdgeDetectionRenderer::renderGuiEdgeDetection() {
         reRender = true;
     }
     if (ImGui::Checkbox("Use Laplacian of Gaussian (LoG)", &useLoG)) {
+        if (useLoG) {
+            weightTextureSize = oldWeightTextureSize;
+        } else {
+            oldWeightTextureSize = weightTextureSize;
+        }
         createWeightTextureEdgeDetection();
         reRender = true;
     }
-    if (useLoG && ImGui::SliderInt("Filter Size", &weightTextureSize.x, 1, 7)) {
+    if (useLoG && ImGui::SliderInt("Filter Size", &weightTextureSize.x, 4, 7)) {
         weightTextureSize.y = weightTextureSize.x;
         createWeightTextureEdgeDetection();
         reRender = true;

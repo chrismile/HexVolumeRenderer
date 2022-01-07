@@ -2,17 +2,17 @@
 
 #version 430 core
 
-in vec4 position;
+in vec4 vertexPosition;
 
 void main() {
-    gl_Position = mvpMatrix * position;
+    gl_Position = mvpMatrix * vertexPosition;
 }
 
 -- Fragment
 
 #version 430 core
 
-uniform sampler2D textureIn;
+uniform sampler2D inputTexture;
 
 layout(pixel_center_integer) in vec4 gl_FragCoord;
 out vec4 fragColor;
@@ -25,16 +25,16 @@ void main() {
     ivec2 centerPosition = ivec2(gl_FragCoord.xy);
 
     // Load all pixel data of the 3x3 grid around our pixel position.
-    vec4 centerColor = texelFetch(textureIn, centerPosition, 0);
+    vec4 centerColor = texelFetch(inputTexture, centerPosition, 0);
     const vec4 neighborColors[8] = {
-    texelFetch(textureIn, centerPosition + ivec2(-1, -1), 0),
-    texelFetch(textureIn, centerPosition + ivec2(0, -1), 0),
-    texelFetch(textureIn, centerPosition + ivec2(1, -1), 0),
-    texelFetch(textureIn, centerPosition + ivec2(-1, 0), 0),
-    texelFetch(textureIn, centerPosition + ivec2(1, 0), 0),
-    texelFetch(textureIn, centerPosition + ivec2(-1, 1), 0),
-    texelFetch(textureIn, centerPosition + ivec2(0, 1), 0),
-    texelFetch(textureIn, centerPosition + ivec2(1, 1), 0),
+        texelFetch(inputTexture, centerPosition + ivec2(-1, -1), 0),
+        texelFetch(inputTexture, centerPosition + ivec2(0, -1), 0),
+        texelFetch(inputTexture, centerPosition + ivec2(1, -1), 0),
+        texelFetch(inputTexture, centerPosition + ivec2(-1, 0), 0),
+        texelFetch(inputTexture, centerPosition + ivec2(1, 0), 0),
+        texelFetch(inputTexture, centerPosition + ivec2(-1, 1), 0),
+        texelFetch(inputTexture, centerPosition + ivec2(0, 1), 0),
+        texelFetch(inputTexture, centerPosition + ivec2(1, 1), 0),
     };
 
     // Compute the derivatives in all directions.
@@ -78,7 +78,7 @@ void main() {
 
 #version 430 core
 
-uniform sampler2D textureIn;
+uniform sampler2D inputTexture;
 
 layout(pixel_center_integer) in vec4 gl_FragCoord;
 out vec4 fragColor;
@@ -91,16 +91,16 @@ void main() {
     ivec2 centerPosition = ivec2(gl_FragCoord.xy);
 
     // Load all pixel data of the 3x3 grid around our pixel position.
-    float centerColor = texelFetch(textureIn, centerPosition, 0).r;
+    float centerColor = texelFetch(inputTexture, centerPosition, 0).r;
     const float neighborColors[8] = {
-        texelFetch(textureIn, centerPosition + ivec2(-1, -1), 0).r,
-        texelFetch(textureIn, centerPosition + ivec2(0, -1), 0).r,
-        texelFetch(textureIn, centerPosition + ivec2(1, -1), 0).r,
-        texelFetch(textureIn, centerPosition + ivec2(-1, 0), 0).r,
-        texelFetch(textureIn, centerPosition + ivec2(1, 0), 0).r,
-        texelFetch(textureIn, centerPosition + ivec2(-1, 1), 0).r,
-        texelFetch(textureIn, centerPosition + ivec2(0, 1), 0).r,
-        texelFetch(textureIn, centerPosition + ivec2(1, 1), 0).r,
+        texelFetch(inputTexture, centerPosition + ivec2(-1, -1), 0).r,
+        texelFetch(inputTexture, centerPosition + ivec2(0, -1), 0).r,
+        texelFetch(inputTexture, centerPosition + ivec2(1, -1), 0).r,
+        texelFetch(inputTexture, centerPosition + ivec2(-1, 0), 0).r,
+        texelFetch(inputTexture, centerPosition + ivec2(1, 0), 0).r,
+        texelFetch(inputTexture, centerPosition + ivec2(-1, 1), 0).r,
+        texelFetch(inputTexture, centerPosition + ivec2(0, 1), 0).r,
+        texelFetch(inputTexture, centerPosition + ivec2(1, 1), 0).r,
     };
 
     // Compute the derivatives in all directions.
