@@ -449,13 +449,14 @@ bool ReplayWidget::update(float currentTime, bool& stopRecording, bool& stopCame
             }
             if (!replayState.cameraCheckpointName.empty()) {
                 sgl::Checkpoint checkpoint;
-                checkpointWindow.getCheckpoint(replayState.cameraCheckpointName, checkpoint);
-                replayState.cameraPositionSet = replayState.cameraOrientationSet = replayState.cameraFovySet = true;
-                replayState.cameraPosition = checkpoint.position;
-                replayState.cameraOrientation =
-                        glm::angleAxis(-checkpoint.pitch, glm::vec3(1, 0, 0))
-                        * glm::angleAxis(checkpoint.yaw + sgl::PI / 2.0f, glm::vec3(0, 1, 0));
-                replayState.cameraFovy = checkpoint.fovy;
+                if (checkpointWindow.getCheckpoint(replayState.cameraCheckpointName, checkpoint)) {
+                    replayState.cameraPositionSet = replayState.cameraOrientationSet = replayState.cameraFovySet = true;
+                    replayState.cameraPosition = checkpoint.position;
+                    replayState.cameraOrientation =
+                            glm::angleAxis(-checkpoint.pitch, glm::vec3(1, 0, 0))
+                            * glm::angleAxis(checkpoint.yaw + sgl::PI / 2.0f, glm::vec3(0, 1, 0));
+                    replayState.cameraFovy = checkpoint.fovy;
+                }
             }
 
             replayState.rendererSettings.setStaticSettings(currentRendererSettings);
