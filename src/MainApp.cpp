@@ -221,6 +221,11 @@ MainApp::MainApp()
     hexaLabDataSetsDownloaded = sgl::FileUtils::get()->exists(meshDirectory + "index.json");
     loadAvailableDataSetSources();
 
+    if (!sgl::AppSettings::get()->getSettings().hasKey("cameraNavigationMode")) {
+        cameraNavigationMode = sgl::CameraNavigationMode::TURNTABLE;
+        updateCameraNavigationMode();
+    }
+
     colorLegendWidget.setTransferFunctionColorMap(
             transferFunctionWindow.getTransferFunctionMap_sRGB());
 
