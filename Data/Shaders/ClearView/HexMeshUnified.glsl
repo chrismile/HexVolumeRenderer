@@ -228,6 +228,7 @@ in vec3 fragmentNormal;
 #endif
 
 #include "DepthCues.glsl"
+#include "Antialiasing.glsl"
 
 void main()
 {
