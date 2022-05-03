@@ -37,6 +37,7 @@
 #include <Utils/AppSettings.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
+#include "Helpers/SortingVendorFix.hpp"
 #include "VolumeRenderer_Faces.hpp"
 
 const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap"};
@@ -179,6 +180,9 @@ void VolumeRenderer_Faces::uploadVisualizationMapping(HexMeshPtr meshIn, bool is
 void VolumeRenderer_Faces::setSortingAlgorithmDefine() {
     if (sortingAlgorithmMode == 0) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "frontToBackPQ");
+        if (getIsGpuVendorAmd()) {
+            sgl::ShaderManager->addPreprocessorDefine("INITIALIZE_ARRAY_POW2", "");
+        }
     } else if (sortingAlgorithmMode == 1) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "bubbleSort");
     } else if (sortingAlgorithmMode == 2) {

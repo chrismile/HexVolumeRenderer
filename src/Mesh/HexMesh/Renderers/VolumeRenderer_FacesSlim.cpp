@@ -42,6 +42,7 @@
 
 #include "Utils/InternalState.hpp"
 #include "Utils/AutomaticPerformanceMeasurer.hpp"
+#include "Helpers/SortingVendorFix.hpp"
 #include "VolumeRenderer_FacesSlim.hpp"
 
 const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap"};
@@ -291,6 +292,9 @@ void VolumeRenderer_FacesSlim::updateLargeMeshMode() {
 void VolumeRenderer_FacesSlim::setSortingAlgorithmDefine() {
     if (sortingAlgorithmMode == 0) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "frontToBackPQ");
+        if (getIsGpuVendorAmd()) {
+            sgl::ShaderManager->addPreprocessorDefine("INITIALIZE_ARRAY_POW2", "");
+        }
     } else if (sortingAlgorithmMode == 1) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "bubbleSort");
     } else if (sortingAlgorithmMode == 2) {

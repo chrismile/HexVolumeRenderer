@@ -40,6 +40,7 @@
 #include "Mesh/HexMesh/Renderers/Tubes/Tubes.hpp"
 #include "Mesh/HexMesh/Renderers/Helpers/Sphere.hpp"
 #include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
+#include "Helpers/SortingVendorFix.hpp"
 #include "ClearViewRenderer.hpp"
 
 // For compute shaders.
@@ -346,6 +347,9 @@ void ClearViewRenderer::renderFocusOutline(size_t fragmentBufferSize) {
 void ClearViewRenderer::setSortingAlgorithmDefine() {
     if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_PRIORITY_QUEUE) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "frontToBackPQ");
+        if (getIsGpuVendorAmd()) {
+            sgl::ShaderManager->addPreprocessorDefine("INITIALIZE_ARRAY_POW2", "");
+        }
     } else if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_BUBBLE_SORT) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "bubbleSort");
     } else if (sortingAlgorithmMode == SORTING_ALGORITHM_MODE_INSERTION_SORT) {

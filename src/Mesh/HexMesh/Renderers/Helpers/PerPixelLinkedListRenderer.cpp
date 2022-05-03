@@ -37,6 +37,7 @@
 #include <Graphics/OpenGL/Shader.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
+#include "SortingVendorFix.hpp"
 #include "PerPixelLinkedListRenderer.hpp"
 
 const char* const sortingModeStrings[] = {"Priority Queue", "Bubble Sort", "Insertion Sort", "Shell Sort", "Max Heap"};
@@ -103,6 +104,9 @@ void PerPixelLinkedListRenderer::initShaders(const std::vector<std::string>& gat
 void PerPixelLinkedListRenderer::setSortingAlgorithmDefine() {
     if (sortingAlgorithmMode == 0) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "frontToBackPQ");
+        if (getIsGpuVendorAmd()) {
+            sgl::ShaderManager->addPreprocessorDefine("INITIALIZE_ARRAY_POW2", "");
+        }
     } else if (sortingAlgorithmMode == 1) {
         sgl::ShaderManager->addPreprocessorDefine("sortingAlgorithm", "bubbleSort");
     } else if (sortingAlgorithmMode == 2) {

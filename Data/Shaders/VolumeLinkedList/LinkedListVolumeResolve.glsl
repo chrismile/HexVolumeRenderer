@@ -295,6 +295,13 @@ void main() {
     // Get start offset from array
     uint fragOffset;
 
+#ifdef INITIALIZE_ARRAY_POW2
+    for (int i = 0; i < MAX_NUM_FRAGS; i++) {
+        colorListVolumeFrontFaces[i] = 0;
+        depthListVolumeFrontFaces[i] = 0.0;
+    }
+#endif
+
     // Collect all fragments for this pixel
     uint numFragsVolumeFrontFaces = 0, numFragsVolumeBackFaces = 0, numFragsSurfaces = 0;
     fragOffset = startOffsetVolumeFrontFaces[pixelIndex];
@@ -312,7 +319,16 @@ void main() {
 
         numFragsVolumeFrontFaces++;
     }
+
     fragOffset = startOffsetVolumeBackFaces[pixelIndex];
+
+#ifdef INITIALIZE_ARRAY_POW2
+    for (int i = 0; i < MAX_NUM_FRAGS; i++) {
+        colorListVolumeBackFaces[i] = 0;
+        depthListVolumeBackFaces[i] = 0.0;
+    }
+#endif
+
     for (uint i = 0; i < MAX_NUM_FRAGS_VOLUME; i++) {
         if (fragOffset == -1) {
             // End of list reached
@@ -327,7 +343,16 @@ void main() {
 
         numFragsVolumeBackFaces++;
     }
+
     fragOffset = startOffsetSurface[pixelIndex];
+
+#ifdef INITIALIZE_ARRAY_POW2
+    for (int i = 0; i < MAX_NUM_FRAGS; i++) {
+        colorListSurfaces[i] = 0;
+        depthListSurfaces[i] = 0.0;
+    }
+#endif
+
     for (uint i = 0; i < MAX_NUM_FRAGS_SURFACE; i++) {
         if (fragOffset == -1) {
             // End of list reached
