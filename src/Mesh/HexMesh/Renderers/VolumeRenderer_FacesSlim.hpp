@@ -98,7 +98,7 @@ protected:
 
     // Multi-var information (optional mode if more than one vertex attribute available).
     bool isMultiVarData = false;
-    bool useMultiVarData = true;
+    bool useMultiVarData = false;
     int multiVarAttrIdx = 0;
 
     // Per-pixel linked list data.

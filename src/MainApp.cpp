@@ -62,6 +62,7 @@
 #include "Mesh/HexMesh/Loaders/MeshLoader.hpp"
 #include "Mesh/HexMesh/Loaders/DatLoader.hpp"
 #include "Mesh/HexMesh/Loaders/HexaLabDatasets.hpp"
+#include "Mesh/HexMesh/Loaders/DegStressLoader.hpp"
 #include "Mesh/Filters/PlaneFilter.hpp"
 #include "Mesh/Filters/PeelingFilter.hpp"
 #include "Mesh/Filters/QualityFilter.hpp"
@@ -182,6 +183,7 @@ MainApp::MainApp()
     meshLoaderMap.insert(std::make_pair("vtk", new VtkLoader));
     meshLoaderMap.insert(std::make_pair("mesh", new MeshLoader));
     meshLoaderMap.insert(std::make_pair("dat", new DatCartesianGridLoader));
+    meshLoaderMap.insert(std::make_pair("degStress", new DegStressLoader));
     meshFilters.push_back(new PlaneFilter);
     meshFilters.push_back(new PeelingFilter);
     meshFilters.push_back(new QualityFilter);
@@ -910,7 +912,11 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         }
         if (!hexMeshAttributeList.empty()) {
             if (isPerVertexData) {
-                inputData->addManualVertexAttribute(hexMeshAttributeList, "Anisotropy");
+                if (extension == "degStress") {
+                    inputData->addManualVertexAttribute(hexMeshAttributeList, "Degeneracy Metric");
+                } else {
+                    inputData->addManualVertexAttribute(hexMeshAttributeList, "Anisotropy");
+                }
             } else {
                 inputData->addManualCellAttribute(hexMeshAttributeList, "Convergence");
                 //std::vector<float> unconvergence(hexMeshAttributeList.size());

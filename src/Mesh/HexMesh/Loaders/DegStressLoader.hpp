@@ -1,7 +1,7 @@
 /*
  * BSD 2-Clause License
  *
- * Copyright (c) 2020, Christoph Neuhauser
+ * Copyright (c) 2022, Christoph Neuhauser
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,14 +26,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HEXVOLUMERENDERER_DATLOADER_HPP
-#define HEXVOLUMERENDERER_DATLOADER_HPP
+#ifndef HEXVOLUMERENDERER_DEGSTRESSLOADER_HPP
+#define HEXVOLUMERENDERER_DEGSTRESSLOADER_HPP
 
 #include <string>
 #include <vector>
 #include "HexahedralMeshLoader.hpp"
 
-class DatCartesianGridLoader : public HexahedralMeshLoader {
+class DegStressLoader : public HexahedralMeshLoader {
 public:
     bool loadHexahedralMeshFromFile(
             const std::string& filename,
@@ -42,11 +42,4 @@ public:
             bool& isPerVertexData) override;
 };
 
-/**
- * Parses a .dat file containing additional data with a set of N attributes per line.
- * @param filename The filename of the .dat file.
- * @return The attribute data (i.e., N x num_lines values).
- */
-std::vector<std::vector<float>> loadDatData(const std::string& filename);
-
-#endif //HEXVOLUMERENDERER_DATLOADER_HPP
+#endif //HEXVOLUMERENDERER_DEGSTRESSLOADER_HPP
