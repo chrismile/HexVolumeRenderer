@@ -266,8 +266,8 @@ void DepthComplexityRenderer::computeStatistics(bool isReRender) {
         if (data[i] > 0) {
             usedLocations++;
         }
-        maxComplexity = std::max(maxComplexity, (uint64_t)data[i]);
-        minComplexity = std::min(maxComplexity, (uint64_t)data[i]);
+        maxComplexity = std::max(maxComplexity, uint64_t(data[i]));
+        minComplexity = std::min(minComplexity, uint64_t(data[i]));
     }
     if (totalNumFragments == 0) usedLocations = 1; // Avoid dividing by zero in code below
     this->totalNumFragments = totalNumFragments;
