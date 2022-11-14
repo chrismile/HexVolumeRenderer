@@ -32,6 +32,38 @@
 
 #include "DegStressLoader.hpp"
 
+#ifdef USE_EIGEN
+#include <Eigen/Eigenvalues>
+
+void computePrincipalStresses(
+        float xx, float yy, float zz, float xy, float yz, float zx,
+        float& majorStress, float& mediumStress, float& minorStress/*,
+        glm::vec3& v0, glm::vec3& v1, glm::vec3& v2*/) {
+    Eigen::Matrix3f stressTensor;
+    stressTensor.row(0) << xx, xy, zx;
+    stressTensor.row(1) << xy, yy, yz;
+    stressTensor.row(2) << zx, yz, zz;
+
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> selfAdjointEigenSolver;
+    selfAdjointEigenSolver.compute(stressTensor);
+    Eigen::Vector3f eigenvalues = selfAdjointEigenSolver.eigenvalues();
+    /*Eigen::Matrix3f eigenvectors = selfAdjointEigenSolver.eigenvectors();
+    v0 = glm::vec3(eigenvectors(0, 0), eigenvectors(1, 0), eigenvectors(2, 0));
+    v1 = glm::vec3(eigenvectors(0, 1), eigenvectors(1, 1), eigenvectors(2, 1));
+    v2 = glm::vec3(eigenvectors(0, 2), eigenvectors(1, 2), eigenvectors(2, 2));*/
+
+    minorStress = eigenvalues(0);
+    mediumStress = eigenvalues(1);
+    majorStress = eigenvalues(2);
+}
+
+float computeDegeneracyMeasure(float sigma1, float sigma2, float sigma3) {
+    float degeneracyMeasure = 1.0f - std::abs((sigma1 - sigma2) / (sigma1 + sigma2));
+    degeneracyMeasure = std::max(degeneracyMeasure, 1.0f - std::abs((sigma3 - sigma2) / (sigma3 + sigma2)));
+    return degeneracyMeasure;
+}
+#endif
+
 bool DegStressLoader::loadHexahedralMeshFromFile(
         const std::string& filename,
         std::vector<glm::vec3>& vertices, std::vector<uint32_t>& cellIndices,
@@ -90,6 +122,15 @@ bool DegStressLoader::loadHexahedralMeshFromFile(
                 "does not match.");
     }
     attributeList.reserve(numVertices);
+
+    float majorStress, mediumStress, minorStress;
+    int xxIdx = 0;
+    int yyIdx = 1;
+    int zzIdx = 2;
+    int xyIdx = 5;
+    int yzIdx = 4;
+    int zxIdx = 3;
+
     std::vector<float> cartesianStressesLine;
     cartesianStressesLine.reserve(6);
     for (uint32_t vertexIdx = 0; vertexIdx < numVertices; vertexIdx++) {
@@ -98,7 +139,21 @@ bool DegStressLoader::loadHexahedralMeshFromFile(
             sgl::Logfile::get()->throwError(
                     "Error in DegStressLoader::loadHexahedralMeshFromFile: Invalid Cartesian stresses line.");
         }
+#ifdef USE_EIGEN
+        computePrincipalStresses(
+                cartesianStressesLine.at(xxIdx),
+                cartesianStressesLine.at(yyIdx),
+                cartesianStressesLine.at(zzIdx),
+                cartesianStressesLine.at(xyIdx),
+                cartesianStressesLine.at(yzIdx),
+                cartesianStressesLine.at(zxIdx),
+                majorStress, mediumStress, minorStress/*, v0, v1, v2*/);
+        float degeneracyMeasure = computeDegeneracyMeasure(
+                minorStress, mediumStress, majorStress);
+        attributeList.emplace_back(degeneracyMeasure);
+#else
         attributeList.emplace_back(cartesianStressesLine.at(0));
+#endif
     }
     isPerVertexData = true;
 
