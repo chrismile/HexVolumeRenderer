@@ -27,6 +27,7 @@
  */
 
 #include <unordered_set>
+#include <limits>
 #include <Utils/CircularQueue.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
