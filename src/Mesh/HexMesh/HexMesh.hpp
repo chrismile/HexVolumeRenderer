@@ -181,7 +181,7 @@ public:
     void addManualCellAttribute(const std::vector<float>& cellAttributes, const std::string& attributeName);
     void setQualityMeasure(QualityMeasure qualityMeasure);
     void onTransferFunctionMapRebuilt();
-    bool isDirty() { return dirty; }
+    inline bool isDirty() const { return dirty; }
 
     // Get mesh information.
     inline size_t getNumCells() const { return meshNumCells; }
@@ -745,7 +745,7 @@ private:
     RayMeshIntersection& rayMeshIntersection;
     bool dirty = false;
 
-    // Mesh informaton.
+    // Mesh data.
     size_t meshNumCells = 0;
     size_t meshNumVertices = 0;
     std::vector<glm::vec3> vertices;
