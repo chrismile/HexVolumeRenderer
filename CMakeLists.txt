@@ -320,6 +320,8 @@ if (Python3_FOUND AND USE_PYTHON)
     endif()
 endif()
 
+add_executable(HexaLabDatasetsDownloader ${SOURCES_DOWNLOADER})
+
 # We need to search for the Vulkan package to avoid errors when sgl is built with Vulkan support.
 find_package(Vulkan QUIET)
 if (${Vulkan_FOUND} AND NOT "USE_SGL_VULKAN_HEADERS" IN_LIST SGL_INTERFACE_COMPILE_DEFINITIONS
@@ -402,7 +404,6 @@ endif()
 
 
 # Downloading data sets for replicability stamp automatically.
-add_executable(HexaLabDatasetsDownloader ${SOURCES_DOWNLOADER})
 target_link_libraries(HexaLabDatasetsDownloader PUBLIC sgl ${CURL_LIBRARIES})
 
 if (JSONCPP_LIBRARIES)
