@@ -33,7 +33,7 @@
         "jsoncpp",
         "python3",
         "curl",
-        "embree"
+        "embree3"
     ],
     "features": {
         "tbb": {
