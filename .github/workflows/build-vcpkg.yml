@@ -143,4 +143,4 @@ jobs:
             goto vulkan_finished
           )
           :vulkan_finished
-          ./build-msvc.bat --do-not-run --vcpkg-triplet ${{env.VCPKG_DEFAULT_TRIPLET}}
+          .\build-msvc.bat --do-not-run --vcpkg-triplet ${{env.VCPKG_DEFAULT_TRIPLET}}

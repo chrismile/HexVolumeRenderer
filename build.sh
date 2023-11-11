@@ -167,13 +167,13 @@ is_installed_brew() {
 }
 
 if $use_msys && command -v pacman &> /dev/null && [ ! -d $build_dir_debug ] && [ ! -d $build_dir_release ]; then
-    if ! command -v cmake &> /dev/null || ! command -v git &> /dev/null \
+    if ! command -v cmake &> /dev/null || ! command -v git &> /dev/null || ! command -v rsync &> /dev/null \
             || ! command -v curl &> /dev/null || ! command -v wget &> /dev/null \
             || ! command -v pkg-config &> /dev/null || ! command -v g++ &> /dev/null; then
         echo "------------------------"
         echo "installing build essentials"
         echo "------------------------"
-        pacman --noconfirm -S --needed make git curl wget mingw64/mingw-w64-x86_64-cmake \
+        pacman --noconfirm -S --needed make git rsync curl wget mingw64/mingw-w64-x86_64-cmake \
         mingw64/mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-gdb
     fi
 
@@ -539,37 +539,36 @@ if [ $use_macos = false ] && [ $use_msys = false ]; then
         fi
         params+=(-Dembree_DIR="${projectpath}/third_party/embree-${embree_version}.x86_64.linux/lib/cmake/embree-${embree_version}")
     fi
-elif [ $use_macos = true ]; then
-    if [ ! -d "./embree/embree/lib/cmake" ]; then
-        # Make sure we have no leftovers from a failed build attempt.
-        if [ -d "./embree-repo" ]; then
-            rm -rf "./embree-repo"
-        fi
-        if [ -d "./embree-build" ]; then
-            rm -rf "./embree-build"
-        fi
-        if [ -d "./embree" ]; then
-            rm -rf "./embree"
-        fi
-
-        params_embree=()
-        if [[ $(uname -m) == 'arm64' ]]; then
-            params_embree+=(-DBUILD_TBB_FROM_SOURCE=On)
-        fi
-
-        # Build Embree and its dependencies.
-        git clone https://github.com/embree/embree.git embree-repo
-        mkdir embree-build
-        pushd "./embree-build" >/dev/null
-        cmake ../embree-repo/scripts/superbuild -DCMAKE_INSTALL_PREFIX="$projectpath/third_party/embree" \
-        -DBUILD_JOBS=$(sysctl -n hw.ncpu) ${params_embree[@]+"${params_embree[@]}"}
-        cmake --build . --parallel $(sysctl -n hw.ncpu)
-        cmake --build . --parallel $(sysctl -n hw.ncpu)
-        popd >/dev/null
-    fi
-
-    params+=(-Dembree_DIR="${projectpath}/third_party/embree/embree/lib/cmake/$(ls "${projectpath}/third_party/embree/embree/lib/cmake")")
-    params+=(-Dembree_DIR="${projectpath}/third_party/embree/embree/lib/cmake/$(ls "${projectpath}/third_party/embree/embree/lib/cmake")")
+#elif [ $use_macos = true ]; then
+#    if [ ! -d "./embree/embree/lib/cmake" ]; then
+#        # Make sure we have no leftovers from a failed build attempt.
+#        if [ -d "./embree-repo" ]; then
+#            rm -rf "./embree-repo"
+#        fi
+#        if [ -d "./embree-build" ]; then
+#            rm -rf "./embree-build"
+#        fi
+#        if [ -d "./embree" ]; then
+#            rm -rf "./embree"
+#        fi
+#
+#        params_embree=()
+#        if [[ $(uname -m) == 'arm64' ]]; then
+#            params_embree+=(-DBUILD_TBB_FROM_SOURCE=On)
+#        fi
+#
+#        # Build Embree and its dependencies.
+#        git clone https://github.com/embree/embree.git embree-repo
+#        mkdir embree-build
+#        pushd "./embree-build" >/dev/null
+#        cmake ../embree-repo/scripts/superbuild -DCMAKE_INSTALL_PREFIX="$projectpath/third_party/embree" \
+#        -DBUILD_JOBS=$(sysctl -n hw.ncpu) ${params_embree[@]+"${params_embree[@]}"}
+#        cmake --build . --parallel $(sysctl -n hw.ncpu)
+#        cmake --build . --parallel $(sysctl -n hw.ncpu)
+#        popd >/dev/null
+#    fi
+#
+#    params+=(-Dembree_DIR="${projectpath}/third_party/embree/embree/lib/cmake/$(ls "${projectpath}/third_party/embree/embree/lib/cmake")")
 fi
 if [ $use_vcpkg = true ]; then
     params+=(-DPYTHONHOME="./python3")
@@ -696,17 +695,17 @@ if $use_msys; then
     done
 elif [ $use_macos = true ] && [ $use_vcpkg = true ]; then
     [ -d $destination_dir ] || mkdir $destination_dir
-    rsync -a "$build_dir/LineVis.app/Contents/MacOS/LineVis" $destination_dir
+    rsync -a "$build_dir/HexVolumeRenderer.app/Contents/MacOS/HexVolumeRenderer" $destination_dir
 elif [ $use_macos = true ] && [ $use_vcpkg = false ]; then
     brew_prefix="$(brew --prefix)"
     mkdir -p $destination_dir
 
-    if [ -d "$destination_dir/$program_name.app" ]; then
-        rm -rf "$destination_dir/$program_name.app"
+    if [ -d "$destination_dir/HexVolumeRenderer.app" ]; then
+        rm -rf "$destination_dir/HexVolumeRenderer.app"
     fi
 
     # Copy the application to the destination directory.
-    cp -a "$build_dir/$program_name.app" "$destination_dir"
+    cp -a "$build_dir/HexVolumeRenderer.app" "$destination_dir"
 
     # Copy sgl to the destination directory.
     if [ $debug = true ] ; then
@@ -772,7 +771,7 @@ elif [ $use_macos = true ] && [ $use_vcpkg = false ]; then
             fi
         done < <(echo "$otool_output")
     }
-    copy_dependencies_recursive "$build_dir/LineVis.app/Contents/MacOS/LineVis"
+    copy_dependencies_recursive "$build_dir/HexVolumeRenderer.app/Contents/MacOS/HexVolumeRenderer"
     if [ $debug = true ]; then
         copy_dependencies_recursive "./third_party/sgl/install/lib/libsgld.dylib"
     else
@@ -886,9 +885,9 @@ fi
 
 # Create a run script.
 if $use_msys; then
-    printf "@echo off\npushd %%~dp0\npushd bin\nstart \"\" LineVis.exe\n" > "$destination_dir/run.bat"
+    printf "@echo off\npushd %%~dp0\npushd bin\nstart \"\" HexVolumeRenderer.exe\n" > "$destination_dir/run.bat"
 elif $use_macos; then
-    printf "#!/bin/sh\npushd \"\$(dirname \"\$0\")\" >/dev/null\n./LineVis.app/Contents/MacOS/LineVis\npopd\n" > "$destination_dir/run.sh"
+    printf "#!/bin/sh\npushd \"\$(dirname \"\$0\")\" >/dev/null\n./HexVolumeRenderer.app/Contents/MacOS/HexVolumeRenderer\npopd\n" > "$destination_dir/run.sh"
     chmod +x "$destination_dir/run.sh"
 else
     printf "#!/bin/bash\npushd \"\$(dirname \"\$0\")/bin\" >/dev/null\n./HexVolumeRenderer\npopd\n" > "$destination_dir/run.sh"
