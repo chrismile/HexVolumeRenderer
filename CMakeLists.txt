@@ -132,23 +132,23 @@ else()
 endif()
 
 if(${USE_STATIC_STD_LIBRARIES})
-    target_link_options(LineVis PRIVATE -static-libgcc -static-libstdc++)
+    target_link_options(HexVolumeRenderer PRIVATE -static-libgcc -static-libstdc++)
 endif()
 
 if (VCPKG_TOOLCHAIN AND UNIX AND NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND ${CMAKE_VERSION} VERSION_GREATER "3.12"
         AND "SGL_STATIC_LIBRARY" IN_LIST SGL_INTERFACE_COMPILE_DEFINITIONS)
-    #target_link_options(LineVis PRIVATE "LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/CMake/symbols_linux_gcc.map")
-    target_link_options(LineVis PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/CMake/symbols_linux_gcc.map")
+    #target_link_options(HexVolumeRenderer PRIVATE "LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/CMake/symbols_linux_gcc.map")
+    target_link_options(HexVolumeRenderer PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/CMake/symbols_linux_gcc.map")
 endif()
 
 if (APPLE)
-    set(BUNDLE_PATH ${CMAKE_CURRENT_BINARY_DIR}/LineVis.app)
+    set(BUNDLE_PATH ${CMAKE_CURRENT_BINARY_DIR}/HexVolumeRenderer.app)
     set_target_properties(
-            LineVis PROPERTIES
-            OUTPUT_NAME "LineVis"
-            MACOSX_BUNDLE_EXECUTABLE_NAME "LineVis"
-            MACOSX_BUNDLE_BUNDLE_NAME "LineVis"
-            FOLDER "LineVis"
+            HexVolumeRenderer PROPERTIES
+            OUTPUT_NAME "HexVolumeRenderer"
+            MACOSX_BUNDLE_EXECUTABLE_NAME "HexVolumeRenderer"
+            MACOSX_BUNDLE_BUNDLE_NAME "HexVolumeRenderer"
+            FOLDER "HexVolumeRenderer"
             MACOSX_BUNDLE_SHORT_VERSION_STRING ""
             MACOSX_BUNDLE_LONG_VERSION_STRING ""
             MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/CMake/MacOSXBundleInfo.plist.in")
@@ -166,14 +166,14 @@ if(MSVC)
 endif()
 
 if(MSVC)
-    #target_compile_definitions(LineVis PRIVATE /wd4251)
-    set_target_properties(LineVis PROPERTIES COMPILE_FLAGS "/wd4251")
-    target_compile_options(LineVis PRIVATE "/MP")
+    #target_compile_definitions(HexVolumeRenderer PRIVATE /wd4251)
+    set_target_properties(HexVolumeRenderer PROPERTIES COMPILE_FLAGS "/wd4251")
+    target_compile_options(HexVolumeRenderer PRIVATE "/MP")
 endif()
 
 if (NOT MSVC)
     if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-        target_compile_definitions(LineVis PRIVATE NDEBUG)
+        target_compile_definitions(HexVolumeRenderer PRIVATE NDEBUG)
     endif()
 endif()
 
@@ -218,7 +218,7 @@ if((${CMAKE_GENERATOR} STREQUAL "MinGW Makefiles") OR (${CMAKE_GENERATOR} STREQU
     else()
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
     endif()
-    target_link_libraries(LineVis PUBLIC mingw32)
+    target_link_libraries(HexVolumeRenderer PUBLIC mingw32)
 endif()
 if(VCPKG_TOOLCHAIN)
     target_link_libraries(HexVolumeRenderer PUBLIC SDL2::SDL2main)
@@ -282,8 +282,8 @@ if (Python3_FOUND AND USE_PYTHON)
         # Python linked statically in this case. See:
         # https://stackoverflow.com/questions/67891197/ctypes-cpython-39-x86-64-linux-gnu-so-undefined-symbol-pyfloat-type-in-embedd
         if(VCPKG_LIBRARY_LINKAGE STREQUAL "static")
-            target_link_options(LineVis PRIVATE "-Xlinker")
-            target_link_options(LineVis PRIVATE "-export-dynamic")
+            target_link_options(HexVolumeRenderer PRIVATE "-Xlinker")
+            target_link_options(HexVolumeRenderer PRIVATE "-export-dynamic")
         endif()
     endif()
     target_include_directories(HexVolumeRenderer PUBLIC ${Python3_INCLUDE_DIRS})
@@ -308,11 +308,11 @@ if (Python3_FOUND AND USE_PYTHON)
             set(PYTHONPATH "${PYTHONHOME}/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}")
         endif()
         set(PYTHONHOME "${PYTHONHOME}" CACHE STRING "PYTHONHOME path.")
-        target_compile_definitions(LineVis PRIVATE PYTHONHOME=L\"${PYTHONHOME}\")
+        target_compile_definitions(HexVolumeRenderer PRIVATE PYTHONHOME=L\"${PYTHONHOME}\")
     endif()
     if (PYTHONPATH)
         set(PYTHONPATH "${PYTHONPATH}" CACHE STRING "PYTHONPATH path.")
-        target_compile_definitions(LineVis PRIVATE PYTHONPATH=L\"${PYTHONPATH}\")
+        target_compile_definitions(HexVolumeRenderer PRIVATE PYTHONPATH=L\"${PYTHONPATH}\")
     endif()
 endif()
 
