@@ -94,7 +94,7 @@ void BaseComplexLineRenderer::render() {
 }
 
 void BaseComplexLineRenderer::renderGui() {
-    if (ImGui::Begin("Base Complex Surface Renderer", &showRendererWindow)) {
+    if (ImGui::Begin(getWindowName(), &showRendererWindow)) {
         if (ImGui::Checkbox("Draw Regular Lines", &drawRegularLines)) {
             dirty = true;
         }

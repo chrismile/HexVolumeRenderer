@@ -41,6 +41,8 @@ public:
     BaseComplexSurfaceRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~BaseComplexSurfaceRenderer() {}
 
+    static const char* getWindowName() { return "Base Complex Surface Renderer"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

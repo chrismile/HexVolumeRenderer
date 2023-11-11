@@ -45,6 +45,8 @@ public:
     LineDensityControlRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~LineDensityControlRenderer() {}
 
+    static const char* getWindowName() { return "Line Density Control Renderer"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

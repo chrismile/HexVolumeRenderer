@@ -136,7 +136,7 @@ void LodLineRendererPerFragment::render() {
 }
 
 void LodLineRendererPerFragment::renderGui() {
-    if (ImGui::Begin("Line LOD Renderer", &showRendererWindow)) {
+    if (ImGui::Begin(getWindowName(), &showRendererWindow)) {
         if (ImGui::SliderFloat("Maximum Distance", &maxDistance, 0.0f, 1.5f)) {
             reloadSphereRenderData();
             reRender = true;

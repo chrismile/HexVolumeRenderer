@@ -305,14 +305,14 @@ void LineDensityControlRenderer::attributeTextureBlur() {
 }
 
 void LineDensityControlRenderer::lineDensityControlRendering() {
-    glViewport(0, 0, sceneData.sceneTexture->getW(), sceneData.sceneTexture->getH());
+    glViewport(0, 0, (*sceneData.sceneTexture)->getW(), (*sceneData.sceneTexture)->getH());
 
     sgl::Renderer->setProjectionMatrix(sceneData.camera->getProjectionMatrix());
     sgl::Renderer->setViewMatrix(sceneData.camera->getViewMatrix());
     sgl::Renderer->setModelMatrix(sgl::matrixIdentity());
 
     // Enable depth test and depth write.
-    sgl::Renderer->bindFBO(sceneData.framebuffer);
+    sgl::Renderer->bindFBO(*sceneData.framebuffer);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glDepthMask(GL_TRUE);
@@ -335,7 +335,7 @@ void LineDensityControlRenderer::render() {
 }
 
 void LineDensityControlRenderer::renderGui() {
-    if (ImGui::Begin("Line Density Control Renderer", &showRendererWindow)) {
+    if (ImGui::Begin(getWindowName(), &showRendererWindow)) {
         if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             reRender = true;
         }

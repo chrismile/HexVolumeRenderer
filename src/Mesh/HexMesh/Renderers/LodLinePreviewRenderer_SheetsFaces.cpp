@@ -116,7 +116,7 @@ void LodLinePreviewRenderer_SheetsFaces::gather() {
 }
 
 void LodLinePreviewRenderer_SheetsFaces::renderGui() {
-    if (ImGui::Begin("Line LOD Preview Renderer", &showRendererWindow)) {
+    if (ImGui::Begin(getWindowName(), &showRendererWindow)) {
         if (ImGui::Checkbox("Show LOD Differences", &showLodDifferences)) {
             reRender = true;
         }

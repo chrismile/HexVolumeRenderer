@@ -158,7 +158,7 @@ void EdgeDetectionRenderer::reloadTexturesEdgeDetection() {
         imageTextureEdgeDetection = sgl::TextureManager->createEmptyTexture(width, height, textureSettings);
         framebufferEdgeDetection->bindTexture(imageTextureEdgeDetection);
         framebufferEdgeDetection->bindRenderbuffer(
-                sceneDataEdgeDetection.sceneDepthRBO, sgl::DEPTH_STENCIL_ATTACHMENT);
+                *sceneDataEdgeDetection.sceneDepthRBO, sgl::DEPTH_STENCIL_ATTACHMENT);
     }
 
     noiseReduction.onResolutionChanged();
@@ -346,7 +346,7 @@ void EdgeDetectionRenderer::renderEdgeDetectionContours() {
             noiseReduction.denoiseTexture();
 
             glEnable(GL_BLEND);
-            sgl::Renderer->bindFBO(sceneDataEdgeDetection.framebuffer);
+            sgl::Renderer->bindFBO(*sceneDataEdgeDetection.framebuffer);
             noiseReduction.getDenoisedTexture();
             directBlitShader->setUniform("clearColor", sceneDataEdgeDetection.clearColor);
             directBlitShader->setUniform("viewportSize", glm::ivec2(width, height));
@@ -354,7 +354,7 @@ void EdgeDetectionRenderer::renderEdgeDetectionContours() {
             sgl::Renderer->render(directBlitShaderAttributes);
         } else {
             glEnable(GL_BLEND);
-            sgl::Renderer->bindFBO(sceneDataEdgeDetection.framebuffer);
+            sgl::Renderer->bindFBO(*sceneDataEdgeDetection.framebuffer);
             sgl::Renderer->render(shaderAttributesEdgeDetection);
             glDisable(GL_DEPTH_TEST);
         }
@@ -364,7 +364,7 @@ void EdgeDetectionRenderer::renderEdgeDetectionContours() {
         sgl::Renderer->render(shaderAttributesFullScreenBlitEdgeDetection);
 
         glDisable(GL_STENCIL_TEST);
-        sgl::Renderer->bindFBO(sceneDataEdgeDetection.framebuffer);
+        sgl::Renderer->bindFBO(*sceneDataEdgeDetection.framebuffer);
         sgl::Renderer->render(shaderAttributesEdgeDetection);
         glEnable(GL_STENCIL_TEST);
     }

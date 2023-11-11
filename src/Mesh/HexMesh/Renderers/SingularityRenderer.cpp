@@ -94,7 +94,7 @@ void SingularityRenderer::render() {
 }
 
 void SingularityRenderer::renderGui() {
-    if (ImGui::Begin("Singularity Renderer", &showRendererWindow)) {
+    if (ImGui::Begin(getWindowName(), &showRendererWindow)) {
         if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             reRender = true;
         }

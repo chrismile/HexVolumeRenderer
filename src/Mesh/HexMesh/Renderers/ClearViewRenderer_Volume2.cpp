@@ -68,7 +68,7 @@ struct LinkedListFragmentNode {
 
 ClearViewRenderer_Volume2::ClearViewRenderer_Volume2(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : ClearViewRenderer(sceneData, transferFunctionWindow), EdgeDetectionRenderer(sceneData) {
-    windowName = "ClearView Renderer (Volume 2)";
+    windowName = getWindowName();
     clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_FACES_UNIFIED;
     useScreenSpaceLens = true;
 

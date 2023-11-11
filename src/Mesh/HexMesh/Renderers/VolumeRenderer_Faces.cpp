@@ -329,7 +329,7 @@ void VolumeRenderer_Faces::render() {
 }
 
 void VolumeRenderer_Faces::renderGui() {
-    if (ImGui::Begin("Volume Renderer (Faces)", &showRendererWindow)) {
+    if (ImGui::Begin(getWindowName(), &showRendererWindow)) {
         if (!useWeightedVertexAttributes && ImGui::Checkbox("Use Shading", &useShading)) {
             reRender = true;
         }

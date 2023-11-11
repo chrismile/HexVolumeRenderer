@@ -57,6 +57,9 @@
 #include <Math/Math.hpp>
 #include <Graphics/Window.hpp>
 #include <Graphics/Renderer.hpp>
+#include <Graphics/OpenGL/Texture.hpp>
+
+#include "Widgets/DataView.hpp"
 
 #include "Mesh/HexMesh/Loaders/VtkLoader.hpp"
 #include "Mesh/HexMesh/Loaders/MeshLoader.hpp"
@@ -105,7 +108,7 @@ MainApp::MainApp()
         : rayMeshIntersection(new RayMeshIntersection_NanoRT(camera)),
 #endif
           sceneData(
-                  sceneFramebuffer, sceneTexture, sceneDepthRBO, camera, clearColor, performanceMeasurer,
+                  &sceneFramebuffer, &sceneTexture, &sceneDepthRBO, camera, clearColor, performanceMeasurer,
                   recording, useCameraFlight, *rayMeshIntersection)
 #ifdef USE_PYTHON
         , replayWidget(sceneData, transferFunctionWindow, checkpointWindow)
@@ -167,15 +170,71 @@ MainApp::MainApp()
         }
     });
 
+    sgl::ColorLegendWidget::setFontScaleStandard(1.0f);
+
+    useDockSpaceMode = true;
+    sgl::AppSettings::get()->getSettings().getValueOpt("useDockSpaceMode", useDockSpaceMode);
+    sgl::AppSettings::get()->getSettings().getValueOpt("useFixedSizeViewport", useFixedSizeViewport);
+    sgl::AppSettings::get()->getSettings().getValueOpt("fixedViewportSizeX", fixedViewportSize.x);
+    sgl::AppSettings::get()->getSettings().getValueOpt("fixedViewportSizeY", fixedViewportSize.y);
+    fixedViewportSizeEdit = fixedViewportSize;
+    showPropertyEditor = true;
+    sgl::ImGuiWrapper::get()->setUseDockSpaceMode(useDockSpaceMode);
+
+    dataView = std::make_shared<DataView>(camera, screenshotTransparentBackground, useLinearRGB, gammaCorrectionShader);
+    if (useDockSpaceMode) {
+        sceneData.framebuffer = &dataView->sceneFramebuffer;
+        sceneData.sceneTexture = &dataView->sceneTexture;
+        sceneData.sceneDepthRBO = &dataView->sceneDepthRBO;
+    } else {
+        sceneData.framebuffer = &sceneFramebuffer;
+        sceneData.sceneTexture = &sceneTexture;
+        sceneData.sceneDepthRBO = &sceneDepthRBO;
+    }
+
+#ifdef NDEBUG
+    showFpsOverlay = false;
+#else
+    showFpsOverlay = true;
+#endif
+    sgl::AppSettings::get()->getSettings().getValueOpt("showFpsOverlay", showFpsOverlay);
+    sgl::AppSettings::get()->getSettings().getValueOpt("showCoordinateAxesOverlay", showCoordinateAxesOverlay);
+
     clearColor = sgl::Color(0, 0, 0, 255);
     clearColorSelection = ImColor(clearColor.getColorRGBA());
     transferFunctionWindow.setClearColor(clearColor);
     transferFunctionWindow.setUseLinearRGB(useLinearRGB);
     colorLegendWidget.setClearColor(clearColor);
+    coordinateAxesOverlayWidget.setClearColor(clearColor);
+    dataView->setClearColor(clearColor);
 
     sgl::Renderer->setErrorCallback(&openglErrorCallback);
     sgl::Renderer->setDebugVerbosity(sgl::DEBUG_OUTPUT_CRITICAL_ONLY);
     resolutionChanged(sgl::EventPtr());
+
+    rendererWindowNames = {
+            SurfaceRenderer::getWindowName(),
+            WireframeRenderer_Faces::getWindowName(),
+            DepthComplexityRenderer::getWindowName(),
+            ClearViewRenderer_FacesUnified::getWindowName(),
+            VolumeRenderer_FacesSlim::getWindowName(),
+            VolumeRenderer_Volume::getWindowName(),
+            ClearViewRenderer_Volume::getWindowName(),
+            VolumeRenderer_Faces::getWindowName(),
+            ClearViewRenderer_Faces::getWindowName(),
+            SingularityRenderer::getWindowName(),
+            BaseComplexLineRenderer::getWindowName(),
+            BaseComplexSurfaceRenderer::getWindowName(),
+            PartitionLineRenderer::getWindowName(),
+            LodLineRenderer::getWindowName(),
+            LodLineRendererPerFragment::getWindowName(),
+            LodLinePreviewRenderer::getWindowName(),
+            LodLinePreviewRenderer_SheetsFaces::getWindowName(),
+            SingularityTypeCounterRenderer::getWindowName(),
+            LineDensityControlRenderer::getWindowName(),
+            HexSheetRenderer::getWindowName(),
+            ClearViewRenderer_Volume2::getWindowName(),
+    };
 
     selectedQualityMeasure = QUALITY_MEASURE_SCALED_JACOBIAN;
     changeQualityMeasureType();
@@ -272,6 +331,15 @@ MainApp::~MainApp() {
 #ifdef USE_STEAMWORKS
     steamworks.shutdown();
 #endif
+
+    sgl::AppSettings::get()->getSettings().addKeyValue("useDockSpaceMode", useDockSpaceMode);
+    if (!usePerformanceMeasurementMode) {
+        sgl::AppSettings::get()->getSettings().addKeyValue("useFixedSizeViewport", useFixedSizeViewport);
+        sgl::AppSettings::get()->getSettings().addKeyValue("fixedViewportSizeX", fixedViewportSize.x);
+        sgl::AppSettings::get()->getSettings().addKeyValue("fixedViewportSizeY", fixedViewportSize.y);
+    }
+    sgl::AppSettings::get()->getSettings().addKeyValue("showFpsOverlay", showFpsOverlay);
+    sgl::AppSettings::get()->getSettings().addKeyValue("showCoordinateAxesOverlay", showCoordinateAxesOverlay);
 }
 
 void MainApp::loadReplicabilityStampState() {
@@ -290,13 +358,19 @@ void MainApp::setNewState(const InternalState &newState) {
     }
 
     // 1. Change the window resolution?
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int currentWindowWidth = window->getWidth();
-    int currentWindowHeight = window->getHeight();
     glm::ivec2 newResolution = newState.windowResolution;
-    if (newResolution.x > 0 && newResolution.y > 0 && currentWindowWidth != newResolution.x
+    if (useDockSpaceMode) {
+        useFixedSizeViewport = true;
+        fixedViewportSizeEdit = newResolution;
+        fixedViewportSize = newResolution;
+    } else {
+        sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+        int currentWindowWidth = window->getWidth();
+        int currentWindowHeight = window->getHeight();
+        if (newResolution.x > 0 && newResolution.y > 0 && currentWindowWidth != newResolution.x
             && currentWindowHeight != newResolution.y) {
-        window->setWindowSize(newResolution.x, newResolution.y);
+            window->setWindowSize(newResolution.x, newResolution.y);
+        }
     }
 
     // 1.1. Handle the new tiling mode for SSBO accesses (TODO).
@@ -426,46 +500,217 @@ void MainApp::render() {
     SciVisApp::preRender();
     prepareVisualizationPipeline();
 
-    for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
-        reRender = reRender || meshRenderer->needsReRender();
-    }
-
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
-    glViewport(0, 0, width, height);
-
-    // Set appropriate background alpha value.
-    if (screenshot && screenshotTransparentBackground) {
-        reRender = true;
-        clearColor.setA(0);
-        glDisable(GL_BLEND);
-    }
-
-    if (reRender || continuousRendering) {
-        if (renderingMode != RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED && usePerformanceMeasurementMode) {
-            performanceMeasurer->startMeasure(recordingTimeLast);
+    if (!useDockSpaceMode) {
+        for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
+            reRender = reRender || meshRenderer->needsReRender();
         }
 
-        SciVisApp::prepareReRender();
+        sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+        int width = window->getWidth();
+        int height = window->getHeight();
+        glViewport(0, 0, width, height);
 
-        if (inputData.get() != nullptr) {
-            for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
-                meshRenderer->render();
+        // Set appropriate background alpha value.
+        if (screenshot && screenshotTransparentBackground) {
+            reRender = true;
+            clearColor.setA(0);
+            glDisable(GL_BLEND);
+        }
+
+        if (reRender || continuousRendering) {
+            if (renderingMode != RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED && usePerformanceMeasurementMode) {
+                performanceMeasurer->startMeasure(recordingTimeLast);
             }
-        }
 
-        if (renderingMode != RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED && usePerformanceMeasurementMode) {
-            performanceMeasurer->endMeasure();
-        }
+            SciVisApp::prepareReRender();
 
-        reRender = false;
+            if (inputData.get() != nullptr) {
+                for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
+                    meshRenderer->render();
+                }
+            }
+
+            if (renderingMode != RENDERING_MODE_CLEAR_VIEW_FACES_UNIFIED && usePerformanceMeasurementMode) {
+                performanceMeasurer->endMeasure();
+            }
+
+            reRender = false;
+        }
     }
 
     SciVisApp::postRender();
 }
 
 void MainApp::renderGui() {
+    focusedWindowIndex = -1;
+    mouseHoverWindowIndex = -1;
+
+    if (useDockSpaceMode) {
+        ImGuiID dockSpaceId = ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+        ImGuiDockNode* centralNode = ImGui::DockBuilderGetNode(dockSpaceId);
+        static bool isProgramStartup = true;
+        if (isProgramStartup && centralNode->IsEmpty()) {
+            const float tabWidth = 0.3f;
+            ImGuiID dockLeftId, dockRightId, dockMainRightId, dockMainId;
+            ImGui::DockBuilderSplitNode(
+                    dockSpaceId, ImGuiDir_Left, tabWidth,
+                    &dockLeftId, &dockMainRightId);
+            ImGui::DockBuilderSplitNode(
+                    dockMainRightId, ImGuiDir_Right, tabWidth / (1.0f - tabWidth),
+                    &dockRightId, &dockMainId);
+            ImGui::DockBuilderDockWindow("Renderer Window", dockMainId);
+
+            ImGuiID dockLeftUpId, dockLeftDownId;
+            ImGui::DockBuilderSplitNode(
+                    dockLeftId, ImGuiDir_Up, 0.6f,
+                    &dockLeftUpId, &dockLeftDownId);
+            ImGui::DockBuilderDockWindow("Settings", dockLeftUpId);
+            ImGui::DockBuilderDockWindow("Transfer Function", dockLeftDownId);
+
+            ImGuiID dockRightUpId, dockRightDown1Id;
+            ImGui::DockBuilderSplitNode(
+                    dockRightId, ImGuiDir_Up, 0.6f,
+                    &dockRightUpId, &dockRightDown1Id);
+            for (const std::string& rendererName : rendererWindowNames) {
+                ImGui::DockBuilderDockWindow(rendererName.c_str(), dockRightUpId);
+            }
+
+            const float sizeReplay = 0.4f;
+            ImGuiID dockReplayCheckpointId, dockRightDown2Id;
+            ImGui::DockBuilderSplitNode(
+                    dockRightDown1Id, ImGuiDir_Up, sizeReplay,
+                    &dockReplayCheckpointId, &dockRightDown2Id);
+            ImGui::DockBuilderDockWindow("Replay Widget", dockReplayCheckpointId);
+            ImGui::DockBuilderDockWindow("Camera Checkpoints", dockReplayCheckpointId);
+
+            ImGuiID dockPlaneFilterId, dockRightDown3Id;
+            ImGui::DockBuilderSplitNode(
+                    dockRightDown2Id, ImGuiDir_Up, 1.0f/3.0f,
+                    &dockPlaneFilterId, &dockRightDown3Id);
+            ImGuiID dockPeelingFilterId, dockQualityFilterId;
+            ImGui::DockBuilderSplitNode(
+                    dockRightDown3Id, ImGuiDir_Up, 1.0f/2.0f,
+                    &dockPeelingFilterId, &dockQualityFilterId);
+            ImGui::DockBuilderDockWindow("Plane Filter", dockPlaneFilterId);
+            ImGui::DockBuilderDockWindow("Peeling Filter", dockPeelingFilterId);
+            ImGui::DockBuilderDockWindow("Quality Filter", dockQualityFilterId);
+
+            ImGui::DockBuilderFinish(dockSpaceId);
+        }
+        isProgramStartup = false;
+
+        //renderGuiMenuBar();
+
+        if (showRendererWindow) {
+            bool isViewOpen = true;
+            sgl::ImGuiWrapper::get()->setNextWindowStandardSize(800, 600);
+            if (ImGui::Begin("Renderer Window", &isViewOpen)) {
+                if (ImGui::IsWindowFocused()) {
+                    focusedWindowIndex = 0;
+                }
+                sgl::ImGuiWrapper::get()->setWindowViewport(0, ImGui::GetWindowViewport());
+                sgl::ImGuiWrapper::get()->setWindowViewport(0, ImGui::GetWindowViewport());
+                sgl::ImGuiWrapper::get()->setWindowPosAndSize(0, ImGui::GetWindowPos(), ImGui::GetWindowSize());
+
+                ImVec2 sizeContent = ImGui::GetContentRegionAvail();
+                if (useFixedSizeViewport) {
+                    sizeContent = ImVec2(float(fixedViewportSize.x), float(fixedViewportSize.y));
+                }
+                if (int(sizeContent.x) != int(dataView->viewportWidth)
+                        || int(sizeContent.y) != int(dataView->viewportHeight)) {
+                    dataView->resize(int(sizeContent.x), int(sizeContent.y));
+                    if (dataView->viewportWidth > 0 && dataView->viewportHeight > 0) {
+                        for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
+                            meshRenderer->onResolutionChanged();
+                        }
+                    }
+                    reRender = true;
+                }
+
+                for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
+                    reRender = reRender || meshRenderer->needsReRender();
+                }
+
+                if (reRender || continuousRendering) {
+                    if (dataView->viewportWidth > 0 && dataView->viewportHeight > 0) {
+                        // Set appropriate background alpha value.
+                        if (screenshot && screenshotTransparentBackground) {
+                            reRender = true;
+                            clearColor.setA(0);
+                            glDisable(GL_BLEND);
+                        }
+
+                        dataView->beginRender();
+                        if (inputData.get() != nullptr) {
+                            for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
+                                meshRenderer->render();
+                            }
+                        }
+                        dataView->endRender();
+                    }
+                    reRender = false;
+                }
+
+                if (dataView->viewportWidth > 0 && dataView->viewportHeight > 0) {
+                    if (!uiOnScreenshot && screenshot) {
+                        printNow = true;
+                        sgl::Renderer->bindFBO(dataView->getSceneFramebuffer());
+                        customScreenshotWidth = int(dataView->viewportWidth);
+                        customScreenshotHeight = int(dataView->viewportHeight);
+                        std::string screenshotFilename =
+                                saveDirectoryScreenshots + saveFilenameScreenshots
+                                + "_" + sgl::toString(screenshotNumber);
+                        screenshotFilename += ".png";
+                        saveScreenshot(screenshotFilename);
+                        customScreenshotWidth = -1;
+                        customScreenshotHeight = -1;
+                        sgl::Renderer->unbindFBO();
+                        printNow = false;
+                        screenshot = true;
+                    }
+
+                    if (!uiOnScreenshot && recording && !isFirstRecordingFrame) {
+                        videoWriter->pushFramebuffer(dataView->getSceneFramebuffer());
+                    }
+
+                    if (isViewOpen) {
+                        ImGui::Image(
+                                (void*)(intptr_t)static_cast<sgl::TextureGL*>(
+                                        dataView->getSceneTextureResolved().get())->getTexture(),
+                                sizeContent, ImVec2(0, 1), ImVec2(1, 0));
+                        if (ImGui::IsItemHovered()) {
+                            mouseHoverWindowIndex = 0;
+                        }
+                    }
+
+                    if (useDockSpaceMode && shallRenderColorLegendWidgets && inputData) {
+                        colorLegendWidget.setAttributeMinValue(transferFunctionWindow.getSelectedRangeMin());
+                        colorLegendWidget.setAttributeMaxValue(transferFunctionWindow.getSelectedRangeMax());
+                        colorLegendWidget.renderGui();
+                    }
+
+                    if (showFpsOverlay) {
+                        renderGuiFpsOverlay();
+                    }
+                    if (showCoordinateAxesOverlay) {
+                        renderGuiCoordinateAxesOverlay(dataView->camera);
+                    }
+                }
+            }
+            ImGui::End();
+        }
+
+        if (!uiOnScreenshot && screenshot) {
+            screenshot = false;
+            screenshotNumber++;
+        }
+        sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+        int width = window->getWidth();
+        int height = window->getHeight();
+        glViewport(0, 0, width, height);
+        reRender = false;
+    }
+
     if (showSettingsWindow) {
         sgl::ImGuiWrapper::get()->setNextWindowStandardPosSize(3085, 39, 744, 1348);
         if (ImGui::Begin("Settings", &showSettingsWindow)) {
@@ -476,7 +721,7 @@ void MainApp::renderGui() {
 
             ImGui::Separator();
 
-            if (ImGui::CollapsingHeader("Scene Settings", NULL, ImGuiTreeNodeFlags_DefaultOpen)) {
+            if (ImGui::CollapsingHeader("Scene Settings", nullptr, ImGuiTreeNodeFlags_DefaultOpen)) {
                 renderSceneSettingsGui();
             }
         }
@@ -497,7 +742,7 @@ void MainApp::renderGui() {
         }
     }
 
-    if (shallRenderColorLegendWidgets && inputData) {
+    if (!useDockSpaceMode && shallRenderColorLegendWidgets && inputData) {
         colorLegendWidget.setAttributeMinValue(transferFunctionWindow.getSelectedRangeMin());
         colorLegendWidget.setAttributeMaxValue(transferFunctionWindow.getSelectedRangeMax());
         colorLegendWidget.renderGui();
@@ -666,12 +911,18 @@ void MainApp::renderSceneSettingsGui() {
                 clearColorSelection.x, clearColorSelection.y, clearColorSelection.z, clearColorSelection.w);
         transferFunctionWindow.setClearColor(clearColor);
         colorLegendWidget.setClearColor(clearColor);
+        coordinateAxesOverlayWidget.setClearColor(clearColor);
+        dataView->setClearColor(clearColor);
         reRender = true;
     }
 
     SciVisApp::renderSceneSettingsGuiPre();
     ImGui::Checkbox("Show Transfer Function Window", &transferFunctionWindow.getShowWindow());
     ImGui::Checkbox("Render Color Legend", &shallRenderColorLegendWidgets);
+    newDockSpaceMode = useDockSpaceMode;
+    if (ImGui::Checkbox("Use Docking Mode", &newDockSpaceMode)) {
+        scheduledDockSpaceModeChange = true;
+    }
 
     if (ImGui::Combo(
             "Rendering Mode", (int*)&renderingMode, RENDERING_MODE_NAMES,
@@ -693,6 +944,23 @@ void MainApp::renderSceneSettingsGui() {
 
 void MainApp::update(float dt) {
     sgl::SciVisApp::update(dt);
+
+    if (scheduledDockSpaceModeChange) {
+        if (useDockSpaceMode) {
+            sceneData.framebuffer = &dataView->sceneFramebuffer;
+            sceneData.sceneTexture = &dataView->sceneTexture;
+            sceneData.sceneDepthRBO = &dataView->sceneDepthRBO;
+        } else {
+            sceneData.framebuffer = &sceneFramebuffer;
+            sceneData.sceneTexture = &sceneTexture;
+            sceneData.sceneDepthRBO = &sceneDepthRBO;
+        }
+
+        useDockSpaceMode = newDockSpaceMode;
+        scheduledDockSpaceModeChange = false;
+        resolutionChanged(sgl::EventPtr());
+        reRender = true;
+    }
 
     if (usePerformanceMeasurementMode && !performanceMeasurer->update(recordingTime)) {
         // All modes were tested -> quit.
@@ -747,22 +1015,19 @@ void MainApp::update(float dt) {
 #endif
 
     ImGuiIO &io = ImGui::GetIO();
-    if (io.WantCaptureKeyboard && !recording) {
-        // Ignore inputs below
-        return;
+    if (!io.WantCaptureKeyboard || recording || focusedWindowIndex != -1) {
+        moveCameraKeyboard(dt);
     }
 
-    moveCameraKeyboard(dt);
-    if (sgl::Keyboard->isKeyDown(SDLK_u)) {
-        transferFunctionWindow.setShowWindow(showSettingsWindow);
+    if (!io.WantCaptureKeyboard || recording) {
+        if (sgl::Keyboard->isKeyDown(SDLK_u)) {
+            transferFunctionWindow.setShowWindow(showSettingsWindow);
+        }
     }
 
-    if (io.WantCaptureMouse) {
-        // Ignore inputs below
-        return;
+    if (!io.WantCaptureMouse || mouseHoverWindowIndex != -1) {
+        moveCameraMouse(dt);
     }
-
-    moveCameraMouse(dt);
 
     for (HexahedralMeshRenderer* meshRenderer : meshRenderers) {
         meshRenderer->update(dt);
@@ -872,6 +1137,7 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
             fileName, hexMeshVertices, hexMeshCellIndices, hexMeshDeformations,
             hexMeshAttributeList, isPerVertexData);
     if (loadingSuccessful) {
+        sgl::ColorLegendWidget::resetStandardSize();
         newMeshLoaded = true;
         printLoadingTime = true;
         loadingTimeSeconds = 0.0;

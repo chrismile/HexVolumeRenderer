@@ -408,7 +408,7 @@ void HexSheetRenderer::render() {
 }
 
 void HexSheetRenderer::renderGui() {
-    if (ImGui::Begin("Hexahedral Sheet Renderer", &showRendererWindow)) {
+    if (ImGui::Begin(getWindowName(), &showRendererWindow)) {
         if (ImGui::Checkbox("Use Shading", &useShading)) {
             reRender = true;
         }

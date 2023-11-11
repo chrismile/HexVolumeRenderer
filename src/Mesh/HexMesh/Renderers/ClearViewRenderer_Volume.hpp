@@ -48,6 +48,8 @@ public:
     ClearViewRenderer_Volume(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~ClearViewRenderer_Volume() {}
 
+    static const char* getWindowName() { return "ClearView Renderer (Volume)"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

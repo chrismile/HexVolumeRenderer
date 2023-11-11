@@ -41,6 +41,8 @@ public:
     LodLinePreviewRenderer_SheetsFaces(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~LodLinePreviewRenderer_SheetsFaces() {}
 
+    static const char* getWindowName() { return "Line LOD Preview Renderer"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

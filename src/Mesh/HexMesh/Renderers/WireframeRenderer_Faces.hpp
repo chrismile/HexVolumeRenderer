@@ -51,6 +51,8 @@ public:
             SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow, bool useOutline, bool onlyBoundary);
     virtual ~WireframeRenderer_Faces() {}
 
+    static const char* getWindowName() { return "Wireframe Renderer (Faces)"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

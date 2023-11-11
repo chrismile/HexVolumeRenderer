@@ -57,6 +57,9 @@
 #include "Utils/Steamworks.hpp"
 #endif
 
+class DataView;
+typedef std::shared_ptr<DataView> DataViewPtr;
+
 class MainApp : public sgl::SciVisApp {
 public:
     MainApp();
@@ -86,9 +89,27 @@ private:
     Steamworks steamworks;
 #endif
 
+    // Dock space mode.
+    //void renderGuiMenuBar();
+    //void renderGuiPropertyEditorBegin() override;
+    //void renderGuiPropertyEditorCustomNodes() override;
+    bool scheduledDockSpaceModeChange = false;
+    bool newDockSpaceMode = false;
+    int focusedWindowIndex = -1;
+    int mouseHoverWindowIndex = -1;
+    bool showRendererWindow = true;
+    DataViewPtr dataView;
+    sgl::CameraPtr cameraHandle;
+    std::vector<std::string> rendererWindowNames;
+
     /// Scene data (e.g., camera, main framebuffer, ...).
     RayMeshIntersection* rayMeshIntersection;
     SceneData sceneData;
+
+    // This setting lets all data views use the same viewport resolution.
+    bool useFixedSizeViewport = false;
+    glm::ivec2 fixedViewportSizeEdit{ 2186, 1358 };
+    glm::ivec2 fixedViewportSize{ 2186, 1358 };
 
     /// Scene data used in user interface.
     RenderingMode renderingMode = RENDERING_MODE_SURFACE;

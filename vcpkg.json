@@ -27,13 +27,17 @@
             "default-features": true,
             "features": [ "bzip2", "lz4", "lzma", "zstd" ]
         },
+        "glew",
         "glm",
         "tbb",
         "eigen3",
         "jsoncpp",
         "python3",
         "curl",
-        "embree3"
+        {
+            "name": "embree3",
+            "platform": "!linux"
+        }
     ],
     "features": {
         "tbb": {

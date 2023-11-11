@@ -86,7 +86,7 @@ void LodLinePreviewRenderer::render() {
 }
 
 void LodLinePreviewRenderer::renderGui() {
-    if (ImGui::Begin("Line LOD Preview Renderer", &showRendererWindow)) {
+    if (ImGui::Begin(getWindowName(), &showRendererWindow)) {
         if (ImGui::SliderFloat("Maximum LOD", &maxLod, 0.0f, 1.0f)) {
             reRender = true;
         }

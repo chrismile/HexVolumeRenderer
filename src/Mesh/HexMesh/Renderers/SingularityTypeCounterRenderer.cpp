@@ -81,7 +81,7 @@ void SingularityTypeCounterRenderer::render() {
 }
 
 void SingularityTypeCounterRenderer::renderGui() {
-    if (ImGui::Begin("Wireframe Renderer (Faces)", &showRendererWindow)) {
+    if (ImGui::Begin(getWindowName(), &showRendererWindow)) {
         ImGui::Text("#Circle SEs: %u", numCircleSEs);
         ImGui::Text("#Open SEs: %u", numOpenSEs);
         ImGui::Separator();

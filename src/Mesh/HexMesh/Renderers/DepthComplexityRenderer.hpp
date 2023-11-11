@@ -41,6 +41,8 @@ public:
     DepthComplexityRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~DepthComplexityRenderer() {}
 
+    static const char* getWindowName() { return "Depth Complexity Renderer"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

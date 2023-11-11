@@ -41,6 +41,8 @@ public:
     SingularityRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~SingularityRenderer() {}
 
+    static const char* getWindowName() { return "Singularity Renderer"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

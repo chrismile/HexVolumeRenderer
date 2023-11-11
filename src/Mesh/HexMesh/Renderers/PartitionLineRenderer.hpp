@@ -38,6 +38,8 @@ public:
     PartitionLineRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~PartitionLineRenderer() {}
 
+    static const char* getWindowName() { return "Partition Lines Renderer"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

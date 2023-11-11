@@ -64,7 +64,7 @@ struct LinkedListFragmentNode {
 
 ClearViewRenderer_Faces::ClearViewRenderer_Faces(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : ClearViewRenderer(sceneData, transferFunctionWindow) {
-    windowName = "ClearView Renderer (Faces)";
+    windowName = getWindowName();
     clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_FACES;
 
     sgl::ShaderManager->invalidateShaderCache();

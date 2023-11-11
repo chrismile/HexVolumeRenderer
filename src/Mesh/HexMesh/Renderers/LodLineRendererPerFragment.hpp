@@ -48,6 +48,8 @@ public:
     LodLineRendererPerFragment(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~LodLineRendererPerFragment() {}
 
+    static const char* getWindowName() { return "Line LOD Renderer"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

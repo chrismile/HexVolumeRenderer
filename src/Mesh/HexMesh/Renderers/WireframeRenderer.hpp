@@ -41,6 +41,8 @@ public:
     WireframeRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~WireframeRenderer() {}
 
+    static const char* getWindowName() { return "Wireframe Renderer"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

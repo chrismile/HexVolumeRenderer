@@ -82,7 +82,7 @@ void WireframeRenderer::render() {
 }
 
 void WireframeRenderer::renderGui() {
-    if (ImGui::Begin("Wireframe Renderer", &showRendererWindow)) {
+    if (ImGui::Begin(getWindowName(), &showRendererWindow)) {
         if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             reRender = true;
         }

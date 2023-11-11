@@ -38,16 +38,16 @@ class AutomaticPerformanceMeasurer;
 
 struct SceneData {
     SceneData(
-            sgl::FramebufferObjectPtr& framebuffer, sgl::TexturePtr& sceneTexture,
-            sgl::RenderbufferObjectPtr& sceneDepthRBO, sgl::CameraPtr& camera, sgl::Color& clearColor,
+            sgl::FramebufferObjectPtr* framebuffer, sgl::TexturePtr* sceneTexture,
+            sgl::RenderbufferObjectPtr* sceneDepthRBO, sgl::CameraPtr& camera, sgl::Color& clearColor,
             AutomaticPerformanceMeasurer*& performanceMeasurer, bool& recordingMode,
             bool& useCameraFlight, RayMeshIntersection& rayMeshIntersection)
         : framebuffer(framebuffer), sceneTexture(sceneTexture), sceneDepthRBO(sceneDepthRBO), camera(camera),
           clearColor(clearColor), performanceMeasurer(performanceMeasurer), recordingMode(recordingMode),
           useCameraFlight(useCameraFlight), rayMeshIntersection(rayMeshIntersection) {}
-    sgl::FramebufferObjectPtr& framebuffer;
-    sgl::TexturePtr& sceneTexture;
-    sgl::RenderbufferObjectPtr& sceneDepthRBO;
+    sgl::FramebufferObjectPtr* framebuffer;
+    sgl::TexturePtr* sceneTexture;
+    sgl::RenderbufferObjectPtr* sceneDepthRBO;
 
     sgl::CameraPtr& camera;
     sgl::Color& clearColor;

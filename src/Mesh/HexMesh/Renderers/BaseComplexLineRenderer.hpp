@@ -41,6 +41,8 @@ public:
     BaseComplexLineRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~BaseComplexLineRenderer() {}
 
+    static const char* getWindowName() { return "Base Complex Line Renderer"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

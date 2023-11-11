@@ -78,7 +78,7 @@ void PartitionLineRenderer::render() {
 }
 
 void PartitionLineRenderer::renderGui() {
-    if (ImGui::Begin("Partition Lines Renderer", &showRendererWindow)) {
+    if (ImGui::Begin(getWindowName(), &showRendererWindow)) {
         if (ImGui::SliderFloat("Line Width", &lineWidth, MIN_LINE_WIDTH, MAX_LINE_WIDTH, "%.4f")) {
             reRender = true;
         }

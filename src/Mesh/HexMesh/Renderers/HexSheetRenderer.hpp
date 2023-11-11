@@ -39,6 +39,8 @@ public:
     HexSheetRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~HexSheetRenderer() {}
 
+    static const char* getWindowName() { return "Hexahedral Sheet Renderer"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

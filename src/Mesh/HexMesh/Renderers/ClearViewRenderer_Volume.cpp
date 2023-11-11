@@ -78,7 +78,7 @@ struct SphereInstancingData {
 
 ClearViewRenderer_Volume::ClearViewRenderer_Volume(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow)
         : ClearViewRenderer(sceneData, transferFunctionWindow) {
-    windowName = "ClearView Renderer (Volume)";
+    windowName = getWindowName();
     clearViewRendererType = CLEAR_VIEW_RENDERER_TYPE_VOLUME;
     useWeightedVertexAttributes = false;
 

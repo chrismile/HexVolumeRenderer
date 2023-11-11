@@ -341,7 +341,7 @@ void VolumeRenderer_Volume::render() {
 }
 
 void VolumeRenderer_Volume::renderGui() {
-    if (ImGui::Begin("Volume Renderer", &showRendererWindow)) {
+    if (ImGui::Begin(getWindowName(), &showRendererWindow)) {
         if (ImGui::Checkbox("Use Weighted Vertex Attributes", &useWeightedVertexAttributes)) {
             if (this->hexMesh) uploadVisualizationMapping(hexMesh, false);
         }

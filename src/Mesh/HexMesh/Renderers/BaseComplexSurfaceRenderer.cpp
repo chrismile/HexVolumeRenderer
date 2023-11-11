@@ -83,7 +83,7 @@ void BaseComplexSurfaceRenderer::render() {
 }
 
 void BaseComplexSurfaceRenderer::renderGui() {
-    if (ImGui::Begin("Base Complex Surface Renderer", &showRendererWindow)) {
+    if (ImGui::Begin(getWindowName(), &showRendererWindow)) {
         if (ImGui::Checkbox("Cull Interior", &cullInterior)) {
             dirty = true;
         }

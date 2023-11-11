@@ -55,6 +55,8 @@ public:
     VolumeRenderer_Volume(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~VolumeRenderer_Volume() {}
 
+    static const char* getWindowName() { return "Volume Renderer"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

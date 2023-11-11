@@ -41,6 +41,8 @@ public:
     SurfaceRenderer(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~SurfaceRenderer() {}
 
+    static const char* getWindowName() { return "Surface Renderer"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

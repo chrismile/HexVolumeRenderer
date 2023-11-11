@@ -214,7 +214,7 @@ std::string numberToCommaString(int number, bool attachLeadingZeroes = false) {
 }
 
 void DepthComplexityRenderer::renderGui() {
-    if (ImGui::Begin("Depth Complexity Renderer", &showWindow)) {
+    if (ImGui::Begin(getWindowName(), &showWindow)) {
         std::string totalNumFragmentsString = numberToCommaString(totalNumFragments);
         ImGui::Text("Depth complexity: #fragments: %s", totalNumFragmentsString.c_str());
         ImGui::Text("avg used: %.2f, avg all: %.2f, max: %lu", ((float) totalNumFragments / usedLocations),

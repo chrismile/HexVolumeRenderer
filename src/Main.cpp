@@ -63,11 +63,15 @@ int main(int argc, char *argv[]) {
     builder.AddChar(L'\u03BB'); // lambda
     builder.AddChar(L'\u2113'); // ell / SCRIPT SMALL L
     builder.BuildRanges(&fontRanges);
+    bool useMultiViewport = false;
+    if (sgl::AppSettings::get()->getSettings().getValueOpt("useDockSpaceMode", useMultiViewport)) {
+        useMultiViewport = !useMultiViewport;
+    }
 #ifdef USE_STEAMWORKS
     sgl::overwriteHighDPIScaleFactor(1.2f);
-    sgl::AppSettings::get()->setLoadGUI(fontRanges.Data, true, false, 1.0f);
+    sgl::AppSettings::get()->setLoadGUI(fontRanges.Data, true, useMultiViewport, 1.0f);
 #else
-    sgl::AppSettings::get()->setLoadGUI(fontRanges.Data);
+    sgl::AppSettings::get()->setLoadGUI(fontRanges.Data, true, useMultiViewport);
 #endif
     sgl::Window* window = sgl::AppSettings::get()->createWindow();
     sgl::AppSettings::get()->initializeSubsystems();

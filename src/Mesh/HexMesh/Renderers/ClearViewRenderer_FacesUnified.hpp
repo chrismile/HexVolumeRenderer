@@ -53,6 +53,8 @@ public:
     ClearViewRenderer_FacesUnified(SceneData &sceneData, sgl::TransferFunctionWindow &transferFunctionWindow);
     virtual ~ClearViewRenderer_FacesUnified();
 
+    static const char* getWindowName() { return "ClearView Renderer (Unified)"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.

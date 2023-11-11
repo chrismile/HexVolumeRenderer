@@ -139,7 +139,7 @@ void SurfaceRenderer::render() {
 
 void SurfaceRenderer::renderGui() {
     sgl::ImGuiWrapper::get()->setNextWindowStandardPosSize(0, 0, 540, 160);
-    if (ImGui::Begin("Surface Renderer", &showRendererWindow)) {
+    if (ImGui::Begin(getWindowName(), &showRendererWindow)) {
         if (ImGui::Checkbox("Use Shading", &useShading)) {
             reRender = true;
         }

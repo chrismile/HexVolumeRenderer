@@ -54,6 +54,8 @@ public:
     virtual ~VolumeRenderer_FacesSlim();
     virtual bool getUsesSlimRepresentation() override { return true; }
 
+    static const char* getWindowName() { return "Pseudo Volume Renderer"; }
+
     /**
      * Re-generates the visualization mapping.
      * @param meshIn The mesh to generate a visualization mapping for.
