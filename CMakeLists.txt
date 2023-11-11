@@ -326,6 +326,7 @@ if (${Vulkan_FOUND} AND NOT "USE_SGL_VULKAN_HEADERS" IN_LIST SGL_INTERFACE_COMPI
         AND "SUPPORT_VULKAN" IN_LIST SGL_INTERFACE_COMPILE_DEFINITIONS
         AND ${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.21.0")
     target_link_libraries(HexVolumeRenderer PUBLIC Vulkan::Headers)
+    target_link_libraries(HexaLabDatasetsDownloader PUBLIC Vulkan::Headers)
 endif()
 
 if(${embree_FOUND})

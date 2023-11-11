@@ -57,6 +57,10 @@ int main(int argc, char *argv[]) {
         sgl::AppSettings::get()->setDataDirectory(DATA_PATH);
     }
 #endif
+    sgl::AppSettings::get()->initializeDataDirectory();
+
+    std::string iconPath = sgl::AppSettings::get()->getDataDirectory() + "Fonts/icon_256.png";
+    sgl::AppSettings::get()->loadApplicationIconFromFile(iconPath);
 
     ImVector<ImWchar> fontRanges;
     ImFontGlyphRangesBuilder builder;
