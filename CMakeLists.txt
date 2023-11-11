@@ -135,12 +135,6 @@ if(${USE_STATIC_STD_LIBRARIES})
     target_link_options(HexVolumeRenderer PRIVATE -static-libgcc -static-libstdc++)
 endif()
 
-if (VCPKG_TOOLCHAIN AND UNIX AND NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND ${CMAKE_VERSION} VERSION_GREATER "3.12"
-        AND "SGL_STATIC_LIBRARY" IN_LIST SGL_INTERFACE_COMPILE_DEFINITIONS)
-    #target_link_options(HexVolumeRenderer PRIVATE "LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/CMake/symbols_linux_gcc.map")
-    target_link_options(HexVolumeRenderer PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/CMake/symbols_linux_gcc.map")
-endif()
-
 if (APPLE)
     set(BUNDLE_PATH ${CMAKE_CURRENT_BINARY_DIR}/HexVolumeRenderer.app)
     set_target_properties(
@@ -250,6 +244,14 @@ else()
         pkg_check_modules(JSONCPP jsoncpp)
     endif()
 endif()
+
+get_target_property(SGL_INTERFACE_COMPILE_DEFINITIONS sgl INTERFACE_COMPILE_DEFINITIONS)
+if (VCPKG_TOOLCHAIN AND UNIX AND NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND ${CMAKE_VERSION} VERSION_GREATER "3.12"
+        AND "SGL_STATIC_LIBRARY" IN_LIST SGL_INTERFACE_COMPILE_DEFINITIONS)
+    #target_link_options(HexVolumeRenderer PRIVATE "LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/CMake/symbols_linux_gcc.map")
+    target_link_options(HexVolumeRenderer PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/CMake/symbols_linux_gcc.map")
+endif()
+
 if(NOT (EIGEN3_VERSION_STRING LESS 3.3))
     target_link_libraries(HexVolumeRenderer PUBLIC Eigen3::Eigen)
 else()
