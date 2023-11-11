@@ -20,28 +20,26 @@ Currently, there are three main ways to compile the program:
 - Linux & Windows: Installing all dependencies using [vcpkg](https://github.com/microsoft/vcpkg).
 - Windows: Using MSYS2 to install all dependencies.
 
-On Windows, we recommend to use vcpkg if you need to use Microsoft Visual Studio.
-Guides for the different build types can be found in the directory `docs/compilation`.
+A build script `build.sh` is available in the project root directory that builds the application using the system
+package manager on Linux and MSYS2 on Windows. Please download and install MSYS2 from https://www.msys2.org/ if you wish
+to use this build script and run the script from an MSYS2 shell.
+Alternatively, we recommend to use vcpkg if the users wants to compile the application with Microsoft Visual Studio.
+A build script using MSVC and vcpkg, `build-msvc.bat`, is available in the project root directory.
+Guides for manual compilation for the different build types can be found in the directory `docs/compilation`.
 
 
 ## How to add new data sets
 
 This program optionally supports downloading data sets from HexaLab. The user is responsible himself or herself that he or she has the rights to do this. For more details on HexaLab see:
 
-[HexaLab.net](http://www.hexalab.net): an online viewer for hexahedral meshes
-
-[Matteo Bracci](https://github.com/c4stan)<sup>x</sup>, [Marco Tarini](http://vcg.isti.cnr.it/~tarini/)<sup>1,2,x</sup>, [Nico Pietroni](http://vcg.isti.cnr.it/~pietroni)<sup>1,4</sup>, [Marco Livesu](http://pers.ge.imati.cnr.it/livesu/)<sup>3</sup>, [Paolo Cignoni](http://vcg.isti.cnr.it/~cignoni)<sup>1</sup>
-
-[Computer-Aided Design, Volume 110, May 2019](https://doi.org/10.1016/j.cad.2018.12.003)
-
-[DOI:10.1016/j.cad.2018.12.003](https://doi.org/10.1016/j.cad.2018.12.003)
-
-(_[preprint](https://arxiv.org/pdf/1806.06639) available on [arxiv](https://arxiv.org/abs/1806.06639)_)
-
+[HexaLab.net](http://www.hexalab.net): an online viewer for hexahedral meshes \
+[Matteo Bracci](https://github.com/c4stan)<sup>x</sup>, [Marco Tarini](http://vcg.isti.cnr.it/~tarini/)<sup>1,2,x</sup>, [Nico Pietroni](http://vcg.isti.cnr.it/~pietroni)<sup>1,4</sup>, [Marco Livesu](http://pers.ge.imati.cnr.it/livesu/)<sup>3</sup>, [Paolo Cignoni](http://vcg.isti.cnr.it/~cignoni)<sup>1</sup> \
+[Computer-Aided Design, Volume 110, May 2019](https://doi.org/10.1016/j.cad.2018.12.003) \
+[DOI:10.1016/j.cad.2018.12.003](https://doi.org/10.1016/j.cad.2018.12.003) \
+(_[preprint](https://arxiv.org/pdf/1806.06639) available on [arxiv](https://arxiv.org/abs/1806.06639)_) \
 Copyright 2018
 [Visual Computing Lab](http://vcg.isti.cnr.it)
-[ISTI](http://www.isti.cnr.it) - [CNR](http://www.cnr.it)
-
+[ISTI](http://www.isti.cnr.it) - [CNR](http://www.cnr.it) \
 Live view on [www.hexalab.net](http://www.hexalab.net)
 - <sup>x</sup> Joint first authors
 - <sup>1</sup> [ISTI](http://www.isti.cnr.it) - [CNR](http://www.cnr.it)
@@ -61,13 +59,13 @@ Hexahedral Re-Meshing (https://github.com/gaoxifeng/Robust-Hexahedral-Re-Meshing
 Xifeng Gao, Daniele Panozzo, Wenping Wang, Zhigang Deng, Guoning Chen,
 In ACM Transactions on Graphics (Proceedings of SIGGRAPH ASIA 2017)
 
-The code from HexaLab is covered by the MIT License (see LICENSE-HexaLab).
-The code from Gao et al. is covered by the MPL 2.0 License (see License-BaseComplex).
-The code of the application itself is covered by the BSD 2-Clause License (see LICENSE).
-The font Droid Sans in the directory Data/Fonts/ is covered by the Apache Version 2.0 License (see DROID-SANS-LICENSE.txt).
+The code from HexaLab is covered by the MIT License (see LICENSE file).
+The code from Gao et al. is covered by the MPL 2.0 License (see LICENSE file).
+The code of the application itself is covered by the BSD 2-Clause License (see LICENSE file).
+The font Droid Sans in the directory Data/Fonts/ is covered by the Apache Version 2.0 License (see LICENSE file).
 
 Please note that different licenses apply to the data sets, dependencies and other assets downloaded.
-License information of used libraries can be found in the directory 'LICENSE-Libraries'. These libraries are used
+License information of used libraries can be found in the directory 'docs/license-libraries'. These libraries are used
 without modifications to the upstream version of the code of the respective libraries.
 Thus, the code is not provided in the repository.
 

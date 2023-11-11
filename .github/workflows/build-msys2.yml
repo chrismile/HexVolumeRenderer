@@ -1,0 +1,28 @@
+name: Build using MSYS2
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: windows-2022
+    name: "${{ github.workflow }}"
+
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: true
+
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Build
+        shell: msys2 {0}
+        run: ./build.sh --do-not-run

@@ -1,0 +1,46 @@
+{
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+    "name": "hexvolumerenderer",
+    "version": "0.1.0",
+    "dependencies": [
+        "boost-core",
+        "boost-algorithm",
+        "boost-filesystem",
+        {
+            "name": "boost-interprocess",
+            "platform": "windows"
+        },
+        {
+            "name": "sdl2",
+            "features": [ "vulkan", "x11", "wayland" ],
+            "platform": "linux"
+        },
+        {
+            "name": "sdl2",
+            "features": [ "vulkan" ],
+            "platform": "!linux"
+        },
+        "sdl2-image",
+        "tinyxml2",
+        {
+            "name": "libarchive",
+            "default-features": true,
+            "features": [ "bzip2", "lz4", "lzma", "zstd" ]
+        },
+        "glm",
+        "tbb",
+        "eigen3",
+        "jsoncpp",
+        "python3",
+        "curl",
+        "embree"
+    ],
+    "features": {
+        "tbb": {
+            "description": "Use TBB instead of OpenMP for multi-threading",
+            "dependencies": [
+                "tbb"
+            ]
+        }
+    }
+}

@@ -1,0 +1,31 @@
+name: Build on Ubuntu
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-20.04, ubuntu-22.04 ]
+
+    runs-on: ${{ matrix.os }}
+    name: "Build on ${{ matrix.os }}"
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Build
+        shell: bash
+        run: |
+          sudo apt-get update
+          ./build.sh --do-not-run
