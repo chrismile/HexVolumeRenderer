@@ -28,7 +28,10 @@
 
 #include <unordered_set>
 #include <queue>
+
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/norm.hpp>
