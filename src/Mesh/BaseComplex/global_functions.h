@@ -15,11 +15,13 @@
 #include "Eigen/Dense"
 #include <algorithm>
 #include <iterator>
-#include <omp.h>
 #include <iostream>
 #include <map>
 #include <set>
 #include <queue>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 //#include <tbb/tbb.h>
 //#include "igl/hausdorff.h"
 
