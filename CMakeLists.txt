@@ -22,12 +22,15 @@ if(MSVC)
     set(CMAKE_CONFIGURATION_TYPES Debug Release)
 endif()
 
-#if(MSVC)
-#    set(CMAKE_CXX_FLAGS "-W3 /EHsc")
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W3 /EHsc /Zc:__cplusplus")
+endif()
+#f(MSVC)
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W3 /EHsc /Zc:__cplusplus")
 #elseif(CMAKE_COMPILER_IS_GNUCXX)
-#    set(CMAKE_CXX_FLAGS "-Wall")
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 #elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-#    set(CMAKE_CXX_FLAGS "-Wall")
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 #endif()
 
 # Prefer GLVND by default when available.
@@ -35,6 +38,25 @@ if (${CMAKE_VERSION} VERSION_GREATER "3.11")
     cmake_policy(SET CMP0072 NEW)
 endif()
 
+if(VCPKG_TOOLCHAIN)
+    if(EXISTS "${Z_VCPKG_ROOT_DIR}/triplets/${VCPKG_TARGET_TRIPLET}.cmake")
+        include("${Z_VCPKG_ROOT_DIR}/triplets/${VCPKG_TARGET_TRIPLET}.cmake")
+    elseif(EXISTS "${Z_VCPKG_ROOT_DIR}/triplets/community/${VCPKG_TARGET_TRIPLET}.cmake")
+        include("${Z_VCPKG_ROOT_DIR}/triplets/community/${VCPKG_TARGET_TRIPLET}.cmake")
+    else()
+        message(FATAL_ERROR "Could not find a vcpkg triplet file for ${VCPKG_TARGET_TRIPLET}.")
+    endif()
+endif()
+
+if (MSVC)
+    set(DEFAULT_USE_TBB ON)
+else()
+    set(DEFAULT_USE_TBB OFF)
+endif()
+
+option(USE_TBB "Build with TBB threading support instead of using OpenMP." ${DEFAULT_USE_TBB})
+option(VCPKG_EXTERNAL_EMBREE "Use external Embree package if vcpkg is used for compilation." OFF)
+option(USE_STATIC_STD_LIBRARIES "Link with standard libraries statically (only supported on Linux for now)." OFF)
 option(USE_PYTHON "Build with Python 3 support for replay scripts" ON)
 option(USE_CORK "Build with Cork as CSG Library" OFF)
 option(USE_LEMON "Build with matching code and LEMON graph library" OFF)
@@ -46,7 +68,8 @@ add_definitions(-DDATA_PATH=\"${DATA_PATH}\")
 if (USE_PYTHON)
     if (${CMAKE_VERSION} VERSION_GREATER "3.11")
         # 2021-05-06: CMake won't find vcpkg version if we don't search for the interpreter.
-        if(VCPKG_TOOLCHAIN)
+        # 2022-08-29: Finding interpreter fails with dynamic vcpkg build on Linux and macOS.
+        if(VCPKG_TOOLCHAIN) #  AND (NOT UNIX OR VCPKG_LIBRARY_LINKAGE STREQUAL "static")
             find_package(Python3 COMPONENTS Development Interpreter REQUIRED)
         else()
             find_package(Python3 COMPONENTS Development REQUIRED)
@@ -88,7 +111,7 @@ endif()
 
 # Embree version 3.12.1-2 shipped by msys2 seems to be buggy and crashes on rtcCommitScene :(
 if(NOT "${CMAKE_GENERATOR}" STREQUAL "MSYS Makefiles")
-    if(VCPKG_TOOLCHAIN)
+    if(VCPKG_TOOLCHAIN AND NOT ${VCPKG_EXTERNAL_EMBREE})
         find_package(TBB QUIET)
         find_package(embree 3 QUIET)
     else()
@@ -108,6 +131,29 @@ else()
     add_executable(HexVolumeRenderer ${SOURCES})
 endif()
 
+if(${USE_STATIC_STD_LIBRARIES})
+    target_link_options(LineVis PRIVATE -static-libgcc -static-libstdc++)
+endif()
+
+if (VCPKG_TOOLCHAIN AND UNIX AND NOT APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND ${CMAKE_VERSION} VERSION_GREATER "3.12"
+        AND "SGL_STATIC_LIBRARY" IN_LIST SGL_INTERFACE_COMPILE_DEFINITIONS)
+    #target_link_options(LineVis PRIVATE "LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/CMake/symbols_linux_gcc.map")
+    target_link_options(LineVis PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/CMake/symbols_linux_gcc.map")
+endif()
+
+if (APPLE)
+    set(BUNDLE_PATH ${CMAKE_CURRENT_BINARY_DIR}/LineVis.app)
+    set_target_properties(
+            LineVis PROPERTIES
+            OUTPUT_NAME "LineVis"
+            MACOSX_BUNDLE_EXECUTABLE_NAME "LineVis"
+            MACOSX_BUNDLE_BUNDLE_NAME "LineVis"
+            FOLDER "LineVis"
+            MACOSX_BUNDLE_SHORT_VERSION_STRING ""
+            MACOSX_BUNDLE_LONG_VERSION_STRING ""
+            MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/CMake/MacOSXBundleInfo.plist.in")
+endif()
+
 # Hide console window in release build on Windows/MSVC.
 # See: https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/recipe/VSConfigSpecificSettings
 if(MSVC)
@@ -117,6 +163,18 @@ if(MSVC)
     set_target_properties(HexVolumeRenderer PROPERTIES COMPILE_DEFINITIONS_RELWITHDEBINFO "_CONSOLE")
     set_target_properties(HexVolumeRenderer PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
     set_target_properties(HexVolumeRenderer PROPERTIES LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:WINDOWS")
+endif()
+
+if(MSVC)
+    #target_compile_definitions(LineVis PRIVATE /wd4251)
+    set_target_properties(LineVis PROPERTIES COMPILE_FLAGS "/wd4251")
+    target_compile_options(LineVis PRIVATE "/MP")
+endif()
+
+if (NOT MSVC)
+    if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_compile_definitions(LineVis PRIVATE NDEBUG)
+    endif()
 endif()
 
 # Eigen is an optional dependency for eigenvalue solving.
@@ -155,8 +213,12 @@ else()
     find_package(SDL2 REQUIRED)
 endif()
 if((${CMAKE_GENERATOR} STREQUAL "MinGW Makefiles") OR (${CMAKE_GENERATOR} STREQUAL "MSYS Makefiles"))
-    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
-    target_link_libraries(HexVolumeRenderer PUBLIC mingw32)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mconsole")
+    else()
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
+    endif()
+    target_link_libraries(LineVis PUBLIC mingw32)
 endif()
 if(VCPKG_TOOLCHAIN)
     target_link_libraries(HexVolumeRenderer PUBLIC SDL2::SDL2main)
@@ -216,6 +278,14 @@ if (Python3_FOUND AND USE_PYTHON)
     else()
         target_link_libraries(HexVolumeRenderer PUBLIC ${Python3_LIBRARIES})
     endif()
+    if(UNIX AND NOT APPLE AND VCPKG_TOOLCHAIN AND ${CMAKE_VERSION} VERSION_GREATER "3.12")
+        # Python linked statically in this case. See:
+        # https://stackoverflow.com/questions/67891197/ctypes-cpython-39-x86-64-linux-gnu-so-undefined-symbol-pyfloat-type-in-embedd
+        if(VCPKG_LIBRARY_LINKAGE STREQUAL "static")
+            target_link_options(LineVis PRIVATE "-Xlinker")
+            target_link_options(LineVis PRIVATE "-export-dynamic")
+        endif()
+    endif()
     target_include_directories(HexVolumeRenderer PUBLIC ${Python3_INCLUDE_DIRS})
 
 
@@ -234,14 +304,20 @@ if (Python3_FOUND AND USE_PYTHON)
         endif()
     endif()
     if (PYTHONHOME)
+        if (NOT PYTHONPATH AND (APPLE OR MSYS))
+            set(PYTHONPATH "${PYTHONHOME}/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}")
+        endif()
         set(PYTHONHOME "${PYTHONHOME}" CACHE STRING "PYTHONHOME path.")
-        add_definitions(-DPYTHONHOME=L\"${PYTHONHOME}\")
+        target_compile_definitions(LineVis PRIVATE PYTHONHOME=L\"${PYTHONHOME}\")
     endif()
     if (PYTHONPATH)
         set(PYTHONPATH "${PYTHONPATH}" CACHE STRING "PYTHONPATH path.")
-        add_definitions(-DPYTHONPATH=L\"${PYTHONPATH}\")
+        target_compile_definitions(LineVis PRIVATE PYTHONPATH=L\"${PYTHONPATH}\")
     endif()
 endif()
+
+# We need to search for the Vulkan package to avoid errors when sgl is built with Vulkan support.
+find_package(Vulkan QUIET)
 
 if(${embree_FOUND})
     add_definitions(-DUSE_EMBREE)
@@ -253,35 +329,64 @@ if(${embree_FOUND})
     include_directories(${EMBREE_INCLUDE_DIRS})
 endif()
 
-# According to https://devblogs.microsoft.com/cppblog/improved-openmp-support-for-cpp-in-visual-studio/,
-# support for LLVM OpenMP was added with Visual Studio 2019 version 16.9. According to
-# https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros?view=msvc-170,
-# both Visual Studio 2019 version 16.8 and 16.9 have _MSC_VER / MSVC_VERSION 1928, so we need to check
-# for a minimum version 1929.
-find_package(OpenMP REQUIRED)
-if(MSVC)
-    option(USE_MSVC_OPENMP_LLVM "Use LLVM OpenMP with MSVC (available since Visual Studio 2019 version 16.9)." ON)
-    option(USE_MSVC_OPENMP_EXPERIMENTAL "Use experimental OpenMP with MSVC (available since Visual Studio 2019 version 16.9)." ON)
-
-    if(${MSVC_VERSION} GREATER_EQUAL 1929 AND (USE_MSVC_OPENMP_LLVM OR USE_MSVC_OPENMP_EXPERIMENTAL))
-        if(USE_MSVC_OPENMP_LLVM)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /openmp:llvm")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp:llvm")
-        endif()
-        if(USE_MSVC_OPENMP_EXPERIMENTAL)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /openmp:experimental")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp:experimental")
-        endif()
-        if(USE_MSVC_OPENMP_LLVM AND USE_MSVC_OPENMP_EXPERIMENTAL)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /w44005")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w44005")
-        endif()
-    endif()
+if (${USE_TBB})
+    find_package(TBB REQUIRED)
+    target_link_libraries(HexVolumeRenderer PRIVATE TBB::tbb)
+    target_compile_definitions(HexVolumeRenderer PRIVATE USE_TBB)
 else()
-    if(OPENMP_FOUND)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+    # According to https://devblogs.microsoft.com/cppblog/improved-openmp-support-for-cpp-in-visual-studio/,
+    # support for LLVM OpenMP was added with Visual Studio 2019 version 16.9. According to
+    # https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros?view=msvc-170,
+    # both Visual Studio 2019 version 16.8 and 16.9 have _MSC_VER / MSVC_VERSION 1928, so we need to check
+    # for a minimum version 1929.
+    if (APPLE)
+        # There are some problems with Homebrew OpenMP as of 2022-10-20.
+        find_package(OpenMP QUIET)
+        if (OpenMP_FOUND)
+            MESSAGE(STATUS "Found OpenMP version ${OpenMP_CXX_VERSION}. Enabling OpenMP threading support.")
+        else()
+            MESSAGE(STATUS "OpenMP not found. Disabling OpenMP threading support.")
+        endif()
+    else()
+        find_package(OpenMP REQUIRED)
+    endif()
+    if(OpenMP_FOUND)
+        if(MSVC)
+            option(USE_MSVC_OPENMP_LLVM "Use LLVM OpenMP with MSVC (available since Visual Studio 2019 version 16.9)." ON)
+            option(USE_MSVC_OPENMP_EXPERIMENTAL "Use experimental OpenMP with MSVC (available since Visual Studio 2019 version 16.9)." ON)
+
+            if(${MSVC_VERSION} GREATER_EQUAL 1929 AND (USE_MSVC_OPENMP_LLVM OR USE_MSVC_OPENMP_EXPERIMENTAL))
+                define_property(
+                        SOURCE
+                        PROPERTY COMPILE_FLAGS
+                        INHERITED
+                        BRIEF_DOCS "brief-doc"
+                        FULL_DOCS "full-doc"
+                )
+                if(USE_MSVC_OPENMP_LLVM)
+                    #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /openmp:llvm")
+                    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp:llvm")
+                    set_directory_properties(PROPERTIES COMPILE_FLAGS "/openmp:llvm")
+                endif()
+                if(USE_MSVC_OPENMP_EXPERIMENTAL)
+                    #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /openmp:experimental")
+                    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp:experimental")
+                    set_directory_properties(PROPERTIES COMPILE_FLAGS "/openmp:experimental")
+                endif()
+                if(USE_MSVC_OPENMP_LLVM AND USE_MSVC_OPENMP_EXPERIMENTAL)
+                    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /w44005")
+                    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w44005")
+                endif()
+                set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/src/LineData/TrianglePayload/NodesBVHTreePayload.cpp" PROPERTIES COMPILE_FLAGS "")
+                set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/CMake/winres.rc" PROPERTIES COMPILE_FLAGS "")
+            endif()
+        elseif(NOT TARGET OpenMP::OpenMP_CXX)
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+        else()
+            target_link_libraries(HexVolumeRenderer PUBLIC OpenMP::OpenMP_CXX)
+        endif()
     endif()
 endif()
 
