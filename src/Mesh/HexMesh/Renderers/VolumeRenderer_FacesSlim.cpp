@@ -176,9 +176,11 @@ void VolumeRenderer_FacesSlim::uploadVisualizationMapping(HexMeshPtr meshIn, boo
 }
 
 void VolumeRenderer_FacesSlim::reallocateFragmentBuffer() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
 
     fragmentBufferSize = size_t(expectedAvgDepthComplexity) * size_t(width) * size_t(height);
     size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
@@ -307,9 +309,11 @@ void VolumeRenderer_FacesSlim::setSortingAlgorithmDefine() {
 }
 
 void VolumeRenderer_FacesSlim::onResolutionChanged() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
     windowWidth = width;
     windowHeight = height;
 
@@ -328,8 +332,9 @@ void VolumeRenderer_FacesSlim::onResolutionChanged() {
 }
 
 void VolumeRenderer_FacesSlim::setUniformData() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    int width = (*sceneData.sceneTexture)->getW();
 
     sgl::ShaderManager->bindShaderStorageBuffer(0, fragmentBuffer);
     sgl::ShaderManager->bindShaderStorageBuffer(1, startOffsetBuffer);

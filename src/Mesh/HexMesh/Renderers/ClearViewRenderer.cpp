@@ -631,9 +631,11 @@ void ClearViewRenderer::update(float dt) {
             if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
                 float scrollAmount = sgl::Mouse->getScrollWheel() * dt * 800.0;
                 screenSpaceLensPixelRadius += scrollAmount;
-                sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-                int width = window->getWidth();
-                int height = window->getHeight();
+                //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+                //int width = window->getWidth();
+                //int height = window->getHeight();
+                int width = (*sceneData.sceneTexture)->getW();
+                int height = (*sceneData.sceneTexture)->getH();
                 screenSpaceLensPixelRadius = glm::min(screenSpaceLensPixelRadius, float(std::max(width, height)));
                 screenSpaceLensPixelRadius = std::max(screenSpaceLensPixelRadius, 0.0f);
                 reRender = true;

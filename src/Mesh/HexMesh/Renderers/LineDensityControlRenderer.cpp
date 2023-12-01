@@ -114,9 +114,11 @@ LineDensityControlRenderer::LineDensityControlRenderer(SceneData &sceneData, sgl
 }
 
 void LineDensityControlRenderer::onResolutionChanged() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    attributeTextureResolution.x = std::round(window->getWidth() * attributeTextureSubsamplingFactor);
-    attributeTextureResolution.y = std::round(window->getHeight() * attributeTextureSubsamplingFactor);
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
+    attributeTextureResolution.x = std::round(width * attributeTextureSubsamplingFactor);
+    attributeTextureResolution.y = std::round(height * attributeTextureSubsamplingFactor);
 
     fragmentBufferSize = size_t(EXPECTED_DEPTH_COMPLEXITY)
             * size_t(attributeTextureResolution.x) * size_t(attributeTextureResolution.y);
@@ -219,7 +221,6 @@ void LineDensityControlRenderer::setUniformData() {
 
     createAttributeTextureClearShader->setUniform("viewportW", attributeTextureResolution.x);
 
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
     if (lineDensityControlShader->hasUniform("cameraPosition")) {
         lineDensityControlShader->setUniform("cameraPosition", sceneData.camera->getPosition());
     }

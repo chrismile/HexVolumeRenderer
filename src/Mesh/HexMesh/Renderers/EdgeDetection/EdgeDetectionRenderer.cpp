@@ -126,9 +126,11 @@ void EdgeDetectionRenderer::reloadModelEdgeDetectionShader() {
 }
 
 void EdgeDetectionRenderer::reloadTexturesEdgeDetection() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneDataEdgeDetection.sceneTexture)->getW();
+    int height = (*sceneDataEdgeDetection.sceneTexture)->getH();
 
     imageTextureEdgeDetection = sgl::TexturePtr();
     normalTextureEdgeDetection = sgl::TexturePtr();
@@ -262,9 +264,11 @@ void EdgeDetectionRenderer::createWeightTextureEdgeDetection() {
 }
 
 void EdgeDetectionRenderer::setUniformDataEdgeDetection() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneDataEdgeDetection.sceneTexture)->getW();
+    int height = (*sceneDataEdgeDetection.sceneTexture)->getH();
 
     sgl::ShaderProgram* shaderProgramEdgeDetection = shaderAttributesEdgeDetection->getShaderProgram();
 
@@ -336,9 +340,11 @@ void EdgeDetectionRenderer::renderEdgeDetectionContours() {
         //glEnable(GL_CULL_FACE);
 
         if (useNoiseReduction) {
-            sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-            int width = window->getWidth();
-            int height = window->getHeight();
+            //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+            //int width = window->getWidth();
+            //int height = window->getHeight();
+            int width = (*sceneDataEdgeDetection.sceneTexture)->getW();
+            int height = (*sceneDataEdgeDetection.sceneTexture)->getH();
 
             glDisable(GL_DEPTH_TEST);
             noiseReduction.bindFramebufferForRendering();

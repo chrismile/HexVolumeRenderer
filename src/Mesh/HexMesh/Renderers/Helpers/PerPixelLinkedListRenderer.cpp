@@ -119,9 +119,11 @@ void PerPixelLinkedListRenderer::setSortingAlgorithmDefine() {
 }
 
 void PerPixelLinkedListRenderer::onResolutionChanged() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
 
     size_t fragmentBufferSize = expectedDepthComplexity * width * height;
     size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
@@ -142,9 +144,11 @@ void PerPixelLinkedListRenderer::onResolutionChanged() {
 }
 
 void PerPixelLinkedListRenderer::setUniformData() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
 
     size_t fragmentBufferSize = expectedDepthComplexity * width * height;
 

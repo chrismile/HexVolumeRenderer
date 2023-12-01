@@ -40,7 +40,7 @@
 class EdgeDetectionRenderer {
 protected:
     EdgeDetectionRenderer(SceneData &sceneData, bool useSlimMeshData = false)
-            : sceneDataEdgeDetection(sceneData), useSlimMeshData(useSlimMeshData) {}
+            : sceneDataEdgeDetection(sceneData), useSlimMeshData(useSlimMeshData), noiseReduction(sceneData) {}
 
     // Initialization & loading.
     void initializeEdgeDetection();

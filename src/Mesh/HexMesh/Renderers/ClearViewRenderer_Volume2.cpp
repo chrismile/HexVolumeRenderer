@@ -269,9 +269,11 @@ void ClearViewRenderer_Volume2::uploadVisualizationMapping(HexMeshPtr meshIn, bo
 }
 
 void ClearViewRenderer_Volume2::onResolutionChanged() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
     screenSpaceLensPixelRadius = std::min(width, height) * screenSpaceLensPixelRadiusWindowFactor;
     focusPointScreen = glm::vec2(width / 2.0f, height / 2.0f);
     windowWidth = width;
@@ -311,9 +313,11 @@ void ClearViewRenderer_Volume2::onResolutionChanged() {
 }
 
 void ClearViewRenderer_Volume2::setUniformData() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
 
     glm::mat4 inverseViewMatrix = glm::inverse(sceneData.camera->getViewMatrix());
     glm::vec3 lookingDirection(-inverseViewMatrix[2].x, -inverseViewMatrix[2].y, -inverseViewMatrix[2].z);

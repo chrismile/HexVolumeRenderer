@@ -183,9 +183,11 @@ void ClearViewRenderer_Volume::uploadVisualizationMapping(HexMeshPtr meshIn, boo
 }
 
 void ClearViewRenderer_Volume::onResolutionChanged() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
 
     size_t fragmentBufferSizeVolume = expectedDepthComplexityVolume * width * height;
     size_t fragmentBufferSizeBytesVolume = sizeof(LinkedListFragmentNode) * fragmentBufferSizeVolume;
@@ -233,9 +235,11 @@ void ClearViewRenderer_Volume::onResolutionChanged() {
 }
 
 void ClearViewRenderer_Volume::setUniformData() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
 
     size_t fragmentBufferSizeVolume = expectedDepthComplexityVolume * width * height;
     size_t fragmentBufferSizeSurface = expectedDepthComplexitySurface * width * height;

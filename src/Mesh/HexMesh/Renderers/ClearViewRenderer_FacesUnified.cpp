@@ -316,8 +316,9 @@ void ClearViewRenderer_FacesUnified::setNewSettings(const SettingsMap& settings)
 
     glm::vec2 screenSpaceLensPositionRelative;
     if (settings.getValueOpt("screen_space_lens_position", screenSpaceLensPositionRelative)) {
-        sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-        int height = window->getHeight();
+        //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+        //int height = window->getHeight();
+        int height = (*sceneData.sceneTexture)->getH();
         focusPointScreen.x = (height * screenSpaceLensPositionRelative.x + (windowWidth - 1.0f)) / 2.0f;
         focusPointScreen.y = height * (screenSpaceLensPositionRelative.y + 1.0f) / 2.0f;
     }
@@ -475,9 +476,11 @@ void ClearViewRenderer_FacesUnified::uploadVisualizationMapping(HexMeshPtr meshI
 }
 
 void ClearViewRenderer_FacesUnified::reallocateFragmentBuffer() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
 
     fragmentBufferSize = size_t(expectedAvgDepthComplexity) * size_t(width) * size_t(height);
     size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
@@ -502,9 +505,11 @@ void ClearViewRenderer_FacesUnified::reallocateFragmentBuffer() {
 }
 
 void ClearViewRenderer_FacesUnified::onResolutionChanged() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
     screenSpaceLensPixelRadius = std::min(width, height) * screenSpaceLensPixelRadiusWindowFactor;
     focusPointScreen = glm::vec2(width / 2.0f, height / 2.0f);
     windowWidth = width;
@@ -525,8 +530,9 @@ void ClearViewRenderer_FacesUnified::onResolutionChanged() {
 }
 
 void ClearViewRenderer_FacesUnified::setUniformData() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    int width = (*sceneData.sceneTexture)->getW();
 
     glm::mat4 inverseViewMatrix = glm::inverse(sceneData.camera->getViewMatrix());
     glm::vec3 lookingDirection(-inverseViewMatrix[2].x, -inverseViewMatrix[2].y, -inverseViewMatrix[2].z);

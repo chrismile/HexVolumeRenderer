@@ -32,8 +32,11 @@
 #include <Graphics/Texture/Texture.hpp>
 #include <Graphics/Shader/Shader.hpp>
 
+struct SceneData;
+
 class NoiseReduction {
 public:
+    NoiseReduction(SceneData& sceneData) : sceneData(sceneData) {}
     void initialize(bool useSingleChannelTexture = false);
     void onResolutionChanged();
     void bindFramebufferForRendering();
@@ -43,6 +46,8 @@ public:
     bool renderGui();
 
 private:
+    SceneData& sceneData;
+
     bool useSingleChannelTexture = false;
     sgl::ShaderProgramPtr noiseReductionShader;
     sgl::ShaderProgramPtr blitShader;

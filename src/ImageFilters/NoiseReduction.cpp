@@ -38,6 +38,7 @@
 #include <Graphics/OpenGL/Shader.hpp>
 #include <ImGui/ImGuiWrapper.hpp>
 
+#include "Mesh/HexMesh/Renderers/SceneData.hpp"
 #include "NoiseReduction.hpp"
 
 void NoiseReduction::initialize(bool useSingleChannelTexture) {
@@ -70,9 +71,11 @@ void NoiseReduction::initialize(bool useSingleChannelTexture) {
 }
 
 void NoiseReduction::onResolutionChanged() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
 
     sgl::TextureSettings textureSettings;
     if (useSingleChannelTexture) {
@@ -104,9 +107,11 @@ void NoiseReduction::denoiseTexture() {
 }
 
 void NoiseReduction::blitDenoisedTexture() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
 
     blitShader->setUniform("inputTexture", textures[iteration % 2], 0);
     blitShader->setUniform("viewportSize", glm::ivec2(width, height));

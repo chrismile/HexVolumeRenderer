@@ -161,9 +161,11 @@ void VolumeRenderer_Volume::setSortingAlgorithmDefine() {
 }
 
 void VolumeRenderer_Volume::onResolutionChanged() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
 
     size_t fragmentBufferSizeVolume = expectedDepthComplexityVolume * width * height;
     size_t fragmentBufferSizeBytesVolume = sizeof(LinkedListFragmentNode) * fragmentBufferSizeVolume;
@@ -211,9 +213,11 @@ void VolumeRenderer_Volume::onResolutionChanged() {
 }
 
 void VolumeRenderer_Volume::setUniformData() {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int width = window->getWidth();
-    int height = window->getHeight();
+    //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
+    //int width = window->getWidth();
+    //int height = window->getHeight();
+    int width = (*sceneData.sceneTexture)->getW();
+    int height = (*sceneData.sceneTexture)->getH();
 
     size_t fragmentBufferSizeVolume = expectedDepthComplexityVolume * width * height;
     size_t fragmentBufferSizeSurface = expectedDepthComplexitySurface * width * height;
