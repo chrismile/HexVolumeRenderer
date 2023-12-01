@@ -101,16 +101,23 @@ jobs:
             cd ~/VulkanSDK/$VULKAN_SDK_VERSION
             sudo ./install_vulkan.py || true
             sudo hdiutil unmount "${vulkan_dir}"
-            brew install llvm libomp pkg-config
+            export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+            brew update
+            #rm /usr/local/bin/2to3 || true
+            #rm /usr/local/bin/idle3 || true
+            #rm /usr/local/bin/pydoc3 || true
+            #rm /usr/local/bin/python3 || true
+            #rm /usr/local/bin/python3-config || true
+            brew install --force --overwrite llvm libomp pkg-config
           else
             echo "$RUNNER_OS is not supported."
             exit 1
           fi
 
       - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v10
+        uses: lukka/run-vcpkg@v11
         with:
-          vcpkgGitCommitId: '8b04a7bd93bef991818fc372bb83ce00ec1c1c16'
+          vcpkgGitCommitId: '4cac260c4b7331538d31886f57739fea0bffa27e'
           vcpkgDirectory: ${{env.VCPKG_ROOT}}
           doNotCacheOnWorkflowFailure: true
 
