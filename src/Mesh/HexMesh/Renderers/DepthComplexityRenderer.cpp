@@ -201,24 +201,9 @@ void DepthComplexityRenderer::render() {
     }
 }
 
-// Converts e.g. 123456789 to "123,456,789"
-std::string numberToCommaString(int number, bool attachLeadingZeroes = false) {
-    if (number < 0) {
-        return std::string() + "-" + numberToCommaString(-number, attachLeadingZeroes);
-    } else if (number < 1000) {
-        return sgl::toString(number);
-    } else {
-        std::string numberString = sgl::toString(number%1000);
-        while (attachLeadingZeroes && numberString.size() < 3) {
-            numberString = "0" + numberString;
-        }
-        return std::string() + numberToCommaString(number/1000, true) + "," + numberString;
-    }
-}
-
 void DepthComplexityRenderer::renderGui() {
     if (ImGui::Begin(getWindowName(), &showWindow)) {
-        std::string totalNumFragmentsString = numberToCommaString(totalNumFragments);
+        std::string totalNumFragmentsString = sgl::numberToCommaString(totalNumFragments);
         ImGui::Text("Depth complexity: #fragments: %s", totalNumFragmentsString.c_str());
         ImGui::Text("avg used: %.2f, avg all: %.2f, max: %lu", ((float) totalNumFragments / usedLocations),
                     ((float) totalNumFragments / bufferSize), maxComplexity);
