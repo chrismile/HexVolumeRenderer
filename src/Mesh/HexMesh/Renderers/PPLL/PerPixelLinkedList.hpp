@@ -55,4 +55,11 @@ const int MESH_MODE_DEPTH_COMPLEXITIES[4][2] = {
         256, 950, // avg and max depth complexity very large
 };
 
+enum class FragmentBufferMode {
+    BUFFER, BUFFER_ARRAY
+};
+const char* const FRAGMENT_BUFFER_MODE_NAMES[2] = {
+        "Buffer", "Buffer Array"
+};
+
 #endif //HEXVOLUMERENDERER_PERPIXELLINKEDLIST_HPP

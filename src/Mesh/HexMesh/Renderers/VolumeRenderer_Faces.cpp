@@ -230,8 +230,8 @@ void VolumeRenderer_Faces::setUniformData() {
 
     gatherShader->setUniform("useShading", int(useShading));
     gatherShader->setUniform("viewportW", width);
-    gatherShader->setShaderStorageBuffer(0, "FragmentBuffer", fragmentBuffer);
-    gatherShader->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
+    gatherShader->setShaderStorageBuffer(0, "StartOffsetBuffer", startOffsetBuffer);
+    gatherShader->setShaderStorageBuffer(1, "FragmentBuffer", fragmentBuffer);
     gatherShader->setAtomicCounterBuffer(0, atomicCounterBuffer);
     gatherShader->setUniform("linkedListSize", (unsigned int)fragmentBufferSize);
     gatherShader->setUniform("cameraPosition", sceneData.camera->getPosition());
@@ -243,11 +243,11 @@ void VolumeRenderer_Faces::setUniformData() {
             "transferFunctionTexture", transferFunctionWindow.getTransferFunctionMapTexture(), 0);
 
     resolveShader->setUniform("viewportW", width);
-    resolveShader->setShaderStorageBuffer(0, "FragmentBuffer", fragmentBuffer);
-    resolveShader->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
+    resolveShader->setShaderStorageBuffer(0, "StartOffsetBuffer", startOffsetBuffer);
+    resolveShader->setShaderStorageBuffer(1, "FragmentBuffer", fragmentBuffer);
 
     clearShader->setUniform("viewportW", width);
-    clearShader->setShaderStorageBuffer(1, "StartOffsetBuffer", startOffsetBuffer);
+    clearShader->setShaderStorageBuffer(0, "StartOffsetBuffer", startOffsetBuffer);
 
     if (hullOpacity > 0.0f) {
         gatherShaderHull->setUniform("useShading", int(useShading));

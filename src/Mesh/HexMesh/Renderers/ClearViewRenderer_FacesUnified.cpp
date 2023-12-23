@@ -33,6 +33,7 @@
 #include <Graphics/Window.hpp>
 #include <Graphics/Renderer.hpp>
 #include <Graphics/Shader/ShaderManager.hpp>
+#include <Graphics/OpenGL/SystemGL.hpp>
 #include <Graphics/OpenGL/GeometryBuffer.hpp>
 #include <Graphics/OpenGL/Shader.hpp>
 #include <Utils/File/FileUtils.hpp>
@@ -75,6 +76,17 @@ ClearViewRenderer_FacesUnified::ClearViewRenderer_FacesUnified(
         selectedLodValueContext = 0.16f;
         importantLineBoostFactor = 0.8f;
     }
+
+    /*
+     * In Vulkan, we could use the minimum out of physicalDeviceVulkan11Properties.maxMemoryAllocationSize and
+     * physicalDeviceProperties.limits.maxStorageBufferRange. On NVIDIA hardware, this seems to be 4GiB - 1B, on AMD
+     * hardware it seems to be 2GiB. We will just assume OpenGL allows allocations of size 4GiB.
+     */
+    maxStorageBufferSize = (1ull << 32ull) - 1ull;
+    double availableMemoryFactor = 28.0 / 32.0;
+    maxDeviceMemoryBudget = size_t(double(sgl::SystemGL::get()->getFreeMemoryBytes()) * availableMemoryFactor);
+    // We only have binding {1,2,3,4,5}, so limit the maximum budget.
+    maxDeviceMemoryBudget = std::min(maxDeviceMemoryBudget, maxStorageBufferSize * 5);
 
     sgl::ShaderManager->invalidateShaderCache();
     setSortingAlgorithmDefine();
@@ -129,6 +141,11 @@ ClearViewRenderer_FacesUnified::~ClearViewRenderer_FacesUnified() {
         sgl::ShaderManager->removePreprocessorDefine("USE_DEPTH_CUES");
     }
     sgl::ShaderManager->removePreprocessorDefine("COMPUTE_DEPTH_CUES_GPU");
+    if (fragmentBufferMode == FragmentBufferMode::BUFFER_ARRAY) {
+        sgl::ShaderManager->removePreprocessorDefine("FRAGMENT_BUFFER_ARRAY");
+        sgl::ShaderManager->removePreprocessorDefine("NUM_FRAGMENT_BUFFERS");
+        sgl::ShaderManager->removePreprocessorDefine("NUM_FRAGS_PER_BUFFER");
+    }
 }
 
 void ClearViewRenderer_FacesUnified::render() {
@@ -484,24 +501,85 @@ void ClearViewRenderer_FacesUnified::reallocateFragmentBuffer() {
 
     fragmentBufferSize = size_t(expectedAvgDepthComplexity) * size_t(width) * size_t(height);
     size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
-    if (fragmentBufferSizeBytes >= (1ull << 32ull)) {
-        sgl::Logfile::get()->writeError(
-                std::string() + "Fragment buffer size was larger than or equal to 4GiB. Clamping to 4GiB.");
-        fragmentBufferSizeBytes = (1ull << 32ull) - sizeof(LinkedListFragmentNode);
-        fragmentBufferSize = fragmentBufferSizeBytes / sizeof(LinkedListFragmentNode);
+
+    // Delete old data first (-> refcount 0)
+    fragmentBuffers = {};
+    fragmentBuffer = {};
+
+    // We only need buffer arrays when the maximum allocation is larger than our budget.
+    if (maxDeviceMemoryBudget < maxStorageBufferSize) {
+        fragmentBufferMode = FragmentBufferMode::BUFFER;
+    }
+
+    if (fragmentBufferMode == FragmentBufferMode::BUFFER) {
+        sgl::ShaderManager->removePreprocessorDefine("FRAGMENT_BUFFER_ARRAY");
+        sgl::ShaderManager->removePreprocessorDefine("NUM_FRAGMENT_BUFFERS");
+        sgl::ShaderManager->removePreprocessorDefine("NUM_FRAGS_PER_BUFFER");
     } else {
-        sgl::Logfile::get()->writeInfo(
-                std::string() + "Fragment buffer size GiB: "
-                + std::to_string(fragmentBufferSizeBytes / 1024.0 / 1024.0 / 1024.0));
+        sgl::ShaderManager->addPreprocessorDefine("FRAGMENT_BUFFER_ARRAY", "");
+        sgl::ShaderManager->addPreprocessorDefine(
+                "NUM_FRAGMENT_BUFFERS", std::to_string(cachedNumFragmentBuffers));
+        sgl::ShaderManager->addPreprocessorDefine(
+                "NUM_FRAGS_PER_BUFFER", std::to_string(maxStorageBufferSize / 12ull) + "u");
+    }
+
+    // We only need buffer arrays when the maximum allocation is larger than our budget.
+    if (maxDeviceMemoryBudget < maxStorageBufferSize) {
+        reloadGatherShader(true);
+        reloadResolveShader();
+    }
+    size_t maxSingleBufferAllocation = std::min(maxDeviceMemoryBudget, maxStorageBufferSize);
+
+    if (fragmentBufferMode == FragmentBufferMode::BUFFER) {
+        if (fragmentBufferSizeBytes > maxSingleBufferAllocation) {
+            sgl::Logfile::get()->writeError(
+                    std::string() + "Fragment buffer size was larger than maximum allocation size ("
+                    + std::to_string(maxSingleBufferAllocation) + "). Clamping to maximum allocation size.",
+                    false);
+            fragmentBufferSize = maxSingleBufferAllocation / sizeof(LinkedListFragmentNode);
+            fragmentBufferSizeBytes = fragmentBufferSize * sizeof(LinkedListFragmentNode);
+        } else {
+            sgl::Logfile::get()->writeInfo(
+                    std::string() + "Fragment buffer size GiB: "
+                    + std::to_string(double(fragmentBufferSizeBytes) / 1024.0 / 1024.0 / 1024.0));
+        }
+
+        numFragmentBuffers = 1;
+        cachedNumFragmentBuffers = 1;
+        fragmentBuffer = sgl::Renderer->createGeometryBuffer(
+                fragmentBufferSizeBytes, nullptr, sgl::SHADER_STORAGE_BUFFER);
+    } else {
+        if (fragmentBufferSizeBytes > maxDeviceMemoryBudget) {
+            sgl::Logfile::get()->writeError(
+                    std::string() + "Fragment buffer size was larger than maximum allocation size ("
+                    + std::to_string(maxDeviceMemoryBudget) + "). Clamping to maximum allocation size.",
+                    false);
+            fragmentBufferSize = maxDeviceMemoryBudget / 12ull;
+            fragmentBufferSizeBytes = fragmentBufferSize * 12ull;
+        } else {
+            sgl::Logfile::get()->writeInfo(
+                    std::string() + "Fragment buffer size GiB: "
+                    + std::to_string(double(fragmentBufferSizeBytes) / 1024.0 / 1024.0 / 1024.0));
+        }
+
+        numFragmentBuffers = sgl::sizeceil(fragmentBufferSizeBytes, maxStorageBufferSize);
+        size_t fragmentBufferSizeBytesLeft = fragmentBufferSizeBytes;
+        for (size_t i = 0; i < numFragmentBuffers; i++) {
+            fragmentBuffers.emplace_back(sgl::Renderer->createGeometryBuffer(
+                    std::min(fragmentBufferSizeBytesLeft, maxStorageBufferSize), nullptr, sgl::SHADER_STORAGE_BUFFER));
+            fragmentBufferSizeBytesLeft -= maxStorageBufferSize;
+        }
+
+        if (numFragmentBuffers != cachedNumFragmentBuffers) {
+            cachedNumFragmentBuffers = numFragmentBuffers;
+            reloadGatherShader(true);
+            reloadResolveShader();
+        }
     }
 
     if (sceneData.performanceMeasurer) {
         sceneData.performanceMeasurer->setCurrentAlgorithmBufferSizeBytes(fragmentBufferSizeBytes);
     }
-
-    fragmentBuffer = sgl::GeometryBufferPtr(); // Delete old data first (-> refcount 0)
-    fragmentBuffer = sgl::Renderer->createGeometryBuffer(
-            fragmentBufferSizeBytes, NULL, sgl::SHADER_STORAGE_BUFFER);
 }
 
 void ClearViewRenderer_FacesUnified::onResolutionChanged() {
@@ -537,8 +615,14 @@ void ClearViewRenderer_FacesUnified::setUniformData() {
     glm::mat4 inverseViewMatrix = glm::inverse(sceneData.camera->getViewMatrix());
     glm::vec3 lookingDirection(-inverseViewMatrix[2].x, -inverseViewMatrix[2].y, -inverseViewMatrix[2].z);
 
-    sgl::ShaderManager->bindShaderStorageBuffer(0, fragmentBuffer);
-    sgl::ShaderManager->bindShaderStorageBuffer(1, startOffsetBuffer);
+    sgl::ShaderManager->bindShaderStorageBuffer(0, startOffsetBuffer);
+    if (fragmentBufferMode == FragmentBufferMode::BUFFER_ARRAY) {
+        for (size_t i = 0; i < numFragmentBuffers; i++) {
+            sgl::ShaderManager->bindShaderStorageBuffer(int(i + 1), fragmentBuffers.at(i));
+        }
+    } else {
+        sgl::ShaderManager->bindShaderStorageBuffer(1, fragmentBuffer);
+    }
     sgl::ShaderManager->bindAtomicCounterBuffer(0, atomicCounterBuffer);
 
     gatherShader->setUniform("viewportW", width);
@@ -793,6 +877,14 @@ void ClearViewRenderer_FacesUnified::childClassRenderGuiEnd() {
             "Sorting Mode", (int*)&sortingAlgorithmMode, SORTING_MODE_NAMES, NUM_SORTING_MODES)) {
         setSortingAlgorithmDefine();
         reloadResolveShader();
+        reRender = true;
+    }
+    if (ImGui::Combo(
+            "Fragment Buffer Mode", (int*)&fragmentBufferMode,
+            FRAGMENT_BUFFER_MODE_NAMES, IM_ARRAYSIZE(FRAGMENT_BUFFER_MODE_NAMES))) {
+        reallocateFragmentBuffer();
+        reloadResolveShader();
+        reloadGatherShader(true);
         reRender = true;
     }
     if (ImGui::Button("Reload Shader")) {

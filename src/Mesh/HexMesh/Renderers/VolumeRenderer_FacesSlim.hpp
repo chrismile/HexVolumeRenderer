@@ -104,8 +104,14 @@ protected:
     int multiVarAttrIdx = 0;
 
     // Per-pixel linked list data.
+    FragmentBufferMode fragmentBufferMode = FragmentBufferMode::BUFFER;
+    size_t maxStorageBufferSize = 0;
+    size_t maxDeviceMemoryBudget = 0;
     size_t fragmentBufferSize = 0;
-    sgl::GeometryBufferPtr fragmentBuffer;
+    size_t numFragmentBuffers = 1;
+    size_t cachedNumFragmentBuffers = 1;
+    sgl::GeometryBufferPtr fragmentBuffer; //< if fragmentBufferMode == FragmentBufferMode::BUFFER
+    std::vector<sgl::GeometryBufferPtr> fragmentBuffers; //< if fragmentBufferMode != FragmentBufferMode::BUFFER
     sgl::GeometryBufferPtr startOffsetBuffer;
     sgl::GeometryBufferPtr atomicCounterBuffer;
 

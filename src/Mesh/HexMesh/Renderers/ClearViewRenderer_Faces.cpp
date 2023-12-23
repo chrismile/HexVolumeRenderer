@@ -202,8 +202,8 @@ void ClearViewRenderer_Faces::setUniformData() {
     glm::mat4 inverseViewMatrix = glm::inverse(sceneData.camera->getViewMatrix());
     glm::vec3 lookingDirection(-inverseViewMatrix[2].x, -inverseViewMatrix[2].y, -inverseViewMatrix[2].z);
 
-    sgl::ShaderManager->bindShaderStorageBuffer(0, fragmentBuffer);
-    sgl::ShaderManager->bindShaderStorageBuffer(1, startOffsetBuffer);
+    sgl::ShaderManager->bindShaderStorageBuffer(0, startOffsetBuffer);
+    sgl::ShaderManager->bindShaderStorageBuffer(1, fragmentBuffer);
     sgl::ShaderManager->bindAtomicCounterBuffer(0, atomicCounterBuffer);
 
     gatherShaderContext->setUniform("useShading", int(useShading));

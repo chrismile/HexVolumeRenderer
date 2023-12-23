@@ -29,12 +29,18 @@ struct LinkedListFragmentNode {
 // fragment-and-link buffer and a start-offset buffer
 
 // Fragment-and-link buffer (linked list). Stores "nodesPerPixel" number of fragments.
-layout (std430, binding = 0) coherent buffer FragmentBuffer {
+#ifdef FRAGMENT_BUFFER_ARRAY
+layout (std430, binding = 1) coherent buffer FragmentBuffer {
+    LinkedListFragmentNode fragmentBuffer[];
+} fragmentBuffers[NUM_FRAGMENT_BUFFERS];
+#else
+layout (std430, binding = 1) coherent buffer FragmentBuffer {
     LinkedListFragmentNode fragmentBuffer[];
 };
+#endif
 
 // Start-offset buffer (mapping pixels to first pixel in the buffer) of size viewportW*viewportH.
-layout (std430, binding = 1) coherent buffer StartOffsetBuffer {
+layout (std430, binding = 0) coherent buffer StartOffsetBuffer {
     uint startOffset[];
 };
 

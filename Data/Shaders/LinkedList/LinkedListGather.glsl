@@ -40,8 +40,16 @@ void gatherFragment(vec4 color) {
 
     if (insertIndex < linkedListSize) {
         // Insert the fragment into the linked list
+        //#ifdef FRAGMENT_BUFFER_ARRAY
+        //frag.color = packColor30bit(vec4(1.0, 0.0, 0.0, color.a));
+        //packFloat22Float10(frag.depth, gl_FragCoord.z, color.a);
+        //#endif
         frag.next = atomicExchange(startOffset[pixelIndex], insertIndex);
+#ifdef FRAGMENT_BUFFER_ARRAY
+        fragmentBuffers[insertIndex / NUM_FRAGS_PER_BUFFER].fragmentBuffer[insertIndex % NUM_FRAGS_PER_BUFFER] = frag;
+#else
         fragmentBuffer[insertIndex] = frag;
+#endif
     }
 }
 
@@ -75,6 +83,10 @@ void gatherFragmentCustomDepth(vec4 color, float depth) {
     if (insertIndex < linkedListSize) {
         // Insert the fragment into the linked list
         frag.next = atomicExchange(startOffset[pixelIndex], insertIndex);
+#ifdef FRAGMENT_BUFFER_ARRAY
+        fragmentBuffers[insertIndex / NUM_FRAGS_PER_BUFFER].fragmentBuffer[insertIndex % NUM_FRAGS_PER_BUFFER] = frag;
+#else
         fragmentBuffer[insertIndex] = frag;
+#endif
     }
 }

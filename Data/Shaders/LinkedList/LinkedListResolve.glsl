@@ -63,7 +63,11 @@ void main() {
             break;
         }
 
+#ifdef FRAGMENT_BUFFER_ARRAY
+        fragment = fragmentBuffers[fragOffset / NUM_FRAGS_PER_BUFFER].fragmentBuffer[fragOffset % NUM_FRAGS_PER_BUFFER];
+#else
         fragment = fragmentBuffer[fragOffset];
+#endif
         fragOffset = fragment.next;
 
         colorList[i] = fragment.color;
