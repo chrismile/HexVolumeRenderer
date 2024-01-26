@@ -33,11 +33,6 @@
 #include <algorithm>
 #include <thread>
 
-#include <glm/gtx/color_space.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/rotate_vector.hpp>
-#include <glm/gtx/euler_angles.hpp>
 #include <GL/glew.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
