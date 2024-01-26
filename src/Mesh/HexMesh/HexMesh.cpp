@@ -60,6 +60,12 @@
 #include <functional>
 #include <unordered_map>
 
+#include <glm/detail/setup.hpp>
+#if GLM_VERSION_MAJOR == 1 && GLM_VERSION_MINOR == 0 && GLM_VERSION_PATCH == 0
+#include <limits>
+template<class T> T epsilon() { return std::numeric_limits<T>::epsilon(); }
+#endif
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/color_space.hpp>
 
