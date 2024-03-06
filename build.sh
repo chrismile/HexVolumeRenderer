@@ -404,7 +404,10 @@ elif $use_conda && ! $use_macos; then
         . "$HOME/miniconda3/etc/profile.d/conda.sh" shell.bash hook
     elif [ -f "/opt/anaconda3/etc/profile.d/conda.sh" ]; then
         . "/opt/anaconda3/etc/profile.d/conda.sh" shell.bash hook
+    elif [ ! -z "${CONDA_PREFIX+x}" ]; then
+        . "$CONDA_PREFIX/etc/profile.d/conda.sh" shell.bash hook
     fi
+
     if ! command -v conda &> /dev/null; then
         echo "------------------------"
         echo "  installing Miniconda  "
