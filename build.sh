@@ -214,6 +214,8 @@ if $use_msys && command -v pacman &> /dev/null && [ ! -d $build_dir_debug ] && [
             || is_installed_pacman "mingw-w64-x86_64-curl-winssl"); then
         pacman --noconfirm -S --needed mingw64/mingw-w64-x86_64-curl
     fi
+elif $use_msys && command -v pacman &> /dev/null; then
+    :
 elif $use_macos && command -v brew &> /dev/null && [ ! -d $build_dir_debug ] && [ ! -d $build_dir_release ]; then
     if ! is_installed_brew "git"; then
         brew install git
@@ -290,6 +292,8 @@ elif $use_macos && command -v brew &> /dev/null && [ ! -d $build_dir_debug ] && 
             brew install curl
         fi
     fi
+elif $use_macos && command -v brew &> /dev/null; then
+    :
 elif command -v apt &> /dev/null && ! $use_conda; then
     if ! command -v cmake &> /dev/null || ! command -v git &> /dev/null || ! command -v curl &> /dev/null \
             || ! command -v pkg-config &> /dev/null || ! command -v g++ &> /dev/null \
