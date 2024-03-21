@@ -450,6 +450,7 @@ elif $use_conda && ! $use_macos; then
             || ! list_contains "$conda_pkg_list" "cmake" || ! list_contains "$conda_pkg_list" "pkg-config" \
             || ! list_contains "$conda_pkg_list" "gdb" || ! list_contains "$conda_pkg_list" "git" \
             || ! list_contains "$conda_pkg_list" "mesa-libgl-devel-cos7-x86_64" \
+            || ! list_contains "$conda_pkg_list" "libglvnd-glx-cos7-x86_64" \
             || ! list_contains "$conda_pkg_list" "mesa-dri-drivers-cos7-aarch64" \
             || ! list_contains "$conda_pkg_list" "libxau-devel-cos7-aarch64" \
             || ! list_contains "$conda_pkg_list" "libselinux-devel-cos7-aarch64" \
@@ -457,15 +458,17 @@ elif $use_conda && ! $use_macos; then
             || ! list_contains "$conda_pkg_list" "libxxf86vm-devel-cos7-aarch64" \
             || ! list_contains "$conda_pkg_list" "libxext-devel-cos7-aarch64" \
             || ! list_contains "$conda_pkg_list" "xorg-libxfixes" || ! list_contains "$conda_pkg_list" "xorg-libxau" \
-            || ! list_contains "$conda_pkg_list" "patchelf" || ! list_contains "$conda_pkg_list" "jsoncpp" \
-            || ! list_contains "$conda_pkg_list" "eigen" || ! list_contains "$conda_pkg_list" "libcurl"; then
+            || ! list_contains "$conda_pkg_list" "xorg-libxrandr" || ! list_contains "$conda_pkg_list" "patchelf" \
+            || ! list_contains "$conda_pkg_list" "jsoncpp" || ! list_contains "$conda_pkg_list" "eigen" \
+            || ! list_contains "$conda_pkg_list" "libcurl"; then
         echo "------------------------"
         echo "installing dependencies "
         echo "------------------------"
         conda install -y -c conda-forge boost glm libarchive tinyxml2 libpng sdl2 sdl2 glew cxx-compiler make cmake \
-        pkg-config gdb git mesa-libgl-devel-cos7-x86_64 mesa-dri-drivers-cos7-aarch64 libxau-devel-cos7-aarch64 \
-        libselinux-devel-cos7-aarch64 libxdamage-devel-cos7-aarch64 libxxf86vm-devel-cos7-aarch64 \
-        libxext-devel-cos7-aarch64 xorg-libxfixes xorg-libxau patchelf jsoncpp eigen libcurl
+        pkg-config gdb git mesa-libgl-devel-cos7-x86_64 libglvnd-glx-cos7-x86_64 mesa-dri-drivers-cos7-aarch64 \
+        libxau-devel-cos7-aarch64 libselinux-devel-cos7-aarch64 libxdamage-devel-cos7-aarch64 \
+        libxxf86vm-devel-cos7-aarch64 libxext-devel-cos7-aarch64 xorg-libxfixes xorg-libxau xorg-libxrandr patchelf \
+        jsoncpp eigen libcurl
     fi
 else
     echo "Warning: Unsupported system package manager detected." >&2
