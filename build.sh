@@ -416,11 +416,19 @@ elif $use_conda && ! $use_macos; then
         echo "------------------------"
         echo "  installing Miniconda  "
         echo "------------------------"
-        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-        chmod +x Miniconda3-latest-Linux-x86_64.sh
-        bash ./Miniconda3-latest-Linux-x86_64.sh
-        . "$HOME/miniconda3/etc/profile.d/conda.sh" shell.bash hook
-        rm ./Miniconda3-latest-Linux-x86_64.sh
+        if [ "$os_arch" = "x86_64" ]; then
+            wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+            chmod +x Miniconda3-latest-Linux-x86_64.sh
+            bash ./Miniconda3-latest-Linux-x86_64.sh
+            . "$HOME/miniconda3/etc/profile.d/conda.sh" shell.bash hook
+            rm ./Miniconda3-latest-Linux-x86_64.sh
+        else
+            wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh
+            chmod +x Miniconda3-latest-Linux-aarch64.sh
+            bash ./Miniconda3-latest-Linux-aarch64.sh
+            . "$HOME/miniconda3/etc/profile.d/conda.sh" shell.bash hook
+            rm ./Miniconda3-latest-Linux-aarch64.sh
+        fi
     fi
 
     if ! conda env list | grep ".*${conda_env_name}.*" >/dev/null 2>&1; then
