@@ -60,6 +60,7 @@ int main(int argc, char *argv[]) {
     sgl::AppSettings::get()->initializeDataDirectory();
 
     std::string iconPath = sgl::AppSettings::get()->getDataDirectory() + "Fonts/icon_256.png";
+    sgl::AppSettings::get()->setApplicationDescription("Visualization tool for hex meshes using transparent volumes");
     sgl::AppSettings::get()->loadApplicationIconFromFile(iconPath);
 
     ImVector<ImWchar> fontRanges;
