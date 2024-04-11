@@ -55,6 +55,10 @@ jobs:
         with:
           submodules: true
 
+      - uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.29.0
+
       - name: Install Vulkan SDK
         shell: bash
         run: |
