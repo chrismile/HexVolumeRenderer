@@ -1166,9 +1166,10 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
                 renderingMode != RENDERING_MODE_PSEUDO_VOLUME && renderingMode != RENDERING_MODE_DEPTH_COMPLEXITY;
         inputData->setHexMeshData(vertices, hexMeshCellIndices, loadMeshRepresentation);
         inputData->setQualityMeasure(selectedQualityMeasure);
-        MeshSourceDescription& sourceDescription = meshSourceDescriptions.at(selectedFileSourceIndex - 1);
+        MeshSourceDescription sourceDescription;
         std::vector<std::string> dataAdditionalFiles;
         if (selectedMeshIndex != 0) {
+            sourceDescription = meshSourceDescriptions.at(selectedFileSourceIndex - 1);
             dataAdditionalFiles = sourceDescription.dataAdditionalFiles.at(selectedMeshIndex - 1);
         }
         if (!hexMeshAttributeList.empty()) {
