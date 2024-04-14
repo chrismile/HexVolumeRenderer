@@ -897,6 +897,15 @@ void MainApp::renderFileSelectionSettingsGui() {
                 this->loadAvailableDataSetSources();
             }, loaderThread);
         }
+        if (getIsDataSetDownloadRunning()) {
+            //float windowContentRegionWidth =
+            //        ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
+            //ImGui::SetCursorPosX(windowContentRegionWidth - ImGui::GetTextLineHeight());
+            ImGui::SameLine();
+            ImGui::ProgressSpinner(
+                    "##progress-spinner", -1.0f, -1.0f, 4.0f,
+                    ImVec4(0.1f, 0.5f, 1.0f, 1.0f));
+        }
     }
 }
 

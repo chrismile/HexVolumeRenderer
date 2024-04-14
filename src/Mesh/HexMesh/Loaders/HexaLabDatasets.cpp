@@ -127,6 +127,10 @@ void downloadHexaLabDataSets(std::function<void()> callback, LoaderThread& loade
     }
 }
 
+bool getIsDataSetDownloadRunning() {
+    return downloadThreadIsRunning;
+}
+
 std::vector<MeshSourceDescription> parseSourceDescriptions() {
     std::vector<MeshSourceDescription> meshSourceDescriptions;
 

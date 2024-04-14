@@ -81,6 +81,7 @@ private:
 
 /// The passed callback is called when the data was loaded successfully.
 void downloadHexaLabDataSets(std::function<void()> callback, LoaderThread& loaderThread);
+bool getIsDataSetDownloadRunning();
 std::vector<MeshSourceDescription> parseSourceDescriptions();
 
 #endif //HEXVOLUMERENDERER_HEXALABDATASETS_HPP
