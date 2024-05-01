@@ -54,6 +54,7 @@ use_vcpkg=false
 use_conda=false
 conda_env_name="hexvolumerenderer"
 link_dynamic=false
+use_custom_vcpkg_triplet=false
 if [ $use_msys = false ] && command -v pacman &> /dev/null; then
     is_embree_installed=true
 else
@@ -82,6 +83,10 @@ do
         link_dynamic=false
     elif [ ${!i} = "--link-dynamic" ]; then
         link_dynamic=true
+    elif [ ${!i} = "--vcpkg-triplet" ]; then
+        ((i++))
+        vcpkg_triplet=${!i}
+        use_custom_vcpkg_triplet=true
     elif [ ${!i} = "--replicability" ]; then
         replicability=true
     fi
@@ -110,7 +115,9 @@ fi
 
 params_link=()
 params_vcpkg=()
-if [ $use_vcpkg = true ] && [ $use_macos = false ] && [ $link_dynamic = true ]; then
+if [ $use_custom_vcpkg_triplet = true ]; then
+    params_link+=(-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet)
+elif [ $use_vcpkg = true ] && [ $use_macos = false ] && [ $link_dynamic = true ]; then
     params_link+=(-DVCPKG_TARGET_TRIPLET=x64-linux-dynamic)
 fi
 if [ $use_vcpkg = true ] && [ $use_macos = false ]; then
