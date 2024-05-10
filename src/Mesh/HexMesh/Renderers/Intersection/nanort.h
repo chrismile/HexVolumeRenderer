@@ -908,7 +908,8 @@ class TriangleSAHPred {
   mutable T pos_;
   const T *vertices_;
   const unsigned int *faces_;
-  const size_t vertex_stride_bytes_;
+  // 2024-05-10: Removed const qualifier to fix build error with GCC 14.
+  size_t vertex_stride_bytes_;
 };
 
 // Predefined Triangle mesh geometry.
