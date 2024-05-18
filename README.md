@@ -15,10 +15,12 @@ The LOD structure discussed can be viewed with the renderer "LOD Lines (Preview,
 
 ## Building and running the programm
 
-Currently, there are three main ways to compile the program:
-- Linux: Using the system package manager to install all dependencies (tested: apt on Ubuntu, pacman on Arch Linux).
-- Linux & Windows: Installing all dependencies using [vcpkg](https://github.com/microsoft/vcpkg).
-- Windows: Using MSYS2 to install all dependencies.
+Currently, there are multiple ways to compile the program:
+- Linux: Using the system package manager to install all dependencies (tested: apt on Ubuntu, pacman on Arch Linux, dnf/yum on Fedora).
+- Linux & Windows: Installing all dependencies using [vcpkg](https://github.com/microsoft/vcpkg)  (by using the flag `./build.sh --vcpkg` on Linux or `build-msvc.bat` on Windows).
+- Windows: Using [MSYS2](https://www.msys2.org/) to install all dependencies (by using `./build.sh` in a MSYS2 shell).
+- Linux: Installing all dependencies with [conda](https://docs.conda.io/en/latest/) (by using the flag `./build.sh --conda`).
+- Linux: Installing all dependencies with [Nix](https://nixos.org/) (by invoking `./build.sh` after calling `nix-shell`).
 
 A build script `build.sh` is available in the project root directory that builds the application using the system
 package manager on Linux and MSYS2 on Windows. Please download and install MSYS2 from https://www.msys2.org/ if you wish
