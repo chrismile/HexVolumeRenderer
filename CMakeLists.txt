@@ -419,7 +419,13 @@ endif()
 
 
 # Downloading data sets for replicability stamp automatically.
-target_link_libraries(HexaLabDatasetsDownloader PUBLIC sgl ${CURL_LIBRARIES})
+target_link_libraries(HexaLabDatasetsDownloader PUBLIC sgl)
+if (TARGET CURL::libcurl)
+    target_link_libraries(HexaLabDatasetsDownloader PUBLIC CURL::libcurl)
+else()
+    target_link_libraries(HexaLabDatasetsDownloader PUBLIC ${CURL_LIBRARIES})
+endif()
+target_include_directories(HexaLabDatasetsDownloader PUBLIC ${CURL_INCLUDES} ${CURL_INCLUDE_DIRS})
 
 if (JSONCPP_LIBRARIES)
         target_link_libraries(HexaLabDatasetsDownloader PRIVATE ${JSONCPP_LIBRARIES})
