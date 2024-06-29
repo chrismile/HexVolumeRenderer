@@ -55,6 +55,7 @@ struct SceneData {
     bool& recordingMode;
     bool& useCameraFlight;
     RayMeshIntersection& rayMeshIntersection;
+    int pickingOffsetX = 0, pickingOffsetY = 0;
 };
 
 #endif //RENDERERS_SCENEDATA_HPP

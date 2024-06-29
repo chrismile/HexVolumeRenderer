@@ -31,14 +31,14 @@
 #include <Utils/AppSettings.hpp>
 #include <Graphics/Window.hpp>
 #include <Graphics/Scene/Camera.hpp>
+#include <ImGui/ImGuiWrapper.hpp>
 
 #include "RayMeshIntersection.hpp"
 
 bool RayMeshIntersection::pickPointScreen(
-        int x, int y, glm::vec3& firstHit, glm::vec3& lastHit) {
-    sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
-    int viewportWidth = window->getWidth();
-    int viewportHeight = window->getHeight();
+        int x, int y, int w, int h, glm::vec3& firstHit, glm::vec3& lastHit) {
+    int viewportWidth = w;
+    int viewportHeight = h;
 
     glm::mat4 inverseViewMatrix = glm::inverse(camera->getViewMatrix());
     float scale = std::tan(camera->getFOVy() * 0.5f);

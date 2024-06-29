@@ -26,7 +26,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if defined(USE_EMBREE3)
 #include <embree3/rtcore.h>
+#elif defined(USE_EMBREE4)
+#include <embree4/rtcore.h>
+#endif
+
 #include <glm/vec4.hpp>
 #include <Utils/File/Logfile.hpp>
 #include <Utils/File/FileUtils.hpp>
@@ -58,7 +63,7 @@ void RayMeshIntersection_Embree::freeStorage() {
 void RayMeshIntersection_Embree::setMeshTriangleData(
         const std::vector<glm::vec3>& vertices, const std::vector<uint32_t>& triangleIndices) {
     freeStorage();
-    if (vertices.size() <= 0 || triangleIndices.size() <= 0) {
+    if (vertices.empty() || triangleIndices.empty()) {
         return;
     }
 
@@ -66,9 +71,9 @@ void RayMeshIntersection_Embree::setMeshTriangleData(
     const size_t numIndices = triangleIndices.size();
     const size_t numTriangles = numIndices / 3;
 
-    glm::vec4* vertexPointer = (glm::vec4*)rtcSetNewGeometryBuffer(
+    auto* vertexPointer = (glm::vec4*)rtcSetNewGeometryBuffer(
             mesh, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(glm::vec4), numVertices);
-    uint32_t* indexPointer = (uint32_t*)rtcSetNewGeometryBuffer(
+    auto* indexPointer = (uint32_t*)rtcSetNewGeometryBuffer(
             mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3,
             sizeof(uint32_t) * 3, numTriangles);
     for (size_t i = 0; i < numVertices; i++) {
@@ -97,12 +102,19 @@ bool RayMeshIntersection_Embree::pickPointWorld(
     const float EPSILON_DEPTH = 1e-3f;
     const float INFINITY_DEPTH = 1e30f;
 
+#ifdef USE_EMBREE3
     RTCIntersectContext context;
     rtcInitIntersectContext(&context);
+#else
+    RTCRayQueryContext context;
+    rtcInitRayQueryContext(&context);
+    RTCIntersectArguments args{};
+    args.context = &context;
+#endif
 
     const size_t MAX_ITERATIONS = 65535u;
     size_t iterationNum;
-    RTCRayHit query;
+    RTCRayHit query{};
     for (iterationNum = 0; iterationNum < MAX_ITERATIONS; iterationNum++) {
         query.ray.org_x = rayOrigin.x;
         query.ray.org_y = rayOrigin.y;
@@ -116,7 +128,11 @@ bool RayMeshIntersection_Embree::pickPointWorld(
         query.hit.geomID = RTC_INVALID_GEOMETRY_ID;
         query.hit.primID = RTC_INVALID_GEOMETRY_ID;
 
+#ifdef USE_EMBREE3
         rtcIntersect1(scene, &context, &query);
+#elif defined(USE_EMBREE4)
+        rtcIntersect1(scene, &query, &args);
+#endif
         if (query.hit.geomID == RTC_INVALID_GEOMETRY_ID) {
             break;
         }

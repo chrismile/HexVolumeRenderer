@@ -57,13 +57,13 @@ public:
      * Picks a point on the mesh using screen coordinates (assuming origin at upper left corner of viewport).
      * @param x The x position on the screen (usually the mouse position).
      * @param y The y position on the screen (usually the mouse position).
+     * @param w The viewport width.
+     * @param h The viewport height.
      * @param firstHit The first hit point on the mesh (closest to the camera) is stored in this variable.
      * @param lastHit The last hit point on the mesh (furthest away from the camera) is stored in this variable.
      * @return True if a point on the mesh was hit.
      */
-    bool pickPointScreen(
-            int x, int y,
-            glm::vec3& firstHit, glm::vec3& lastHit);
+    bool pickPointScreen(int x, int y, int w, int h, glm::vec3& firstHit, glm::vec3& lastHit);
 
     /**
      * Picks a point on the mesh using a ray in world coordinates.

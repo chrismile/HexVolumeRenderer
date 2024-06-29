@@ -618,7 +618,7 @@ void ClearViewRenderer::update(float dt) {
     if (!useScreenSpaceLens) {
         if (sgl::Keyboard->getModifier() & KMOD_SHIFT) {
             if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
-                float scrollAmount = sgl::Mouse->getScrollWheel() * dt * 0.5;
+                float scrollAmount = float(sgl::Mouse->getScrollWheel()) * dt * 0.5f;
                 focusRadius += scrollAmount;
                 focusRadius = glm::clamp(focusRadius, 0.001f, 0.4f);
                 reRender = true;
@@ -629,7 +629,7 @@ void ClearViewRenderer::update(float dt) {
     } else {
         if (sgl::Keyboard->getModifier() & KMOD_SHIFT) {
             if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
-                float scrollAmount = sgl::Mouse->getScrollWheel() * dt * 800.0;
+                float scrollAmount = float(sgl::Mouse->getScrollWheel()) * dt * 800.0f;
                 screenSpaceLensPixelRadius += scrollAmount;
                 //sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
                 //int width = window->getWidth();
@@ -647,10 +647,16 @@ void ClearViewRenderer::update(float dt) {
                 sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
                 int mouseX = sgl::Mouse->getX();
                 int mouseY = sgl::Mouse->getY();
-                focusPointScreen = glm::vec2(mouseX, window->getHeight() - mouseY - 1);
+                int viewportWidth = (*sceneData.sceneTexture)->getW();
+                int viewportHeight = (*sceneData.sceneTexture)->getH();
+                if (sgl::ImGuiWrapper::get()->getUseDockSpaceMode()) {
+                    mouseX -= sceneData.pickingOffsetX;
+                    mouseY -= sceneData.pickingOffsetY;
+                }
+                focusPointScreen = glm::vec2(mouseX, viewportHeight - mouseY - 1);
                 glm::vec2 normalizedPosition = glm::vec2(
-                        (focusPointScreen.x * 2.0f - (windowWidth - 1.0f)) / windowHeight,
-                        focusPointScreen.y / windowHeight * 2.0f - 1.0f
+                        (focusPointScreen.x * 2.0f - (float(viewportWidth) - 1.0f)) / float(viewportWidth),
+                        focusPointScreen.y / float(viewportHeight) * 2.0f - 1.0f
                 );
                 //if (sgl::Mouse->buttonPressed(1)) {
                 //    std::cout << "(" << normalizedPosition.x << ", " << normalizedPosition.y << ")," << std::endl;

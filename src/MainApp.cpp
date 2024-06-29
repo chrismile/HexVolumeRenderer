@@ -539,6 +539,8 @@ void MainApp::render() {
 void MainApp::renderGui() {
     focusedWindowIndex = -1;
     mouseHoverWindowIndex = -1;
+    sceneData.pickingOffsetX = 0;
+    sceneData.pickingOffsetY = 0;
 
     if (useDockSpaceMode) {
         ImGuiID dockSpaceId = ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
@@ -604,8 +606,11 @@ void MainApp::renderGui() {
                     focusedWindowIndex = 0;
                 }
                 sgl::ImGuiWrapper::get()->setWindowViewport(0, ImGui::GetWindowViewport());
-                sgl::ImGuiWrapper::get()->setWindowViewport(0, ImGui::GetWindowViewport());
                 sgl::ImGuiWrapper::get()->setWindowPosAndSize(0, ImGui::GetWindowPos(), ImGui::GetWindowSize());
+
+                ImVec2 pos = ImGui::GetCursorScreenPos();
+                sceneData.pickingOffsetX = int(pos.x);
+                sceneData.pickingOffsetY = int(pos.y);
 
                 ImVec2 sizeContent = ImGui::GetContentRegionAvail();
                 if (useFixedSizeViewport) {

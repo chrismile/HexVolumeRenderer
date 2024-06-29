@@ -31,6 +31,7 @@
 #include <Math/Math.hpp>
 #include <Input/Keyboard.hpp>
 #include <Input/Mouse.hpp>
+#include <ImGui/ImGuiWrapper.hpp>
 
 #include "Pickable.hpp"
 #include "Mesh/HexMesh/Renderers/Helpers/LineRenderingDefines.hpp"
@@ -43,8 +44,13 @@ void Pickable::updatePickable(float dt, bool& reRender, SceneData& sceneData) {
         if (sgl::Mouse->buttonPressed(1) || (sgl::Mouse->isButtonDown(1) && sgl::Mouse->mouseMoved())) {
             int mouseX = sgl::Mouse->getX();
             int mouseY = sgl::Mouse->getY();
+            if (sgl::ImGuiWrapper::get()->getUseDockSpaceMode()) {
+                mouseX -= sceneData.pickingOffsetX;
+                mouseY -= sceneData.pickingOffsetY;
+            }
             bool rayHasHitMesh = sceneData.rayMeshIntersection.pickPointScreen(
-                    mouseX, mouseY, firstHit, lastHit);
+                    mouseX, mouseY, (*sceneData.sceneTexture)->getW(), (*sceneData.sceneTexture)->getH(),
+                    firstHit, lastHit);
             if (rayHasHitMesh) {
                 focusPoint = firstHit;
                 hitLookingDirection = glm::normalize(firstHit - sceneData.camera->getPosition());
