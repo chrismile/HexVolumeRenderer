@@ -105,16 +105,14 @@ bool RayMeshIntersection_Embree::pickPointWorld(
 #ifdef USE_EMBREE3
     RTCIntersectContext context;
     rtcInitIntersectContext(&context);
-#else
-    RTCRayQueryContext context;
-    rtcInitRayQueryContext(&context);
-    RTCIntersectArguments args{};
-    args.context = &context;
 #endif
 
     const size_t MAX_ITERATIONS = 65535u;
     size_t iterationNum;
     RTCRayHit query{};
+#ifdef USE_EMBREE4
+    query.ray.mask = -1;
+#endif
     for (iterationNum = 0; iterationNum < MAX_ITERATIONS; iterationNum++) {
         query.ray.org_x = rayOrigin.x;
         query.ray.org_y = rayOrigin.y;
@@ -131,7 +129,7 @@ bool RayMeshIntersection_Embree::pickPointWorld(
 #ifdef USE_EMBREE3
         rtcIntersect1(scene, &context, &query);
 #elif defined(USE_EMBREE4)
-        rtcIntersect1(scene, &query, &args);
+        rtcIntersect1(scene, &query, nullptr);
 #endif
         if (query.hit.geomID == RTC_INVALID_GEOMETRY_ID) {
             break;

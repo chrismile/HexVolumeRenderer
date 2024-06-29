@@ -48,6 +48,7 @@ os_arch="$(uname -m)"
 run_program=true
 debug=false
 glibcxx_debug=false
+clean=false
 build_dir_debug=".build_debug"
 build_dir_release=".build_release"
 use_vcpkg=false
@@ -72,6 +73,8 @@ do
         debug=true
     elif [ ${!i} = "--glibcxx-debug" ]; then
         glibcxx_debug=true
+    elif [ ${!i} = "--clean" ] || [ ${!i} = "clean" ]; then
+        clean=true
     elif [ ${!i} = "--vcpkg" ] || [ ${!i} = "--use-vcpkg" ]; then
         use_vcpkg=true
     elif [ ${!i} = "--conda" ] || [ ${!i} = "--use-conda" ]; then
@@ -91,6 +94,14 @@ do
         replicability=true
     fi
 done
+
+if [ $clean = true ]; then
+    echo "------------------------"
+    echo " cleaning up old files  "
+    echo "------------------------"
+    rm -rf third_party/sgl/ third_party/vcpkg/ .build_release/ .build_debug/ Shipping/
+    git submodule update --init --recursive
+fi
 
 if [ $debug = true ]; then
     cmake_config="Debug"
@@ -666,7 +677,7 @@ if [ ! -d "./sgl/install" ]; then
     popd >/dev/null
 fi
 
-embree_version="3.13.3"
+embree_version="4.3.2"
 
 if [ $use_macos = false ] && [ $use_msys = false ]; then
     if ! $is_embree_installed && [ $os_arch = "x86_64" ]; then
@@ -675,7 +686,13 @@ if [ $use_macos = false ] && [ $use_msys = false ]; then
             echo "   downloading Embree   "
             echo "------------------------"
             wget "https://github.com/embree/embree/releases/download/v${embree_version}/embree-${embree_version}.x86_64.linux.tar.gz"
-            tar -xvzf "embree-${embree_version}.x86_64.linux.tar.gz"
+            if [ $( tar --exclude='*/*' -tvf "embree-${embree_version}.x86_64.linux.tar.gz" | wc -l) -gt 1 ]; then
+                mkdir -p "embree-${embree_version}.x86_64.linux"
+                tar -xvzf "embree-${embree_version}.x86_64.linux.tar.gz" -C "embree-${embree_version}.x86_64.linux"
+            else
+                # For older Embree versions.
+                tar -xvzf "embree-${embree_version}.x86_64.linux.tar.gz"
+            fi
         fi
         params+=(-Dembree_DIR="${projectpath}/third_party/embree-${embree_version}.x86_64.linux/lib/cmake/embree-${embree_version}")
     fi
