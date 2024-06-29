@@ -84,6 +84,9 @@ private:
     void renderSceneSettingsGui();
     /// Update the color space (linear RGB vs. sRGB).
     void updateColorSpaceMode();
+    /// Callback when a file has been dropped on the program.
+    void onFileDropped(const std::string& droppedFileName) override;
+    bool checkHasValidExtension(const std::string& filenameLower);
 
 #ifdef USE_STEAMWORKS
     Steamworks steamworks;

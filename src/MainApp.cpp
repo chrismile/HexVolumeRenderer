@@ -1038,6 +1038,29 @@ void MainApp::update(float dt) {
     }
 }
 
+bool MainApp::checkHasValidExtension(const std::string& filenameLower) {
+    if (boost::ends_with(filenameLower, ".vtk")
+            || boost::ends_with(filenameLower, ".mesh")
+            || boost::ends_with(filenameLower, ".dat")
+            || boost::ends_with(filenameLower, ".degStress")) {
+        return true;
+    }
+    return false;
+}
+
+void MainApp::onFileDropped(const std::string& droppedFileName) {
+    std::string filenameLower = boost::to_lower_copy(droppedFileName);
+    if (checkHasValidExtension(filenameLower)) {
+        selectedFileSourceIndex = 0;
+        customMeshFileName = droppedFileName;
+        loadHexahedralMesh(getSelectedMeshFilename());
+    } else {
+        sgl::Logfile::get()->writeError(
+                "The dropped file name has an unknown extension \""
+                + sgl::FileUtils::get()->getFileExtension(filenameLower) + "\".");
+    }
+}
+
 
 
 // --- Visualization pipeline ---
