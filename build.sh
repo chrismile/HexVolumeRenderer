@@ -694,6 +694,14 @@ if [ $use_macos = false ] && [ $use_msys = false ]; then
                 tar -xvzf "embree-${embree_version}.x86_64.linux.tar.gz"
             fi
         fi
+        if [[ $embree_version == 3* ]]; then
+            embree_lib_name="embree3"
+        elif [[ $embree_version == 4* ]]; then
+            embree_lib_name="embree4"
+        else
+            echo "Unsupported Embree version $embree_version detected."
+            exit 1
+        fi
         params+=(-Dembree_DIR="${projectpath}/third_party/embree-${embree_version}.x86_64.linux/lib/cmake/embree-${embree_version}")
     fi
 #elif [ $use_macos = true ]; then
@@ -957,7 +965,7 @@ else
     ldd_output="$(ldd $build_dir/HexVolumeRenderer)"
 
     if ! $is_embree_installed && [ $os_arch = "x86_64" ]; then
-        libembree3_so="$(readlink -f "${projectpath}/third_party/embree-${embree_version}.x86_64.linux/lib/libembree3.so")"
+        libembree3_so="$(readlink -f "${projectpath}/third_party/embree-${embree_version}.x86_64.linux/lib/lib${embree_lib_name}.so")"
         ldd_output="$ldd_output $libembree3_so"
     fi
     library_blacklist=(
@@ -999,7 +1007,7 @@ else
     done
     patchelf --set-rpath '$ORIGIN' "$destination_dir/bin/HexVolumeRenderer"
     if ! $is_embree_installed; then
-        ln -sf "./$(basename "$libembree3_so")" "$destination_dir/bin/libembree3.so"
+        ln -sf "./$(basename "$libembree3_so")" "$destination_dir/bin/lib${embree_lib_name}.so"
     fi
 fi
 
