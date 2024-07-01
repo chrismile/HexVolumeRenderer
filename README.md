@@ -2,12 +2,12 @@
 
 A program for rendering hexahedral meshes in the form of transparent volumes.
 
-This repository was created for the paper
+This repository was created for the following paper.
 
-Interactive Focus+Context Rendering for Hexahedral Mesh Inspection. \
+**Interactive Focus+Context Rendering for Hexahedral Mesh Inspection.** \
 Christoph Neuhauser, Junpeng Wang, Rüdiger Westermann. \
-to appear in IEEE Transactions on Visualization and Computer Graphics 2021 (TVCG 2021). \
-DOI: 10.1109/TVCG.2021.3074607
+IEEE Transactions on Visualization and Computer Graphics 2021 (TVCG 2021). \
+DOI: [10.1109/TVCG.2021.3074607](https://www.doi.org/10.1109/TVCG.2021.3074607)
 
 The rendering mode discussed in the paper can be used when selecting the renderer "ClearView (Unified)" in the program.
 The LOD structure discussed can be viewed with the renderer "LOD Lines (Preview, Sheets)".
