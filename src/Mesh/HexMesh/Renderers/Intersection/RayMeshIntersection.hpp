@@ -29,7 +29,6 @@
 #define HEXVOLUMERENDERER_RAYMESHINTERSECTION_HPP
 
 #include <vector>
-#include <boost/shared_ptr.hpp>
 #include <glm/vec3.hpp>
 
 namespace sgl {

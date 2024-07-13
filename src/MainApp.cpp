@@ -34,8 +34,6 @@
 #include <thread>
 
 #include <GL/glew.h>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
 
 #include <ImGui/ImGuiWrapper.hpp>
 #include <ImGui/imgui_internal.h>
@@ -144,7 +142,7 @@ MainApp::MainApp()
     cameraPath.setApplicationCallback([this](
             const std::string& modelFilename, glm::vec3& centerOffset, float& startAngle, float& pulseFactor,
             float& standardZoom) {
-        if (boost::starts_with(
+        if (sgl::startsWith(
                 modelFilename,
                 sgl::AppSettings::get()->getDataDirectory() +
                 "Meshes/2011 - All-Hex Mesh Generation via Volumetric PolyCube Deformation/anc101_a1.mesh")) {
@@ -152,7 +150,7 @@ MainApp::MainApp()
             pulseFactor = 3.0f;
             standardZoom = 1.6f;
         }
-        if (boost::starts_with(
+        if (sgl::startsWith(
                 modelFilename,
                 sgl::AppSettings::get()->getDataDirectory() +
                 "Meshes/2014 - l1-Based Construction of Polycube Maps from Complex Shapes/cognit/hex.vtk")) {
@@ -160,7 +158,7 @@ MainApp::MainApp()
             pulseFactor = 3.0f;
             standardZoom = 1.6f;
         }
-        if (usePerformanceMeasurementMode && boost::ends_with(modelFilename, "cubic128.vtk")) {
+        if (usePerformanceMeasurementMode && sgl::endsWith(modelFilename, "cubic128.vtk")) {
             standardZoom = 1.3f;
         }
     });
@@ -856,7 +854,7 @@ std::string MainApp::getSelectedMeshFilename() {
 }
 
 bool MainApp::getFileSourceContainsDeformationMeshes() {
-    return boost::starts_with(meshDataSetSources[selectedFileSourceIndex], "00")
+    return sgl::startsWith(meshDataSetSources[selectedFileSourceIndex], "00")
             && meshDataSetSources[selectedFileSourceIndex].find("Deformation") != std::string::npos;
 }
 
@@ -1044,17 +1042,17 @@ void MainApp::update(float dt) {
 }
 
 bool MainApp::checkHasValidExtension(const std::string& filenameLower) {
-    if (boost::ends_with(filenameLower, ".vtk")
-            || boost::ends_with(filenameLower, ".mesh")
-            || boost::ends_with(filenameLower, ".dat")
-            || boost::ends_with(filenameLower, ".degStress")) {
+    if (sgl::endsWith(filenameLower, ".vtk")
+            || sgl::endsWith(filenameLower, ".mesh")
+            || sgl::endsWith(filenameLower, ".dat")
+            || sgl::endsWith(filenameLower, ".degStress")) {
         return true;
     }
     return false;
 }
 
 void MainApp::onFileDropped(const std::string& droppedFileName) {
-    std::string filenameLower = boost::to_lower_copy(droppedFileName);
+    std::string filenameLower = sgl::toLowerCopy(droppedFileName);
     if (checkHasValidExtension(filenameLower)) {
         selectedFileSourceIndex = 0;
         customMeshFileName = droppedFileName;
@@ -1227,14 +1225,14 @@ void MainApp::loadHexahedralMesh(const std::string &fileName) {
         }
         if (!dataAdditionalFiles.empty()) {
             for (std::string& additionalDataName : dataAdditionalFiles) {
-                if (boost::ends_with(additionalDataName, ".dat")) {
+                if (sgl::endsWith(additionalDataName, ".dat")) {
                     const std::string meshDirectory = sgl::AppSettings::get()->getDataDirectory() + "Meshes/";
                     std::string additionalDataFilename =
                             meshDirectory + sourceDescription.path + "/" + additionalDataName;
                     std::vector<std::vector<float>> datData = loadDatData(additionalDataFilename);
 
                     std::string dataType = "Unknown";
-                    std::string filenameLowerCase = boost::to_lower_copy(additionalDataName);
+                    std::string filenameLowerCase = sgl::toLowerCopy(additionalDataName);
                     if (filenameLowerCase.find("stress") != std::string::npos) {
                         dataType = "";
                         if (filenameLowerCase.find("cartesian") != std::string::npos) {
