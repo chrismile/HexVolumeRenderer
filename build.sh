@@ -64,6 +64,13 @@ fi
 # Replicability Stamp (https://www.replicabilitystamp.org/) mode for replicating a figure from the corresponding paper.
 replicability=false
 
+# Check if a conda environment is already active.
+if $use_conda; then
+    if [ ! -z "${CONDA_DEFAULT_ENV+x}" ]; then
+        conda_env_name="$CONDA_DEFAULT_ENV"
+    fi
+fi
+
 # Process command line arguments.
 for ((i=1;i<=$#;i++));
 do
