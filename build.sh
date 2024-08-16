@@ -223,12 +223,13 @@ list_contains() {
 if $use_msys && command -v pacman &> /dev/null && [ ! -d $build_dir_debug ] && [ ! -d $build_dir_release ]; then
     if ! command -v cmake &> /dev/null || ! command -v git &> /dev/null || ! command -v rsync &> /dev/null \
             || ! command -v curl &> /dev/null || ! command -v wget &> /dev/null || ! command -v unzip &> /dev/null \
-            || ! command -v pkg-config &> /dev/null || ! command -v g++ &> /dev/null; then
+            || ! command -v pkg-config &> /dev/null || ! command -v g++ &> /dev/null \
+            || ! command -v ntldd &> /dev/null; then
         echo "------------------------"
         echo "installing build essentials"
         echo "------------------------"
         pacman --noconfirm -S --needed make git rsync curl wget unzip mingw64/mingw-w64-x86_64-cmake \
-        mingw64/mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-gdb
+        mingw64/mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-gdb mingw-w64-x86_64-ntldd
     fi
 
     # Dependencies of sgl and the application.
@@ -850,6 +851,42 @@ startswith() {
 }
 
 if $use_msys; then
+    if [[ -z "${PATH+x}" ]]; then
+        export PATH="${projectpath}/third_party/sgl/install/bin"
+    elif [[ ! "${PATH}" == *"${projectpath}/third_party/sgl/install/bin"* ]]; then
+        export PATH="${projectpath}/third_party/sgl/install/bin:$PATH"
+    fi
+elif $use_macos; then
+    if [ -z "${DYLD_LIBRARY_PATH+x}" ]; then
+        export DYLD_LIBRARY_PATH="${projectpath}/third_party/sgl/install/lib"
+    elif contains "${DYLD_LIBRARY_PATH}" "${projectpath}/third_party/sgl/install/lib"; then
+        export DYLD_LIBRARY_PATH="DYLD_LIBRARY_PATH:${projectpath}/third_party/sgl/install/lib"
+    fi
+else
+  if [[ -z "${LD_LIBRARY_PATH+x}" ]]; then
+      export LD_LIBRARY_PATH="${projectpath}/third_party/sgl/install/lib"
+  elif [[ ! "${LD_LIBRARY_PATH}" == *"${projectpath}/third_party/sgl/install/lib"* ]]; then
+      export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${projectpath}/third_party/sgl/install/lib"
+  fi
+fi
+if [ $use_macos = false ] && [ $use_msys = false ]; then
+    if ! $is_embree_installed && [ $os_arch = "x86_64" ]; then
+        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${projectpath}/third_party/embree-${embree_version}.x86_64.linux/lib"
+    fi
+fi
+if [ $use_macos = true ] && [ $use_vcpkg = true ]; then
+    export PYTHONHOME="$PYTHONHOME_global"
+elif [ $use_macos = true ] && [ $use_vcpkg = false ]; then
+    export PYTHONHOME="../$destination_dir/python3"
+elif $use_msys; then
+    export PYTHONHOME="/mingw64"
+else
+    if [ $use_vcpkg = true ]; then
+        export PYTHONHOME="../Shipping/bin/python3"
+    fi
+fi
+
+if $use_msys; then
     mkdir -p $destination_dir/bin
 
     # Copy sgl to the destination directory.
@@ -863,14 +900,19 @@ if $use_msys; then
     cp "$build_dir/HexVolumeRenderer.exe" "$destination_dir/bin"
 
     # Copy all dependencies of the application to the destination directory.
-    ldd_output="$(ldd $destination_dir/bin/HexVolumeRenderer.exe)"
-    for library in $ldd_output
+    ldd_output="$(ntldd -R $build_dir/HexVolumeRenderer.exe)"
+    for library_abs in $ldd_output
     do
-        if [[ $library == "$MSYSTEM_PREFIX"* ]] ;
+        if [[ $library == "not found"* ]] || [[ $library == "ext-ms-win"* ]] || [[ $library == "=>"* ]] \
+                || [[ $library == "(0x"* ]] || [[ $library == "C:\\WINDOWS"* ]]; then
+            continue
+        fi
+        library="$(cygpath "$library_abs")"
+        if [[ $library == "$MSYSTEM_PREFIX"* ]] || [[ $library == "$projectpath"* ]];
         then
             cp "$library" "$destination_dir/bin"
         fi
-        if [[ $library == libpython* ]] ;
+        if [[ $library == libpython* ]];
         then
             tmp=${library#*lib}
             Python3_VERSION=${tmp%.dll}
@@ -1121,42 +1163,6 @@ fi
 echo ""
 echo "All done!"
 pushd $build_dir >/dev/null
-
-if $use_msys; then
-    if [[ -z "${PATH+x}" ]]; then
-        export PATH="${projectpath}/third_party/sgl/install/bin"
-    elif [[ ! "${PATH}" == *"${projectpath}/third_party/sgl/install/bin"* ]]; then
-        export PATH="${projectpath}/third_party/sgl/install/bin:$PATH"
-    fi
-elif $use_macos; then
-    if [ -z "${DYLD_LIBRARY_PATH+x}" ]; then
-        export DYLD_LIBRARY_PATH="${projectpath}/third_party/sgl/install/lib"
-    elif contains "${DYLD_LIBRARY_PATH}" "${projectpath}/third_party/sgl/install/lib"; then
-        export DYLD_LIBRARY_PATH="DYLD_LIBRARY_PATH:${projectpath}/third_party/sgl/install/lib"
-    fi
-else
-  if [[ -z "${LD_LIBRARY_PATH+x}" ]]; then
-      export LD_LIBRARY_PATH="${projectpath}/third_party/sgl/install/lib"
-  elif [[ ! "${LD_LIBRARY_PATH}" == *"${projectpath}/third_party/sgl/install/lib"* ]]; then
-      export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${projectpath}/third_party/sgl/install/lib"
-  fi
-fi
-if [ $use_macos = false ] && [ $use_msys = false ]; then
-    if ! $is_embree_installed && [ $os_arch = "x86_64" ]; then
-        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${projectpath}/third_party/embree-${embree_version}.x86_64.linux/lib"
-    fi
-fi
-if [ $use_macos = true ] && [ $use_vcpkg = true ]; then
-    export PYTHONHOME="$PYTHONHOME_global"
-elif [ $use_macos = true ] && [ $use_vcpkg = false ]; then
-    export PYTHONHOME="../$destination_dir/python3"
-elif $use_msys; then
-    export PYTHONHOME="/mingw64"
-else
-    if [ $use_vcpkg = true ]; then
-        export PYTHONHOME="../Shipping/bin/python3"
-    fi
-fi
 
 if [ $run_program = true ] && [ $use_macos = false ]; then
     ./HexVolumeRenderer ${params_run[@]+"${params_run[@]}"}
