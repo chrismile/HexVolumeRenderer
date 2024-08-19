@@ -1010,7 +1010,6 @@ elif [ $use_macos = true ] && [ $use_vcpkg = false ]; then
             codesign --force -s - "$filename" &> /dev/null
         fi
     done
-${copy_dependencies_macos_post}
 else
     mkdir -p $destination_dir/bin
 
