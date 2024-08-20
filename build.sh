@@ -903,8 +903,9 @@ if $use_msys; then
     ldd_output="$(ntldd -R $build_dir/HexVolumeRenderer.exe)"
     for library_abs in $ldd_output
     do
-        if [[ $library == "not found"* ]] || [[ $library == "ext-ms-win"* ]] || [[ $library == "=>"* ]] \
-                || [[ $library == "(0x"* ]] || [[ $library == "C:\\WINDOWS"* ]]; then
+        if [[ $library_abs == "not found"* ]] || [[ $library_abs == "ext-ms-win"* ]] || [[ $library_abs == "=>" ]] \
+                || [[ $library_abs == "(0x"* ]] || [[ $library_abs == "C:\\WINDOWS"* ]] \
+                || [[ $library_abs == "not" ]] || [[ $library_abs == "found"* ]]; then
             continue
         fi
         library="$(cygpath "$library_abs")"
