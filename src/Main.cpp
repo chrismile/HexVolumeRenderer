@@ -36,8 +36,13 @@
 #include <Utils/File/FileUtils.hpp>
 #include <Utils/AppSettings.hpp>
 #include <Utils/AppLogic.hpp>
-#include <SDL/HiDPI.hpp>
 #include <Graphics/Window.hpp>
+
+#ifdef SGL_INPUT_API_V2
+#include <Graphics/Utils/HiDPI.hpp>
+#else
+#include <SDL/HiDPI.hpp>
+#endif
 
 #include "MainApp.hpp"
 

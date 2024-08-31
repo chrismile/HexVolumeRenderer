@@ -40,7 +40,11 @@ glm::vec3 Pickable::focusPoint = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec4 Pickable::focusPointColor = FOCUS_SPHERE_COLOR;
 
 void Pickable::updatePickable(float dt, bool& reRender, SceneData& sceneData) {
+#ifdef SGL_INPUT_API_V2
+    if (sgl::Keyboard->getModifier(ImGuiKey_ModCtrl)) {
+#else
     if (sgl::Keyboard->getModifier() & KMOD_CTRL) {
+#endif
         if (sgl::Mouse->buttonPressed(1) || (sgl::Mouse->isButtonDown(1) && sgl::Mouse->mouseMoved())) {
             int mouseX = sgl::Mouse->getX();
             int mouseY = sgl::Mouse->getY();

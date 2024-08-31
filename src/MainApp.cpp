@@ -1027,9 +1027,15 @@ void MainApp::update(float dt) {
     }
 
     if (!io.WantCaptureKeyboard || recording) {
+#ifdef SGL_INPUT_API_V2
+        if (sgl::Keyboard->isKeyDown(ImGuiKey_U)) {
+            transferFunctionWindow.setShowWindow(showSettingsWindow);
+        }
+#else
         if (sgl::Keyboard->isKeyDown(SDLK_u)) {
             transferFunctionWindow.setShowWindow(showSettingsWindow);
         }
+#endif
     }
 
     if (!io.WantCaptureMouse || mouseHoverWindowIndex != -1) {

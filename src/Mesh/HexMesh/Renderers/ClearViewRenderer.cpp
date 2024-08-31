@@ -616,7 +616,11 @@ void ClearViewRenderer::renderGui() {
 
 void ClearViewRenderer::update(float dt) {
     if (!useScreenSpaceLens) {
+#ifdef SGL_INPUT_API_V2
+        if (sgl::Keyboard->getModifier(ImGuiKey_ModShift)) {
+#else
         if (sgl::Keyboard->getModifier() & KMOD_SHIFT) {
+#endif
             if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
                 float scrollAmount = float(sgl::Mouse->getScrollWheel()) * dt * 0.5f;
                 focusRadius += scrollAmount;
@@ -627,7 +631,11 @@ void ClearViewRenderer::update(float dt) {
 
         Pickable::updatePickable(dt, reRender, sceneData);
     } else {
+#ifdef SGL_INPUT_API_V2
+        if (sgl::Keyboard->getModifier(ImGuiKey_ModShift)) {
+#else
         if (sgl::Keyboard->getModifier() & KMOD_SHIFT) {
+#endif
             if (sgl::Mouse->getScrollWheel() > 0.1 || sgl::Mouse->getScrollWheel() < -0.1) {
                 float scrollAmount = float(sgl::Mouse->getScrollWheel()) * dt * 800.0f;
                 screenSpaceLensPixelRadius += scrollAmount;
@@ -642,7 +650,11 @@ void ClearViewRenderer::update(float dt) {
             }
         }
 
+#ifdef SGL_INPUT_API_V2
+        if (sgl::Keyboard->getModifier(ImGuiKey_ModCtrl)) {
+#else
         if (sgl::Keyboard->getModifier() & KMOD_CTRL) {
+#endif
             if (sgl::Mouse->buttonPressed(1) || (sgl::Mouse->isButtonDown(1) && sgl::Mouse->mouseMoved())) {
                 sgl::Window *window = sgl::AppSettings::get()->getMainWindow();
                 int mouseX = sgl::Mouse->getX();
