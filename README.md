@@ -13,7 +13,7 @@ The rendering mode discussed in the paper can be used when selecting the rendere
 The LOD structure discussed can be viewed with the renderer "LOD Lines (Preview, Sheets)".
 
 
-## Building and running the programm
+## Building and running the program
 
 Currently, there are multiple ways to compile the program:
 - Linux: Using the system package manager to install all dependencies (tested: apt on Ubuntu, pacman on Arch Linux, dnf/yum on Fedora).
