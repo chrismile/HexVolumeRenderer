@@ -74,10 +74,10 @@ if %clean% == true (
     rd /s /q "third_party\sgl\install"
     for /d %%G in ("third_party\sgl\.build*") do rd /s /q "%%~G"
     goto done
-    :notfound
+:notfound
     rd /s /q "third_party\sgl"
     goto done
-    :done
+:done
 
     git submodule update --init --recursive
 )
