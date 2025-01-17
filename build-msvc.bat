@@ -96,8 +96,8 @@ echo AAA
 echo %VCINSTALLDIR%
 echo %VisualStudioVersion%
 echo %VsPathEnd%
-if not defined VsPathEnd (
-    if defined VisualStudioVersion (
+if defined VisualStudioVersion (
+    if not defined VsPathEnd (
         if %VisualStudioVersion:~0,2% == 14 (
             set VsPathEnd=2015
         ) else if %VisualStudioVersion:~0,2% == 15 (
