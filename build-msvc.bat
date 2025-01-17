@@ -83,18 +83,20 @@ goto cleandone
 
 where cmake >NUL 2>&1 || echo cmake was not found but is required to build the program && exit /b 1
 
-echo AAA
 
 :: Creates a string with, e.g., -G "Visual Studio 17 2022".
 :: Needs to be run from a Visual Studio developer PowerShell or command prompt.
 if defined VCINSTALLDIR (
     set VCINSTALLDIR_ESC=%VCINSTALLDIR:\=\\%
 )
-echo BBB
 if defined VCINSTALLDIR (
     set "x=%VCINSTALLDIR_ESC:Microsoft Visual Studio\\=" & set "VsPathEnd=%"
 )
-echo CCC
+echo AAA
+echo %VCINSTALLDIR%
+echo %VsPathEnd%
+echo %VisualStudioVersion%
+echo BBB
 if not defined VsPathEnd (
     if %VisualStudioVersion:~0,2% == 14 (
         set VsPathEnd=2015
@@ -106,14 +108,13 @@ if not defined VsPathEnd (
         set VsPathEnd=2022
     )
 )
-echo DDD
+echo CCC
 if defined VsPathEnd (
     set cmake_generator=-G "Visual Studio %VisualStudioVersion:~0,2% %VsPathEnd:~0,4%"
 ) else (
     set cmake_generator=
 )
 
-echo EEE
 if %debug% == true (
     set cmake_config="Debug"
     set cmake_config_opposite="Release"
@@ -122,14 +123,10 @@ if %debug% == true (
     set cmake_config_opposite="Debug"
 )
 
-echo FFF
-
 if not exist .\third_party\ mkdir .\third_party\
 set proj_dir=%~dp0
 set third_party_dir=%proj_dir%third_party
 pushd third_party
-
-echo GGG
 
 IF "%toolchain_file%"=="" (
     SET use_vcpkg=true
