@@ -24,6 +24,7 @@
 :: OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 :: OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+@echo off
 setlocal
 pushd %~dp0
 
@@ -83,7 +84,6 @@ goto cleandone
 
 where cmake >NUL 2>&1 || echo cmake was not found but is required to build the program && exit /b 1
 
-
 :: Creates a string with, e.g., -G "Visual Studio 17 2022".
 :: Needs to be run from a Visual Studio developer PowerShell or command prompt.
 if defined VCINSTALLDIR (
@@ -92,23 +92,19 @@ if defined VCINSTALLDIR (
 if defined VCINSTALLDIR (
     set "x=%VCINSTALLDIR_ESC:Microsoft Visual Studio\\=" & set "VsPathEnd=%"
 )
-echo AAA
-echo %VCINSTALLDIR%
-echo %VsPathEnd%
-echo %VisualStudioVersion%
-echo BBB
 if not defined VsPathEnd (
-    if %VisualStudioVersion:~0,2% == 14 (
-        set VsPathEnd=2015
-    ) else if %VisualStudioVersion:~0,2% == 15 (
-        set VsPathEnd=2017
-    ) else if %VisualStudioVersion:~0,2% == 16 (
-        set VsPathEnd=2019
-    ) else if %VisualStudioVersion:~0,2% == 17 (
-        set VsPathEnd=2022
+    if defined VisualStudioVersion (
+        if %VisualStudioVersion:~0,2% == 14 (
+            set VsPathEnd=2015
+        ) else if %VisualStudioVersion:~0,2% == 15 (
+            set VsPathEnd=2017
+        ) else if %VisualStudioVersion:~0,2% == 16 (
+            set VsPathEnd=2019
+        ) else if %VisualStudioVersion:~0,2% == 17 (
+            set VsPathEnd=2022
+        )
     )
 )
-echo CCC
 if defined VsPathEnd (
     set cmake_generator=-G "Visual Studio %VisualStudioVersion:~0,2% %VsPathEnd:~0,4%"
 ) else (
@@ -123,10 +119,12 @@ if %debug% == true (
     set cmake_config_opposite="Debug"
 )
 
+
 if not exist .\third_party\ mkdir .\third_party\
 set proj_dir=%~dp0
 set third_party_dir=%proj_dir%third_party
 pushd third_party
+
 
 IF "%toolchain_file%"=="" (
     SET use_vcpkg=true
