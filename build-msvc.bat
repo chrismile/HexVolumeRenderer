@@ -24,7 +24,7 @@
 :: OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 :: OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-@echo off
+@echo on
 setlocal
 pushd %~dp0
 
@@ -92,6 +92,10 @@ if defined VCINSTALLDIR (
 if defined VCINSTALLDIR (
     set "x=%VCINSTALLDIR_ESC:Microsoft Visual Studio\\=" & set "VsPathEnd=%"
 )
+echo AAA
+echo %VCINSTALLDIR%
+echo %VisualStudioVersion%
+echo %VsPathEnd%
 if not defined VsPathEnd (
     if defined VisualStudioVersion (
         if %VisualStudioVersion:~0,2% == 14 (
@@ -105,6 +109,7 @@ if not defined VsPathEnd (
         )
     )
 )
+echo BBB
 if defined VsPathEnd (
     set cmake_generator=-G "Visual Studio %VisualStudioVersion:~0,2% %VsPathEnd:~0,4%"
 ) else (
