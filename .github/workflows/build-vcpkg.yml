@@ -152,17 +152,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: cmd
         run: |
-          echo AAA
           for /D %%F in (C:\VulkanSDK\*) do (
-            echo BBB
             set VULKAN_SDK=%%F
-            echo CCC
             set "PATH=%%F\Bin;%PATH%"
-            echo DDD
             goto vulkan_finished
           )
-          echo EEE
           :vulkan_finished
-          echo FFF
-          ./build-msvc.bat --do-not-run --vcpkg-triplet ${{env.VCPKG_DEFAULT_TRIPLET}}
-          echo GGG
+          call build-msvc.bat --do-not-run --vcpkg-triplet ${{env.VCPKG_DEFAULT_TRIPLET}}
