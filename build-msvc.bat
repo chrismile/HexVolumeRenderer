@@ -36,6 +36,8 @@ set build_dir=.build
 set destination_dir=Shipping
 set vcpkg_triplet="x64-windows"
 
+echo AAA
+
 :loop
 IF NOT "%1"=="" (
     IF "%1"=="--do-not-run" (
@@ -83,6 +85,8 @@ goto cleandone
 
 where cmake >NUL 2>&1 || echo cmake was not found but is required to build the program && exit /b 1
 
+echo BBB
+
 :: Creates a string with, e.g., -G "Visual Studio 17 2022".
 :: Needs to be run from a Visual Studio developer PowerShell or command prompt.
 if defined VCINSTALLDIR (
@@ -122,6 +126,7 @@ set proj_dir=%~dp0
 set third_party_dir=%proj_dir%third_party
 pushd third_party
 
+echo CCC
 
 IF "%toolchain_file%"=="" (
     SET use_vcpkg=true
@@ -147,6 +152,8 @@ if %use_vcpkg% == true (
         call vcpkg\bootstrap-vcpkg.bat -disableMetrics || exit /b 1
     )
 )
+
+echo DDD
 
 if not exist .\sgl (
     echo ------------------------
@@ -200,6 +207,8 @@ echo ------------------------
 
 
 cmake %cmake_generator% %cmake_args% -S . -B %build_dir%
+
+echo EEE
 
 echo ------------------------
 echo       compiling
