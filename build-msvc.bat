@@ -96,6 +96,7 @@ echo AAA
 echo %VCINSTALLDIR%
 echo %VisualStudioVersion%
 echo %VsPathEnd%
+set "VsVersionNumber=%VisualStudioVersion:~0,2%"
 if defined VisualStudioVersion (
     if not defined VsPathEnd (
         if %VisualStudioVersion:~0,2% == 14 (
