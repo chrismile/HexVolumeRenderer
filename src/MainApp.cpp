@@ -541,7 +541,7 @@ void MainApp::renderGui() {
     sceneData.pickingOffsetY = 0;
 
     if (useDockSpaceMode) {
-        ImGuiID dockSpaceId = ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+        ImGuiID dockSpaceId = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
         ImGuiDockNode* centralNode = ImGui::DockBuilderGetNode(dockSpaceId);
         static bool isProgramStartup = true;
         if (isProgramStartup && centralNode->IsEmpty()) {
@@ -673,8 +673,8 @@ void MainApp::renderGui() {
 
                     if (isViewOpen) {
                         ImGui::Image(
-                                (void*)(intptr_t)static_cast<sgl::TextureGL*>(
-                                        dataView->getSceneTextureResolved().get())->getTexture(),
+                                ImTextureID(static_cast<sgl::TextureGL*>(
+                                        dataView->getSceneTextureResolved().get())->getTexture()),
                                 sizeContent, ImVec2(0, 1), ImVec2(1, 0));
                         if (ImGui::IsItemHovered()) {
                             mouseHoverWindowIndex = 0;
