@@ -1,5 +1,4 @@
-cmake_minimum_required (VERSION 3.5)
-cmake_policy(VERSION 3.5...3.20)
+cmake_minimum_required(VERSION 3.10...4.0)
 project (HexVolumeRenderer)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 #MESSAGE(STATUS "CMAKE_MODULE_PATH: " ${CMAKE_MODULE_PATH})
