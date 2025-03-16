@@ -280,7 +280,12 @@ if(NOT (EIGEN3_VERSION_STRING LESS 3.3))
 else()
     include_directories(${EIGEN3_INCLUDE_DIR})
 endif()
-target_link_libraries(HexVolumeRenderer PUBLIC sgl ${OPENGL_LIBRARIES} GLEW::GLEW ${NETCDF_LIBRARIES}) # ${LEMON_LIBRARIES}
+if (TARGET OpenGL::OpenGL)
+    target_link_libraries(HexVolumeRenderer PRIVATE OpenGL::OpenGL)
+else()
+    target_link_libraries(HexVolumeRenderer PRIVATE OpenGL::GL)
+endif()
+target_link_libraries(HexVolumeRenderer PUBLIC sgl GLEW::GLEW ${NETCDF_LIBRARIES}) # ${LEMON_LIBRARIES}
 include_directories(${sgl_INCLUDES} ${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDES} ${NETCDF_INCLUDES})
 if (TARGET CURL::libcurl)
     target_link_libraries(HexVolumeRenderer PUBLIC CURL::libcurl)
