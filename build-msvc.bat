@@ -163,6 +163,7 @@ if not exist .\sgl (
     git clone --depth 1 https://github.com/chrismile/sgl.git   || exit /b 1
 )
 
+set cmake_args_sgl=%cmake_args_sgl% -DSUPPORT_VULKAN=OFF
 if not exist .\sgl\install (
     echo ------------------------
     echo      building sgl

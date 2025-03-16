@@ -221,7 +221,8 @@ endif()
 
 set(FPHSA_NAME_MISMATCHED TRUE)
 
-find_package(Vulkan QUIET)  # Necessary if sgl is built with Vulkan support.
+# We need to search for the Vulkan package to avoid errors when sgl is built with Vulkan support.
+find_package(Vulkan QUIET)
 find_package(sgl QUIET)
 if(NOT sgl_FOUND)
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH};third_party/sgl/install/lib/cmake/sgl)
@@ -351,7 +352,6 @@ endif()
 add_executable(HexaLabDatasetsDownloader ${SOURCES_DOWNLOADER})
 
 # We need to search for the Vulkan package to avoid errors when sgl is built with Vulkan support.
-find_package(Vulkan QUIET)
 if (${Vulkan_FOUND} AND NOT "USE_SGL_VULKAN_HEADERS" IN_LIST SGL_INTERFACE_COMPILE_DEFINITIONS
         AND "SUPPORT_VULKAN" IN_LIST SGL_INTERFACE_COMPILE_DEFINITIONS
         AND ${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.21.0")

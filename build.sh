@@ -581,6 +581,7 @@ if $glibcxx_debug; then
     params_sgl+=(-DUSE_GLIBCXX_DEBUG=On)
     params+=(-DUSE_GLIBCXX_DEBUG=On)
 fi
+params_sgl+=(-DSUPPORT_VULKAN=OFF)
 
 use_vulkan=false
 vulkan_sdk_env_set=true
