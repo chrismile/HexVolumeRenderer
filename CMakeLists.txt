@@ -221,6 +221,7 @@ endif()
 
 set(FPHSA_NAME_MISMATCHED TRUE)
 
+find_package(Vulkan QUIET)  # Necessary if sgl is built with Vulkan support.
 find_package(sgl QUIET)
 if(NOT sgl_FOUND)
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH};third_party/sgl/install/lib/cmake/sgl)

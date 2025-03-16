@@ -51,7 +51,7 @@ jobs:
             shell: bash
           # Windows targets.
           - os: windows-2022
-            target_name: x86_64-windows
+            target_name: x86_64-windows-gnu
             linking: dynamic
             shell: 'msys2 {0}'
 
