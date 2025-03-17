@@ -148,6 +148,14 @@ jobs:
           cp Data/TransferFunctions/Standard.xml Shipping/Data/TransferFunctions/Standard.xml
           mv Shipping ${{ env.artifact_name }}
 
+      - name: Archive Test Results
+        if: always() && runner.os == 'Linux'
+        run: |
+          egrep -rn "libGLU" third_party/sgl/.build_release
+          egrep -rn "lGLU" third_party/sgl/.build_release
+          egrep -rn "libGLU" .build_release
+          egrep -rn "lGLU" .build_release
+
       ##- name: Create archive (Unix)
       ##  shell: bash
       ##  run: |
