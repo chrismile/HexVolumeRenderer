@@ -575,7 +575,6 @@ fi
 [ -d "./third_party/" ] || mkdir "./third_party/"
 pushd third_party > /dev/null
 
-
 params_sgl=()
 params=()
 params_run=()
@@ -606,6 +605,25 @@ if $glibcxx_debug; then
     params+=(-DUSE_GLIBCXX_DEBUG=On)
 fi
 params_sgl+=(-DSUPPORT_VULKAN=OFF)
+
+cmake_version=$(cmake --version | head -n 1 | awk '{print $NF}')
+cmake_version_major=$(echo $cmake_version | cut -d. -f1)
+cmake_version_minor=$(echo $cmake_version | cut -d. -f2)
+if [ $use_msys = false ] && [ $use_macos = false ] && [ $use_conda = false ] && [ $use_vcpkg = false ] && [[ $cmake_version_major -ge 4 ]]; then
+    # Ubuntu 22.04 ships packages, such as libjsoncpp-dev, that are incompatible with CMake 4.0.
+    if (lsb_release -a 2> /dev/null | grep -q 'Ubuntu' || lsb_release -a 2> /dev/null | grep -q 'Mint'); then
+        if lsb_release -a 2> /dev/null | grep -q 'Ubuntu'; then
+            distro_code_name=$(lsb_release -cs)
+            distro_release=$(lsb_release -rs)
+        else
+            distro_code_name=$(cat /etc/upstream-release/lsb-release | grep "DISTRIB_CODENAME=" | sed 's/^.*=//')
+            distro_release=$(cat /etc/upstream-release/lsb-release | grep "DISTRIB_RELEASE=" | sed 's/^.*=//')
+        fi
+        if dpkg --compare-versions "$distro_release" "lt" "24.04"; then
+            params+=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
+        fi
+    fi
+fi
 
 use_vulkan=false
 vulkan_sdk_env_set=true
