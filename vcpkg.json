@@ -10,23 +10,6 @@
             "name": "boost-interprocess",
             "platform": "windows"
         },
-        {
-            "name": "dbus",
-            "default-features": false,
-            "features": [],
-            "platform": "linux"
-        },
-        {
-            "name": "sdl2",
-            "features": [ "vulkan", "x11", "wayland" ],
-            "platform": "linux"
-        },
-        {
-            "name": "sdl2",
-            "features": [ "vulkan" ],
-            "platform": "!linux"
-        },
-        "sdl2-image",
         "tinyxml2",
         {
             "name": "libarchive",
@@ -46,7 +29,53 @@
             "platform": "!linux"
         }
     ],
+    "default-features": [
+        "sdl3"
+    ],
     "features": {
+        "sdl2": {
+            "description": "SDL2 backend support.",
+            "dependencies": [
+                {
+                    "name": "sdl2",
+                    "features": [ "vulkan", "x11", "wayland" ],
+                    "platform": "linux"
+                },
+                {
+                    "name": "sdl2",
+                    "features": [ "vulkan" ],
+                    "platform": "!linux"
+                },
+                {
+                    "name": "dbus",
+                    "default-features": false,
+                    "features": [],
+                    "platform": "linux"
+                },
+                "sdl2-image"
+            ]
+        },
+        "sdl3": {
+            "description": "SDL3 backend support.",
+            "dependencies": [
+                {
+                    "name": "sdl3",
+                    "features": [ "vulkan", "x11", "wayland" ],
+                    "platform": "linux"
+                },
+                {
+                    "name": "sdl3",
+                    "features": [ "vulkan" ],
+                    "platform": "!linux"
+                },
+                {
+                    "name": "dbus",
+                    "default-features": false,
+                    "features": [],
+                    "platform": "linux"
+                }
+            ]
+        },
         "tbb": {
             "description": "Use TBB instead of OpenMP for multi-threading",
             "dependencies": [
