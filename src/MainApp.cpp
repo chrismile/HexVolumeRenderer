@@ -201,6 +201,8 @@ MainApp::MainApp()
     coordinateAxesOverlayWidget.setClearColor(clearColor);
     dataView->setClearColor(clearColor);
 
+    deviceSelector = sgl::AppSettings::get()->getDeviceSelector();
+
     sgl::Renderer->setErrorCallback(&openglErrorCallback);
     sgl::Renderer->setDebugVerbosity(sgl::DEBUG_OUTPUT_CRITICAL_ONLY);
     resolutionChanged(sgl::EventPtr());
@@ -947,6 +949,14 @@ void MainApp::renderSceneSettingsGui() {
     }
 
     SciVisApp::renderSceneSettingsGuiPost();
+
+    if (deviceSelector) {
+        deviceSelector->renderGui();
+        deviceSelector->renderGuiDialog();
+        if (deviceSelector->getShallRestartApp()) {
+            quit();
+        }
+    }
 }
 
 void MainApp::update(float dt) {

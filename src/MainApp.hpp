@@ -92,6 +92,9 @@ private:
     Steamworks steamworks;
 #endif
 
+    // OpenGL device selection helper.
+    sgl::DeviceSelector* deviceSelector = nullptr;
+
     // Dock space mode.
     //void renderGuiMenuBar();
     //void renderGuiPropertyEditorBegin() override;

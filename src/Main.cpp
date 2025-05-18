@@ -84,6 +84,7 @@ int main(int argc, char *argv[]) {
 #else
     sgl::AppSettings::get()->setLoadGUI(fontRanges.Data, true, useMultiViewport);
 #endif
+    sgl::AppSettings::get()->setUseAppDeviceSelectorOpenGL();
     sgl::Window* window = sgl::AppSettings::get()->createWindow();
     sgl::AppSettings::get()->initializeSubsystems();
 
