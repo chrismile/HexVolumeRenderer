@@ -50,6 +50,7 @@
 #include <Math/Math.hpp>
 #include <Graphics/Window.hpp>
 #include <Graphics/Renderer.hpp>
+#include <Graphics/Utils/DeviceSelection.hpp>
 #include <Graphics/OpenGL/Texture.hpp>
 
 #include "Widgets/DataView.hpp"
