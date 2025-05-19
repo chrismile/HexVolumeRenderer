@@ -47,6 +47,10 @@
 
 #include "MainApp.hpp"
 
+#ifdef _WIN32
+#include <Graphics/OpenGL/Context/DeviceSelectionWGLGlobals.hpp>
+#endif
+
 int main(int argc, char *argv[]) {
     // Initialize the filesystem utilities
     sgl::FileUtils::get()->initialize("HexVolumeRenderer", argc, argv);
@@ -84,7 +88,11 @@ int main(int argc, char *argv[]) {
 #else
     sgl::AppSettings::get()->setLoadGUI(fontRanges.Data, true, useMultiViewport);
 #endif
+#ifdef _WIN32
+    sgl::AppSettings::get()->setUseAppDeviceSelectorOpenGL(&NvOptimusEnablement, &AmdPowerXpressRequestHighPerformance);
+#else
     sgl::AppSettings::get()->setUseAppDeviceSelectorOpenGL();
+#endif
     sgl::Window* window = sgl::AppSettings::get()->createWindow();
     sgl::AppSettings::get()->initializeSubsystems();
 
