@@ -29,12 +29,29 @@ jobs:
 
     env:
       VCPKG_ROOT: ${{ github.workspace }}/third_party/vcpkg
-      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/third_party/vcpkg/bincache
+      VCPKG_CACHE_DIR: ${{ github.workspace }}/third_party/vcpkg/bincache
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/third_party/vcpkg/bincache,readwrite
+      VCPKG_COMMIT_ID: "a9eee3b18df395dbb8be71a31bd78ea441056e42"
 
     steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+
       - name: Set up vcpkg environment variables
         shell: bash
         run: |
+          mkdir -p "${{env.VCPKG_ROOT}}"
+          git clone https://github.com/microsoft/vcpkg.git "${{env.VCPKG_ROOT}}"
+          pushd "${{env.VCPKG_ROOT}}"
+          if [ -z "${{env.VCPKG_COMMIT_ID}}" ]; then
+            echo "VCPKG_COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          else
+            git checkout ${{env.VCPKG_COMMIT_ID}}
+          fi
+          popd
+          echo "VCPKG_CACHE_KEY=vcpkg-${{env.VCPKG_DEFAULT_TRIPLET}}-${{env.VCPKG_COMMIT_ID}}-${{ github.event.repository.name }}-" >> $GITHUB_ENV
+          echo "VCPKG_CACHE_KEY_FULL=vcpkg-${{env.VCPKG_CACHE_KEY}}${{ hashFiles('vcpkg.json') }}" >> $GITHUB_ENV
           if [ "$RUNNER_OS" == "Linux" ]; then
             echo "VCPKG_COPY_TRIPLET=x64-linux" >> $GITHUB_ENV
             echo "VCPKG_DEFAULT_TRIPLET=x64-linux-${{matrix.linking}}-release-only" >> $GITHUB_ENV
@@ -52,9 +69,12 @@ jobs:
           exit 1
           fi
 
-      - uses: actions/checkout@v2
+      - name: Restore vcpkg cache
+        uses: actions/cache/restore@v4
         with:
-          submodules: true
+          path: ${{env.VCPKG_CACHE_DIR}}
+          key: ${{env.VCPKG_CACHE_KEY_FULL}}
+          restore-keys: ${{env.VCPKG_CACHE_KEY}}
 
       - uses: lukka/get-cmake@latest
         with:
@@ -128,13 +148,6 @@ jobs:
             exit 1
           fi
 
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitURL: 'https://github.com/microsoft/vcpkg.git'
-          vcpkgGitCommitId: '9b75e789ece3f942159b8500584e35aafe3979ff'
-          vcpkgDirectory: ${{env.VCPKG_ROOT}}
-
       - name: Create custom vcpkg triplet
         shell: bash
         run: |
@@ -166,3 +179,9 @@ jobs:
           )
           :vulkan_finished
           call build-msvc.bat --do-not-run --vcpkg-triplet ${{env.VCPKG_DEFAULT_TRIPLET}}
+
+      - name: Save vcpkg cache
+        uses: actions/cache/save@v4
+        with:
+          path: ${{env.VCPKG_CACHE_DIR}}
+          key: ${{env.VCPKG_CACHE_KEY_FULL}}
