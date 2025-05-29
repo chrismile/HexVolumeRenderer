@@ -808,7 +808,7 @@ if [ ! -d "./sgl/install" ]; then
     popd >/dev/null
 fi
 
-embree_version="4.3.2"
+embree_version="4.4.0"
 
 if [ $use_macos = false ] && [ $use_msys = false ]; then
     if ! $is_embree_installed && [ $os_arch = "x86_64" ]; then
