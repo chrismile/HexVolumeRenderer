@@ -299,6 +299,9 @@ elif $use_macos && command -v brew &> /dev/null && [ ! -d $build_dir_debug ] && 
     if ! is_installed_brew "curl"; then
         brew install curl
     fi
+    if ! is_installed_brew "wget"; then
+        brew install wget
+    fi
     if ! is_installed_brew "pkg-config"; then
         brew install pkg-config
     fi
@@ -1191,7 +1194,7 @@ if [ $use_vcpkg = true ]; then
         vcpkg_installed_dir="$build_dir/vcpkg_installed"
     fi
     if [ $use_macos = true ]; then
-        vcpkg_installed_dir_triplet="vcpkg_installed/$(ls $vcpkg_installed_dir | grep -Ewv 'vcpkg')"
+        vcpkg_installed_dir_triplet="$vcpkg_installed_dir/$(ls $vcpkg_installed_dir | grep -Ewv 'vcpkg')"
     else
         if [ $use_custom_vcpkg_triplet = true ]; then
             vcpkg_installed_dir_triplet="$vcpkg_installed_dir/$vcpkg_triplet"
