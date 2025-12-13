@@ -531,7 +531,7 @@ elif command -v yum &> /dev/null && ! $use_conda; then
                 || ! is_installed_rpm "autoconf" || ! is_installed_rpm "automake" \
                 || ! is_installed_rpm "autoconf-archive" || ! is_installed_rpm "mesa-libGLU-devel" \
                 || ! is_installed_rpm "glew-devel" || ! is_installed_rpm "libXext-devel" \
-                || ! is_installed_rpm "vulkan-headers" || ! is_installed_rpm "vulkan-loader" \
+                || ! is_installed_rpm "vulkan-headers" || ! is_installed_rpm "vulkan-loader-devel" \
                 || ! is_installed_rpm "vulkan-tools" || ! is_installed_rpm "vulkan-validation-layers" \
                 || ! is_installed_rpm "libshaderc-devel" || ! is_installed_rpm "libXinerama-devel" \
                 || ! is_installed_rpm "libXrandr-devel" || ! is_installed_rpm "libXcursor-devel" \
@@ -542,7 +542,7 @@ elif command -v yum &> /dev/null && ! $use_conda; then
             echo "installing dependencies "
             echo "------------------------"
             sudo yum install -y perl libstdc++-devel libstdc++-static autoconf automake autoconf-archive \
-            mesa-libGLU-devel glew-devel libXext-devel vulkan-headers vulkan-loader vulkan-tools \
+            mesa-libGLU-devel glew-devel libXext-devel vulkan-headers vulkan-loader-devel vulkan-tools \
             vulkan-validation-layers libshaderc-devel libXinerama-devel libXrandr-devel libXcursor-devel libXi-devel \
             wayland-devel libxkbcommon-devel wayland-protocols-devel extra-cmake-modules
         fi
