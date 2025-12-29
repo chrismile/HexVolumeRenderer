@@ -4,11 +4,14 @@ A program for rendering hexahedral meshes in the form of transparent volumes.
 
 This repository was created for the following paper.
 
-**Interactive Focus+Context Rendering for Hexahedral Mesh Inspection.** \
-Christoph Neuhauser, Junpeng Wang, Rüdiger Westermann. \
-IEEE Transactions on Visualization and Computer Graphics 2021 (TVCG 2021). \
+**Interactive Focus+Context Rendering for Hexahedral Mesh Inspection** \
+Christoph Neuhauser, Junpeng Wang, Rüdiger Westermann \
+IEEE Transactions on Visualization and Computer Graphics (TVCG), 2021 \
 DOI: [10.1109/TVCG.2021.3074607](https://www.doi.org/10.1109/TVCG.2021.3074607) \
-Project page: https://chrismile.net/publications/fc-hexmesh/
+[[Project page](https://chrismile.net/publications/fc-hexmesh/)]
+[[Paper](https://ieeexplore.ieee.org/document/9409710)]
+[[Preprint](https://www.cs.cit.tum.de/fileadmin/w00cfj/cg/Research/Publications/2021/HexMeshFocusContext/TVCG_HexMesh_preprint.pdf)]
+[[BIB](https://chrismile.net/publications/fc-hexmesh/ref.bib)]
 
 The rendering mode discussed in the paper can be used when selecting the renderer "ClearView (Unified)" in the program
 (see the screenshot below for an example).
