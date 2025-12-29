@@ -14,7 +14,7 @@ The rendering mode discussed in the paper can be used when selecting the rendere
 (see the screenshot below for an example).
 The LOD structure discussed can be viewed with the renderer "LOD Lines (Preview, Sheets)".
 
-![Teaser image of different data sets displayed using LineVis.](https://chrismile.net/github/hexvolumerenderer/teaser.png)
+![Teaser image of volumetric Focus+Context visualization.](https://chrismile.net/github/hexvolumerenderer/teaser.png)
 
 The model in the image above is courtesy of J. Gregson, A. Sheffer, E. Zhang
 (https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1467-8659.2011.02015.x).
