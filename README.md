@@ -7,10 +7,17 @@ This repository was created for the following paper.
 **Interactive Focus+Context Rendering for Hexahedral Mesh Inspection.** \
 Christoph Neuhauser, Junpeng Wang, Rüdiger Westermann. \
 IEEE Transactions on Visualization and Computer Graphics 2021 (TVCG 2021). \
-DOI: [10.1109/TVCG.2021.3074607](https://www.doi.org/10.1109/TVCG.2021.3074607)
+DOI: [10.1109/TVCG.2021.3074607](https://www.doi.org/10.1109/TVCG.2021.3074607) \
+Project page: https://chrismile.net/publications/fc-hexmesh/
 
-The rendering mode discussed in the paper can be used when selecting the renderer "ClearView (Unified)" in the program.
+The rendering mode discussed in the paper can be used when selecting the renderer "ClearView (Unified)" in the program
+(see the screenshot below for an example).
 The LOD structure discussed can be viewed with the renderer "LOD Lines (Preview, Sheets)".
+
+![Teaser image of different data sets displayed using LineVis.](https://chrismile.net/github/hexvolumerenderer/teaser.png)
+
+The model in the image above is courtesy of J. Gregson, A. Sheffer, E. Zhang
+(https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1467-8659.2011.02015.x).
 
 
 ## Building and running the program
@@ -76,3 +83,12 @@ Thus, the code is not provided in the repository.
 
 For more details on the TVCG Replicability Stamp, please refer to `replicability/README.md`.
 
+
+### Video 1: IEEE TVCG 2021 Paper Short Intro
+
+[![IEEE TVCG 2021 Paper Short Intro](https://img.youtube.com/vi/CPHrO2aM0NY/maxresdefault.jpg)](https://youtu.be/CPHrO2aM0NY)
+
+
+### Video 2: IEEE TVCG 2021 Paper Presentation
+
+[![IEEE TVCG 2021 Paper Presentation](https://img.youtube.com/vi/t34qLFVoxHA/maxres3.jpg)](https://youtu.be/t34qLFVoxHA)
