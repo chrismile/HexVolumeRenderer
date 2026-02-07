@@ -97,7 +97,8 @@ int main(int argc, char *argv[]) {
     sgl::AppSettings::get()->initializeSubsystems();
 
 #ifdef USE_PYTHON
-    sgl::pythonInit(argc, argv);
+    int argcPython = std::min(argc, 1);
+    sgl::pythonInit(argcPython, argv);
 #endif
 
     MainApp* app = new MainApp();
