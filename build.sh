@@ -68,6 +68,7 @@ use_conda=false
 conda_env_name="hexvolumerenderer"
 link_dynamic=false
 use_custom_vcpkg_triplet=false
+standalone=false
 if [ $use_msys = false ] && command -v pacman &> /dev/null; then
     is_embree_installed=true
 else
@@ -772,7 +773,7 @@ if [ -f "./sgl/$build_dir/CMakeCache.txt" ]; then
     fi
 fi
 
-if [ ! -d "./sgl/$install_dir" ]; then
+if [ ! -d "./sgl/$install_dir" ] && ! $standalone; then
     echo "------------------------"
     echo "     building sgl       "
     echo "------------------------"

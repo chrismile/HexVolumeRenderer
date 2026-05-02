@@ -36,6 +36,7 @@ set clean=false
 set build_dir=.build
 set destination_dir=Shipping
 set vcpkg_triplet="x64-windows"
+set standalone=false
 
 :loop
 IF NOT "%1"=="" (
@@ -137,15 +138,19 @@ set third_party_dir=%proj_dir%third_party
 pushd third_party
 
 
+SET use_vcpkg=false
 IF "%toolchain_file%"=="" (
     SET use_vcpkg=true
-) ELSE (
+)
+IF %standalone% == true (
     SET use_vcpkg=false
 )
 IF "%toolchain_file%"=="" SET toolchain_file="vcpkg/scripts/buildsystems/vcpkg.cmake"
 
-set cmake_args=%cmake_args% -DCMAKE_TOOLCHAIN_FILE="third_party/%toolchain_file%" ^
-               -Dsgl_DIR="third_party/sgl/install/lib/cmake/sgl/"
+if %use_vcpkg% == true (
+    set cmake_args=%cmake_args% -DCMAKE_TOOLCHAIN_FILE="third_party/%toolchain_file%" ^
+                   -Dsgl_DIR="third_party/sgl/install/lib/cmake/sgl/"
+)
 
 set cmake_args_general=%cmake_args_general% -DCMAKE_TOOLCHAIN_FILE="%third_party_dir%/%toolchain_file%"
 
@@ -170,7 +175,13 @@ if not exist .\sgl (
 )
 
 set cmake_args_sgl=%cmake_args_sgl% -DSUPPORT_VULKAN=OFF
+set build_sgl=false
 if not exist .\sgl\install (
+    if %standalone% == false (
+        set build_sgl=true
+    )
+)
+if %build_sgl% == true (
     echo ------------------------
     echo      building sgl
     echo ------------------------
