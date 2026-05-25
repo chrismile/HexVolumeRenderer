@@ -326,6 +326,14 @@ if (Python3_FOUND AND USE_PYTHON)
             target_link_options(HexVolumeRenderer PRIVATE "-export-dynamic")
         endif()
     endif()
+        if (MSVC AND NOT VCPKG)
+        # The system Python usually only includes the release library "python*.lib", not "python*_d.lib".
+        # However, in Python.h, linking to "python*_d.lib" is specified. We use a similar fix as described here:
+        # - https://github.com/Slicer/Slicer/pull/8651
+        # - https://github.com/commontk/PythonQt/blob/7f7105ba9ec59d719ded80090e049fa85ad76e79/src/PythonQtPythonInclude.h#L95
+        # - https://github.com/Slicer/VTK/blob/slicer-v9.5.0-2025-06-19-e70c856bd/Utilities/Python/vtkPython.h#L40
+        target_compile_definitions(HexVolumeRenderer PRIVATE USE_PYTHON_LINKER_FIX)
+    endif()
     target_include_directories(HexVolumeRenderer PUBLIC ${Python3_INCLUDE_DIRS})
 
 
